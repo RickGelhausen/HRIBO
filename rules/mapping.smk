@@ -2,8 +2,7 @@ rule genomeSegemehlIndex:
     input:
         genome=rules.retrieveGenome.output
     output:
-        index="genomeSegemehlIndex/genome.idx",
-        #"genomeStarIndex/genomeParameters.txt"
+        index="genomeSegemehlIndex/genome.idx"
     conda:
         "../envs/segemehl.yaml"
     threads: 20
@@ -12,7 +11,7 @@ rule genomeSegemehlIndex:
     log:
         "logs/genomeIndex.log"
     shell:
-        "if [ -d {params.indexpath} ]; then ln -T -s {params.indexpath} {output.index}; echo \"Index linked\"; else mkdir -p genomeStarIndex; echo \"Computing Segemehl index\"; segemehl.x -x {output.index} -d {input.genome} 2> {log}; fi"
+        "if [ -d {params.indexpath} ]; then ln -T -s {params.indexpath} {output.index}; echo \"Index linked\"; else mkdir -p genomeSegemehlIndex; echo \"Computing Segemehl index\"; segemehl.x --threads {threads} -x {output.index} -d {input.genome} 2> {log}; fi"
 
 rule map:
     input:
@@ -29,7 +28,7 @@ rule map:
     params:
         prefix=lambda wildcards, output: (os.path.dirname(output[0]))
     log:
-        "logs/{method}-{condition}-{replicate}_star.log"
+        "logs/{method}-{condition}-{replicate}_segemehl.log"
     shell:
         "mkdir -p sam; mkdir -p sam/unmapped; segemehl.x -s -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sam} -u {output.unmapped} 2> {log}"
 
@@ -38,6 +37,8 @@ rule samtobam
         sam="sam/{method}-{condition}-{replicate}.sam"
     output:
         bam="bam/{method}-{condition}-{replicate}.bam"
+    conda:
+        "../envs/samtools.yaml"
     shell:
         "mkdir -p bam; samtools view -bh {input.sam} | samtools sort -o {output.bam} -O bam"
 
