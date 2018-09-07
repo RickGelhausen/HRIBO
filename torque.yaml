@@ -1,0 +1,69 @@
+__default__:
+  jobname: "{rule}"
+  qname: "long"
+  resources : 'nodes=1:ppn=8'
+  logoutputdir : "$PWD/logs"
+  erroroutputdir : "$PWD/logs"
+
+retrieveGenome:
+  resources : 'nodes=1:ppn=1'
+  qname: "short"
+
+retrieveAnnotation:
+  resources : 'nodes=1:ppn=1'
+  qname: "short"
+
+genomeSamToolsIndex:
+  resources : 'nodes=1:ppn=1'
+
+rrnaretrieve:
+  resources : 'nodes=1:ppn=1'
+  qname: "short"
+
+rrnaindex:
+  resources : 'nodes=1:ppn=1'
+
+rrnafilter:
+  resources : 'nodes=1:ppn=20'
+
+trim:
+  resources : 'nodes=1:ppn=1'
+
+fastqc:
+  resources : 'nodes=1:ppn=6'
+  qname: "short"
+
+genomeIndex:
+  resources : 'nodes=1:ppn=20'
+
+map:
+  resources : 'nodes=1:ppn=20'
+
+maplink:
+  resources : 'nodes=1:ppn=1'
+  qname: "tiny"
+
+ribotish:
+  resources : 'nodes=1:ppn=1'
+
+longestTranscript:
+  resources : 'nodes=1:ppn=1'
+
+normalizedCounts:
+  resources : 'nodes=1:ppn=1'
+
+genomeSize:
+  resources : 'nodes=1:ppn=1'
+
+bamindex:
+  resources : 'nodes=1:ppn=20'
+
+wig:
+  resources : 'nodes=1:ppn=1'
+
+annotationBed:
+  resources : 'nodes=1:ppn=1'
+
+annotationBigBed:
+  resources : 'nodes=1:ppn=1'
+
