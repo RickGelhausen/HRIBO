@@ -16,9 +16,8 @@ rule genomeSegemehlIndex:
 rule map:
     input:
         genome=rules.retrieveGenome.output,
-        genomeSegemehlIndex=rules.genomeIndexSegemehl.output
+        genomeSegemehlIndex="genomeSegemehlIndex/genome.idx",
         fastq="norRNA/{method}-{condition}-{replicate}.fastq",
-        index=rules.genomeIndex.output
     output:
         sam="sam/{method}-{condition}-{replicate}.sam",
         unmapped="sam/unmapped/{method}-{condition}-{replicate}.sam"
@@ -32,7 +31,7 @@ rule map:
     shell:
         "mkdir -p sam; mkdir -p sam/unmapped; segemehl.x -s -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sam} -u {output.unmapped} 2> {log}"
 
-rule samtobam
+rule samtobam:
     input:
         sam="sam/{method}-{condition}-{replicate}.sam"
     output:
