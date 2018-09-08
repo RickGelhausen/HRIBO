@@ -1,0 +1,22 @@
+$schema: "http://json-schema.org/draft-06/schema#"
+
+description: an entry in the sample sheet
+properties:
+  method:
+    type: string
+    description: Used high troughput sequening methods, RIBO for Ribo-seq, RNA for RNA-seq
+  condition:
+    type: string
+    description: Condition A for first condition, B for second condition (e.g. a treatment, tissue, mutant)
+  replicate:
+    type: string
+    description: Identifier for replicate, (e.g. 1)
+  fastqFile:
+    type: string
+    description: Path to gzipped fastq file (e.g. fastq/1.fa.gz)
+
+required:
+  - method
+  - condition
+  - replicate
+  - fastqFile
