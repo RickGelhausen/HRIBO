@@ -40,5 +40,3 @@ include: "rules/mapping.smk"
 include: "rules/visualization.smk"
 #Ribotish
 include: "rules/ribotish.smk"
-#Report
-include: "rules/report.smk"
