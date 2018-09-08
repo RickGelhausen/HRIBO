@@ -55,7 +55,7 @@ rule maplink:
 
 rule ribomaplink:
     input:
-        "bam/{method}-{condition}-{replicate}/Aligned.sortedByCoord.out.bam"
+        "bam/{method}-{condition}-{replicate}.bam"
     output:
         "maplink/{method, RIBO}/{condition, [a-zA-Z]+}-{replicate,\d+}.bam"
     params:
@@ -67,7 +67,7 @@ rule ribomaplink:
 
 rule rnamaplink:
     input:
-        "bam/{method}-{condition}-{replicate}/Aligned.sortedByCoord.out.bam"
+        "bam/{method}-{condition}-{replicate}.bam"
     output:
         "maplink/{method, RNA}/{condition, [a-zA-Z]+}-{replicate,\d+}.bam"
     params:
