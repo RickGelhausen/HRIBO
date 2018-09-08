@@ -2,5 +2,5 @@
 taxonomy: "Bacteria"
 #Adapter sequence used
 adapter: ""
-samples: "uORF-Tools/samples.tsv"
+samples: "SPtools/samples.tsv"
 genomeindexpath: ""

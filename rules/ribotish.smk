@@ -17,11 +17,10 @@ rule ribotishQuality:
         annotation=rules.retrieveAnnotation.output,
         samindex=rules.genomeSamToolsIndex.output,
         bamindex="maplink/RIBO/{condition}-{replicate}.bam.bai"
-	#bamindex=expand("maplink/{sample.method}-{sample.condition}-{sample.replicate}.bam.bai", sample=samples.itertuples())
     output:
         reportpdf="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.pdf",
         reporttxt=report("ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.txt", caption="../report/ribotishquality.rst", category="Ribotish"),
-	offsetparameters="maplink/RIBO/{condition, [a-zA-Z]+}-{replicate,\d+}.bam.para.py"
+        offsetparameters="maplink/RIBO/{condition, [a-zA-Z]+}-{replicate,\d+}.bam.para.py"
     conda:
         "../envs/ribotish.yaml"
     threads: 10
@@ -39,7 +38,8 @@ rule ribotish:
         bamindex="maplink/RIBO/{condition}-{replicate}.bam.bai",
         offsetparameters="maplink/RIBO/{condition}-{replicate}.bam.para.py"
     output:
-        report=report("ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-newORFs.tsv", caption="../report/ribotish.rst", category="Ribotish")
+        report=report("ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-newORFs.tsv_all.txt", caption="../report/ribotish.rst", category="Ribotish"),
+        filtered="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-newORFs.tsv"
     conda:
         "../envs/ribotish.yaml"
     threads: 10
