@@ -1,0 +1,6 @@
+#Taxonomy of the samples to be processed, possible are Eukarya, Bacteria, Archea
+taxonomy: "Bacteria"
+#Adapter sequence used
+adapter: ""
+samples: "SPTools/samples.tsv"
+genomeindexpath: ""

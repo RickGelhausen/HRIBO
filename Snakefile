@@ -2,7 +2,7 @@ import os
 import re
 import pandas as pd
 from snakemake.utils import validate, min_version
-min_version("5.2.2")
+min_version("5.2.1")
 
 ADAPTERS=config["adapter"]
 INDEXPATH=config["genomeindexpath"]
