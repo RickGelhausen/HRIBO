@@ -13,7 +13,7 @@ rule trim:
         "../envs/trimgalore.yaml"
     threads: 1
     shell:
-        "mkdir -p trimmed; trim_galore {params.ada} --phred33 --output_dir trimmed/ --trim-n --suppress_warn --dont_gzip fastq/{params.prefix}.fastq.gz; mv trimmed/{params.prefix}_trimmed.fq {output}"
+        "mkdir -p trimmed; trim_galore {params.ada} --phred33 -q 20 --length 15 --output_dir trimmed/ --trim-n --suppress_warn --clip_R1 1 --dont_gzip fastq/{params.prefix}.fastq.gz; mv trimmed/{params.prefix}_trimmed.fq {output}"
 
 rule fastqcraw:
     input:
