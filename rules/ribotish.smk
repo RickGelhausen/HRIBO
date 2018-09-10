@@ -46,4 +46,4 @@ rule ribotish:
     log:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotish.log"
     shell:
-        "mkdir -p ribotish; ribotish predict --longest -p {threads} -b {input.fp} -g {input.annotation} -f {input.genome} -o {output.report} 2> {log}"
+        "mkdir -p ribotish; if grep -q \"offdict = {{'m0': {{}}}}\" {input.offsetparameters}; then mv {input.offsetparameters} {input.offsetparameters}.unused; fi; ribotish predict --longest -p {threads} -b {input.fp} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
