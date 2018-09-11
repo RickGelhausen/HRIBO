@@ -1,0 +1,107 @@
+__default__:
+  jobname: "{rule}"
+  parallelenvironment : 'smp 8'
+  logoutputdir : "$PWD/logs"
+  erroroutputdir : "$PWD/logs"
+  joinlogs : 'y'
+  memory: "h_vmem=8G"
+
+retrieveGenome:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=1G"
+
+retrieveAnnotation:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=1G"
+
+ribotish:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=20G"
+
+genomeSamToolsIndex:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=30G"
+
+psiteOffset:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=30G"
+
+rrnaretrieve:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=1G"
+
+rrnaindex:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=30G"
+
+rrnafilter:
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=3G"
+
+trim:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=30G"
+
+fastqcraw:
+  parallelenvironment : 'smp 6'
+  memory: "h_vmem=3G"
+
+fastqctrimmed:
+  parallelenvironment : 'smp 6'
+  memory: "h_vmem=3G"
+
+fastqcrrnafilter:
+  parallelenvironment : 'smp 6'
+  memory: "h_vmem=3G"
+
+genomeIndex:
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=3G"
+
+map:
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=3G"
+
+maplink:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=1G"
+
+ribomaplink:
+    parallelenvironment : 'smp 1'
+    memory: "h_vmem=1G"
+
+rnamaplink:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=1G"
+
+riboMerge:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=20G"
+
+longestTranscript:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+normalizedCounts:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=30G"
+
+genomeSize:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=1G"
+
+bamindex:
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=3G"
+
+wig:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=30G"
+
+annotationBed:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=30G"
+
+annotationBigBed:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=30G"
