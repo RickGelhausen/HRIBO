@@ -105,3 +105,7 @@ annotationBed:
 annotationBigBed:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=30G"
+
+samtobam:
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=30G"

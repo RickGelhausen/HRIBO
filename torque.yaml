@@ -67,3 +67,5 @@ annotationBed:
 annotationBigBed:
   resources : 'nodes=1:ppn=1'
 
+samtobam:
+  resources : 'nodes=1:ppn=20'
