@@ -108,4 +108,4 @@ annotationBigBed:
 
 samtobam:
   parallelenvironment : 'smp 20'
-  memory: "h_vmem=30G"
+  memory: "h_vmem=3G"
