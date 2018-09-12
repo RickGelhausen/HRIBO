@@ -1,19 +1,22 @@
+from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
+FTP = FTPRemoteProvider()
+
 rule uniprotDBRetrieve:
     input:
-        HTTP.remote("TODO.fasta",keep_local=True,allow_redirects=True)
+        FTP.remote("ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz",keep_local=True,allow_redirects=True)
     output:
-        "uniprotDB/TODO.fasta"
+        "uniprotDB/uniprot_sprot.fasta"
     threads: 1
     run:
         outputname = os.path.basename(input[0])
-        shell("mkdir -p uniprotDBM; mv {input} uniprotDB/{outputName}")
+        shell("mkdir -p uniprotDB; mv {input} uniprotDB/{outputName}; gunzip uniprotDB/{outputName}")
 
 rule reparation:
     input:
         sam="sam/RIBO-{condition}-{replicate}.sam",
         genome=rules.retrieveGenome.output,
         gtf=rules.retrieveAnnotation.output,
-        db="uniprotDB/TODO.fasta"
+        db="uniprotDB/uniprot_sprot.fasta"
     output:
         bed="reparation/{condition}-{replicate}/Predicted_ORFs.bed"
     conda:
