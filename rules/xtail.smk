@@ -1,3 +1,10 @@
+import itertools as iter
+
+def getcontrast(wildcards):
+  conditions=wildcards.samples['condition'].tolist()
+  contrasts=iter.combinations(conditions, 2)
+return contrasts
+
 rule longestTranscript:
     input:
         rules.retrieveAnnotation.output
@@ -34,12 +41,13 @@ rule cdsNormalizedCounts:
 
 rule cdsxtail:
     input:
-        "xtail/norm_CDS_reads.csv"
+        normreads="xtail/norm_CDS_reads.csv"
+        contrast=getcontrast
     output:
-        table=report("xtail/xtail.csv", caption="../report/xtail_cds_fc.rst", category="CDS"),
-        fcplot="xtail/xtail_cds_fc.pdf",
-        rplot="xtail/xtail_cds_r.pdf"
+        table="xtail/{contrast}.csv",
+        fcplot="xtail/fc_{contrast}.pdf",
+        rplot="xtail/r_{contrast}.pdf"
     conda:
         "../envs/xtail.yaml"
     threads: 1
-    shell: ("mkdir -p xtail; SPtools/scripts/xtail_normalized_counts.R -t SPtools/samples.tsv -r {input} -x {output.table} -f {output.fcplot} -p {output.rplot};")
+    shell: ("mkdir -p xtail; SPtools/scripts/xtail_normalized_counts.R -c {input.contrast} -t SPtools/samples.tsv -r {input.normreads} -x {output.table} -f {output.fcplot} -p {output.rplot};")
