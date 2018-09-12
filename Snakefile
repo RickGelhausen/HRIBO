@@ -2,7 +2,7 @@ import os
 import re
 import pandas as pd
 from snakemake.utils import validate, min_version
-min_version("5.2.1")
+min_version("5.2.4")
 
 ADAPTERS=config["adapter"]
 INDEXPATH=config["genomeindexpath"]
@@ -22,7 +22,9 @@ rule all:
        expand("fastqc/trimmed/{sample.method}-{sample.condition}-{sample.replicate}-trimmed.html", sample=samples.itertuples()),
        expand("fastqc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA.html", sample=samples.itertuples()),
        expand("ribotish/{sample.condition}-{sample.replicate}-newORFs.tsv_all.txt", sample=samples.itertuples()),
-       expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples())
+       expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
+       "xtail/sfactors.csv",
+       "xtail/xtail.csv",
 
 onsuccess:
     print("Done, no error")
@@ -37,5 +39,7 @@ include: "rules/rrnafiltering.smk"
 include: "rules/mapping.smk"
 #Visualization
 include: "rules/visualization.smk"
-#Ribotish
+#ribotish
 include: "rules/ribotish.smk"
+#xtail
+include: "rules/xtail.smk"

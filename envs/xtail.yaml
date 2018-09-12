@@ -1,0 +1,10 @@
+channels:
+ - bioconda
+ - conda-forge
+dependencies:
+ - bioconductor-genomicranges
+ - bioconductor-genomicalignments
+ - bioconductor-deseq2
+ - r-plyr
+ - bioconductor-rtracklayer
+ - r-optparse
