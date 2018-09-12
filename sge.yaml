@@ -105,3 +105,11 @@ annotationBed:
 annotationBigBed:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=30G"
+
+reparation:
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=1.5G"
+
+uniprotDBRetrieve:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=1G"

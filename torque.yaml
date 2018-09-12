@@ -67,3 +67,10 @@ annotationBed:
 annotationBigBed:
   resources : 'nodes=1:ppn=1'
 
+reparation:
+  resources : 'nodes=1:ppn=20'
+
+uniprotDBRetrieve:
+  resources : 'nodes=1:ppn=1'
+  qname: "short"
+
