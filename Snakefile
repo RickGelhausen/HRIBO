@@ -23,6 +23,8 @@ rule all:
        expand("fastqc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA.html", sample=samples.itertuples()),
        expand("ribotish/{sample.condition}-{sample.replicate}-newORFs.tsv_all.txt", sample=samples.itertuples()),
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
+       expand("xtailclassic/{sample.method}-{sample.condition}-{sample.replicate}.csv", sample=samples.itertuples()),
+       expand("xtail/{contrast}.csv", contrast=getContrast),
        "xtail/sfactors.csv",
        "xtail/xtail.csv",
 
