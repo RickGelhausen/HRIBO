@@ -1,10 +1,3 @@
-import itertools as iter
-
-def getcontrast(wildcards):
-  conditions=wildcards.samples['condition'].tolist()
-  contrasts=iter.combinations(conditions, 2)
-return contrasts
-
 rule longestTranscript:
     input:
         rules.retrieveAnnotation.output
@@ -41,8 +34,7 @@ rule cdsNormalizedCounts:
 
 rule cdsxtail:
     input:
-        normreads="xtail/norm_CDS_reads.csv"
-        contrast=getcontrast
+        normreads="xtail/norm_CDS_reads.csv",
     output:
         table="xtail/{contrast}.csv",
         fcplot="xtail/fc_{contrast}.pdf",

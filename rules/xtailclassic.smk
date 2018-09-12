@@ -3,7 +3,7 @@ rule xtailclassicnormalize:
         bam="maplink/{method}-{condition}-{replicate}.bam",
         annotation="annotation/annotation.gtf"
     output:
-        xtailclassic="xtailclassic/{method}-{condition}-{replicate}.csv
+        xtailclassic="xtailclassic/{method}-{condition}-{replicate}.csv"
     conda:
         "../envs/xtailcounts.yaml"
     threads: 1
