@@ -7,7 +7,7 @@ rule xtailclassicnormalize:
     conda:
         "../envs/xtailcounts.yaml"
     threads: 1
-    shell: ("mkdir -p xtailclassic; python RPF_counts_CDS.py bamFile gtfFile > {output}")
+    shell: ("mkdir -p xtailclassic; python RPF_counts_CDS.py {input.bam} {input.annotation} > {output}")
 
 
 #rule xtailclassic:
