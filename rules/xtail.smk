@@ -32,14 +32,31 @@ rule cdsNormalizedCounts:
     threads: 1
     shell: ("mkdir -p xtail; SPtools/scripts/generate_normalized_counts_CDS.R -b maplink/ -a {input.annotation} -s {input.sizefactor} -t SPtools/samples.tsv -n {output};")
 
+rule contrastInput:
+    #params:
+    #    contrasts=expand("{contrastpair}", contrastpair=lambda wildcards: getContrast(wildcards))
+    output:
+        "contrasts/{contrast}"
+    run:
+        if not os.path.exists("contrasts"):
+            os.makedirs("contrasts")
+        for f in getContrast(wildcards):
+            print(f)
+            open((f), 'a').close()
+
 rule cdsxtail:
     input:
         normreads="xtail/norm_CDS_reads.csv",
+        sizefactor="xtail/sfactors.csv",
+        contrastfile="contrasts/{contrast}"
     output:
         table="xtail/{contrast}.csv",
         fcplot="xtail/fc_{contrast}.pdf",
         rplot="xtail/r_{contrast}.pdf"
     conda:
         "../envs/xtail.yaml"
+    #params:
+        #contrast="-c {}".format(lambda wildcards: getContrast(wildcards))
+        #contrast=expand("{contrastpair}", contrastpair=lambda wildcards: getContrast(wildcards))
     threads: 1
-    shell: ("mkdir -p xtail; SPtools/scripts/xtail_normalized_counts.R -c {input.contrast} -t SPtools/samples.tsv -r {input.normreads} -x {output.table} -f {output.fcplot} -p {output.rplot};")
+    shell: ("mkdir -p xtail; SPtools/scripts/xtail_normalized_counts.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.normreads} -x {output.table} -f {output.fcplot} -p {output.rplot};")
