@@ -113,3 +113,7 @@ reparation:
 uniprotDBRetrieve:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=1G"
+
+samtobam:
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=3G"
