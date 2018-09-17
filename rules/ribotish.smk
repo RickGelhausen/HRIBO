@@ -52,9 +52,9 @@ rule ribotishGFF:
     input:
         expand("ribotish/{sample.condition}-{sample.replicate}-newORFs.tsv_all.txt", sample=samples.itertuples())
     output:
-        gff3="tracks/merged_uORFs.gff"
+        "tracks/{condition, [a-zA-Z]+}-{replicate,\d+}.ribotish.gff"
     conda:
-        "../envs/xtail.yaml"
+        "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/ribotish.py --input_csv_filepath {input} --output_gff3_filepath {output.gff3}"
+        "mkdir -p tracks; SPtools/scripts/ribotish.py {input} --output_gff3_filepath {output}"

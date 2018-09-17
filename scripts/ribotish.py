@@ -9,13 +9,14 @@ import argparse
 import numpy as np
 import os
 
-# function to read in ribosome profiling output files ORFs_max_filt
+# function to read in ribosome profiling output files
 def create_table(name):
     df = pd.read_table(name)
     return df
 
 # function to keep only certain columns
-def filter_cols(df_ORFs):
+def filter_cols(df):
+    df_ORFs = create_table(df)
     df_kept = df_ORFs[["GenomePos", "AALen", "Gid", "Symbol", "Tid", "StartCodon", "TisType", "TISPvalue", "RiboPvalue", "FisherPvalue"]]
     df_kept.columns = ["ORF_id_gen", "ORF_length", "gene_id", "gene_symbol", "transcript_id", "start_codon", "tis_type", "tis_pvalue", "ribo_pvalue", "fisher_pvalue"]
     return df_kept
@@ -114,7 +115,7 @@ def create_output(args):
 def make_ORFs_gff3(args):
     ORFsString = ""
     for index, row in args.iterrows():
-        ORFString=row.chromosome + "\t" + "ribotish" + "\t" + "CDS" + "\t" + row.start + "\t" + row.stop + "\t" + "." + "\t" + row.strand + "\t" + "." + "\t" + "transcript_id ribotish" + index + ";" + "start_codon " + row.start_codon + ";" +  "tis_type " + row.tis_type + ";" +  "tis_pvalue " + row.tis_pvalue  + ";" +  "ribo_pvalue " + row.ribo_pvalue + ";" +  "fisher_pvalue " + row.fisher_pvalue + "\n"
+        ORFString=row.chromosome + "\t" + "ribotish" + "\t" + "CDS" + "\t" + row.start + "\t" + row.stop + "\t" + "." + "\t" + row.strand + "\t" + "." + "\t" + "transcript_id ribotish" + str(index) + ";" + "start_codon " + row.start_codon + ";" +  "tis_type " + row.tis_type + ";" +  "tis_pvalue " + str(row.tis_pvalue)  + ";" +  "ribo_pvalue " + str(row.ribo_pvalue) + ";" +  "fisher_pvalue " + str(row.fisher_pvalue) + "\n"
         ORFsString= ORFsString + ORFString
     return(ORFsString)
 
@@ -138,4 +139,4 @@ def main():
     f.write(ORFsgff)
 
 if __name__ == '__main__':
-main()
+    main()
