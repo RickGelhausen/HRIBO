@@ -25,7 +25,6 @@ rule all:
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
        "xtail/sfactors.csv",
        "xtail/xtail.csv",
-       "uniprotDB/uniprot_sprot.fasta",
 
 onsuccess:
     print("Done, no error")
