@@ -47,3 +47,14 @@ rule ribotish:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotish.log"
     shell:
         "mkdir -p ribotish; if grep -q \"offdict = {{'m0': {{}}}}\" {input.offsetparameters}; then mv {input.offsetparameters} {input.offsetparameters}.unused; fi; ribotish predict --longest -p {threads} -b {input.fp} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
+
+rule ribotishGFF:
+    input:
+        expand("ribotish/{sample.condition}-{sample.replicate}-newORFs.tsv_all.txt", sample=samples.itertuples())
+    output:
+        gff3="tracks/merged_uORFs.gff"
+    conda:
+        "../envs/xtail.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/ribotish.py --input_csv_filepath {input} --output_gff3_filepath {output.gff3}"
