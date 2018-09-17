@@ -67,7 +67,6 @@ annotationBed:
 annotationBigBed:
   resources : 'nodes=1:ppn=1'
 
-<<<<<<< HEAD
 reparation:
   resources : 'nodes=1:ppn=20'
 
@@ -75,7 +74,5 @@ uniprotDBRetrieve:
   resources : 'nodes=1:ppn=1'
   qname: "short"
 
-=======
 samtobam:
   resources : 'nodes=1:ppn=20'
->>>>>>> Added threads to samfile conversion
