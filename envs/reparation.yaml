@@ -2,5 +2,5 @@ channels:
  - bioconda
  - conda-forge
 dependencies:
- - reparation-blast
+ - reparation_blast
 

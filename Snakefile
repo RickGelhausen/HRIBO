@@ -23,9 +23,7 @@ rule all:
        expand("fastqc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA.html", sample=samples.itertuples()),
        expand("ribotish/{sample.condition}-{sample.replicate}-newORFs.tsv_all.txt", sample=samples.itertuples()),
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
-       "xtail/sfactors.csv",
-       "xtail/xtail.csv",
-       "uniprotDB/uniprot_sprot.fasta",
+       expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.bed", sample=samples.itertuples()),
 
 onsuccess:
     print("Done, no error")

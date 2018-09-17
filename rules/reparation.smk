@@ -8,7 +8,7 @@ rule uniprotDBRetrieve:
         "uniprotDB/uniprot_sprot.fasta"
     threads: 1
     run:
-        outputname = os.path.basename(input[0])
+        outputName = os.path.basename(input[0])
         shell("mkdir -p uniprotDB; mv {input} uniprotDB/{outputName}; gunzip uniprotDB/{outputName}")
 
 rule reparation:
