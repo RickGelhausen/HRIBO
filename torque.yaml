@@ -74,3 +74,5 @@ uniprotDBRetrieve:
   resources : 'nodes=1:ppn=1'
   qname: "short"
 
+samtobam:
+  resources : 'nodes=1:ppn=20'

@@ -38,8 +38,9 @@ rule samtobam:
         bam="bam/{method}-{condition}-{replicate}.bam"
     conda:
         "../envs/samtools.yaml"
+    threads: 20
     shell:
-        "mkdir -p bam; samtools view -bh {input.sam} | samtools sort -o {output.bam} -O bam"
+        "mkdir -p bam; samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output.bam} -O bam"
 
 rule maplink:
     input:
