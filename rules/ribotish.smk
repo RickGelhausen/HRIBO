@@ -12,6 +12,7 @@ rule ribobamindexlink:
 
 rule ribotishQuality:
     input:
+        #fp="maplink/RIBO/{condition}-{replicate}.bam",
         fp="maplink/RIBO/{condition}-{replicate}.bam",
         genome=rules.retrieveGenome.output,
         annotation=rules.retrieveAnnotation.output,
@@ -20,39 +21,44 @@ rule ribotishQuality:
     output:
         reportpdf="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.pdf",
         reporttxt=report("ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.txt", caption="../report/ribotishquality.rst", category="Ribotish"),
-        offsetparameters="maplink/RIBO/{condition, [a-zA-Z]+}-{replicate,\d+}.bam.para.py"
+        offsetparameters="maplink/RIBO/{condition, [a-zA-Z]+}-{replicate,\d+}.bam.para.py",
+        offsetdone="maplink/RIBO/{condition, [a-zA-Z]+}-{replicate,\d+}.qualdone"
     conda:
         "../envs/ribotish.yaml"
     threads: 10
     log:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotishquality.log"
     shell:
-        "mkdir -p ribotish; ribotish quality -p {threads} -b {input.fp} -g {input.annotation} -o {output.reporttxt} -f {output.reportpdf} 2> {log}"
+        "mkdir -p ribotish; ribotish quality -v --th 0.2 -p {threads} -b {input.fp} -g {input.annotation} -o {output.reporttxt} -f {output.reportpdf} 2> {log}; if grep -q \"offdict = {{'m0': {{}}}}\" {output.offsetparameters}; then mv {ouput.offsetparameters} {output.offsetparameters}.unused; fi; touch {output.offsetdone}"
 
 rule ribotish:
     input:
-        fp="maplink/RIBO/{condition}-{replicate}.bam",
+        #fp="maplink/RIBO/{condition}-{replicate}.bam",
+        fp=expand("maplink/RIBO/{{condition}}-{sample.replicate}.bam",  sample=samples.itertuples()),
         genome=rules.retrieveGenome.output,
         annotation=rules.retrieveAnnotation.output,
         samindex=rules.genomeSamToolsIndex.output,
-        bamindex="maplink/RIBO/{condition}-{replicate}.bam.bai",
-        offsetparameters="maplink/RIBO/{condition}-{replicate}.bam.para.py"
+        bamindex=expand("maplink/RIBO/{{condition}}-{sample.replicate}.bam.bai", sample=samples.itertuples()),
+        offsetparameters=expand("maplink/RIBO/{{condition}}-{sample.replicate}.qualdone", sample=samples.itertuples())
+        #offsetparameters="maplink/RIBO/{condition}-{replicate}.bam.para.py"
     output:
-        report=report("ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-newORFs.tsv_all.txt", caption="../report/ribotish.rst", category="Ribotish"),
-        filtered="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-newORFs.tsv"
+        report=report("ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt", caption="../report/ribotish.rst", category="Ribotish"),
+        filtered="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv"
+    params:
+        fplist= lambda wildcards, input: ','.join(list(set(input.fp)))
     conda:
         "../envs/ribotish.yaml"
     threads: 10
     log:
-        "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotish.log"
+        "logs/{condition, [a-zA-Z]+}_ribotish.log"
     shell:
-        "mkdir -p ribotish; if grep -q \"offdict = {{'m0': {{}}}}\" {input.offsetparameters}; then mv {input.offsetparameters} {input.offsetparameters}.unused; fi; ribotish predict --longest -p {threads} -b {input.fp} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
+        "mkdir -p ribotish; ribotish predict -v -p {threads} -b {params.fplist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
 
 rule ribotishGFF:
     input:
-        expand("ribotish/{sample.condition}-{sample.replicate}-newORFs.tsv_all.txt", sample=samples.itertuples())
+        expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples())
     output:
-        "tracks/{condition, [a-zA-Z]+}-{replicate,\d+}.ribotish.gff"
+        "tracks/{condition, [a-zA-Z]+}.ribotish.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
