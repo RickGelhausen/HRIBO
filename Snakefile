@@ -43,7 +43,7 @@ rule all:
        expand("fastqc/raw/{sample.method}-{sample.condition}-{sample.replicate}-raw.html", sample=samples.itertuples()),
        expand("fastqc/trimmed/{sample.method}-{sample.condition}-{sample.replicate}-trimmed.html", sample=samples.itertuples()),
        expand("fastqc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA.html", sample=samples.itertuples()),
-       expand("maplink/RIBO/{sample.condition}-{sample.replicate}.bam.para.py", sample=samples.itertuples()),
+       expand("maplink/RIBO/{sample.condition}-{sample.replicate}.qualdone", sample=samples.itertuples()),
        expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
        expand("tracks/{sample.condition}.ribotish.gff", sample=samples.itertuples()),
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
