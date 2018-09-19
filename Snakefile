@@ -7,6 +7,7 @@ min_version("5.2.4")
 
 ADAPTERS=config["adapter"]
 INDEXPATH=config["genomeindexpath"]
+CODONS=config["alternativestartcodons"]
 
 onstart:
    if not os.path.exists("logs"):
@@ -42,7 +43,9 @@ rule all:
        expand("fastqc/raw/{sample.method}-{sample.condition}-{sample.replicate}-raw.html", sample=samples.itertuples()),
        expand("fastqc/trimmed/{sample.method}-{sample.condition}-{sample.replicate}-trimmed.html", sample=samples.itertuples()),
        expand("fastqc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA.html", sample=samples.itertuples()),
-       expand("ribotish/{sample.condition}-{sample.replicate}-newORFs.tsv_all.txt", sample=samples.itertuples()),
+       expand("maplink/RIBO/{sample.condition}-{sample.replicate}.qualdone", sample=samples.itertuples()),
+       expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
+       expand("tracks/{sample.condition}.ribotish.gff", sample=samples.itertuples()),
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
        #expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.bed", sample=samples.itertuples()),
        #expand("xtailclassic/{sample.method}-{sample.condition}-{sample.replicate}.csv", sample=samples.itertuples()),
