@@ -87,8 +87,8 @@ rule fastqcmapped:
         "../envs/fastqc.yaml"
     threads: 6
     params:
-        prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads))[0])
+        prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.sam))[0])
     shell:
-        "mkdir -p fastqc/map; fastqc -o fastqc/map -t {threads} -f sam_mapped {input}; mv fastqc/map/{params.prefix}_fastqc.html {output}"
+        "mkdir -p fastqc/map; fastqc -o fastqc/map -t {threads} -f sam_mapped {input.sam}; mv fastqc/map/{params.prefix}_fastqc.html {output}"
 
 

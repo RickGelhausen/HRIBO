@@ -48,11 +48,10 @@ rule all:
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
        #expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.bed", sample=samples.itertuples()),
        #expand("xtailclassic/{sample.method}-{sample.condition}-{sample.replicate}.csv", sample=samples.itertuples()),
-       #expand("contrasts/{contrast}", lambda wildcards: contrast=getContrast(wildcards)),
        unpack(getContrast),
-       #expand("xtail/{contrast}.csv", lambda wildcards: contrast=getContrast(wildcards)),
        unpack(getContrastXtail),
-       "xtail/sfactors.csv"
+       "xtail/sfactors.csv",
+       "QC/Multi/multiqc_report.html"
 
 onsuccess:
     print("Done, no error")
@@ -75,3 +74,5 @@ include: "rules/xtail.smk"
 include: "rules/reparation.smk"
 #xtail
 #include: "rules/xtailclassic.smk"
+#multiqc
+include: "rules/multiqc.smk"
