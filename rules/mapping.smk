@@ -77,3 +77,18 @@ rule rnamaplink:
     threads: 1
     shell:
         "mkdir -p maplink/RNA/; ln -s {params.inlink} {params.outlink}"
+
+rule fastqcmapped:
+    input:
+        sam="sam/{method}-{condition}-{replicate}.sam"
+    output:
+        report("fastqc/map/{method}-{condition}-{replicate}-map.html", caption="../report/fastqcmapped.rst", category="Mapped reads") 
+    conda:
+        "../envs/fastqc.yaml"
+    threads: 6
+    params:
+        prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads))[0])
+    shell:
+        "mkdir -p fastqc/map; fastqc -o fastqc/map -t {threads} -f sam_mapped {input}; mv fastqc/map/{params.prefix}_fastqc.html {output}"
+
+
