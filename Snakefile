@@ -3,7 +3,7 @@ import re
 import pandas as pd
 import itertools as iter
 from snakemake.utils import validate, min_version
-min_version("5.2.4")
+min_version("5.3.0")
 
 ADAPTERS=config["adapter"]
 INDEXPATH=config["genomeindexpath"]
@@ -35,8 +35,6 @@ def getContrastXtail(wildcards):
   elements = [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + ".csv") for element in flat_contrasts]
   print(elements)
   return elements
-
-
 
 rule all:
    input:
