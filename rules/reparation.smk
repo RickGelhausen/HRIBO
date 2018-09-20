@@ -18,7 +18,7 @@ rule reparation:
         gtf=rules.retrieveAnnotation.output,
         db="uniprotDB/uniprot_sprot.fasta"
     output:
-        bed="reparation/{condition}-{replicate}/Predicted_ORFs.bed"
+        "reparation/{condition}-{replicate}/Predicted_ORFs.txt"
     conda:
         "../envs/reparation.yaml"
     threads: 20
@@ -28,3 +28,14 @@ rule reparation:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_reparation.log"
     shell:
         "mkdir -p reparation; mkdir -p {params.prefix}/tmp; reparation.pl -sam {input.sam} -g {input.genome} -gtf {input.gtf} -db {input.db} -out {params.prefix} -threads {threads}"
+
+rule reparationGFF:
+    input:
+        "reparation/{condition}-{replicate}/Predicted_ORFs.txt"
+    output:
+        "tracks/{condition, [a-zA-Z]+}-{replicate,\d+}-reparation.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/reparationGFF.py -i {input} -o {output}"
