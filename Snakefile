@@ -46,7 +46,7 @@ rule all:
        expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
        expand("tracks/{sample.condition}.ribotish.gff", sample=samples.itertuples()),
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
-       #expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.bed", sample=samples.itertuples()),
+       expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.txt", sample=samples.itertuples()),
        #expand("xtailclassic/{sample.method}-{sample.condition}-{sample.replicate}.csv", sample=samples.itertuples()),
        unpack(getContrast),
        unpack(getContrastXtail),
