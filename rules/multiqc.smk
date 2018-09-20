@@ -11,4 +11,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "multiqc -f -k json -z -o {params.dir} . 2> {log}"
+        "multiqc -f --exclude picard,gatk -k json -z -o {params.dir} . 2> {log}"
