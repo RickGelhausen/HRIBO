@@ -60,16 +60,3 @@ rule rrnafilter:
     shell:
         "mkdir -p norRNA; mkdir -p norRNA/rRNA; sortmerna -a {threads} --ref {params.dbstring} --reads {input[0]} --num_alignments 1 --fastx --aligned norRNA/rRNA/reject --other {params.prefix} 2> /dev/null"
 
-rule fastqcrrnafilter:
-    input:
-        reads="norRNA/{method}-{condition}-{replicate}.fastq"
-    output:
-        report("fastqc/norRNA/{method}-{condition}-{replicate}-norRNA.html", caption="../report/fastqcnorRNA.rst", category="Removing hits mapping to rRNA") 
-    conda:
-        "../envs/fastqc.yaml"
-    threads: 6
-    params:
-        prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads))[0])
-    shell:
-        "mkdir -p fastqc/norRNA; fastqc -o fastqc/norRNA -t {threads} {input}; mv fastqc/norRNA/{params.prefix}_fastqc.html {output}"
-
