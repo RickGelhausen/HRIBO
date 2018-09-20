@@ -76,3 +76,6 @@ uniprotDBRetrieve:
 
 samtobam:
   resources : 'nodes=1:ppn=20'
+
+reparationGFF:
+  resources : 'nodes=1:ppn=10'

@@ -117,3 +117,7 @@ uniprotDBRetrieve:
 samtobam:
   parallelenvironment : 'smp 20'
   memory: "h_vmem=3G"
+
+reparationGFF:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=10G"
