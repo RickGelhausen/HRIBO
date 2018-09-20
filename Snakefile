@@ -38,11 +38,7 @@ def getContrastXtail(wildcards):
 
 rule all:
    input:
-       expand("fastqc/raw/{sample.method}-{sample.condition}-{sample.replicate}-raw.html", sample=samples.itertuples()),
-       expand("fastqc/trimmed/{sample.method}-{sample.condition}-{sample.replicate}-trimmed.html", sample=samples.itertuples()),
-       expand("fastqc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA.html", sample=samples.itertuples()),
        expand("maplink/RIBO/{sample.condition}-{sample.replicate}.qualdone", sample=samples.itertuples()),
-       expand("fastqc/map/{sample.method}-{sample.condition}-{sample.replicate}-map.html", sample=samples.itertuples()),
        expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
        expand("tracks/{sample.condition}.ribotish.gff", sample=samples.itertuples()),
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
@@ -51,7 +47,7 @@ rule all:
        unpack(getContrast),
        unpack(getContrastXtail),
        "xtail/sfactors.csv",
-       "QC/Multi/multiqc_report.html"
+       "qc/multi/multiqc_report.html"
 
 onsuccess:
     print("Done, no error")
@@ -75,4 +71,4 @@ include: "rules/reparation.smk"
 #xtail
 #include: "rules/xtailclassic.smk"
 #multiqc
-include: "rules/multiqc.smk"
+include: "rules/qc.smk"
