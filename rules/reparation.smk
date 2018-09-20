@@ -27,4 +27,4 @@ rule reparation:
     log:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_reparation.log"
     shell:
-        "mkdir -p reparation; reparation.pl -sam {input.sam} -g {input.genome} -gtf {input.gtf} -db {input.db} -out {params.prefix} -threads {threads}"
+        "mkdir -p reparation; mkdir -p {params.prefix}/tmp; reparation.pl -sam {input.sam} -g {input.genome} -gtf {input.gtf} -db {input.db} -out {params.prefix} -threads {threads}"
