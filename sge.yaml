@@ -43,15 +43,19 @@ trim:
   memory: "h_vmem=30G"
 
 fastqcraw:
-  parallelenvironment : 'smp 6'
+  parallelenvironment : 'smp 8'
   memory: "h_vmem=3G"
 
 fastqctrimmed:
-  parallelenvironment : 'smp 6'
+  parallelenvironment : 'smp 8'
   memory: "h_vmem=3G"
 
 fastqcrrnafilter:
-  parallelenvironment : 'smp 6'
+  parallelenvironment : 'smp 8'
+  memory: "h_vmem=3G"
+
+fastqcmap:
+  parallelenvironment: 'smp 8'
   memory: "h_vmem=3G"
 
 genomeIndex:
