@@ -26,7 +26,7 @@ rule fastqcraw:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.splitext(os.path.basename(input.reads[0]))[0])[0])
     threads: 8
     shell:
-        "mkdir -p qc/raw; fastqc -o qc/raw -t {threads} {input}; mv qc/raw/{params.prefix}_fastqc.html {output.html}; mv qc/raw/{params.prefix}_fastqc.html {output.zip}"
+        "mkdir -p qc/raw; fastqc -o qc/raw -t {threads} {input}; mv qc/raw/{params.prefix}_fastqc.html {output.html}; mv qc/raw/{params.prefix}_fastqc.zip {output.zip}"
 
 rule fastqctrimmed:
     input:
@@ -58,6 +58,20 @@ rule fastqcrrnafilter:
     shell:
         "mkdir -p qc/norRNA; fastqc -o qc/norRNA -t {threads} {input}; mv qc/norRNA/{params.prefix}_fastqc.html {output.html}; mv qc/norRNA/{params.prefix}_fastqc.zip {output.zip}"
 
+rule featurescounts:
+    input:
+        annotation={annotation=rules.retrieveAnnotation.output}
+        bam="bam/{method}-{condition}-{replicate}.bam"
+    output:
+        txt="qc/featurecount/{method}-{condition}-{replicate}.txt",
+    conda:
+        "../envs/subread.yaml"
+    threads: 8
+    params:
+        prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.sam))[0])
+    shell:
+        "mkdir -p qc/featurecount; featureCounts -T {threads} -t exon -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+
 rule multiqc:
     input:
         expand("tracks/{sample.condition}.ribotish.gff", sample=samples.itertuples()),
@@ -65,7 +79,8 @@ rule multiqc:
         expand("qc/raw/{sample.method}-{sample.condition}-{sample.replicate}-raw.html", sample=samples.itertuples()),
         expand("qc/trimmed/{sample.method}-{sample.condition}-{sample.replicate}-trimmed.html", sample=samples.itertuples()),
         expand("qc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA.html", sample=samples.itertuples()),
-        expand("qc/map/{sample.method}-{sample.condition}-{sample.replicate}-map.html", sample=samples.itertuples()) 
+        expand("qc/map/{sample.method}-{sample.condition}-{sample.replicate}-map.html", sample=samples.itertuples()),
+        expand("bam/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples()) 
     output: 
         "qc/multi/multiqc_report.html"
     params: 
