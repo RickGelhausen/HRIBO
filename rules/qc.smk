@@ -11,7 +11,7 @@ rule fastqcmapped:
     params:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.sam))[0])
     shell:
-        "mkdir -p qc/map; fastqc -o fastqc/map -t {threads} -f sam_mapped {input.sam}; mv qc/map/{params.prefix}_fastqc.html {output.html}; mv qc/map/{params.prefix}_fastqc.zip {output.zip}"
+        "mkdir -p qc/map; fastqc -o qc/map -t {threads} -f sam_mapped {input.sam}; mv qc/map/{params.prefix}_fastqc.html {output.html}; mv qc/map/{params.prefix}_fastqc.zip {output.zip}"
 
 rule fastqcraw:
     input:
