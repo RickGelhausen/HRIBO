@@ -60,15 +60,13 @@ rule fastqcrrnafilter:
 
 rule featurescounts:
     input:
-        annotation={annotation=rules.retrieveAnnotation.output}
+        annotation={rules.retrieveAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/featurecount/{method}-{condition}-{replicate}.txt",
     conda:
         "../envs/subread.yaml"
     threads: 8
-    params:
-        prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.sam))[0])
     shell:
         "mkdir -p qc/featurecount; featureCounts -T {threads} -t exon -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
@@ -80,7 +78,9 @@ rule multiqc:
         expand("qc/trimmed/{sample.method}-{sample.condition}-{sample.replicate}-trimmed.html", sample=samples.itertuples()),
         expand("qc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA.html", sample=samples.itertuples()),
         expand("qc/map/{sample.method}-{sample.condition}-{sample.replicate}-map.html", sample=samples.itertuples()),
-        expand("bam/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples()) 
+        expand("qc/featurecount/{sample.method}-{sample.condition}-{sample.replicate}.txt", sample=samples.itertuples()),
+        expand("bam/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples())
+ 
     output: 
         "qc/multi/multiqc_report.html"
     params: 
