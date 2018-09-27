@@ -19,8 +19,8 @@ rule map:
         genomeSegemehlIndex="genomeSegemehlIndex/genome.idx",
         fastq="norRNA/{method}-{condition}-{replicate}.fastq",
     output:
-        sam="sam/{method}-{condition}-{replicate}.sam",
-        unmapped="sam/unmapped/{method}-{condition}-{replicate}.sam"
+        sammulti="sammulti/{method}-{condition}-{replicate}.sam",
+        unmapped="sammulti/unmapped/{method}-{condition}-{replicate}.sam"
     conda:
         "../envs/segemehl.yaml"
     threads: 20
@@ -29,7 +29,35 @@ rule map:
     log:
         "logs/{method}-{condition}-{replicate}_segemehl.log"
     shell:
-        "mkdir -p sam; mkdir -p sam/unmapped; segemehl.x -s -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sam} -u {output.unmapped} 2> {log}"
+        "mkdir -p sammulti; mkdir -p sammulti/unmapped; segemehl.x -s -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sammulti} -u {output.unmapped} 2> {log}"
+
+rule samuniq:
+    input:
+        sammulti="sammulti/{method}-{condition}-{replicate}.sam"
+    output:
+        sam="sam/{method}-{condition}-{replicate}.sam"
+    conda:
+        "../envs/samtools.yaml"
+    threads: 20
+    shell:
+        """
+        set +e
+        mkdir -p sam
+        samtools view  -H <(cat {input.sammulti}) | grep '@HD' > {output.sam}
+        samtools view -H <(cat {input.sammulti}) | grep '@SQ' | sort -t$'\t' -k1,1 -k2,2V >> {output.sam}
+        samtools view -H <(cat {input.sammulti}) | grep '@RG' >> {output.sam}
+        samtools view -H <(cat {input.sammulti}) | grep '@PG' >> {output.sam}
+        cat {input.sammulti} |grep -v '^@' | grep -w 'NH:i:1' >> {output.sam}
+        exitcode=$?
+        if [ $exitcode -eq 1 ]
+        then
+            exit 1
+        else
+            exit 0
+        fi
+        """
+        #"mkdir -p sam; samtools view  -H <(cat {input.sammulti}) | grep '@HD' > {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@SQ' | sort -t$'\t' -k1,1 -k2,2V >> {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@RG' >> {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@PG' >> {output.sam}; cat {input.sammulti} |grep -v '^@' | grep -w 'NH:i:1' >> {output.sam}"
+
 
 rule samtobam:
     input:

@@ -44,7 +44,7 @@ maplink:
   qname: "tiny"
 
 ribotish:
-  resources : 'nodes=1:ppn=1'
+  resources : 'nodes=1:ppn=10'
 
 longestTranscript:
   resources : 'nodes=1:ppn=1'
