@@ -15,8 +15,8 @@ retrieveAnnotation:
   memory: "h_vmem=1G"
 
 ribotish:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=20G"
+  parallelenvironment : 'smp 10'
+  memory: "h_vmem=3G"
 
 genomeSamToolsIndex:
   parallelenvironment : 'smp 1'
