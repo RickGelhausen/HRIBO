@@ -33,7 +33,7 @@ rule reparationGFF:
     input:
         "reparation/{condition}-{replicate}/Predicted_ORFs.txt"
     output:
-        "tracks/{condition, [a-zA-Z]+}-{replicate,\d+}-reparation.gff"
+        "tracks/{condition, [a-zA-Z]+}-{replicate,\d+}.reparation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
