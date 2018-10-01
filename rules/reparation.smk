@@ -16,7 +16,8 @@ rule reparation:
         sam="sam/RIBO-{condition}-{replicate}.sam",
         genome=rules.retrieveGenome.output,
         gtf=rules.retrieveAnnotation.output,
-        db="uniprotDB/uniprot_sprot.fasta"
+        db="uniprotDB/uniprot_sprot.fasta",
+        bam="bam/RIBO-{condition}-{replicate}.bam"
     output:
         "reparation/{condition}-{replicate}/Predicted_ORFs.txt"
     conda:
@@ -27,7 +28,7 @@ rule reparation:
     log:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_reparation.log"
     shell:
-        "mkdir -p reparation; mkdir -p {params.prefix}/tmp; reparation.pl -sam {input.sam} -g {input.genome} -gtf {input.gtf} -db {input.db} -out {params.prefix} -threads {threads}"
+        "mkdir -p reparation; mkdir -p {params.prefix}/tmp; reparation.pl -sam {input.sam} -g {input.genome} -gtf {input.gtf} -db {input.db} -out {params.prefix} -bam {input.bam} -threads {threads}"
 
 rule reparationGFF:
     input:
