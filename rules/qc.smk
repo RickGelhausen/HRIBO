@@ -78,8 +78,8 @@ rule multiqc:
         expand("qc/trimmed/{sample.method}-{sample.condition}-{sample.replicate}-trimmed.html", sample=samples.itertuples()),
         expand("qc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA.html", sample=samples.itertuples()),
         expand("qc/map/{sample.method}-{sample.condition}-{sample.replicate}-map.html", sample=samples.itertuples()),
-        expand("qc/featurecount/{sample.method}-{sample.condition}-{sample.replicate}.txt", sample=samples.itertuples()),
-        expand("bam/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples())
+        expand("qc/featurecount/{sample.method}-{sample.condition}-{sample.replicate}.txt", sample=samples.itertuples())
+        #expand("bam/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples())
  
     output: 
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")

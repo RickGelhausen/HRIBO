@@ -14,23 +14,23 @@ rule sizeFactors:
         rules.longestTranscript.output,
         expand("maplink/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples())
     output:
-        "xtail/sfactors.csv"
+        "normalization/sfactors.csv"
     conda:
         "../envs/normalization.yaml"
     threads: 1
-    shell: ("mkdir -p xtail; SPtools/scripts/generate_size_factors.R -t SPtools/samples.tsv -b maplink/ -a {input[0]} -s {output};")
+    shell: ("mkdir -p normalization; SPtools/scripts/generate_size_factors.R -t SPtools/samples.tsv -b maplink/ -a {input[0]} -s {output};")
 
 rule cdsNormalizedCounts:
     input:
         bam=expand("maplink/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples()),
         annotation=rules.longestTranscript.output,
-        sizefactor="xtail/sfactors.csv"
+        sizefactor="normalization/sfactors.csv"
     output:
-        "xtail/norm_CDS_reads.csv"
+        "normalization/norm_CDS_reads.csv"
     conda:
         "../envs/normalization.yaml"
     threads: 1
-    shell: ("mkdir -p xtail; SPtools/scripts/generate_normalized_counts_CDS.R -b maplink/ -a {input.annotation} -s {input.sizefactor} -t SPtools/samples.tsv -n {output};")
+    shell: ("mkdir -p normalization; SPtools/scripts/generate_normalized_counts_CDS.R -b maplink/ -a {input.annotation} -s {input.sizefactor} -t SPtools/samples.tsv -n {output};")
 
 rule contrastInput:
     #params:
@@ -46,8 +46,8 @@ rule contrastInput:
 
 rule cdsxtail:
     input:
-        normreads="xtail/norm_CDS_reads.csv",
-        sizefactor="xtail/sfactors.csv",
+        normreads="normalization/norm_CDS_reads.csv",
+        sizefactor="normalization/sfactors.csv",
         contrastfile="contrasts/{contrast}"
     output:
         table="xtail/{contrast}.csv",

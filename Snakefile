@@ -24,7 +24,6 @@ def getContrast(wildcards):
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
   flat_contrasts= [item for sublist in contrasts for item in sublist]
   elements = [("contrasts/"+((element.replace("[", '')).replace("]", '')).replace("'", '')) for element in flat_contrasts]
-  print(elements)
   return elements
 
 def getContrastXtail(wildcards):
@@ -33,7 +32,6 @@ def getContrastXtail(wildcards):
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
   flat_contrasts= [item for sublist in contrasts for item in sublist]
   elements = [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + ".csv") for element in flat_contrasts]
-  print(elements)
   return elements
 
 rule all:
@@ -47,7 +45,6 @@ rule all:
        #expand("xtailclassic/{sample.method}-{sample.condition}-{sample.replicate}.csv", sample=samples.itertuples()),
        unpack(getContrast),
        unpack(getContrastXtail),
-       "xtail/sfactors.csv",
        "qc/multi/multiqc_report.html"
 
 onsuccess:
