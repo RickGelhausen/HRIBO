@@ -90,4 +90,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/raw qc/norRNA qc/mapped qc/featurecount trimmed  2> {log}"
+        "multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/raw qc/norRNA qc/map qc/featurecount trimmed  2> {log}"
