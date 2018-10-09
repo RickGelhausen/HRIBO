@@ -46,7 +46,7 @@ rule all:
    input:
        expand("maplink/RIBO/{sample.condition}-{sample.replicate}.qualdone", sample=samples.itertuples()),
        expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
-       expand("tracks/{sample.condition}.ribotish.gff", sample=samples.itertuples()),
+       expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
        expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.txt", sample=samples.itertuples()),
        expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
