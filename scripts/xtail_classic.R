@@ -45,7 +45,7 @@ RIBO <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == con
 RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 
 # run xtail analysis
-test_results <- xtail(RNA, RIBO, condition)
+test_results <- xtail(RNA, RIBO, contrastconditions)
 
 # turn results into table
 test_tab <- resultsTable(test_results, log2FCs = TRUE)

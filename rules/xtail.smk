@@ -48,6 +48,7 @@ rule contrastInput:
 rule cdsxtail:
     input:
         normreads="normalization/norm_CDS_reads.csv",
+        rawreads="normalization/raw_CDS_reads.csv",
         sizefactor="normalization/sfactors.csv",
         contrastfile="contrasts/{contrast}"
     output:
@@ -60,7 +61,8 @@ rule cdsxtail:
         #contrast="-c {}".format(lambda wildcards: getContrast(wildcards))
         #contrast=expand("{contrastpair}", contrastpair=lambda wildcards: getContrast(wildcards))
     threads: 1
-    shell: ("mkdir -p xtail; SPtools/scripts/xtail_normalized_counts.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.normreads} -x {output.table} -f {output.fcplot} -p {output.rplot};")
+    shell: ("mkdir -p xtail; SPtools/scripts/xtail_classic.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.table} -f {output.fcplot} -p {output.rplot};")
+    #shell: ("mkdir -p xtail; SPtools/scripts/xtail_normalized_counts.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.normreads} -x {output.table} -f {output.fcplot} -p {output.rplot};")
 
 rule riborex:
     input:
@@ -69,12 +71,10 @@ rule riborex:
         contrastfile="contrasts/{contrast}"
     output:
         tabledeseq2="riborex/{contrast}.deseq2.csv",
-        tableedger="riborex/{contrast}.edger.csv",
-        tablevoom="riborex/{contrast}.voom.csv"
     conda:
         "../envs/riborex.yaml"
     #params:
         #contrast="-c {}".format(lambda wildcards: getContrast(wildcards))
         #contrast=expand("{contrastpair}", contrastpair=lambda wildcards: getContrast(wildcards))
     threads: 1
-    shell: ("mkdir -p riborex; SPtools/scripts/riborex.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.tabledeseq2} -y {output.tableedger} -z {output.tablevoom};")
+    shell: ("mkdir -p riborex; SPtools/scripts/riborex.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.tabledeseq2};")
