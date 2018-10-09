@@ -29,7 +29,7 @@ def toGFF(args):
     gff3DF["score"] = "."
     gff3DF["strand"] = inputDF["strand"]
     gff3DF["phase"] = "."
-    gff3DF["attribute"] = "transcript_id=RP-%s-%s" %(prefix,tmpDF["transcript_id"].astype(str)) \
+    gff3DF["attribute"] = "transcript_id=RP-%s-"%(prefix)+ tmpDF["transcript_id"].astype(str)  \
                         + ";Name=" + inputDF["Reference"].astype(str) \
                         + ";start_codon=" + inputDF["start_codon"] \
                         + ";ribo_count=" + inputDF["ribo_count"].astype(str) \
@@ -41,6 +41,7 @@ def toGFF(args):
                         + ";ORF_type=" + inputDF["ORF_type"] \
                         + ";Distance_from_aTIS=" + inputDF["Distance_from_aTIS"].astype(str)
 
+    print(gff3DF)
     ### Handling output
     # Append results
     with open(args.outputGFF, 'w') as f:
