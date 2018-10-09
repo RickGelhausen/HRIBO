@@ -20,7 +20,7 @@ option_list = list(
 option_parser = OptionParser(option_list = option_list);
 options = parse_args(option_parser);
 
-if (is.null(options$normalized_read_counts_csv_path)){
+if (is.null(options$raw_read_counts_csv_path)){
   print_help(option_parser)
   stop("Please supply arguments (-r, -t, -x, -y, -z), see --help \n", call.=FALSE)
 }

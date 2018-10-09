@@ -77,4 +77,4 @@ rule riborex:
         #contrast="-c {}".format(lambda wildcards: getContrast(wildcards))
         #contrast=expand("{contrastpair}", contrastpair=lambda wildcards: getContrast(wildcards))
     threads: 1
-    shell: ("mkdir -p riborex; SPtools/scripts/xtail_normalized_counts.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.tabledeseq2} -y {output.tableedger} -z {output.tablevoom};")
+    shell: ("mkdir -p riborex; SPtools/scripts/riborex.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.tabledeseq2} -y {output.tableedger} -z {output.tablevoom};")
