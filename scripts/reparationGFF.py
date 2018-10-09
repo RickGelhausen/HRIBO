@@ -14,6 +14,7 @@ import os
 def toGFF(args):
     # ['ORF_locus', 'strand', 'length', 'start_codon', 'ribo_count', 'ribo_rpkm', 'ribo_coverage', 'SD_score', 'SD_pos', 'prob', 'ORF_type', 'Reference', 'Distance_from_aTIS']
     inputDF = pd.read_csv(args.predictedORFs, sep='\t', header=0)
+    prefix = args.outputGFF.split(".")[0]
 
     ## seqID | source | type | start | end | score | strand | phase | attribute
     # Creation of dataframe in gff3 format
@@ -28,7 +29,7 @@ def toGFF(args):
     gff3DF["score"] = "."
     gff3DF["strand"] = inputDF["strand"]
     gff3DF["phase"] = "."
-    gff3DF["attribute"] = "transcript_id=reparation" + tmpDF["transcript_id"].astype(str) \
+    gff3DF["attribute"] = "transcript_id=reparation_%s" %prefix + tmpDF["transcript_id"].astype(str) \
                         + ";Name=" + inputDF["Reference"].astype(str) \
                         + ";start_codon=" + inputDF["start_codon"] \
                         + ";ribo_count=" + inputDF["ribo_count"].astype(str) \
