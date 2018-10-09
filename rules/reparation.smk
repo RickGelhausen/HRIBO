@@ -35,7 +35,7 @@ rule reparationGFF:
     input:
         "reparation/{condition}-{replicate}/Predicted_ORFs.txt"
     output:
-        "tracks/{condition, [a-zA-Z]+}-{replicate,\d+}.reparation.gff"
+        "reparation/{condition, [a-zA-Z]+}-{replicate,\d+}.reparation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -44,7 +44,7 @@ rule reparationGFF:
 
 rule concatReparation:
     input:
-        "tracks/{condition}-{replicate}.reparation.gff"
+	expand("reparation/{{condition}}-{sample.replicate}.reparation.gff",  sample=samples.itertuples())
     output:
         "tracks/{condition}.reparation.gff"
     conda:
