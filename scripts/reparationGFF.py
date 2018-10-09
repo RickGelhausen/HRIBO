@@ -29,7 +29,7 @@ def toGFF(args):
     gff3DF["score"] = "."
     gff3DF["strand"] = inputDF["strand"]
     gff3DF["phase"] = "."
-    gff3DF["attribute"] = "transcript_id=reparation_%s" %prefix + tmpDF["transcript_id"].astype(str) \
+    gff3DF["attribute"] = "transcript_id=RP-%s-%s" %(prefix,tmpDF["transcript_id"].astype(str)) \
                         + ";Name=" + inputDF["Reference"].astype(str) \
                         + ";start_codon=" + inputDF["start_codon"] \
                         + ";ribo_count=" + inputDF["ribo_count"].astype(str) \
@@ -42,12 +42,8 @@ def toGFF(args):
                         + ";Distance_from_aTIS=" + inputDF["Distance_from_aTIS"].astype(str)
 
     ### Handling output
-    # Setting up result file with header
-    with open(args.outputGFF, 'w') as f:
-        f.write("##gff-version 3\n")
-
     # Append results
-    with open(args.outputGFF, 'a') as f:
+    with open(args.outputGFF, 'w') as f:
         gff3DF.to_csv(f, sep="\t", header=False, index=False)
 
 def main():

@@ -46,7 +46,7 @@ rule concatReparation:
     input:
         "tracks/{condition}-{replicate}.reparation.gff"
     output:
-        "tracks/{condition}.reparation.gff"
+        "tracks/{condition, [a-zA-Z]+}.reparation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
