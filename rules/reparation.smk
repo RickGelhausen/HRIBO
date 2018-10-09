@@ -44,11 +44,11 @@ rule reparationGFF:
 
 rule concatReparation:
     input:
-	expand("reparation/{{condition}}-{sample.replicate}.reparation.gff",  sample=samples.itertuples())
+        expand("reparation/{{condition}}-{sample.replicate}.reparation.gff",  sample=samples.itertuples())
     output:
         "tracks/{condition, [a-zA-Z]+}.reparation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "SPtools/scripts/concatReparation.py -i tracks/"
+        "SPtools/scripts/concatReparation.py {input}"

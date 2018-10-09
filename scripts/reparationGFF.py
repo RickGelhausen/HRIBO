@@ -14,7 +14,7 @@ import os
 def toGFF(args):
     # ['ORF_locus', 'strand', 'length', 'start_codon', 'ribo_count', 'ribo_rpkm', 'ribo_coverage', 'SD_score', 'SD_pos', 'prob', 'ORF_type', 'Reference', 'Distance_from_aTIS']
     inputDF = pd.read_csv(args.predictedORFs, sep='\t', header=0)
-    prefix = args.outputGFF.split(".")[0]
+    prefix = os.path.basename(args.outputGFF).split(".")[0]
 
     ## seqID | source | type | start | end | score | strand | phase | attribute
     # Creation of dataframe in gff3 format
