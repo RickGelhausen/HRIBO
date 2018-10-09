@@ -79,3 +79,6 @@ samtobam:
 
 reparationGFF:
   resources : 'nodes=1:ppn=10'
+
+concatReparation:
+  resources : 'nodes=1:ppn=10'

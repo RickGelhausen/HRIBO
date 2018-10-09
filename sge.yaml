@@ -125,3 +125,7 @@ samtobam:
 reparationGFF:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=10G"
+
+concatReparation:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=3G"
