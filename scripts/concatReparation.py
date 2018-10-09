@@ -12,19 +12,15 @@ def concatGff(gffFiles, prefix, inputFolder):
     dataFrames = []
     for file in gffFiles:
         if os.stat(os.path.join(inputFolder,file)).st_size != 0:
-            dataFrames.append(pd.read_csv(os.path.join(inputFolder,file), sep='\t', skiprows=[0], header=None))
+            dataFrames.append(pd.read_csv(os.path.join(inputFolder,file), sep='\t', header=None))
 
     # check if dataframe exist for concatination
     if len(dataFrames) != 0:
         mergedGff = pd.concat(dataFrames)
         outputFile = os.path.join(inputFolder,"%s.reparation.gff" %prefix)
         ### Handling output
-        # Setting up result file with header
-        with open(outputFile, 'w') as f:
-            f.write("##gff-version 3\n")
-
         # write to file
-        with open(outputFile, 'a') as f:
+        with open(outputFile, 'w') as f:
             mergedGff.to_csv(f, sep="\t", header=False, index=False)
 
 

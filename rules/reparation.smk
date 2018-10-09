@@ -46,7 +46,7 @@ rule concatReparation:
     input:
 	expand("reparation/{{condition}}-{sample.replicate}.reparation.gff",  sample=samples.itertuples())
     output:
-        "tracks/{condition}.reparation.gff"
+        "tracks/{condition, [a-zA-Z]+}.reparation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
