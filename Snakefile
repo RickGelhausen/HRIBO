@@ -49,7 +49,7 @@ rule all:
        expand("tracks/{sample.condition}.ribotish.gff", sample=samples.itertuples()),
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
        expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.txt", sample=samples.itertuples()),
-       expand("tracks/{sample.condition}-{sample.replicate}.reparation.gff", sample=samples.itertuples()),
+       expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
        #expand("xtailclassic/{sample.method}-{sample.condition}-{sample.replicate}.csv", sample=samples.itertuples()),
        unpack(getContrast),
        #unpack(getContrastXtail),

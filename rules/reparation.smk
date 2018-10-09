@@ -17,7 +17,8 @@ rule reparation:
         genome=rules.retrieveGenome.output,
         gtf=rules.retrieveAnnotation.output,
         db="uniprotDB/uniprot_sprot.fasta",
-        bam="bam/RIBO-{condition}-{replicate}.bam"
+        bam="bam/RIBO-{condition}-{replicate}.bam",
+        bamindex="bam/RIBO-{condition}-{replicate}.bam.bai"
     output:
         "reparation/{condition}-{replicate}/Predicted_ORFs.txt"
     conda:
@@ -40,3 +41,14 @@ rule reparationGFF:
     threads: 1
     shell:
         "mkdir -p tracks; SPtools/scripts/reparationGFF.py -i {input} -o {output}"
+
+rule concatReparation:
+    input:
+        "tracks/{condition}-{replicate}.reparation.gff"
+    output:
+        "tracks/{condition}.reparation.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "SPtools/scripts/concatReparation.py -i tracks/"
