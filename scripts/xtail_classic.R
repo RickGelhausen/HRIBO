@@ -3,8 +3,10 @@
 library(optparse)
 
 option_list = list(
-  make_option(c("-r", "--read_counts_csv_path"), type = "character", default = NULL,
+  make_option(c("-r", "--raw_read_counts_csv_path"), type = "character", default = NULL,
               help = "Path to read counts table", metavar = "character"),
+  make_option(c("-c", "--contrast"), type = "character", default = NULL,
+              help = "Contrast, pair of conditions ", metavar = "character"),
   make_option(c("-t", "--sample_file_path"), type = "character", default = NULL,
               help = "Path to sample.tsv", metavar = "character"),
   make_option(c("-x", "--xtail_result_path"), type = "character", default = "NULL",
@@ -18,7 +20,7 @@ option_list = list(
 option_parser = OptionParser(option_list = option_list);
 options = parse_args(option_parser);
 
-if (is.null(options$normalized_read_counts_csv_path)){
+if (is.null(options$raw_read_counts_csv_path)){
   print_help(option_parser)
   stop("Please supply arguments (-r, -t, -x), see --help \n", call.=FALSE)
 }
@@ -26,17 +28,21 @@ if (is.null(options$normalized_read_counts_csv_path)){
 library(xtail)
 
 # read table with mormalized read counts
-counts <- read.csv(options$read_counts_csv_path, row.names = 1, check.names = FALSE, stringsAsFactors = FALSE)
+counts <- read.csv(options$raw_read_counts_csv_path, row.names = 1, check.names = FALSE, stringsAsFactors = FALSE)
 
 # get sample sheet
 sampleSheet <- read.csv(file=options$sample_file_path ,header=TRUE, sep="\t", stringsAsFactors=FALSE)
 
-# split data frame into RIBO and RNA
-RIBO <- counts[, sampleSheet$method == "RIBO"]
-RNA <- counts[, sampleSheet$method == "RNA"]
+#create condition vector
+constraststring <- gsub("contrasts/", "", options$contrast)
+#print(constraststring)
+contrastconditions <- unlist(strsplit(constraststring,"-"))
+cond1 <- contrastconditions[1]
+cond2 <- contrastconditions[2]
 
-#create condition vextor
-condition <- sampleSheet$condition[which(sampleSheet$method == "RIBO")]
+# split data frame into RIBO and RNA
+RIBO <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
+RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 
 # run xtail analysis
 test_results <- xtail(RNA, RIBO, condition)

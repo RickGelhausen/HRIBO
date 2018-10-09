@@ -49,15 +49,15 @@ numberofreplicates <- max(sampleSheet$replicate)
 contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)
 # run xtail analysis
 results.deseq2 <- riborex(RNA, RIBO, contrastconditionsvector, contrastconditionsvector)
-results.edgeRD <- riborex(RNA, RIBO, contrastconditionsvector, contrastconditionsvector, "edgeRD")
-results.voom <- riborex(RNA, RIBO, contrastconditionsvector, contrastconditionsvector, "Voom")
+#results.edgeRD <- riborex(RNA, RIBO, contrastconditionsvector, contrastconditionsvector, "edgeRD")
+#results.voom <- riborex(RNA, RIBO, contrastconditionsvector, contrastconditionsvector, "Voom")
 summary(results.deseq2)
-summary(results.edgeRD)
-summary(results.voom)
+#summary(results.edgeRD)
+#summary(results.voom)
 # write results into file
-write.csv(test_tab, options$riborexdeseq_result_path, quote = F)
-write.csv(test_tab, options$riborexedgeR_result_path, quote = F)
-write.csv(test_tab, options$riborexvoom_result_path, quote = F)
+write.csv(results.deseq2, options$riborexdeseq_result_path, quote = F)
+#write.csv(test_tab, options$riborexedgeR_result_path, quote = F)
+#write.csv(test_tab, options$riborexvoom_result_path, quote = F)
 
 #plot results
 
