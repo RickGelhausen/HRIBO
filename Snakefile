@@ -34,6 +34,14 @@ def getContrastXtail(wildcards):
   elements = [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + ".csv") for element in flat_contrasts]
   return elements
 
+def getContrastRiborex(wildcards):
+  conditions=samples["condition"].unique()
+  contrastsTupleList=list((iter.combinations(conditions,2)))
+  contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
+  flat_contrasts= [item for sublist in contrasts for item in sublist]
+  elements = [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + ".deseq2.csv") for element in flat_contrasts]
+  return elements
+
 rule all:
    input:
        expand("maplink/RIBO/{sample.condition}-{sample.replicate}.qualdone", sample=samples.itertuples()),
@@ -44,7 +52,8 @@ rule all:
        expand("tracks/{sample.condition}-{sample.replicate}.reparation.gff", sample=samples.itertuples()),
        #expand("xtailclassic/{sample.method}-{sample.condition}-{sample.replicate}.csv", sample=samples.itertuples()),
        unpack(getContrast),
-       unpack(getContrastXtail),
+       #unpack(getContrastXtail),
+       unpack(getContrastRiborex),
        "qc/multi/multiqc_report.html"
 
 onsuccess:
