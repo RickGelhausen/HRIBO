@@ -80,14 +80,14 @@ rule multiqc:
         expand("qc/map/{sample.method}-{sample.condition}-{sample.replicate}-map.html", sample=samples.itertuples()),
         expand("qc/featurecount/{sample.method}-{sample.condition}-{sample.replicate}.txt", sample=samples.itertuples())
         #expand("bam/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples())
- 
-    output: 
+
+    output:
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")
-    params: 
+    params:
         dir="qc/multi"
     log:
         "logs/multiqc.log"
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/raw qc/norRNA qc/map qc/featurecount trimmed  2> {log}"
+        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/raw qc/norRNA qc/map qc/featurecount trimmed  2> {log}"
