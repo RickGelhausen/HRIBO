@@ -44,8 +44,11 @@ cond2 <- contrastconditions[2]
 RIBO <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 
+numberofreplicates <- max(sampleSheet$replicate)
+contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)
+
 # run xtail analysis
-test_results <- xtail(RNA, RIBO, contrastconditions)
+test_results <- xtail(RNA, RIBO, contrastconditionsvector)
 
 # turn results into table
 test_tab <- resultsTable(test_results, log2FCs = TRUE)
