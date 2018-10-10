@@ -52,7 +52,7 @@ rule cdsxtail:
         sizefactor="normalization/sfactors.csv",
         contrastfile="contrasts/{contrast}"
     output:
-        table="xtail/{contrast}.csv",
+        table=report("xtail/{contrast}.csv", caption="../report/xtail_cds_fc.rst", category="Regulation"),
         fcplot="xtail/fc_{contrast}.pdf",
         rplot="xtail/r_{contrast}.pdf"
     conda:
@@ -70,7 +70,7 @@ rule riborex:
         sizefactor="normalization/sfactors.csv",
         contrastfile="contrasts/{contrast}"
     output:
-        tabledeseq2="riborex/{contrast}.deseq2.csv",
+        tabledeseq2="riborex/{contrast}_deseq2.csv",
     conda:
         "../envs/riborex.yaml"
     #params:
@@ -78,3 +78,13 @@ rule riborex:
         #contrast=expand("{contrastpair}", contrastpair=lambda wildcards: getContrast(wildcards))
     threads: 1
     shell: ("mkdir -p riborex; SPtools/scripts/riborex.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.tabledeseq2};")
+
+rule riborexresults:
+    input:
+        tabledeseq2="riborex/{contrast}_deseq2.csv"
+    output:
+        tablesorted="riborex/{contrast}_sorted.csv",
+        tablesignificant=report("riborex/{contrast}_significant.csv", caption="../report/riborex.rst", category="Regulation")
+    threads: 1
+    shell: ("mkdir -p riborex; (head -n 2 {input.tabledeseq2} && tail -n +3 {input.tabledeseq2} | sort -r -n -t',' -k 7) > {output.tablesorted};  awk -F ',' '(NR>1) && ($7 < 0.05 )' {output.tablesorted} > {output.tablesignificant};")
+

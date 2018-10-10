@@ -39,7 +39,7 @@ def getContrastRiborex(wildcards):
   contrastsTupleList=list((iter.combinations(conditions,2)))
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
   flat_contrasts= [item for sublist in contrasts for item in sublist]
-  elements = [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + ".deseq2.csv") for element in flat_contrasts]
+  elements = [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.csv") for element in flat_contrasts]
   return elements
 
 rule all:
@@ -50,9 +50,8 @@ rule all:
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
        expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.txt", sample=samples.itertuples()),
        expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
-       #expand("xtailclassic/{sample.method}-{sample.condition}-{sample.replicate}.csv", sample=samples.itertuples()),
        unpack(getContrast),
-       #unpack(getContrastXtail),
+       unpack(getContrastXtail),
        unpack(getContrastRiborex),
        "qc/multi/multiqc_report.html",
        expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples())
