@@ -12,6 +12,8 @@ option_list = list(
   make_option(c("-t", "--sample_file_path"), type = "character", default = NULL,
               help = "Path to sample.tsv", metavar = "character"),
   make_option(c("-n", "--norm_count_cds_out_path"), type = "character", default = NULL,
+              help = "Path for writing CDS output normalized count file", metavar = "character"),
+  make_option(c("-r", "--raw_count_cds_out_path"), type = "character", default = NULL,
               help = "Path for writing CDS output normalized count file", metavar = "character")
 );
 
@@ -20,7 +22,7 @@ options = parse_args(option_parser);
 
 if (is.null(options$bam_directory_path)){
   print_help(option_parser)
-  stop("Please supply arguments (-b, -a, -s, -t, -n), see --help \n", call.=FALSE)
+  stop("Please supply arguments (-b, -a, -s, -t, -n, -r), see --help \n", call.=FALSE)
 }
 
 library(GenomicRanges)
@@ -104,7 +106,8 @@ sizeFactors(dds) <- size.factors$size
 
 # get normalized counts
 norm.counts <- counts(dds, normalized = TRUE)
-
+raw.counts <-  counts(dds, normalized = FALSE)
 # save normalized counts
 write.csv(norm.counts, options$norm_count_cds_out_path, quote = F)
+write.csv(raw.counts, options$raw_count_cds_out_path, quote = F)
 
