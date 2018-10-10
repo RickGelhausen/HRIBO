@@ -31,7 +31,7 @@ def getContrastXtail(wildcards):
   contrastsTupleList=list((iter.combinations(conditions,2)))
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
   flat_contrasts= [item for sublist in contrasts for item in sublist]
-  elements = [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + ".csv") for element in flat_contrasts]
+  elements = [("figures/fc_" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + ".jpg") for element in flat_contrasts]
   return elements
 
 def getContrastRiborex(wildcards):
@@ -46,6 +46,7 @@ rule all:
    input:
        expand("maplink/RIBO/{sample.condition}-{sample.replicate}.qualdone", sample=samples.itertuples()),
        expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
+       expand("figures/{sample.condition}-{sample.replicate}-qual.jpg", sample=samples.itertuples()),
        expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
        expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.txt", sample=samples.itertuples()),
@@ -81,4 +82,5 @@ include: "rules/reparation.smk"
 include: "rules/qc.smk"
 #merging
 include: "rules/merge.smk"
-
+#report
+include: "rules/report.smk"
