@@ -35,7 +35,8 @@ rule all:
        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
        expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.txt", sample=samples.itertuples()),
        expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
-       "qc/multi/multiqc_report.html"
+       "qc/multi/multiqc_report.html",
+       expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples())
 
 onsuccess:
     print("Done, no error")
@@ -56,3 +57,5 @@ include: "rules/ribotish.smk"
 include: "rules/reparation.smk"
 #multiqc
 include: "rules/qc.smk"
+#merge
+include: "rules/merge.smk"

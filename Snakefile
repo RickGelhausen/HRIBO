@@ -54,7 +54,8 @@ rule all:
        unpack(getContrast),
        #unpack(getContrastXtail),
        unpack(getContrastRiborex),
-       "qc/multi/multiqc_report.html"
+       "qc/multi/multiqc_report.html",
+       expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples())
 
 onsuccess:
     print("Done, no error")
@@ -79,3 +80,6 @@ include: "rules/reparation.smk"
 #include: "rules/xtailclassic.smk"
 #multiqc
 include: "rules/qc.smk"
+#merging
+include: "rules/merge.smk"
+
