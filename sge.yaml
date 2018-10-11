@@ -129,3 +129,7 @@ reparationGFF:
 concatReparation:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=3G"
+
+noverlap:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=3G"
