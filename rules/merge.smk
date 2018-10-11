@@ -1,7 +1,7 @@
 rule mergeConditions:
     input:
-        ribotish="tracks/{condition, [a-zA-Z]+}.ribotish.gff",
-        reparation="tracks/{condition, [a-zA-Z]+}.reparation.gff"
+        ribotish="tracks/{condition}.ribotish.gff",
+        reparation="tracks/{condition}.reparation.gff"
     output:
         "tracks/{condition, [a-zA-Z]+}.merged.gff"
     conda:
@@ -12,9 +12,9 @@ rule mergeConditions:
 
 rule noverlap:
     input:
-        mergedGff="tracks/{sample.condition}.merged.gff"
+        mergedGff="tracks/{condition}.merged.gff"
     output:
-        "tracks/{sample.condition}.filtered.gff"
+        "tracks/{condition}.filtered.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
