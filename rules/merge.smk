@@ -45,7 +45,7 @@ rule filterAll:
 
 rule newAnnotation:
     input:
-        newOrfs="tracks/novelORFs.gff",
+        newOrfs="tracks/filtered.gff",
         currentAnnotation="xtail/longest_protein_coding_transcripts.gtf"
     output:
         "xtail/newAnnotation.gff"
