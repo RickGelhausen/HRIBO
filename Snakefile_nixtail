@@ -62,3 +62,5 @@ include: "rules/reparation.smk"
 include: "rules/qc.smk"
 #merge
 include: "rules/merge.smk"
+#xtail
+include: "rules/xtail.smk"
