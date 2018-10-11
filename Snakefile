@@ -55,7 +55,7 @@ rule all:
        unpack(getContrastXtail),
        unpack(getContrastRiborex),
        "qc/multi/multiqc_report.html",
-       expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples())
+       expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples())
 
 onsuccess:
     print("Done, no error")
