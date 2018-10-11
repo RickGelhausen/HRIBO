@@ -3,37 +3,38 @@
 reparationGFF and merges all replicates into one file, for each condition.
 '''
 
-import os
+import os, sys
 import argparse
 import pandas as pd
 
-def concatGff(args):
+def concatGFF(args):
     # create dataframes of all non-empty files
     dataFrames = []
     for file in args.reparation_files:
         if os.stat(file).st_size != 0:
             dataFrames.append(pd.read_csv(file, sep='\t', header=None))
 
-    prefix = os.path.basename(args.reparation_files[0]).split("-")[0]
     # check if dataframe exist for concatination
     if len(dataFrames) != 0:
-        mergedGff = pd.concat(dataFrames)
+        mergedGFF = pd.concat(dataFrames)
 
         ### Handling output
         # write to file
-        outputFile = os.path.join(args.output_folder,"%s.reparation.gff" %prefix)
-        with open(outputFile, 'w') as f:
-            mergedGff.to_csv(f, sep="\t", header=False, index=False)
+        if args.output_file != "":
+            with open(args.output_file, 'w') as f:
+                mergedGFF.to_csv(f, sep="\t", header=False, index=False)
+        else:
+            mergedGFF.to_csv(sys.stdout, sep="\t", header=False, index=False)
 
 
 def main():
     # store commandline args
     parser = argparse.ArgumentParser(description='Concatenates multiple gff3 files.')
-    parser.add_argument("reparation_files", nargs="*", metavar="reparation", help= "Path to reparation gff files.")
-    parser.add_argument("output_folder", help= "output folder for concatenated files.")
+    parser.add_argument("reparation_files", nargs="*", metavar="reparation", help="Path to reparation gff files.")
+    parser.add_argument("-o", "--output_file", action="store", dest="output_file", default="", help="output folder for concatenated files.")
     args = parser.parse_args()
 
-    concatGff(args)
+    concatGFF(args)
 
 if __name__ == '__main__':
     main()
