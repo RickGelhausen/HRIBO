@@ -37,7 +37,9 @@ rule all:
        expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
        "qc/multi/multiqc_report.html",
        expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples()),
+       "xtail/longest_protein_coding_transcripts.gtf",
        "xtail/newAnnotation.gff"
+
 
 onsuccess:
     print("Done, no error")
