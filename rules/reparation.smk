@@ -51,4 +51,4 @@ rule concatReparation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "SPtools/scripts/concatReparation.py {input} tracks/"
+        "mkdir -p tracks; SPtools/scripts/concatGFF.py {input} -o {output}"

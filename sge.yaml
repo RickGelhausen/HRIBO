@@ -133,3 +133,21 @@ concatReparation:
 noverlap:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=3G"
+
+mergeConditions:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=3G"
+
+mergeAll:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=3G"
+
+filterAll:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=3G"
+
+newAnnonation:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=3G"
+
+

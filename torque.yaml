@@ -85,3 +85,15 @@ concatReparation:
 
 noverlap:
   resources : 'nodes=1,ppn=1'
+
+mergeConditions:
+  resources : 'nodes=1,ppn=1'
+
+mergeAll:
+  resources : 'nodes=1,ppn=1'
+
+filterAll:
+  resources : 'nodes=1,ppn=1'
+
+newAnnotation:
+  resources : 'nodes=1,ppn=1'
