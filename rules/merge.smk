@@ -12,23 +12,45 @@ rule mergeConditions:
 
 rule noverlap:
     input:
-        mergedGff=expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples())
+        mergedGff="tracks/{sample.condition}.merged.gff"
     output:
-        "tracks/{condition, [a-zA-Z]+}.filtered.gff"
+        "tracks/{sample.condition}.filtered.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
         "mkdir -p tracks; SPtools/scripts/noverlapper.py -i {input} -o {output}"
 
-#rule newAnnotation:
-#    input:
-#        newOrfs="tracks/novelORFs.gff"
-#        currentAnnoation="xtail/longest_protein_coding_transcripts.gtf"
-#    output:
-#        "tracks/newAnnotation.gff"
-#    conda:
-#        "../envs/mergetools.yaml"
-#    threads: 1
-#    shell:
-#        "mkdir -p tracks; merge_orfs.py -i {input.currentAnnotation} {input.newOrfs} -o {output};"
+rule mergeAll:
+    input:
+        mergedGff=expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples())
+    output:
+        "tracks/all.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/concatGFF.py {input.mergedGff} -o {output}"
+
+rule filterAll:
+    input:
+        "tracks/all.gff"
+    output:
+        "tracks/filtered.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/noverlapper.py -i {input} -o {output}"
+
+rule newAnnotation:
+    input:
+        newOrfs="tracks/novelORFs.gff",
+        currentAnnotation="xtail/longest_protein_coding_transcripts.gtf"
+    output:
+        "xtail/newAnnotation.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/concatGFF.py {input.newOrfs} {input.currentAnnotation} -o xtail/tmp.gff; SPtools/scripts/merge_orfs.py -i xtail/tmp.gff -o {output};"
