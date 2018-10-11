@@ -1,1 +1,1 @@
-Differential regulation table for CDS, {{ snakemake.wildcards.condition }}-{{ snakemake.wildcards.replicate }}
+Differential regulation table computed with Xtail for {{ snakemake.wildcards.contrast }}

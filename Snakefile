@@ -55,7 +55,9 @@ rule all:
        unpack(getContrastXtail),
        unpack(getContrastRiborex),
        "qc/multi/multiqc_report.html",
+       expand("figures/{sample.condition}-{sample.replicate}_metagene.jpg", sample=samples.itertuples()),
        expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples())
+       
 
 onsuccess:
     print("Done, no error")
