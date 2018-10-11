@@ -19,7 +19,7 @@ rule noverlap:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/noverlapper.py -i {input} -o {output}"
+        "mkdir -p tracks; SPtools/scripts/noverlapper.py -i {input.mergedGff} -o {output}"
 
 rule mergeAll:
     input:
