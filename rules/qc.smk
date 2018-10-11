@@ -2,8 +2,8 @@ rule fastqcmapped:
     input:
         sam="sam/{method}-{condition}-{replicate}.sam"
     output:
-        html="qc/map/{method}-{condition}-{replicate}-map.html",
-        zip="qc/map/{method}-{condition}-{replicate}-map.zip",
+        html="qc/map/{method}-{condition}-{replicate}-map_fastqc.html",
+        zip="qc/map/{method}-{condition}-{replicate}-map_fastqc.zip",
         #report("qc/map/{method}-{condition}-{replicate}-map.html", caption="../report/fastqcmapped.rst", category="Mapped reads")
     conda:
         "../envs/fastqc.yaml"
@@ -17,8 +17,8 @@ rule fastqcraw:
     input:
         reads=getfastq,
     output:
-        html="qc/raw/{method}-{condition}-{replicate}-raw.html",
-        zip="qc/raw/{method}-{condition}-{replicate}-raw.zip"
+        html="qc/raw/{method}-{condition}-{replicate}-raw_fastqc.html",
+        zip="qc/raw/{method}-{condition}-{replicate}-raw_fastqc.zip"
         #report("qc/raw/{method}-{condition}-{replicate}-raw.html", caption="../report/fastqcraw.rst", category="Input quality control")
     conda:
         "../envs/fastqc.yaml"
@@ -32,8 +32,8 @@ rule fastqctrimmed:
     input:
         reads="trimmed/{method}-{condition}-{replicate}.fastq"
     output:
-        html="qc/trimmed/{method}-{condition}-{replicate}-trimmed.html",
-        zip="qc/trimmed/{method}-{condition}-{replicate}-trimmed.zip"
+        html="qc/trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html",
+        zip="qc/trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.zip"
         #report("qc/trimmed/{method}-{condition}-{replicate}-trimmed.html", caption="../report/fastqctrimmed.rst", category="Trimming")
     conda:
         "../envs/fastqc.yaml"
@@ -47,8 +47,8 @@ rule fastqcrrnafilter:
     input:
         reads="norRNA/{method}-{condition}-{replicate}.fastq"
     output:
-        html="qc/norRNA/{method}-{condition}-{replicate}-norRNA.html",
-        zip="qc/norRNA/{method}-{condition}-{replicate}-norRNA.zip"
+        html="qc/norRNA/{method}-{condition}-{replicate}-norRNA_fastqc.html",
+        zip="qc/norRNA/{method}-{condition}-{replicate}-norRNA_fastqc.zip"
         #report("qc/norRNA/{method}-{condition}-{replicate}-norRNA.html", caption="../report/fastqcnorRNA.rst", category="Removing hits mapping to rRNA")
     conda:
         "../envs/fastqc.yaml"
@@ -74,10 +74,10 @@ rule multiqc:
     input:
         expand("tracks/{sample.condition}.ribotish.gff", sample=samples.itertuples()),
         expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
-        expand("qc/raw/{sample.method}-{sample.condition}-{sample.replicate}-raw.html", sample=samples.itertuples()),
-        expand("qc/trimmed/{sample.method}-{sample.condition}-{sample.replicate}-trimmed.html", sample=samples.itertuples()),
-        expand("qc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA.html", sample=samples.itertuples()),
-        expand("qc/map/{sample.method}-{sample.condition}-{sample.replicate}-map.html", sample=samples.itertuples()),
+        expand("qc/raw/{sample.method}-{sample.condition}-{sample.replicate}-raw_fastqc.html", sample=samples.itertuples()),
+        expand("qc/trimmed/{sample.method}-{sample.condition}-{sample.replicate}-trimmed_fastqc.html", sample=samples.itertuples()),
+        expand("qc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA_fastqc.html", sample=samples.itertuples()),
+        expand("qc/map/{sample.method}-{sample.condition}-{sample.replicate}-map_fastqc.html", sample=samples.itertuples()),
         expand("qc/featurecount/{sample.method}-{sample.condition}-{sample.replicate}.txt", sample=samples.itertuples())
         #expand("bam/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples())
 
@@ -90,4 +90,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/raw qc/norRNA qc/map qc/featurecount trimmed  2> {log}"
+        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/raw qc/trimmed qc/norRNA qc/map qc/featurecount trimmed  2> {log}"
