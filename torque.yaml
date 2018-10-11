@@ -78,7 +78,10 @@ samtobam:
   resources : 'nodes=1:ppn=20'
 
 reparationGFF:
-  resources : 'nodes=1:ppn=10'
+  resources : 'nodes=1:ppn=1'
 
 concatReparation:
-  resources : 'nodes=1:ppn=10'
+  resources : 'nodes=1:ppn=1'
+
+noverlap:
+  resources : 'nodes=1,ppn=1'
