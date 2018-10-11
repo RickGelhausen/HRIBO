@@ -36,7 +36,7 @@ rule all:
        expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.txt", sample=samples.itertuples()),
        expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
        "qc/multi/multiqc_report.html",
-       expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples())
+       expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples()),
        "xtail/newAnnotation.gff"
 
 onsuccess:

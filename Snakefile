@@ -57,7 +57,7 @@ rule all:
        "qc/multi/multiqc_report.html",
        expand("figures/{sample.condition}-{sample.replicate}_metagene.jpg", sample=samples.itertuples()),
        expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples()),
-       expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples())
+       expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples()),
        "xtail/newAnnotation.gff"
 
 onsuccess:
