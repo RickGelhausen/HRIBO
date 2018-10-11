@@ -28,8 +28,7 @@ def concatGff(args):
 
 def main():
     # store commandline args
-    parser = argparse.ArgumentParser(description='Converts reperation output to new data frame\
-                                     containing specified information and saves it in gff3 format.')
+    parser = argparse.ArgumentParser(description='Concatenates multiple gff3 files.')
     parser.add_argument("reparation_files", nargs="*", metavar="reparation", help= "Path to reparation gff files.")
     parser.add_argument("output_folder", help= "output folder for concatenated files.")
     args = parser.parse_args()

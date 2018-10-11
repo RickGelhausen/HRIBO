@@ -41,7 +41,6 @@ def toGFF(args):
                         + ";ORF_type=" + inputDF["ORF_type"] \
                         + ";Distance_from_aTIS=" + inputDF["Distance_from_aTIS"].astype(str)
 
-    print(gff3DF)
     ### Handling output
     # Append results
     with open(args.outputGFF, 'w') as f:
@@ -55,8 +54,7 @@ def main():
                                           , help= "the input file. (created by reparation)")
     parser.add_argument("-o", "--outputGFF", action="store", dest="outputGFF", required=True
                                            , help= "the output file name (gff3 format)")
-    #parser.add_argument("-s", "--source", action="store", dest="source"
-    #                                      , help= "the source of the input file.", default=".")
+
     args = parser.parse_args()
     gffoutput = toGFF(args)
 
