@@ -53,4 +53,4 @@ rule newAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/concatGFF.py {input.newOrfs} {input.currentAnnotation} -o xtail/tmp.gff; SPtools/scripts/merge_orfs.py -i xtail/tmp.gff -o {output};"
+        "mkdir -p tracks; SPtools/scripts/concatGFF.py {input.newOrfs} {input.currentAnnotation} -o xtail/tmp.gff; SPtools/scripts/noverlapper.py -i xtail/tmp.gff -o {output};"
