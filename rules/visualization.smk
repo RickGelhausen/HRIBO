@@ -41,7 +41,7 @@ rule wig:
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.bamindex.output
     output:
-        "tracks/{method}-{condition}-{replicate}.bw"
+        report("tracks/{method}-{condition}-{replicate}.bw",  caption="../report/wig.rst", category="Mapped tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1

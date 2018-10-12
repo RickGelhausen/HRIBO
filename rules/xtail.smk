@@ -23,7 +23,8 @@ rule sizeFactors:
 rule cdsNormalizedCounts:
     input:
         bam=expand("maplink/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples()),
-        annotation=rules.longestTranscript.output,
+        annotation="xtail/newAnnotation.gff",
+        #annotation=rules.longestTranscript.output,
         sizefactor="normalization/sfactors.csv"
     output:
         norm="normalization/norm_CDS_reads.csv",

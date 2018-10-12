@@ -3,7 +3,7 @@ rule mergeConditions:
         ribotish="tracks/{condition}.ribotish.gff",
         reparation="tracks/{condition}.reparation.gff"
     output:
-        "tracks/{condition, [a-zA-Z]+}.merged.gff"
+        report("tracks/{condition, [a-zA-Z]+}.merged.gff", caption="../report/novelmerged.rst", category="Novel ORFs")
     conda:
         "../envs/bedtools.yaml"
     threads: 1
@@ -14,7 +14,7 @@ rule noverlap:
     input:
         mergedGff="tracks/{condition}.merged.gff"
     output:
-        "tracks/{condition}.filtered.gff"
+         report("tracks/{condition}.filtered.gff", caption="../report/novelfiltered.rst", category="Novel ORFs")
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -25,7 +25,7 @@ rule mergeAll:
     input:
         mergedGff=expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples())
     output:
-        "tracks/all.gff"
+        report("tracks/all.gff", caption="../report/novelall.rst", category="Novel ORFs")
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -36,7 +36,7 @@ rule filterAll:
     input:
         "tracks/all.gff"
     output:
-        "tracks/filtered.gff"
+        report("tracks/filtered.gff", caption="../report/novelallfiltered.rst", category="Novel ORFs")
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -48,7 +48,7 @@ rule newAnnotation:
         newOrfs="tracks/filtered.gff",
         currentAnnotation="xtail/longest_protein_coding_transcripts.gtf"
     output:
-        "xtail/newAnnotation.gff"
+        report("xtail/newAnnotation.gff", caption="../report/novelannotation.rst", category="Novel ORFs")
     conda:
         "../envs/mergetools.yaml"
     threads: 1

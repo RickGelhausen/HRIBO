@@ -148,6 +148,6 @@ filterAll:
 
 newAnnonation:
   parallelenvironment : 'smp 1'
-  memory: "h_vmem=3G"
+  memory: "h_vmem=16G"
 
 

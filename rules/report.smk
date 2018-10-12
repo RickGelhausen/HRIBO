@@ -14,7 +14,8 @@ rule ribotishreport:
     input:
         "ribotish/{condition}-{replicate}-qual.pdf" 
     output:
-        report("figures/{condition}-{replicate}-qual.jpg", caption="../report/ribotishquality.rst", category="Novel ORFs - Ribotish")
+        "figures/{condition}-{replicate}-qual.jpg"
+        #report("figures/{condition}-{replicate}-qual.jpg", caption="../report/ribotishquality.rst", category="Novel ORFs - Ribotish")
     conda:
         "../envs/imagemagick.yaml"
     threads: 1
@@ -27,10 +28,14 @@ rule reparationreport:
         psite="reparation/{condition}-{replicate}/p_site_offset.png",
         scurve="reparation/{condition}-{replicate}/S_Curve.pdf"
     output:
-        metagene=report("figures/{condition}-{replicate}_metagene.jpg", caption="../report/reparation_metagene.rst", category="Novel ORFs - Reparation"),
-        roc=report("figures/{condition}-{replicate}_roc.jpg", caption="../report/reparation_roc.rst", category="Novel ORFs - Reparation"),
-        psite=report("figures/{condition}-{replicate}_psite.png", caption="../report/reparation_psite.rst", category="Novel ORFs - Reparation"),
-        scurve=report("figures/{condition}-{replicate}_scurve.jpg", caption="../report/reparation_scurve.rst", category="Novel ORFs - Reparation")
+        "figures/{condition}-{replicate}_metagene.jpg",
+        "figures/{condition}-{replicate}_roc.jpg",
+        "figures/{condition}-{replicate}_psite.png",
+        "figures/{condition}-{replicate}_scurve.jpg"
+        #metagene=report("figures/{condition}-{replicate}_metagene.jpg", caption="../report/reparation_metagene.rst", category="Novel ORFs - Reparation"),
+        #roc=report("figures/{condition}-{replicate}_roc.jpg", caption="../report/reparation_roc.rst", category="Novel ORFs - Reparation"),
+        #psite=report("figures/{condition}-{replicate}_psite.png", caption="../report/reparation_psite.rst", category="Novel ORFs - Reparation"),
+        #scurve=report("figures/{condition}-{replicate}_scurve.jpg", caption="../report/reparation_scurve.rst", category="Novel ORFs - Reparation")
     conda:
         "../envs/imagemagick.yaml"
     threads: 1

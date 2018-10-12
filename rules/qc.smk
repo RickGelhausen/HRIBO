@@ -82,6 +82,7 @@ rule multiqc:
         #expand("bam/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples())
 
     output:
+        #"qc/multi/multiqc_report.html"
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")
     params:
         dir="qc/multi"

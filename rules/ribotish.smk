@@ -42,7 +42,8 @@ rule ribotish:
         offsetparameters=expand("maplink/RIBO/{{condition}}-{sample.replicate}.qualdone", sample=samples.itertuples())
         #offsetparameters="maplink/RIBO/{condition}-{replicate}.bam.para.py"
     output:
-        report=report("ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt", caption="../report/ribotish.rst", category="Ribotish"),
+        report="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt",
+        #report=report("ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt", caption="../report/ribotish.rst", category="Ribotish"),
         filtered="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv"
     params:
         fplist= lambda wildcards, input: ','.join(list(set(input.fp))),
