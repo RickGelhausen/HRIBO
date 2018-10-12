@@ -3,12 +3,12 @@ rule xtailreport:
         fcplot="xtail/fc_{contrast}.pdf",
         rplot="xtail/r_{contrast}.pdf",
     output:
-        fcplot=report("figures/fc_{contrast}.jpg", caption="../report/xtail_fc.rst", category="Regulation - Xtail"),
-        rplot=report("figures/r_{contrast}.jpg", caption="../report/xtail_r.rst", category="Regulation - Xtail")
+        fcplot=report("figures/fc_{contrast}.jpg", caption="../report/xtail_fc.rst", category="Regulation"),
+        rplot=report("figures/r_{contrast}.jpg", caption="../report/xtail_r.rst", category="Regulation")
     conda:
         "../envs/imagemagick.yaml"
     threads: 1
-    shell: ("mkdir -p figures; convert -density 150 -trim {input.fcplot}  -quality 100  -flatten -sharpen 0x1.0 {output.fcplot}; convert -density 150 -trim {input.rplot}  -quality 100  -flatten -sharpen 0x1.0 {output.rplot}; convert -density 150 -trim {input.fcplot}  -quality 100  -flatten -sharpen 0x1.0 {output.fcplot}; convert -density 150 -trim {input.rplot}  -quality 100  -flatten -sharpen 0x1.0 {output.rplot}; ")
+    shell: ("mkdir -p figures; convert -density 100 -trim {input.fcplot}  -quality 100  -flatten -sharpen 0x1.0 {output.fcplot}; convert -density 100 -trim {input.rplot}  -quality 100  -flatten -sharpen 0x1.0 {output.rplot}; convert -density 100 -trim {input.fcplot}  -quality 100  -flatten -sharpen 0x1.0 {output.fcplot}; convert -density 100 -trim {input.rplot}  -quality 100  -flatten -sharpen 0x1.0 {output.rplot}; ")
 
 rule ribotishreport:
     input:

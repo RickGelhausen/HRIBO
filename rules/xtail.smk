@@ -53,7 +53,7 @@ rule cdsxtail:
         sizefactor="normalization/sfactors.csv",
         contrastfile="contrasts/{contrast}"
     output:
-        table=report("xtail/{contrast}.csv", caption="../report/xtail_table.rst", category="Regulation-Xtail"),
+        table=report("xtail/{contrast}.csv", caption="../report/xtail_table.rst", category="Regulation"),
         fcplot="xtail/fc_{contrast}.pdf",
         rplot="xtail/r_{contrast}.pdf"
     conda:
