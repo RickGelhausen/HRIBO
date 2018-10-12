@@ -17,13 +17,13 @@ def getLongestInterval(intervals):
     intervals.sort(key=itemgetter(1))
     # create list of weights
     weights = [interval[2] for interval in intervals]
+
     # find longest non-overlapping interval
     for i in range(1,len(intervals)):
         for j in range(0,i):
             # if non-overlapping: calculate max weights
             if intervals[j][1] <= intervals[i][0]:
-                #weights[i]=max(weights[i],weights[j]+intervals[i][2]) # when negative weights are allowed
-                weights[i] = weights[j] + intervals[i][2]
+                weights[i]=max(weights[i],weights[j]+intervals[i][2])
             maxi = max(weights[i], maxi)
 
     # Traceback
@@ -51,7 +51,7 @@ def handleOverlap(args):
         # create a list of tuples used in the following algorithm
         rowTuples = [(row[3], row[4], row[4]-row[3], i) for i, row in inputDF.loc[inputDF[0] == id].iterrows()]
 
-        # find the longest non-overlapping interval
+        # find the longest non-overlapping intervalc
         finalTuples += getLongestInterval(rowTuples)
 
     # create new dataframe containing only the non-overlapping entries for each identifier
