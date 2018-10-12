@@ -24,15 +24,12 @@ rule cdsNormalizedCounts:
     input:
         bam=expand("maplink/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples()),
         annotation="xtail/newAnnotation.gff",
-        #annotation=rules.longestTranscript.output,
-        sizefactor="normalization/sfactors.csv"
     output:
-        norm="normalization/norm_CDS_reads.csv",
-        raw="normalization/raw_CDS_reads.csv"
+        raw="normalization/raw_reads.csv"
     conda:
         "../envs/normalization.yaml"
     threads: 1
-    shell: ("mkdir -p normalization; SPtools/scripts/generate_normalized_counts_CDS.R -b maplink/ -a {input.annotation} -s {input.sizefactor} -t SPtools/samples.tsv -n {output.norm} -r {output.raw};")
+    shell: ("mkdir -p normalization; SPtools/scripts/generate_normalized_counts.R -b maplink/ -a {input.annotation} -t SPtools/samples.tsv -r {output.raw};")
 
 rule contrastInput:
     #params:
@@ -46,10 +43,9 @@ rule contrastInput:
             print(f)
             open((f), 'a').close()
 
-rule cdsxtail:
+rule xtail:
     input:
-        normreads="normalization/norm_CDS_reads.csv",
-        rawreads="normalization/raw_CDS_reads.csv",
+        rawreads="normalization/raw_reads.csv",
         sizefactor="normalization/sfactors.csv",
         contrastfile="contrasts/{contrast}"
     output:
@@ -67,7 +63,7 @@ rule cdsxtail:
 
 rule riborex:
     input:
-        rawreads="normalization/raw_CDS_reads.csv",
+        rawreads="normalization/raw_reads.csv",
         sizefactor="normalization/sfactors.csv",
         contrastfile="contrasts/{contrast}"
     output:
