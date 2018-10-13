@@ -58,7 +58,7 @@ def handleOverlap(args):
     finalTuples.sort(key=itemgetter(3))
     newDF = inputDF.loc[[x[3] for x in finalTuples],:]
     with open(args.outputGFF, 'w') as f:
-        newDF.to_csv(f, sep="\t", header=False, index=False)
+        newDF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
 
 def main():
