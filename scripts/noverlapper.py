@@ -9,7 +9,7 @@ import re
 import argparse
 import numpy as np
 import os
-
+import csv
 
 def getLongestInterval(intervals):
     maxi = -1

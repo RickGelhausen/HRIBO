@@ -29,7 +29,7 @@ rule cdsNormalizedCounts:
     conda:
         "../envs/normalization.yaml"
     threads: 1
-    shell: ("mkdir -p normalization; SPtools/scripts/generate_normalized_counts.R -b maplink/ -a {input.annotation} -t SPtools/samples.tsv -r {output.raw};")
+    shell: ("mkdir -p normalization; SPtools/scripts/generate_raw_counts.R -b maplink/ -a {input.annotation} -t SPtools/samples.tsv -r {output.raw};")
 
 rule contrastInput:
     #params:
