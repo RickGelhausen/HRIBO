@@ -20,8 +20,8 @@ def toGFF(args):
     # Creation of dataframe in gff3 format
     gff3DF = pd.DataFrame()
     tmpDF = pd.DataFrame()
-    # Creating a unique transcript_id
-    tmpDF["transcript_id"] = np.arange(inputDF.shape[0])
+    # Creating a unique gene_id
+    tmpDF["gene_id"] = np.arange(inputDF.shape[0])
     gff3DF["seqID"], tmpDF["range"] = inputDF["ORF_locus"].str.split(":").str
     gff3DF["source"] = "reparation" #args.source
     gff3DF["type"] = "CDS"
@@ -29,17 +29,17 @@ def toGFF(args):
     gff3DF["score"] = "."
     gff3DF["strand"] = inputDF["strand"]
     gff3DF["phase"] = "."
-    gff3DF["attribute"] = "transcript_id=RP-%s-"%(prefix)+ tmpDF["transcript_id"].astype(str)  \
-                        + ";Name=" + inputDF["Reference"].astype(str) \
-                        + ";start_codon=" + inputDF["start_codon"] \
-                        + ";ribo_count=" + inputDF["ribo_count"].astype(str) \
-                        + ";ribo_rpkm=" + inputDF["ribo_rpkm"].astype(str) \
-                        + ";ribo_coverage=" + inputDF["ribo_coverage"].astype(str) \
-                        + ";SD_score=" + inputDF["SD_score"].astype(str) \
-                        + ";SD_pos=" + inputDF["SD_pos"].astype(str) \
-                        + ";prob=" + inputDF["prob"].astype(str) \
-                        + ";ORF_type=" + inputDF["ORF_type"] \
-                        + ";Distance_from_aTIS=" + inputDF["Distance_from_aTIS"].astype(str)
+    gff3DF["attribute"] = "gene_id RP-%s-"%(prefix)+ tmpDF["gene_id"].astype(str)  \
+                        + ";Name " + inputDF["Reference"].astype(str) \
+                        + ";start_codon " + inputDF["start_codon"] \
+                        + ";ribo_count " + inputDF["ribo_count"].astype(str) \
+                        + ";ribo_rpkm " + inputDF["ribo_rpkm"].astype(str) \
+                        + ";ribo_coverage " + inputDF["ribo_coverage"].astype(str) \
+                        + ";SD_score " + inputDF["SD_score"].astype(str) \
+                        + ";SD_pos " + inputDF["SD_pos"].astype(str) \
+                        + ";prob " + inputDF["prob"].astype(str) \
+                        + ";ORF_type " + inputDF["ORF_type"] \
+                        + ";Distance_from_aTIS " + inputDF["Distance_from_aTIS"].astype(str)
 
     ### Handling output
     # Append results

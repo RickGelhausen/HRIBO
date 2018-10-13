@@ -46,7 +46,6 @@ rule contrastInput:
 rule xtail:
     input:
         rawreads="normalization/raw_reads.csv",
-        sizefactor="normalization/sfactors.csv",
         contrastfile="contrasts/{contrast}"
     output:
         table=report("xtail/{contrast}.csv", caption="../report/xtail_table.rst", category="Regulation"),
@@ -64,7 +63,6 @@ rule xtail:
 rule riborex:
     input:
         rawreads="normalization/raw_reads.csv",
-        sizefactor="normalization/sfactors.csv",
         contrastfile="contrasts/{contrast}"
     output:
         tabledeseq2="riborex/{contrast}_deseq2.csv",
