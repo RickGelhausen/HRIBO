@@ -35,7 +35,7 @@ sel <- gencode$type == "CDS"
 cds <- gencode[which(sel),]
 
 # create empty data frame
-gene.counts <- data.frame(gene.id = cds$transcript_id)
+gene.counts <- data.frame(gene.id = cds$gene_id)
 
 # get sample files
 sample.files <- paste(options$bam_directory_path, list.files(options$bam_directory_path, pattern = "\\.bam$"), sep = "")
@@ -61,9 +61,9 @@ for (i in sample.files) {
 
 # sum all reads across gene.ids
 gene.counts <- ddply(gene.counts,"gene.id",numcolwise(sum))
-
 # change row names and drop column gene.id
 rownames(gene.counts) <- gene.counts$gene.id
+
 gene.counts$gene.id <- NULL
 
 # get sample sheet
