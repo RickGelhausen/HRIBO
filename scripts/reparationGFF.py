@@ -9,6 +9,7 @@ import re
 import argparse
 import numpy as np
 import os
+import csv
 
 
 def toGFF(args):
@@ -29,22 +30,22 @@ def toGFF(args):
     gff3DF["score"] = "."
     gff3DF["strand"] = inputDF["strand"]
     gff3DF["phase"] = "."
-    gff3DF["attribute"] = "gene_id RP-%s-"%(prefix)+ tmpDF["gene_id"].astype(str)  \
-                        + ";Name " + inputDF["Reference"].astype(str) \
-                        + ";start_codon " + inputDF["start_codon"] \
-                        + ";ribo_count " + inputDF["ribo_count"].astype(str) \
-                        + ";ribo_rpkm " + inputDF["ribo_rpkm"].astype(str) \
-                        + ";ribo_coverage " + inputDF["ribo_coverage"].astype(str) \
-                        + ";SD_score " + inputDF["SD_score"].astype(str) \
-                        + ";SD_pos " + inputDF["SD_pos"].astype(str) \
-                        + ";prob " + inputDF["prob"].astype(str) \
-                        + ";ORF_type " + inputDF["ORF_type"] \
-                        + ";Distance_from_aTIS " + inputDF["Distance_from_aTIS"].astype(str)
+    gff3DF["attribute"] = "gene_id \"RP-%s-"%(prefix)+ tmpDF["gene_id"].astype(str)  \
+                        + "\"; Name \"" + inputDF["Reference"].astype(str) \
+                        + "\"; start_codon \"" + inputDF["start_codon"] \
+                        + "\"; ribo_count \"" + inputDF["ribo_count"].astype(str) \
+                        + "\"; ribo_rpkm \"" + inputDF["ribo_rpkm"].astype(str) \
+                        + "\"; ribo_coverage \"" + inputDF["ribo_coverage"].astype(str) \
+                        + "\"; SD_score \"" + inputDF["SD_score"].astype(str) \
+                        + "\"; SD_pos \"" + inputDF["SD_pos"].astype(str) \
+                        + "\"; prob \"" + inputDF["prob"].astype(str) \
+                        + "\"; ORF_type \"" + inputDF["ORF_type"] \
+                        + "\"; Distance_from_aTIS \"" + inputDF["Distance_from_aTIS"].astype(str) + "\""
 
     ### Handling output
     # Append results
     with open(args.outputGFF, 'w') as f:
-        gff3DF.to_csv(f, sep="\t", header=False, index=False)
+        gff3DF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
 def main():
     # store commandline args
