@@ -21,10 +21,10 @@ rule reparation:
         bamindex="bam/RIBO-{condition}-{replicate}.bam.bai"
     output:
         orfs="reparation/{condition}-{replicate}/Predicted_ORFs.txt",
-        metagene="figures/{condition}-{replicate}_metagene.jpg",
-        roc="figures/{condition}-{replicate}_roc.jpg",
-        psite="figures/{condition}-{replicate}_psite.png",
-        scurve="figures/{condition}-{replicate}_scurve.jpg"
+        metagene="reparation/{condition}-{replicate}/metagene_profile.pdf",
+        roc="reparation/{condition}-{replicate}/PR_and_ROC_curve.pdf",
+        psite="reparation/{condition}-{replicate}/p_site_offset.png",
+        scurve="reparation/{condition}-{replicate}/S_Curve.pdf"
     conda:
         "../envs/reparation.yaml"
     threads: 20
