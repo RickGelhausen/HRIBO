@@ -20,12 +20,16 @@ rule reparation:
         bam="bam/RIBO-{condition}-{replicate}.bam",
         bamindex="bam/RIBO-{condition}-{replicate}.bam.bai"
     output:
-        "reparation/{condition}-{replicate}/Predicted_ORFs.txt"
+        orfs="reparation/{condition}-{replicate}/Predicted_ORFs.txt",
+        metagene="figures/{condition}-{replicate}_metagene.jpg",
+        roc="figures/{condition}-{replicate}_roc.jpg",
+        psite="figures/{condition}-{replicate}_psite.png",
+        scurve="figures/{condition}-{replicate}_scurve.jpg"
     conda:
         "../envs/reparation.yaml"
     threads: 20
     params:
-        prefix=lambda wildcards, output: (os.path.dirname(output[0]))
+        prefix=lambda wildcards, output: (os.path.dirname(output.orfs[0]))
     log:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_reparation.log"
     shell:
