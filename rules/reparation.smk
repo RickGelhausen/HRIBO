@@ -29,7 +29,7 @@ rule reparation:
         "../envs/reparation.yaml"
     threads: 20
     params:
-        prefix=lambda wildcards, output: (os.path.dirname(output.orfs[0]))
+        prefix=lambda wildcards, output: (os.path.dirname(output.orfs))
     log:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_reparation.log"
     shell:
