@@ -94,5 +94,5 @@ dds <- DESeqDataSetFromMatrix(countData = gene.counts,
 # get normalized counts
 raw.counts <-  counts(dds, normalized = FALSE)
 # save normalized counts
-write.csv(raw.counts, options$raw_count_cds_out_path, quote = F)
+write.csv(raw.counts, options$raw_count_out_path, quote = F)
 
