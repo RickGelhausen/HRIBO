@@ -28,10 +28,10 @@ rule reparationreport:
         psite="reparation/{condition}-{replicate}/p_site_offset.png",
         scurve="reparation/{condition}-{replicate}/S_Curve.pdf"
     output:
-        "figures/{condition}-{replicate}_metagene.jpg",
-        "figures/{condition}-{replicate}_roc.jpg",
-        "figures/{condition}-{replicate}_psite.png",
-        "figures/{condition}-{replicate}_scurve.jpg"
+        metagene="figures/{condition}-{replicate}_metagene.jpg",
+        roc="figures/{condition}-{replicate}_roc.jpg",
+        psite="figures/{condition}-{replicate}_psite.png",
+        scurve="figures/{condition}-{replicate}_scurve.jpg"
         #metagene=report("figures/{condition}-{replicate}_metagene.jpg", caption="../report/reparation_metagene.rst", category="Novel ORFs - Reparation"),
         #roc=report("figures/{condition}-{replicate}_roc.jpg", caption="../report/reparation_roc.rst", category="Novel ORFs - Reparation"),
         #psite=report("figures/{condition}-{replicate}_psite.png", caption="../report/reparation_psite.rst", category="Novel ORFs - Reparation"),
