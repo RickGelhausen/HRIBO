@@ -12,7 +12,7 @@ rule xtailreport:
 
 rule ribotishreport:
     input:
-        "ribotish/{condition}-{replicate}-qual.pdf" 
+        "ribotish/{condition}-{replicate}-qual.pdf"
     output:
         "figures/{condition}-{replicate}-qual.jpg"
         #report("figures/{condition}-{replicate}-qual.jpg", caption="../report/ribotishquality.rst", category="Novel ORFs - Ribotish")
