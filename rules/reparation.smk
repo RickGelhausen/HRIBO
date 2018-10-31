@@ -18,7 +18,7 @@ rule reparation:
         gtf=rules.retrieveAnnotation.output,
         db="uniprotDB/uniprot_sprot.fasta",
         bam="bam/RIBO-{condition}-{replicate}.bam",
-        bamindex="bam/RIBO-{condition}-{replicate}.bam.bai"
+        bamindex="maplink/RIBO-{condition}-{replicate}.bam.bai"
     output:
         orfs="reparation/{condition}-{replicate}/Predicted_ORFs.txt",
         metagene="reparation/{condition}-{replicate}/metagene_profile.pdf",
