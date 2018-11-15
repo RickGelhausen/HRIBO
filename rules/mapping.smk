@@ -29,7 +29,7 @@ rule map:
     log:
         "logs/{method}-{condition}-{replicate}_segemehl.log"
     shell:
-        "mkdir -p sammulti; mkdir -p sammulti/unmapped; segemehl.x -s -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sammulti} -u {output.unmapped} 2> {log}"
+        "mkdir -p sammulti; mkdir -p sammulti/unmapped; segemehl.x -s -e -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sammulti} -u {output.unmapped} 2> {log}"
 
 rule samuniq:
     input:
