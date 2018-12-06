@@ -2,4 +2,4 @@ channels:
  - bioconda
  - conda-forge
 dependencies:
- - imagemagick
+ - imagemagick =7.0.8_15

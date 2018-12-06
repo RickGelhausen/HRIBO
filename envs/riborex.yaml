@@ -2,5 +2,5 @@ channels:
  - bioconda
  - conda-forge
 dependencies:
- - riborex
- - r-optparse
+ - riborex =2.3.4
+ - r-optparse =1.3.2
