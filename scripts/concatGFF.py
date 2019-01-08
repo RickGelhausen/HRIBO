@@ -6,6 +6,7 @@ reparationGFF and merges all replicates into one file, for each condition.
 import os, sys
 import argparse
 import pandas as pd
+import csv
 
 def concatGFF(args):
     # create dataframes of all non-empty files
@@ -22,9 +23,9 @@ def concatGFF(args):
         # write to file
         if args.output_file != "":
             with open(args.output_file, 'w') as f:
-                mergedGFF.to_csv(f, sep="\t", header=False, index=False)
+                mergedGFF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
         else:
-            mergedGFF.to_csv(sys.stdout, sep="\t", header=False, index=False)
+            mergedGFF.to_csv(sys.stdout, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
 
 def main():
