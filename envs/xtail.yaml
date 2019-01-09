@@ -3,5 +3,5 @@ channels:
  - conda-forge
 dependencies:
  - xtail =1.1.5
- - r-optparse =1.3.2
+ - r-optparse =1.6.0
  - libgfortran-ng =7.2.0
