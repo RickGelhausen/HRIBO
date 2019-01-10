@@ -1,5 +1,5 @@
 channels:
- - bioconda
  - conda-forge
+ - bioconda
 dependencies:
  - ribotish =0.2.1

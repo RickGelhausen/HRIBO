@@ -1,6 +1,6 @@
 channels:
- - bioconda
  - conda-forge
+ - bioconda
 dependencies:
  - xtail =1.1.5
  - r-optparse =1.6.0

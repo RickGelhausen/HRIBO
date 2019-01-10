@@ -1,5 +1,5 @@
 channels:
- - bioconda
  - conda-forge
+ - bioconda
 dependencies:
  - RPF-count-CDS =0.0.1
