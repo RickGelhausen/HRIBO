@@ -8,6 +8,7 @@ min_version("5.3.0")
 ADAPTERS=config["adapter"]
 INDEXPATH=config["genomeindexpath"]
 CODONS=config["alternativestartcodons"]
+USETIS=config["tis"]
 
 onstart:
    if not os.path.exists("logs"):
@@ -74,7 +75,11 @@ include: "rules/mapping.smk"
 #Visualization
 include: "rules/visualization.smk"
 #ribotish
-include: "rules/ribotish.smk"
+include: "rules/ribotishauxiliary.smk"
+if USETIS == "True":
+   include: "rules/ribotishtis.smk"
+else:
+   include: "rules/ribotish.smk"
 #xtail
 include: "rules/xtail.smk"
 #reparation

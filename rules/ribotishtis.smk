@@ -1,6 +1,19 @@
+rule ribomaplink:
+    input:
+        "bam/{method}-{condition}-{replicate}.bam"
+    output:
+        "maplink/{method, RIBO}/{condition, [a-zA-Z]+}-{replicate,\d+}.bam"
+    params:
+        inlink=lambda wildcards, input:(os.getcwd() + "/" + str(input)),
+        outlink=lambda wildcards, output:(os.getcwd() + "/" + str(output))
+    threads: 1
+    shell:
+        "mkdir -p maplink/RIBO/; ln -s {params.inlink} {params.outlink}"
+
 rule ribotish:
     input:
         fp=expand("maplink/RIBO/{{condition}}-{sample.replicate}.bam", sample=samples.itertuples()),
+	tis=expand("maplink/TIS/{{condition}}-{sample.replicate}.bam", sample=samples.itertuples()),
         genome=rules.retrieveGenome.output,
         annotation=rules.retrieveAnnotation.output,
         samindex=rules.genomeSamToolsIndex.output,
@@ -13,6 +26,7 @@ rule ribotish:
         filtered="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv"
     params:
         fplist= lambda wildcards, input: ','.join(list(set(input.fp))),
+	tislist= lambda wildcards, input: ','.join(list(set(input.tis))),
         codons= lambda wildcards: ("" if not CODONS else (" --alt --altcodons " + CODONS)),
     conda:
         "../envs/ribotish.yaml"
@@ -20,4 +34,4 @@ rule ribotish:
     log:
         "logs/{condition, [a-zA-Z]+}_ribotish.log"
     shell:
-        "mkdir -p ribotish; ribotish predict --longest -v {params.codons} -p {threads} -b {params.fplist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
+        "mkdir -p ribotish; ribotish predict --longest -v {params.codons} -p {threads} -t {params.tislist} -b {params.fplist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
