@@ -2,6 +2,7 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
+ - r-base =3.5.1
  - bioconductor-genomicranges =1.32.7
  - bioconductor-genomicalignments =1.16.0
  - bioconductor-deseq2 =1.20.0
