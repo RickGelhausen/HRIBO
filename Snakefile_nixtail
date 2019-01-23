@@ -55,6 +55,7 @@ include: "rules/mapping.smk"
 #Visualization
 include: "rules/visualization.smk"
 #ribotish
+include: "rules/ribotishauxiliary.smk"
 include: "rules/ribotish.smk"
 #reparation
 include: "rules/reparation.smk"
