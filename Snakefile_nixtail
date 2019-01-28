@@ -16,7 +16,7 @@ onstart:
 samples = pd.read_table(config["samples"], dtype=str).set_index(["method", "condition", "replicate"], drop=False)
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
-report: "report/workflow.rst"
+report: "report/workflow_nixtail.rst"
 def getContrast(wildcards):
   conditions=samples["condition"].unique()
   print(conditions)
