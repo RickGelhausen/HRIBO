@@ -3,12 +3,12 @@ import re
 import pandas as pd
 import itertools as iter
 from snakemake.utils import validate, min_version
-min_version("5.3.0")
+min_version("5.4444)
 
 ADAPTERS=config["adapter"]
 INDEXPATH=config["genomeindexpath"]
 CODONS=config["alternativestartcodons"]
-USETIS=config["tis"]
+TISHMODE=config["tishmode"]
 
 onstart:
    if not os.path.exists("logs"):
@@ -76,10 +76,12 @@ include: "rules/mapping.smk"
 include: "rules/visualization.smk"
 #ribotish
 include: "rules/ribotishauxiliary.smk"
-if USETIS == "True":
+if TISHMODE == "TISONLY":
    include: "rules/ribotishtis.smk"
-else:
+elif TISHMODE == "RIBOONLY":
    include: "rules/ribotish.smk"
+else:
+   include: "rules/ribotishall.smk"
 #xtail
 include: "rules/xtail.smk"
 #reparation
