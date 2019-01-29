@@ -56,7 +56,12 @@ include: "rules/mapping.smk"
 include: "rules/visualization.smk"
 #ribotish
 include: "rules/ribotishauxiliary.smk"
-include: "rules/ribotish.smk"
+if TISHMODE == "TISONLY":
+   include: "rules/ribotishtis.smk"
+elif TISHMODE == "RIBOONLY":
+   include: "rules/ribotish.smk"
+else:
+   include: "rules/ribotishall.smk"
 #reparation
 include: "rules/reparation.smk"
 #multiqc
