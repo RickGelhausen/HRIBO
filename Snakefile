@@ -45,37 +45,19 @@ def getContrastRiborex(wildcards):
 
 rule all:
    input:
-       if TISHMODE == "TISONLY":
-           expand("maplink/RIBO/{sample.condition}-{sample.replicate}.qualdone", sample=samples.itertuples()),
-           expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
-           expand("figures/{sample.condition}-{sample.replicate}-qual.jpg", sample=samples.itertuples()),
-           expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
-           expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
-           expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
-           unpack(getContrast),
-           unpack(getContrastXtail),
-           unpack(getContrastRiborex),
-           "qc/multi/multiqc_report.html",
-           expand("figures/{sample.condition}-{sample.replicate}_metagene.jpg", sample=samples.itertuples()),
-           expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples()),
-           expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples()),
-           "xtail/newAnnotation.gff"
-       else:
-           expand("maplink/RIBO/{sample.condition}-{sample.replicate}.qualdone", sample=samples.itertuples()),
-           expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
-           expand("figures/{sample.condition}-{sample.replicate}-qual.jpg", sample=samples.itertuples()),
-           expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
-           expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
-           expand("reparation/{sample.condition}-{sample.replicate}/Predicted_ORFs.txt", sample=samples.itertuples()),
-           expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
-           unpack(getContrast),
-           unpack(getContrastXtail),
-           unpack(getContrastRiborex),
-           "qc/multi/multiqc_report.html",
-           expand("figures/{sample.condition}-{sample.replicate}_metagene.jpg", sample=samples.itertuples()),
-           expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples()),
-           expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples()),
-           "xtail/newAnnotation.gff"
+     expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
+     expand("figures/{sample.condition}-{sample.replicate}-qual.jpg", sample=samples.itertuples()),
+     expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
+     expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
+     #expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
+     unpack(getContrast),
+     unpack(getContrastXtail),
+     unpack(getContrastRiborex),
+     "qc/multi/multiqc_report.html",
+     expand("figures/{sample.condition}-{sample.replicate}_metagene.jpg", sample=samples.itertuples()),
+     expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples()),
+     expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples()),
+     "xtail/newAnnotation.gff"
 
 onsuccess:
     print("Done, no error")
