@@ -14,7 +14,7 @@ onstart:
    if not os.path.exists("logs"):
      os.makedirs("logs")
 
-samples = pd.read_table(config["samples"], dtype=str).set_index(["method", "condition", "replicate"], drop=False)
+samples = pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["method", "condition", "replicate"], drop=False)
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
 report: "report/workflow.rst"
@@ -45,19 +45,36 @@ def getContrastRiborex(wildcards):
 
 rule all:
    input:
-     expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
-     expand("figures/{sample.condition}-{sample.replicate}-qual.jpg", sample=samples.itertuples()),
-     expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
-     expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
-     #expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
-     unpack(getContrast),
-     unpack(getContrastXtail),
-     unpack(getContrastRiborex),
-     "qc/multi/multiqc_report.html",
-     expand("figures/{sample.condition}-{sample.replicate}_metagene.jpg", sample=samples.itertuples()),
-     expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples()),
-     expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples()),
-     "xtail/newAnnotation.gff"
+      expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+
+
+#     expand("ribotish/{sample.condition}-newORFs.tsv_all.txt", sample=samples.itertuples()),
+#     expand("figures/{sample.condition}-{sample.replicate}-qual.jpg", sample=samples.itertuples()),
+#     expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
+#     expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
+#     #expand("tracks/{sample.condition}.reparation.gff", sample=samples.itertuples()),
+#     unpack(getContrast),
+#     unpack(getContrastXtail),
+#     unpack(getContrastRiborex),
+#     "qc/multi/multiqc_report.html",
+#     expand("figures/{sample.condition}-{sample.replicate}_metagene.jpg", sample=samples.itertuples()),
+#     expand("tracks/{sample.condition}.merged.gff", sample=samples.itertuples()),
+#     expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples()),
+#     "xtail/newAnnotation.gff"
+
+#     expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples["condition"]),
+#     expand("figures/{condition}-{replicate}-qual.jpg", zip, condition=samples["condition"], replicate=samples["replicate"]),
+#     expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
+#      expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+#     #expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
+#     unpack(getContrast),
+#     unpack(getContrastXtail),
+#     unpack(getContrastRiborex),
+#     "qc/multi/multiqc_report.html",
+#     expand("figures/{condition}-{replicate}_metagene.jpg", zip, condition=samples["condition"], replicate=samples["replicate"]),
+#     expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
+#     expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
+#     "xtail/newAnnotation.gff"
 
 onsuccess:
     print("Done, no error")
