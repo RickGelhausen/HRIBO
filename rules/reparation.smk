@@ -48,7 +48,7 @@ rule reparationGFF:
 
 rule concatReparation:
     input:
-        expand("reparation/{{condition}}-{sample.replicate}.reparation.gff",  sample=samples.itertuples())
+        lambda wildcards: expand("reparation/{{condition}}-{replicate}.reparation.gff", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"])
     output:
         "tracks/{condition, [a-zA-Z]+}.reparation.gff"
     conda:

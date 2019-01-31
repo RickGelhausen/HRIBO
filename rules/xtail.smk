@@ -12,7 +12,7 @@ rule longestTranscript:
 rule sizeFactors:
     input:
         rules.longestTranscript.output,
-        expand("maplink/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples())
+        expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         "normalization/sfactors.csv"
     conda:
@@ -22,7 +22,7 @@ rule sizeFactors:
 
 rule cdsNormalizedCounts:
     input:
-        bam=expand("maplink/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples()),
+        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         annotation="xtail/newAnnotation.gff",
     output:
         raw="normalization/raw_reads.csv"

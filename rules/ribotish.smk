@@ -70,12 +70,12 @@ rule ribotishQuality:
 
 rule ribotish:
     input:
-        fp=expand("maplink/RIBO/{{condition}}-{sample.replicate}.bam", sample=samples.itertuples()),
+        fp=expand("maplink/RIBO/{{condition}}-{replicate}.bam", zip, condition=samples["condition"], replicate=samples["replicate"]),
         genome=rules.retrieveGenome.output,
         annotation=rules.retrieveAnnotation.output,
         samindex=rules.genomeSamToolsIndex.output,
-        bamindex=expand("maplink/RIBO/{{condition}}-{sample.replicate}.bam.bai", sample=samples.itertuples()),
-        offsetparameters=expand("maplink/RIBO/{{condition}}-{sample.replicate}.qualdone", sample=samples.itertuples())
+        bamindex=expand("maplink/RIBO/{{condition}}-{replicate}.bam.bai", zip, condition=samples["condition"], replicate=samples["replicate"]),
+        offsetparameters=expand("maplink/RIBO/{{condition}}-{replicate}.qualdone", zip, condition=samples["condition"], replicate=samples["replicate"])
         #offsetparameters="maplink/RIBO/{condition}-{replicate}.bam.para.py"
     output:
         report="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt",

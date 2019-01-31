@@ -72,14 +72,14 @@ rule featurescounts:
 
 rule multiqc:
     input:
-        expand("tracks/{sample.condition}.ribotish.gff", sample=samples.itertuples()),
-        expand("tracks/{sample.method}-{sample.condition}-{sample.replicate}.bw", sample=samples.itertuples()),
-        expand("qc/raw/{sample.method}-{sample.condition}-{sample.replicate}-raw_fastqc.html", sample=samples.itertuples()),
-        expand("qc/trimmed/{sample.method}-{sample.condition}-{sample.replicate}-trimmed_fastqc.html", sample=samples.itertuples()),
-        expand("qc/norRNA/{sample.method}-{sample.condition}-{sample.replicate}-norRNA_fastqc.html", sample=samples.itertuples()),
-        expand("qc/map/{sample.method}-{sample.condition}-{sample.replicate}-map_fastqc.html", sample=samples.itertuples()),
-        expand("qc/featurecount/{sample.method}-{sample.condition}-{sample.replicate}.txt", sample=samples.itertuples())
-        #expand("bam/{sample.method}-{sample.condition}-{sample.replicate}.bam", sample=samples.itertuples())
+        expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
+        expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/raw/{method}-{condition}-{replicate}-raw_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/norRNA/{method}-{condition}-{replicate}-norRNA_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/map/{method}-{condition}-{replicate}-map_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/featurecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+        #expand("bam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
 
     output:
         #"qc/multi/multiqc_report.html"

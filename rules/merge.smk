@@ -23,7 +23,7 @@ rule noverlap:
 
 rule mergeAll:
     input:
-        mergedGff=expand("tracks/{sample.condition}.filtered.gff", sample=samples.itertuples())
+        mergedGff=expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"])
     output:
         report("tracks/all.gff", caption="../report/novelall.rst", category="Novel ORFs")
     conda:
