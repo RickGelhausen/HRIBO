@@ -72,7 +72,7 @@ rule featurescounts:
 
 rule multiqc:
     input:
-        expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
+        expand("tracks/{condition}.ribotish.gff", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
         expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/raw/{method}-{condition}-{replicate}-raw_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
