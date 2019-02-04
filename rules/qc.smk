@@ -70,9 +70,20 @@ rule featurescounts:
     shell:
         "mkdir -p qc/featurecount; featureCounts -T {threads} -t exon -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
+rule coveragedepth:
+    input:
+        "bam/{method}-{condition}-{replicate}.bam"
+    output:
+        "coverage/{method}-{condition}-{replicate}.bed"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 8
+    shell:
+        "mkdir -p coverage; bedtools genomecov -ibam {input} -bg > {output}"
+
 rule multiqc:
     input:
-        expand("tracks/{condition}.ribotish.gff", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
+        expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
         expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/raw/{method}-{condition}-{replicate}-raw_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),

@@ -51,6 +51,7 @@ rule all:
       expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
       expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
       expand("figures/{condition}-{replicate}-qual.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples.loc[samples["method"] == "RIBO", "replicate"]),
+      expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
       unpack(getContrast),
       unpack(getContrastXtail),
       unpack(getContrastRiborex),
