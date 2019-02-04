@@ -98,7 +98,7 @@ def generateStartCodon(row):
 
 # calculate the stop codon for a given cds row (ensembl style)
 def generateStopCodon(row):
-    if getattr(row, "s2").lower() == "gene":
+    if getattr(row, "s2").lower() in ["gene", "exon"]:
         if getattr(row, "s6") == "+":
             newLeftBoundary = str(int(getattr(row, "s4") - 2))
             return createNTuple(row, s2="stop_codon", s3=newLeftBoundary)
@@ -133,6 +133,7 @@ def cleanse_annotation(annotationDF, intersectingIDs):
 
 # helper function to create a dictionary {geneID : namedtuple}
 def create_dictionary(cleansedDF):
+    print("Reading table rows!")
     geneDict = dict()
     insensitive_geneid= re.compile(re.escape("gene_id"), re.IGNORECASE)
     for row in cleansedDF.itertuples(index=False, name='Pandas'):
@@ -152,6 +153,7 @@ def create_dictionary(cleansedDF):
 
 # create a dataframe from the dictionary
 def createAnnotationFromDictionary(geneDict):
+    print("Creating new annotation file!")
     rows = []
     keys = sorted(geneDict.keys())
     for key in keys:
@@ -164,6 +166,7 @@ def createAnnotationFromDictionary(geneDict):
 def complete_annotation(cleansedDF):
     # create the geneDict
     geneDict = create_dictionary(cleansedDF)
+    print("Completing missing values!")
     # Go through all keys and complete the annotation
     sortedKeys = sorted(geneDict.keys())
     for key in sortedKeys:
@@ -192,10 +195,15 @@ def complete_annotation(cleansedDF):
                     if getattr(entry, "s2") == "gene":
                         newEntries.append(generateStartCodon(entry))
                         features.add("start_codon")
-                elif "CDS" in features and "start_codon" not in features:
+                elif "exon" in features:
+                    if getattr(entry, "s2") == "exon":
+                        newEntries.append(generateStartCodon(entry))
+                        features.add("start_codon")
+                elif "CDS" in features:
                     if getattr(entry, "s2") == "CDS":
                         newEntries.append(generateStartCodon(entry))
                         features.add("start_codon")
+
 
             # stop codon generation
             if "stop_codon" not in features:
@@ -203,7 +211,11 @@ def complete_annotation(cleansedDF):
                     if getattr(entry, "s2") == "gene":
                         newEntries.append(generateStopCodon(entry))
                         features.add("stop_codon")
-                elif "CDS" in features and "stop_codon" not in features:
+                elif "exon" in features:
+                    if getattr(entry, "s2") == "exon":
+                        newEntries.append(generateStopCodon(entry))
+                        features.add("stop_codon")
+                elif "CDS" in features:
                     if getattr(entry, "s2") == "CDS":
                         newEntries.append(generateStopCodon(entry))
                         features.add("stop_codon")
@@ -283,11 +295,19 @@ def validate(args):
         sys.exit("Error: The identifiers for genome.fa and annotation.gtf do not match." \
                 +" Please, check for empty or missplaced files!")
 
-    cleansedAnnoDF = cleanse_annotation(annotationDF, intersectingIDs.union(ignoreA))
-    newAnnotationDF = complete_annotation(cleansedAnnoDF)
-
-    # write new files
+    # if requested, create annotation output
     if args.annotationOutput != "":
+        cleansedAnnoDF = cleanse_annotation(annotationDF, intersectingIDs.union(ignoreA))
+        newAnnotationDF = complete_annotation(cleansedAnnoDF)
+
+        # if desired sort the dataframe by pos1, pos2, name
+        if args.sort:
+            print("Sorting annotation file!")
+            newAnnotationDF[3] = newAnnotationDF[3].astype(int)
+            newAnnotationDF[4] = newAnnotationDF[4].astype(int)
+            newAnnotationDF.sort_values([3,4,0], ascending=True, inplace=True)
+
+        # write new files
         with open(args.annotationOutput, "w") as f:
             f.write("# This annotation file was automatically generated from another annotation file.\n")
         newAnnotationDF.to_csv(args.annotationOutput, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE, mode="a")
@@ -315,6 +335,7 @@ def main():
     parser.add_argument("--annotationOutput", action="store", dest="annotationOutput",default="", help="output annotation file.")
     parser.add_argument("--genomeOutput", action="store", dest="genomeOutput", default="", help="output genome file.")
     parser.add_argument("-i", "--ignore", nargs="*", dest="ignoreIDs", default=[], help="IDs that are enforced to be added.")
+    parser.add_argument("-s", "--sort", action="store_true", dest="sort", help="sort the file according to 1st position, 2nd position, name")
     args = parser.parse_args()
 
     validate(args)
