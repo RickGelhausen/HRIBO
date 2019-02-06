@@ -80,8 +80,7 @@ rule ribotish:
         #report=report("ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt", caption="../report/ribotish.rst", category="Ribotish"),
         filtered="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv"
     params:
-        fplist= lambda wildcards, input: ','.join(list(set(input.fp))),
-	tislist= lambda wildcards, input: ','.join(list(set(input.tis))),
+        tislist= lambda wildcards, input: ','.join(list(set(input.tis))),
         codons= lambda wildcards: ("" if not CODONS else (" --alt --altcodons " + CODONS)),
     conda:
         "../envs/ribotish.yaml"
