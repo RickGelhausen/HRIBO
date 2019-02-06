@@ -69,12 +69,13 @@ rule ribotishQuality:
 
 rule ribotish:
     input:
-	tis=expand("maplink/TIS/{{condition}}-{replicate}.bam", zip, condition=samples["condition"], replicate=samples["replicate"]),
+        tis= lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.bam", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"]),
         genome=rules.retrieveGenome.output,
         annotation=rules.retrieveAnnotation.output,
         samindex=rules.genomeSamToolsIndex.output,
-        bamindex=expand("maplink/RIBO/{{condition}}-{replicate}.bam.bai", zip, condition=samples["condition"], replicate=samples["replicate"]),
-        offsetparameters=expand("maplink/RIBO/{{condition}}-{replicate}.qualdone", zip, condition=samples["condition"], replicate=samples["replicate"])
+        bamindex= lambda wildcards: expand("maplink/RIBO/{{condition}}-{replicate}.bam.bai", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"]),
+        offsetparameters= lambda wildcards: expand("maplink/RIBO/{{condition}}-{replicate}.qualdone", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"])
+#offsetparameters="maplink/RIBO/{condition}-{replicate}.bam.para.py"
         #offsetparameters="maplink/RIBO/{condition}-{replicate}.bam.para.py"
     output:
         report="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt",
