@@ -48,14 +48,16 @@ RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond
 #numberofreplicates <- max(sampleSheet$replicate)
 #contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)
 
-samplesheetheader <- colnames(sampleSheet)
-replicatescondition1 <- length(grep(cond1, samplesheetheader))
-replicatescondition2 <- length(grep(cond2, samplesheetheader))
+countsheader <- colnames(counts)
+countsheader <- countsheader[grepl("RIBO", countsheader)]
+replicatescondition1 <- length(grep(cond1, countsheader))
+replicatescondition2 <- length(grep(cond2, countsheader))
 
+#numberofreplicates <- max(sampleSheet$replicate)
+#contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)
 conditionsvector1 <- rep(cond1,each=replicatescondition1)
 conditionsvector2 <- rep(cond2,each=replicatescondition2)
-contrastconditionsvector <- c(replicatescondition1, replicatescondition2)
-
+contrastconditionsvector <- c(conditionsvector1, conditionsvector2)
 
 # run xtail analysis
 results.deseq2 <- riborex(RNA, RIBO, contrastconditionsvector, contrastconditionsvector)
