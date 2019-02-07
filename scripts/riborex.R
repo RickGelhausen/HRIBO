@@ -45,8 +45,18 @@ RIBO <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == con
 RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 
 #contrastconditions <- c( "TruDWT", "TruDWT", "TruDDel", "TruDDel")
-numberofreplicates <- max(sampleSheet$replicate)
-contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)
+#numberofreplicates <- max(sampleSheet$replicate)
+#contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)
+
+samplesheetheader <- colnames(sampleSheet)
+replicatescondition1 <- length(grep(cond1, samplesheetheader))
+replicatescondition2 <- length(grep(cond2, samplesheetheader))
+
+conditionsvector1 <- rep(cond1,each=replicatescondition1)
+conditionsvector2 <- rep(cond2,each=replicatescondition2)
+contrastconditionsvector <- c(replicatescondition1, replicatescondition2)
+
+
 # run xtail analysis
 results.deseq2 <- riborex(RNA, RIBO, contrastconditionsvector, contrastconditionsvector)
 #results.edgeRD <- riborex(RNA, RIBO, contrastconditionsvector, contrastconditionsvector, "edgeRD")
@@ -60,4 +70,3 @@ write.csv(results.deseq2, options$riborexdeseq_result_path, quote = F)
 #write.csv(test_tab, options$riborexvoom_result_path, quote = F)
 
 #plot results
-
