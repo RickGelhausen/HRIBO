@@ -27,7 +27,7 @@ def filter_cols(df):
 def chrom_name(column):
     chrom = []
     for i in column:
-        match = re.findall("^[0-9A-Za-z]+", i)
+        match = re.findall("^[0-9A-Za-z\.\_]+", i)
         for a in match:
             chrom.append(a)
     return chrom
@@ -114,7 +114,7 @@ def create_output(args):
 def make_ORFs_gff3(args,prefix):
     ORFsString = ""
     for index, row in args.iterrows():
-        ORFString=row.chromosome + "\t" + "ribotish" + "\t" + "CDS" + "\t" + row.start + "\t" + row.stop + "\t" + "." + "\t" + row.strand + "\t" + "." + "\t" + "gene_id \"RI-" + prefix + "-" + str(index) + "\"; " + "start_codon \"" + row.start_codon + "\"; " +  "tis_type \"" + row.tis_type + "\"; " +  "tis_pvalue \"" + str(row.tis_pvalue)  + "\"; " +  "ribo_pvalue \"" + str(row.ribo_pvalue) + "\"; " +  "fisher_pvalue \"" + str(row.fisher_pvalue) + "\"\n"
+        ORFString=row.chromosome + "\t" + "ribotish" + "\t" + "CDS" + "\t" + row.start + "\t" + row.stop + "\t" + "." + "\t" + row.strand + "\t" + "." + "\t" + "gene_id=RI-" + prefix + "-" + str(index) + ";" + "start_codon=" + row.start_codon + ";" +  "tis_type=" + row.tis_type + ";" +  "tis_pvalue=" + str(row.tis_pvalue)  + ";" +  "ribo_pvalue=" + str(row.ribo_pvalue) + ";" +  "fisher_pvalue=" + str(row.fisher_pvalue) + "\n"
         ORFsString= ORFsString + ORFString
     return(ORFsString)
 
