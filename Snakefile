@@ -3,7 +3,7 @@ import re
 import pandas as pd
 import itertools as iter
 from snakemake.utils import validate, min_version
-min_version("5.4.0")
+min_version("5.4.2")
 
 ADAPTERS=config["adapter"]
 INDEXPATH=config["genomeindexpath"]
@@ -50,13 +50,11 @@ if TISHMODE == "TISONLY":
          expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "TIS", "condition"]),
          expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
          expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-         expand("figures/{condition}-{replicate}-qual.jpg", zip, condition=samples.loc[samples["method"] == "TIS", "condition"], replicate=samples.loc[samples["method"] == "TIS", "replicate"]),
          expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          unpack(getContrast),
          unpack(getContrastXtail),
          unpack(getContrastRiborex),
          "qc/multi/multiqc_report.html",
-         expand("figures/{condition}-{replicate}_metagene.jpg", zip, condition=samples.loc[samples["method"] == "TIS", "condition"], replicate=samples.loc[samples["method"] == "TIS", "replicate"]),
          expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
          expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
          "xtail/newAnnotation.gff"

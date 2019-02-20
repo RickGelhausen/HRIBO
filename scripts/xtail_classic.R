@@ -44,8 +44,17 @@ cond2 <- contrastconditions[2]
 RIBO <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 
-numberofreplicates <- max(sampleSheet$replicate)
-contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)
+countsheader <- colnames(counts)
+countsheader <- countsheader[grepl("RIBO", countsheader)]
+replicatescondition1 <- length(grep(cond1, countsheader))
+replicatescondition2 <- length(grep(cond2, countsheader))
+
+#numberofreplicates <- max(sampleSheet$replicate)
+#contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)
+conditionsvector1 <- rep(cond1,each=replicatescondition1)
+conditionsvector2 <- rep(cond2,each=replicatescondition2)
+contrastconditionsvector <- c(conditionsvector1, conditionsvector2)
+print(contrastconditionsvector)
 
 # run xtail analysis
 test_results <- xtail(RNA, RIBO, contrastconditionsvector)
@@ -63,4 +72,3 @@ dev.off()
 pdf(file=options$xtail_rplot_path, paper = "a4r", height = 10, width = 13)
 plotRs(test_results)
 dev.off()
-

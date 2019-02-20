@@ -91,18 +91,18 @@ rule rnatisbamindexlink:
 
 rule ribotish:
     input:
-        fp=lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.bam", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"]),
+        tis=lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.bam", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"]),
         genome=rules.retrieveGenome.output,
         annotation=rules.retrieveAnnotation.output,
         samindex=rules.genomeSamToolsIndex.output,
-        bamindex= lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.bam.bai", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"]),
+	tisindex= lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.bam.bai", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"]),
         #offsetparameters= lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.qualdone", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"])
     output:
         report="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt",
         #report=report("ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt", caption="../report/ribotish.rst", category="Ribotish"),
         filtered="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv"
     params:
-        fplist= lambda wildcards, input: ','.join(list(set(input.fp))),
+        tislist= lambda wildcards, input: ','.join(list(set(input.tis))),
         codons= lambda wildcards: ("" if not CODONS else (" --alt --altcodons " + CODONS)),
     conda:
         "../envs/ribotish.yaml"
@@ -110,7 +110,7 @@ rule ribotish:
     log:
         "logs/{condition, [a-zA-Z]+}_ribotish.log"
     shell:
-        "mkdir -p ribotish; ribotish predict --longest -v {params.codons} -p {threads} -b {params.fplist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
+        "mkdir -p ribotish; ribotish predict --longest -v {params.codons} -p {threads} -b {params.tislist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
 
 #rule ribotishGFF:
 #    input:
