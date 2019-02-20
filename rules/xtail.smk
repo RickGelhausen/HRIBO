@@ -82,3 +82,16 @@ rule riborexresults:
         tablesignificant=report("riborex/{contrast}_significant.csv", caption="../report/riborex.rst", category="Regulation")
     threads: 1
     shell: ("mkdir -p riborex; (head -n 2 {input.tabledeseq2} && tail -n +3 {input.tabledeseq2} | sort -r -n -t',' -k 7) > {output.tablesorted};  awk -F ',' 'NR==1; (NR>1) && ($7 < 0.05 )' {output.tablesorted} > {output.tablesignificant};")
+
+rule xtailreport:
+    input:
+        fcplot="xtail/fc_{contrast}.pdf",
+        rplot="xtail/r_{contrast}.pdf",
+    output:
+        fcplot=report("figures/fc_{contrast}.jpg", caption="../report/xtail_fc.rst", category="Regulation"),
+        rplot=report("figures/r_{contrast}.jpg", caption="../report/xtail_r.rst", category="Regulation")
+    conda:
+        "../envs/imagemagick.yaml"
+    threads: 1
+    shell: ("mkdir -p figures; convert -density 100 -trim {input.fcplot}  -quality 100  -flatten -sharpen 0x1.0 {output.fcplot}; convert -density 100 -trim {input.rplot}  -quality 100  -flatten -sharpen 0x1.0 {output.rplot}; convert -density 100 -trim {input.fcplot}  -quality 100  -flatten -sharpen 0x1.0 {output.fcplot}; convert -density 100 -trim {input.rplot}  -quality 100  -flatten -sharpen 0x1.0 {output.rplot}; ")
+

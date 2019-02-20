@@ -46,44 +46,63 @@ rule rnatisbamindexlink:
     shell:
         "mkdir -p maplink/RNATIS/; ln -s {params.inlink} {params.outlink}"
 
-rule ribotishQuality:
-    input:
-        fp="maplink/TIS/{condition}-{replicate}.bam",
-        genome=rules.retrieveGenome.output,
-        annotation=rules.retrieveAnnotation.output,
-        samindex=rules.genomeSamToolsIndex.output,
-        bamindex="maplink/TIS/{condition}-{replicate}.bam.bai"
-    output:
-        reportpdf="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.pdf",
-        reporttxt=report("ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.txt", caption="../report/ribotishquality.rst", category="Ribotish"),
-        offsetdone="maplink/TIS/{condition, [a-zA-Z]+}-{replicate,\d+}.qualdone"
-    params:
-        offsetparameters="maplink/TIS/{condition, [a-zA-Z]+}-{replicate,\d+}.bam.para.py"
-    conda:
-        "../envs/ribotish.yaml"
-    threads: 10
-    log:
-        "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotishquality.log"
-    shell:
-        "mkdir -p ribotish; ribotish quality -v --th 0.2 -p {threads} -b {input.fp} -t -g {input.annotation} -o {output.reporttxt} -f {output.reportpdf} 2> {log}; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
+#rule ribotishQuality:
+#    input:
+#        fp="maplink/TIS/{condition}-{replicate}.bam",
+#        genome=rules.retrieveGenome.output,
+#        annotation=rules.retrieveAnnotation.output,
+#        samindex=rules.genomeSamToolsIndex.output,
+#        bamindex="maplink/TIS/{condition}-{replicate}.bam.bai"
+#    output:
+#        reportpdf="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.pdf",
+#        reporttxt=report("ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.txt", caption="../report/ribotishquality.rst", category="Ribotish"),
+#        offsetdone="maplink/TIS/{condition, [a-zA-Z]+}-{replicate,\d+}.qualdone"
+#    params:
+#        offsetparameters="maplink/TIS/{condition, [a-zA-Z]+}-{replicate,\d+}.bam.para.py"
+#    conda:
+#        "../envs/ribotish.yaml"
+#    threads: 10
+#    log:
+#        "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotishquality.log"
+#    shell:
+#        "mkdir -p ribotish; ribotish quality -v --th 0.2 -p {threads} -b {input.fp} -t -g {input.annotation} -o {output.reporttxt} -f {output.reportpdf} 2> {log}; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
+
+#rule ribotish:
+#    input:
+#        tis="maplink/TIS/{condition}-{replicate}.bam",
+#        genome=rules.retrieveGenome.output,
+#        annotation=rules.retrieveAnnotation.output,
+#        samindex=rules.genomeSamToolsIndex.output,
+#        bamindex="maplink/RIBO/{condition}-{replicate}.bam.bai",
+#        offsetparameters="maplink/RIBO/{condition}-{replicate}.qualdone"
+#    output:
+#        report="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-newORFs.tsv_all.txt",
+#        filtered="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-newORFs.tsv"
+#    params:
+#        tislist= lambda wildcards, input: ','.join(list(set(input.tis))),
+#        codons= lambda wildcards: ("" if not CODONS else (" --alt --altcodons " + CODONS)),
+#    conda:
+#        "../envs/ribotish.yaml"
+#    threads: 10
+#    log:
+#        "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotish.log"
+#    shell:
+#        "mkdir -p ribotish; ribotish predict --longest -v {params.codons} -p {threads} -t {params.tislist} -a {input.annotation} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
 
 rule ribotish:
     input:
-        tis= lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.bam", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"]),
+        fp=lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.bam", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"]),
         genome=rules.retrieveGenome.output,
         annotation=rules.retrieveAnnotation.output,
         samindex=rules.genomeSamToolsIndex.output,
-        bamindex= lambda wildcards: expand("maplink/RIBO/{{condition}}-{replicate}.bam.bai", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"]),
-        offsetparameters= lambda wildcards: expand("maplink/RIBO/{{condition}}-{replicate}.qualdone", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"])
-#offsetparameters="maplink/RIBO/{condition}-{replicate}.bam.para.py"
-        #offsetparameters="maplink/RIBO/{condition}-{replicate}.bam.para.py"
+        bamindex= lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.bam.bai", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"]),
+        #offsetparameters= lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.qualdone", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"])
     output:
         report="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt",
         #report=report("ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt", caption="../report/ribotish.rst", category="Ribotish"),
         filtered="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv"
     params:
         fplist= lambda wildcards, input: ','.join(list(set(input.fp))),
-	tislist= lambda wildcards, input: ','.join(list(set(input.tis))),
         codons= lambda wildcards: ("" if not CODONS else (" --alt --altcodons " + CODONS)),
     conda:
         "../envs/ribotish.yaml"
@@ -91,4 +110,15 @@ rule ribotish:
     log:
         "logs/{condition, [a-zA-Z]+}_ribotish.log"
     shell:
-        "mkdir -p ribotish; ribotish predict --longest -v {params.codons} -p {threads} -t {params.tislist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
+        "mkdir -p ribotish; ribotish predict --longest -v {params.codons} -p {threads} -b {params.fplist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
+
+#rule ribotishGFF:
+#    input:
+#        lambda wildcards: expand("ribotish/{condition}-{replicate}-newORFs.tsv_all.txt", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"])
+#    output:
+#        "tracks/{condition, [a-zA-Z]+}.ribotish.gff"
+#    conda:
+#        "../envs/mergetools.yaml"
+#    threads: 1
+#    shell:
+#        "mkdir -p tracks; SPtools/scripts/ribotish.py {input} --output_gff3_filepath {output}"

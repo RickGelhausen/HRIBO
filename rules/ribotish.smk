@@ -91,3 +91,14 @@ rule ribotish:
         "logs/{condition, [a-zA-Z]+}_ribotish.log"
     shell:
         "mkdir -p ribotish; ribotish predict --longest -v {params.codons} -p {threads} -b {params.fplist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
+
+rule ribotishreport:
+    input:
+        "ribotish/{condition}-{replicate}-qual.pdf"
+    output:
+        "figures/{condition}-{replicate}-qual.jpg"
+        #report("figures/{condition}-{replicate}-qual.jpg", caption="../report/ribotishquality.rst", category="Novel ORFs - Ribotish")
+    conda:
+        "../envs/imagemagick.yaml"
+    threads: 1
+shell: ("mkdir -p figures; convert -density 150 -trim {input} -quality 100 -flatten -sharpen 0x1.0 {output};")
