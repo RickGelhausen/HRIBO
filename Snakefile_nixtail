@@ -28,19 +28,28 @@ def getContrast(wildcards):
   print(elements)
   return elements
 
-rule all:
-   input:
-#       expand("maplink/RIBO/{condition}-{replicate}.qualdone", zip, condition=samples["condition"], replicate=samples["replicate"]),
-       expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
-       expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
-       expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-#       expand("reparation/{condition}-{replicate}/Predicted_ORFs.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples["replicate"]),
-       expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
-       "qc/multi/multiqc_report.html",
-       expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
-       "xtail/longest_protein_coding_transcripts.gtf",
-       "xtail/newAnnotation.gff"
+if TISHMODE == "TISONLY":
+   rule all:
+      input:
+          expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
+          expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
+          expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+           expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          "qc/multi/multiqc_report.html",
+          expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
+          "xtail/longest_protein_coding_transcripts.gtf",
+          "xtail/newAnnotation.gff"
+else:
+      input:
+          expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
+          expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
+          expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+           expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
+          "qc/multi/multiqc_report.html",
+          expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
+          "xtail/longest_protein_coding_transcripts.gtf",
+          "xtail/newAnnotation.gff"
 
 
 onsuccess:
@@ -59,16 +68,25 @@ include: "rules/visualization.smk"
 #ribotish
 include: "rules/ribotishauxiliary.smk"
 if TISHMODE == "TISONLY":
+   # merge
+   include: "rules/mergetis.smk"
    include: "rules/ribotishtis.smk"
 elif TISHMODE == "RIBOONLY":
+   #merging
+   include: "rules/merge.smk"
+   #ribotish
    include: "rules/ribotish.smk"
 else:
+   #merging
+   include: "rules/merge.smk"
+   #ribotish
    include: "rules/ribotishall.smk"
 #reparation
 include: "rules/reparation.smk"
-#multiqc
-include: "rules/qc.smk"
-#merge
-include: "rules/merge.smk"
 #xtail
 include: "rules/xtail.smk"
+#multiqc
+include: "rules/qc.smk"
+#report
+include: "rules/report.smk"
+
