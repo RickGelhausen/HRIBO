@@ -40,6 +40,7 @@ if TISHMODE == "TISONLY":
           "xtail/longest_protein_coding_transcripts.gtf",
           "xtail/newAnnotation.gff"
 else:
+   rule all:
       input:
           expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
           expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
