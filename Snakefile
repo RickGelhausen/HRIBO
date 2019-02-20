@@ -43,23 +43,42 @@ def getContrastRiborex(wildcards):
   elements = [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.csv") for element in flat_contrasts]
   return elements
 
-rule all:
-   input:
-      expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-      expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
-      expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
-      expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-      expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
-      expand("figures/{condition}-{replicate}-qual.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples.loc[samples["method"] == "RIBO", "replicate"]),
-      expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-      unpack(getContrast),
-      unpack(getContrastXtail),
-      unpack(getContrastRiborex),
-      "qc/multi/multiqc_report.html",
-      expand("figures/{condition}-{replicate}_metagene.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples.loc[samples["method"] == "RIBO", "replicate"]),
-      expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
-      expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
-      "xtail/newAnnotation.gff"
+if TISHMODE == "TISONLY":
+   rule all:
+      input:
+         expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+         expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "TIS", "condition"]),
+         expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
+         expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+         expand("figures/{condition}-{replicate}-qual.jpg", zip, condition=samples.loc[samples["method"] == "TIS", "condition"], replicate=samples.loc[samples["method"] == "TIS", "replicate"]),
+         expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+         unpack(getContrast),
+         unpack(getContrastXtail),
+         unpack(getContrastRiborex),
+         "qc/multi/multiqc_report.html",
+         expand("figures/{condition}-{replicate}_metagene.jpg", zip, condition=samples.loc[samples["method"] == "TIS", "condition"], replicate=samples.loc[samples["method"] == "TIS", "replicate"]),
+         expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
+         expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
+         "xtail/newAnnotation.gff"
+
+else:
+   rule all:
+      input:
+         expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+         expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
+         expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
+         expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+         expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
+         expand("figures/{condition}-{replicate}-qual.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples.loc[samples["method"] == "RIBO", "replicate"]),
+         expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+         unpack(getContrast),
+         unpack(getContrastXtail),
+         unpack(getContrastRiborex),
+         "qc/multi/multiqc_report.html",
+         expand("figures/{condition}-{replicate}_metagene.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples.loc[samples["method"] == "RIBO", "replicate"]),
+         expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
+         expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
+         "xtail/newAnnotation.gff"
 
 onsuccess:
     print("Done, no error")
@@ -77,20 +96,26 @@ include: "rules/visualization.smk"
 #ribotish
 include: "rules/ribotishauxiliary.smk"
 if TISHMODE == "TISONLY":
+   # merge
+   include: "rules/mergetis.smk"
    include: "rules/ribotishtis.smk"
 elif TISHMODE == "RIBOONLY":
+   #merging
+   include: "rules/merge.smk"
+   #ribotish
    include: "rules/ribotish.smk"
+   #include: "rules/ribotishauxiliary.smk"
 else:
+   #merging
+   include: "rules/merge.smk"
+   #ribotish
    include: "rules/ribotishall.smk"
-#xtail
-include: "rules/xtail.smk"
+   #include: "rules/ribotishauxiliary.smk"
 #reparation
 include: "rules/reparation.smk"
+#xtail
+include: "rules/xtail.smk"
 #xtail
 #include: "rules/xtailclassic.smk"
 #multiqc
 include: "rules/qc.smk"
-#merging
-include: "rules/merge.smk"
-#report
-include: "rules/report.smk"
