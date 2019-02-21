@@ -100,4 +100,4 @@ rule ribotishreport:
     conda:
         "../envs/imagemagick.yaml"
     threads: 1
-shell: ("mkdir -p figures; convert -density 150 -trim {input} -quality 100 -flatten -sharpen 0x1.0 {output};")
+    shell: ("mkdir -p figures; convert -density 150 -trim {input} -quality 100 -flatten -sharpen 0x1.0 {output};")
