@@ -68,7 +68,7 @@ rule featurescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/featurecount; featureCounts -T {threads} -t exon -g ID -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/featurecount; featureCounts -T {threads} -t exon -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule coveragedepth:
     input:
