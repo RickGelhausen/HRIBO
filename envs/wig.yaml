@@ -2,6 +2,4 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - r-base =3.5.1
- - ucsc-wigtobigwig =366 
- - rseqc =2.6.4
+ - deeptools =3.2.0

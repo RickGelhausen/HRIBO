@@ -41,14 +41,15 @@ rule wig:
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.bamindex.output
     output:
-        report("tracks/{method}-{condition}-{replicate}.bw",  caption="../report/wig.rst", category="Mapped tracks")
+        fwd=report("tracks/{method}-{condition}-{replicate}.fwd.bw",  caption="../report/wig.rst", category="Mapped tracks"),
+	rev=report("tracks/{method}-{condition}-{replicate}.rev.bw",  caption="../report/wig.rst", category="Mapped tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p tracks; bam2wig.py -i {input.bam} -s {input.genomeSize} -o {params.prefix}"
+        "mkdir -p tracks; bamCoverage --filterRNAstrand forward -b {input.bam} -o {output.fwd}; bamCoverage --filterRNAstrand reverse -b {input.bam} -o {output.rev};"
 
 rule annotationBed:
     input:
