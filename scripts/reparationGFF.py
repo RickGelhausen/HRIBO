@@ -10,43 +10,55 @@ import argparse
 import numpy as np
 import os
 import csv
+import collections
 
 
-def toGFF(args):
-    # ['ORF_locus', 'strand', 'length', 'start_codon', 'ribo_count', 'ribo_rpkm', 'ribo_coverage', 'SD_score', 'SD_pos', 'prob', 'ORF_type', 'Reference', 'Distance_from_aTIS']
+# little helper function to create named tuple without having to always state every argument
+def createNTuple(args, row):
+    nTuple = collections.namedtuple('Pandas', ["seqName","source","type","start","stop","score","strand","phase","attribute"])
+    # txt file content
+    ORF_locus = getattr(row, "ORF_locus")
+    strand = getattr(row, "strand")
+    length = str(getattr(row, "length"))
+    start_codon = getattr(row, "start_codon")
+    ribo_count = str(getattr(row, "ribo_count"))
+    ribo_rpkm = str(getattr(row, "ribo_rpkm"))
+    ribo_coverage = str(getattr(row, "ribo_coverage"))
+    SD_score = str(getattr(row, "SD_score"))
+    SD_pos = str(getattr(row, "SD_pos"))
+    prob = str(getattr(row, "prob"))
+    ORF_type = getattr(row, "ORF_type")
+    Reference = str(getattr(row, "Reference"))
+    Distance_from_aTIS = str(getattr(row, "Distance_from_aTIS"))
+
+    # new content
+    chromosome, rest = ORF_locus.split(":")
+    start, stop = rest.split("-")
+
+    seqName = chromosome
+    source = "reparation"
+    type = "CDS"
+    score = "."
+    phase = "."
+    attribute = "geneID=" + chromosome + ":" + start + ":" + stop + ":" + strand \
+              + ";ORF_type=" + ORF_type + ";length=" + length + ";ribo_count=" + ribo_count \
+              + ";ribo_rpkm=" + ribo_rpkm + ";ribo_coverage=" + ribo_coverage + ";SD_score=" + SD_score \
+              + ";SD_pos=" + SD_pos + ";ribo_pvalue=" + prob + ";Reference=" + Reference \
+              + ";Distance_from_aTIS=" + Distance_from_aTIS + ";condition=" + args.condition + ";method=reparation"
+
+    return nTuple(seqName, source, type, start, stop, score, strand, phase, attribute)
+
+
+def to_gff3(args):
     inputDF = pd.read_csv(args.predictedORFs, sep='\t', header=0)
-    prefix = os.path.basename(args.outputGFF).split(".")[0]
 
-    ## seqID | source | type | start | end | score | strand | phase | attribute
-    # Creation of dataframe in gff3 format
-    gff3DF = pd.DataFrame()
-    tmpDF = pd.DataFrame()
-    # Creating a unique gene_id
-    tmpDF["gene_id"] = np.arange(inputDF.shape[0])
-    gff3DF["seqID"], tmpDF["range"] = inputDF["ORF_locus"].str.split(":").str
-    gff3DF["source"] = "reparation" #args.source
-    gff3DF["type"] = "CDS"
-    gff3DF["start"], gff3DF["end"] = tmpDF["range"].str.split("-").str
-    gff3DF["score"] = "."
-    gff3DF["strand"] = inputDF["strand"]
-    gff3DF["phase"] = "."
-    gff3DF["attribute"] = "gene_id=RP-%s-"%(prefix)+ tmpDF["gene_id"].astype(str)  \
-                        + ";Name=RP-%s-"%(prefix)+ tmpDF["gene_id"].astype(str) \
-                        + ";Reference=" + inputDF["Reference"].astype(str) \
-                        + ";start_codon=" + inputDF["start_codon"] \
-                        + ";ribo_count=" + inputDF["ribo_count"].astype(str) \
-                        + ";ribo_rpkm=" + inputDF["ribo_rpkm"].astype(str) \
-                        + ";ribo_coverage=" + inputDF["ribo_coverage"].astype(str) \
-                        + ";SD_score=" + inputDF["SD_score"].astype(str) \
-                        + ";SD_pos=" + inputDF["SD_pos"].astype(str) \
-                        + ";prob=" + inputDF["prob"].astype(str) \
-                        + ";ORF_type=" + inputDF["ORF_type"] \
-                        + ";Distance_from_aTIS=" + inputDF["Distance_from_aTIS"].astype(str)
+    # extract information from each row and build new dataframe in gff format
+    rows = []
+    for row in inputDF.itertuples(index=True, name='Pandas'):
+        rows.append(createNTuple(args, row))
 
-    ### Handling output
-    # Append results
-    with open(args.outputGFF, 'w') as f:
-        gff3DF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
+    return pd.DataFrame.from_records(rows, columns=["seqName","source","type","start","stop","score","strand","phase","attribute"])
+
 
 def main():
     # store commandline args
@@ -54,11 +66,15 @@ def main():
                                      containing specified information and saves it in gff3 format.')
     parser.add_argument("-i", "--inputTXT", action="store", dest="predictedORFs", required=True
                                           , help= "the input file. (created by reparation)")
+    parser.add_argument("-c", "--condition", action="store", dest="condition", required=True
+                                          , help= "the condition of the current file")
     parser.add_argument("-o", "--outputGFF", action="store", dest="outputGFF", required=True
                                            , help= "the output file name (gff3 format)")
 
     args = parser.parse_args()
-    gffoutput = toGFF(args)
+    gff3df = to_gff3(args)
+
+    gff3df.to_csv(args.outputGFF, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
 
 if __name__ == '__main__':
