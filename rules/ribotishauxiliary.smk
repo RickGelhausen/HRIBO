@@ -7,4 +7,4 @@ rule ribotishGFF:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/ribotish.py {input} --output_gff3_filepath {output}"
+        "mkdir -p tracks; SPtools/scripts/ribotish.py {input} --condition {wildcards.condition} --output_gff3_filepath {output}"

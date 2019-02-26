@@ -111,10 +111,11 @@ def create_output(args):
     return df_final
 
 
-def make_ORFs_gff3(args,prefix):
+def make_ORFs_gff3(args,prefix,condition):
     ORFsString = ""
     for index, row in args.iterrows():
-        ORFString=row.chromosome + "\t" + "ribotish" + "\t" + "CDS" + "\t" + row.start + "\t" + row.stop + "\t" + "." + "\t" + row.strand + "\t" + "." + "\t" + "gene_id=RI-" + prefix + "-" + str(index) + ";" + "start_codon=" + row.start_codon + ";" +  "tis_type=" + row.tis_type + ";" +  "tis_pvalue=" + str(row.tis_pvalue)  + ";" +  "ribo_pvalue=" + str(row.ribo_pvalue) + ";" +  "fisher_pvalue=" + str(row.fisher_pvalue) + "\n"
+        ORFid=row.chromosome + ":" + row.start + ":" +  row.stop + ":" + row.strand
+        ORFString=row.chromosome + "\t" + "ribotish" + "\t" + "CDS" + "\t" + row.start + "\t" + row.stop + "\t" + "." + "\t" + row.strand + "\t" + "." + "\t" + "gene_id=" + ORFid + ";" + "start_codon=" + row.start_codon + ";" +  "tis_type=" + row.tis_type + ";" +  "tis_pvalue=" + str(row.tis_pvalue)  + ";" +  "ribo_pvalue=" + str(row.ribo_pvalue) + ";" + "fisher_pvalue=" + str(row.fisher_pvalue) + ";" + "condition=" + condition + ";" + "method=ribotish" + "\n"
         ORFsString= ORFsString + ORFString
     return(ORFsString)
 
@@ -128,13 +129,14 @@ def main():
                         length')
     parser.add_argument("--max_length", default=None, help='Maximal uORF \
                         length')
+    parser.add_argument("--condition", default=None, help='Condition')
     args = parser.parse_args()
     # make sure that min_length and max_length are given
     orfsframe = create_output(args)
     #print(output.describe(include='all'))
     # write output to gff3 file
     prefix = os.path.basename(args.output_gff3_filepath).split(".")[0]
-    ORFsgff=make_ORFs_gff3(orfsframe,prefix)
+    ORFsgff=make_ORFs_gff3(orfsframe,prefix,condition)
     f = open(args.output_gff3_filepath, 'wt', encoding='utf-8')
     f.write(ORFsgff)
 
