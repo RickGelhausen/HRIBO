@@ -41,6 +41,7 @@ def createNTuple(args, row):
     score = "."
     phase = "."
     attribute = "geneID=" + chromosome + ":" + start + ":" + stop + ":" + strand \
+              + ";name=" + chromosome + ":" + start + ":" + stop + ":" + strand \
               + ";ORF_type=" + ORF_type + ";length=" + length + ";ribo_count=" + ribo_count \
               + ";ribo_rpkm=" + ribo_rpkm + ";ribo_coverage=" + ribo_coverage + ";SD_score=" + SD_score \
               + ";SD_pos=" + SD_pos + ";prob=" + prob + ";Reference=" + Reference \
