@@ -33,7 +33,8 @@ if TISHMODE == "TISONLY":
       input:
           expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
           expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
-          expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           "qc/multi/multiqc_report.html",
           expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
@@ -44,7 +45,8 @@ else:
       input:
           expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
           expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
-          expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
           "qc/multi/multiqc_report.html",
@@ -89,5 +91,5 @@ include: "rules/xtail.smk"
 #multiqc
 include: "rules/qc.smk"
 #report
-include: "rules/report.smk"
+#include: "rules/report.smk"
 

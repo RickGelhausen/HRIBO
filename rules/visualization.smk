@@ -45,11 +45,11 @@ rule wig:
 	rev=report("tracks/{method}-{condition}-{replicate}.rev.bw",  caption="../report/wig.rst", category="Mapped tracks")
     conda:
         "../envs/wig.yaml"
-    threads: 1
+    threads: 20
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p tracks; bamCoverage --filterRNAstrand forward -b {input.bam} -o {output.fwd}; bamCoverage --filterRNAstrand reverse -b {input.bam} -o {output.rev};"
+        "mkdir -p tracks; bamCoverage -p {threads} --filterRNAstrand forward -b {input.bam} -o {output.fwd}; bamCoverage -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.rev};"
 
 rule annotationBed:
     input:
