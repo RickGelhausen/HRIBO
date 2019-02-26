@@ -43,7 +43,7 @@ def createNTuple(args, row):
     attribute = "geneID=" + chromosome + ":" + start + ":" + stop + ":" + strand \
               + ";ORF_type=" + ORF_type + ";length=" + length + ";ribo_count=" + ribo_count \
               + ";ribo_rpkm=" + ribo_rpkm + ";ribo_coverage=" + ribo_coverage + ";SD_score=" + SD_score \
-              + ";SD_pos=" + SD_pos + ";ribo_pvalue=" + prob + ";Reference=" + Reference \
+              + ";SD_pos=" + SD_pos + ";prob=" + prob + ";Reference=" + Reference \
               + ";Distance_from_aTIS=" + Distance_from_aTIS + ";condition=" + args.condition + ";method=reparation"
 
     return nTuple(seqName, source, type, start, stop, score, strand, phase, attribute)
