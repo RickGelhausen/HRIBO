@@ -10,55 +10,82 @@ import argparse
 import numpy as np
 import os
 import csv
+import collections
 
-def getLongestInterval(intervals):
-    maxi = -1
-    # sort intervals by interval ends
-    intervals.sort(key=itemgetter(1))
-    # create list of weights
-    weights = [interval[2] for interval in intervals]
+# little helper function to create named tuple without having to always state every argument
+def createNTuple(row, s0=None, s1=None, s2=None, s3=None, s4=None, s5=None, s6=None, s7=None, s8=None):
+    nTuple = collections.namedtuple('Pandas', ["s0","s1","s2","s3","s4","s5","s6","s7","s8"])
+    try:
+        c0, c1, c2 = getattr(row, "_0"), getattr(row, "_1"), getattr(row, "_2")
+        c3, c4, c5 = getattr(row, "_3"), getattr(row, "_4"), getattr(row, "_5")
+        c6, c7, c8 = getattr(row, "_6"), getattr(row, "_7"), getattr(row, "_8")
+    except AttributeError:
+        c0, c1, c2 = getattr(row, "s0"), getattr(row, "s1"), getattr(row, "s2")
+        c3, c4, c5 = getattr(row, "s3"), getattr(row, "s4"), getattr(row, "s5")
+        c6, c7, c8 = getattr(row, "s6"), getattr(row, "s7"), getattr(row, "s8")
 
-    # find longest non-overlapping interval
-    for i in range(1,len(intervals)):
-        for j in range(0,i):
-            # if non-overlapping: calculate max weights
-            if intervals[j][1] <= intervals[i][0]:
-                weights[i]=max(weights[i],weights[j]+intervals[i][2])
-            maxi = max(weights[i], maxi)
+    if s0 != None:
+        c0 = s0
+    if s1 != None:
+        c1 = s1
+    if s2 != None:
+        c2 = s2
+    if s3 != None:
+        c3 = s3
+    if s4 != None:
+        c4 = s4
+    if s5 != None:
+        c5 = s5
+    if s6 != None:
+        c6 = s6
+    if s7 != None:
+        c7 = s7
+    if s8 != None:
+        c8 = s8
+    return nTuple(c0, c1, c2, c3, c4, c5, c6, c7, c8)
 
-    # Traceback
-    optimalInterval=[]
-    for i in range(len(intervals)-1,-1,-1):
-        if weights[i] == maxi:
-            maxi -= intervals[i][2]
-            optimalInterval.append(intervals[i])
 
-    return optimalInterval[::-1]
+# helper function to create a dictionary {geneID : namedtuple}
+def create_dictionary(inputDF):
+    geneDict = dict()
+    for row in inputDF.itertuples(index=False, name='Pandas'):
+        commentPart = getattr(row, "_8").split(";")
+        for opt in commentPart:
+            if "ID" in opt:
+                geneID = opt.split("=")[1]
 
-def handleOverlap(args):
-    # read input file into dataframe
+                # save the row into the dictionary and ensure gene_id is written in lowercase
+                if geneID in geneDict:
+                    geneDict[geneID].append(createNTuple(row))
+                else:
+                    geneDict[geneID] = [createNTuple(row)]
+    return geneDict
+
+def handle_overlap(args):
     inputDF = pd.read_csv(args.inputGFF, sep='\t', header=None)
 
-    # remove entries with duplicate ranges
-    inputDF.drop_duplicates(subset=[0,3,4], keep="first",inplace=True)
+    # create a dictionary for common ids
+    geneDict = create_dictionary(inputDF)
 
-    # get different identifiers
-    identifiers = set(inputDF[0])
+    # run over all entries in the dictionary and combine overlapping ones
+    rows = []
+    for key in geneDict.keys():
+        sampleRow = geneDict[key][0]
+        cm = set()
+        for row in geneDict[key]:
+            attributes = getattr(row, "s8").split(";")
+            for opt in attributes:
+                if "condition" in opt:
+                    condition = opt.split("=")[1]
+                if "method" in opt:
+                    method = opt.split("=")[1]
 
-    finalTuples = []
-    # for each identifier find the longest non-overlapping interval
-    for id in identifiers:
-        # create a list of tuples used in the following algorithm
-        rowTuples = [(row[3], row[4], row[4]-row[3], i) for i, row in inputDF.loc[inputDF[0] == id].iterrows()]
+            cm.add(method + "-" + condition)
 
-        # find the longest non-overlapping intervalc
-        finalTuples += getLongestInterval(rowTuples)
+        attribute = "ID="+key+";Name="+key+";Evidence="+",".join(cm)
+        rows.append(createNTuple(sampleRow,s1="merged",s8=attribute))
 
-    # create new dataframe containing only the non-overlapping entries for each identifier
-    finalTuples.sort(key=itemgetter(3))
-    newDF = inputDF.loc[[x[3] for x in finalTuples],:]
-    with open(args.outputGFF, 'w') as f:
-        newDF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
+    return pd.DataFrame.from_records(rows, columns=[0,1,2,3,4,5,6,7,8])
 
 
 def main():
@@ -71,7 +98,10 @@ def main():
                                            , help= "the output file name (gff3 format)")
     args = parser.parse_args()
 
-    handleOverlap(args)
+    newDF = handle_overlap(args)
+    newDF.to_csv(args.outputGFF, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
+
+
 
 
 if __name__ == '__main__':

@@ -40,18 +40,18 @@ def createNTuple(args, row):
     type = "CDS"
     score = "."
     phase = "."
-    attribute = "geneID=" + chromosome + ":" + start + ":" + stop + ":" + strand \
-              + ";name=" + chromosome + ":" + start + ":" + stop + ":" + strand \
-              + ";ORF_type=" + ORF_type + ";length=" + length + ";ribo_count=" + ribo_count \
-              + ";ribo_rpkm=" + ribo_rpkm + ";ribo_coverage=" + ribo_coverage + ";SD_score=" + SD_score \
-              + ";SD_pos=" + SD_pos + ";prob=" + prob + ";Reference=" + Reference \
-              + ";Distance_from_aTIS=" + Distance_from_aTIS + ";condition=" + args.condition + ";method=reparation"
+    attribute = "ID=" + chromosome + ":" + start + ":" + stop + ":" + strand \
+              + ";Name=" + chromosome + ":" + start + ":" + stop + ":" + strand \
+              + ";ORF_type=" + ORF_type + ";Length=" + length + ";Ribo_count=" + ribo_count \
+              + ";Ribo_rpkm=" + ribo_rpkm + ";Ribo_coverage=" + ribo_coverage + ";SD_score=" + SD_score \
+              + ";SD_pos=" + SD_pos + ";Prob=" + prob + ";Reference=" + Reference \
+              + ";Distance_from_aTIS=" + Distance_from_aTIS + ";Condition=" + args.condition + ";Method=reparation"
 
     return nTuple(seqName, source, type, start, stop, score, strand, phase, attribute)
 
 
 def to_gff3(args):
-    inputDF = pd.read_csv(args.predictedORFs, sep='\t', header=0)
+    inputDF = pd.read_csv(args.predictedORFs, sep='\t', header=None)
 
     # extract information from each row and build new dataframe in gff format
     rows = []
