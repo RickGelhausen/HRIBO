@@ -1,6 +1,6 @@
 rule ribotishGFF:
     input:
-        expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples["condition"])
+        "ribotish/{condition}-newORFs.tsv_all.txt"
     output:
         "tracks/{condition, [a-zA-Z]+}.ribotish.gff"
     conda:
