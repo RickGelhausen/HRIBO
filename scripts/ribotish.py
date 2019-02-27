@@ -115,7 +115,7 @@ def make_ORFs_gff3(args,prefix,condition):
     ORFsString = ""
     for index, row in args.iterrows():
         ORFid=row.chromosome + ":" + row.start + ":" +  row.stop + ":" + row.strand
-        ORFString=row.chromosome + "\t" + "ribotish" + "\t" + "CDS" + "\t" + row.start + "\t" + row.stop + "\t" + "." + "\t" + row.strand + "\t" + "." + "\t" + "gene_id=" + ORFid + ";" + "start_codon=" + row.start_codon + ";" +  "tis_type=" + row.tis_type + ";" +  "tis_pvalue=" + str(row.tis_pvalue)  + ";" +  "ribo_pvalue=" + str(row.ribo_pvalue) + ";" + "fisher_pvalue=" + str(row.fisher_pvalue) + ";" + "condition=" + condition + ";" + "method=ribotish" + "\n"
+        ORFString=row.chromosome + "\t" + "ribotish" + "\t" + "CDS" + "\t" + row.start + "\t" + row.stop + "\t" + "." + "\t" + row.strand + "\t" + "." + "\t" + "ID=" + ORFid + ";" + "Name=" + ORFid + ";" + "Start_codon=" + row.start_codon + ";" +  "Tis_type=" + row.tis_type + ";" +  "Tis_pvalue=" + str(row.tis_pvalue)  + ";" +  "Ribo_pvalue=" + str(row.ribo_pvalue) + ";" + "Fisher_pvalue=" + str(row.fisher_pvalue) + ";" + "Condition=" + condition + ";" + "Method=ribotish" + "\n"
         ORFsString= ORFsString + ORFString
     return(ORFsString)
 
@@ -136,7 +136,7 @@ def main():
     #print(output.describe(include='all'))
     # write output to gff3 file
     prefix = os.path.basename(args.output_gff3_filepath).split(".")[0]
-    ORFsgff=make_ORFs_gff3(orfsframe,prefix,condition)
+    ORFsgff=make_ORFs_gff3(orfsframe,prefix,args.condition)
     f = open(args.output_gff3_filepath, 'wt', encoding='utf-8')
     f.write(ORFsgff)
 
