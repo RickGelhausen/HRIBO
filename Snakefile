@@ -46,23 +46,21 @@ def getContrastRiborex(wildcards):
 if TISHMODE == "TISONLY":
    rule all:
       input:
-         expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "TIS", "condition"]),
          expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
-         expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+         expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+         expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          unpack(getContrast),
          unpack(getContrastXtail),
          unpack(getContrastRiborex),
          "qc/multi/multiqc_report.html",
          expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
-         expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
          "xtail/newAnnotation.gff"
 
 else:
    rule all:
       input:
-         expand("tracks/{method}-{condition}-{replicate}.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
          expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
          expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -76,7 +74,6 @@ else:
          "qc/multi/multiqc_report.html",
          expand("figures/{condition}-{replicate}_metagene.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples.loc[samples["method"] == "RIBO", "replicate"]),
          expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
-         expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
          "xtail/newAnnotation.gff"
 
 onsuccess:

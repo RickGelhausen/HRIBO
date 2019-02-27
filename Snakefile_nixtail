@@ -37,7 +37,6 @@ if TISHMODE == "TISONLY":
           expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           "qc/multi/multiqc_report.html",
-          expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
           "xtail/longest_protein_coding_transcripts.gtf",
           "xtail/newAnnotation.gff"
 else:
@@ -50,7 +49,6 @@ else:
           expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
           "qc/multi/multiqc_report.html",
-          expand("tracks/{condition}.filtered.gff", zip, condition=samples["condition"]),
           "xtail/longest_protein_coding_transcripts.gtf",
           "xtail/newAnnotation.gff"
 
