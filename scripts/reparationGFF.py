@@ -51,7 +51,7 @@ def createNTuple(args, row):
 
 
 def to_gff3(args):
-    inputDF = pd.read_csv(args.predictedORFs, sep='\t', header=None)
+    inputDF = pd.read_csv(args.predictedORFs, sep='\t')
 
     # extract information from each row and build new dataframe in gff format
     rows = []
