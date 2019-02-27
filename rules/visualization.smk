@@ -45,7 +45,7 @@ rule wig:
 	rev=report("tracks/{method}-{condition}-{replicate}.rev.bw",  caption="../report/wig.rst", category="Mapped tracks")
     conda:
         "../envs/wig.yaml"
-    threads: 20
+    threads: 5
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:

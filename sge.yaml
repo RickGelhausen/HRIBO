@@ -99,7 +99,7 @@ bamindex:
   memory: "h_vmem=3G"
 
 wig:
-  parallelenvironment : 'smp 20'
+  parallelenvironment : 'smp 5'
   memory: "h_vmem=1G"
 
 annotationBed:

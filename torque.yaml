@@ -59,7 +59,7 @@ bamindex:
   resources : 'nodes=1:ppn=20'
 
 wig:
-  resources : 'nodes=1:ppn=20'
+  resources : 'nodes=1:ppn=5'
 
 annotationBed:
   resources : 'nodes=1:ppn=1'
