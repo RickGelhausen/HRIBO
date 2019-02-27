@@ -75,9 +75,9 @@ def handle_overlap(args):
         for row in geneDict[key]:
             attributes = getattr(row, "s8").split(";")
             for opt in attributes:
-                if "condition" in opt:
+                if "Condition" in opt:
                     condition = opt.split("=")[1]
-                if "method" in opt:
+                if "Method" in opt:
                     method = opt.split("=")[1]
 
             cm.add(method + "-" + condition)
