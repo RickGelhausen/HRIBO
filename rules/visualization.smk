@@ -49,7 +49,7 @@ rule wig:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p tracks; bamCoverage -p {threads} --filterRNAstrand forward -b {input.bam} -o {output.fwd}; bamCoverage -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.rev};"
+        "mkdir -p tracks; bamCoverage -p {threads} --filterRNAstrand forward -b {input.bam} -o {output.rev}; bamCoverage -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
 
 rule annotationBed:
     input:

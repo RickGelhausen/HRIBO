@@ -40,8 +40,8 @@ def createNTuple(args, row):
     type = "CDS"
     score = "."
     phase = "."
-    attribute = "ID=" + chromosome + ":" + start + ":" + stop + ":" + strand \
-              + ";Name=" + chromosome + ":" + start + ":" + stop + ":" + strand \
+    attribute = "ID=" + chromosome + ":" + start + "-" + stop + ":" + strand \
+              + ";Name=" + chromosome + ":" + start + "-" + stop + ":" + strand \
               + ";ORF_type=" + ORF_type + ";Length=" + length + ";Ribo_count=" + ribo_count \
               + ";Ribo_rpkm=" + ribo_rpkm + ";Ribo_coverage=" + ribo_coverage + ";SD_score=" + SD_score \
               + ";SD_pos=" + SD_pos + ";Prob=" + prob + ";Reference=" + Reference \

@@ -114,7 +114,7 @@ def create_output(args):
 def make_ORFs_gff3(args,prefix,condition):
     ORFsString = ""
     for index, row in args.iterrows():
-        ORFid=row.chromosome + ":" + row.start + ":" +  row.stop + ":" + row.strand
+        ORFid=row.chromosome + ":" + row.start + "-" +  row.stop + ":" + row.strand
         ORFString=row.chromosome + "\t" + "ribotish" + "\t" + "CDS" + "\t" + row.start + "\t" + row.stop + "\t" + "." + "\t" + row.strand + "\t" + "." + "\t" + "ID=" + ORFid + ";" + "Name=" + ORFid + ";" + "Start_codon=" + row.start_codon + ";" +  "Tis_type=" + row.tis_type + ";" +  "Tis_pvalue=" + str(row.tis_pvalue)  + ";" +  "Ribo_pvalue=" + str(row.ribo_pvalue) + ";" + "Fisher_pvalue=" + str(row.fisher_pvalue) + ";" + "Condition=" + condition + ";" + "Method=ribotish" + "\n"
         ORFsString= ORFsString + ORFString
     return(ORFsString)

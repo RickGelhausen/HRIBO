@@ -36,7 +36,7 @@ rule filterAll:
     input:
         "tracks/all.gff"
     output:
-        report("tracks/filtered.gff", caption="../report/novelallfiltered.rst", category="Novel ORFs")
+        report("tracks/combined.gff", caption="../report/combined.rst", category="Novel ORFs")
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -45,10 +45,10 @@ rule filterAll:
 
 rule newAnnotation:
     input:
-        newOrfs="tracks/filtered.gff",
+        newOrfs="tracks/combined.gff",
         currentAnnotation="annotation/annotation.gtf"
     output:
-        report("xtail/newAnnotation.gff", caption="../report/novelannotation.rst", category="Novel ORFs")
+        "xtail/newAnnotation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
