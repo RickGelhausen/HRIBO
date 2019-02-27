@@ -13,7 +13,7 @@ def concatGFF(args):
     dataFrames = []
     for file in args.reparation_files:
         if os.stat(file).st_size != 0:
-            dataFrames.append(pd.read_csv(file, sep='\t', header=None))
+            dataFrames.append(pd.read_csv(file, sep='\t', comment="#", header=None))
 
     # check if dataframe exist for concatination
     if len(dataFrames) != 0:

@@ -46,7 +46,7 @@ rule filterAll:
 rule newAnnotation:
     input:
         newOrfs="tracks/filtered.gff",
-        currentAnnotation="xtail/longest_protein_coding_transcripts.gtf"
+        currentAnnotation="annotation/annotation.gtf"
     output:
         report("xtail/newAnnotation.gff", caption="../report/novelannotation.rst", category="Novel ORFs")
     conda:
