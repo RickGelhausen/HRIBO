@@ -41,15 +41,37 @@ rule wig:
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.bamindex.output
     output:
-        fwd=report("tracks/{method}-{condition}-{replicate}.fwd.bw",  caption="../report/wig.rst", category="Mapped tracks"),
-	rev=report("tracks/{method}-{condition}-{replicate}.rev.bw",  caption="../report/wig.rst", category="Mapped tracks")
+        fwd=report("tracks/{method}-{condition}-{replicate}.fwd.bw", caption="../report/wig.rst", category="Mapped tracks"),
+        rev=report("tracks/{method}-{condition}-{replicate}.rev.bw", caption="../report/wig.rst", category="Mapped tracks")
     conda:
         "../envs/wig.yaml"
     threads: 5
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p tracks; bamCoverage -p {threads} --filterRNAstrand forward -b {input.bam} -o {output.rev}; bamCoverage -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
+        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand forward -b {input.bam} -o {output.rev}; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
+
+rule bamcompare:
+    input:
+        "qc/multi/multiqc_report.html"
+    output:
+        "figures/results.npz"
+    conda:
+        "../envs/wig.yaml"
+    threads: 5
+    shell:
+        "mkdir -p tracks; multiBamSummary bins --smartLabels --bamfiles maplink/*.bam -o {output} -p {threads};"
+
+rule plotCorrelation:
+    input:
+        npz="figures/results.npz"
+    output:
+        correlation=report("figures/heatmap_SpearmanCorr_readCounts.pdf", caption="../report/correlation.rst", category="Quality control")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "mkdir -p figures; plotCorrelation -in {input.npz} --corMethod spearman --skipZeros --plotTitle \"Spearman Correlation of Read Counts\" --whatToPlot heatmap --colorMap RdYlBu --plotNumbers -o {output.correlation} --outFileCorMatrix SpearmanCorr_readCounts.tab"
 
 rule annotationBed:
     input:

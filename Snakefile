@@ -51,12 +51,14 @@ if TISHMODE == "TISONLY":
          expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+         expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          unpack(getContrast),
          unpack(getContrastXtail),
          unpack(getContrastRiborex),
          "qc/multi/multiqc_report.html",
          expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
-         "xtail/newAnnotation.gff"
+         "xtail/newAnnotation.gff",
+         "figures/heatmap_SpearmanCorr_readCounts.pdf"
 
 else:
    rule all:
@@ -68,13 +70,15 @@ else:
          expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
          expand("figures/{condition}-{replicate}-qual.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples.loc[samples["method"] == "RIBO", "replicate"]),
          expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+         expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          unpack(getContrast),
          unpack(getContrastXtail),
          unpack(getContrastRiborex),
          "qc/multi/multiqc_report.html",
          expand("figures/{condition}-{replicate}_metagene.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples.loc[samples["method"] == "RIBO", "replicate"]),
          expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
-         "xtail/newAnnotation.gff"
+         "xtail/newAnnotation.gff",
+         "figures/heatmap_SpearmanCorr_readCounts.pdf"
 
 onsuccess:
     print("Done, no error")
