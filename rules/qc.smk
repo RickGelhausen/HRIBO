@@ -94,7 +94,6 @@ rule multiqc:
         #expand("bam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
 
     output:
-        #"qc/multi/multiqc_report.html"
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")
     params:
         dir="qc/multi"

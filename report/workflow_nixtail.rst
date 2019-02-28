@@ -6,10 +6,3 @@ and a custom modified version of `Reparation <https://github.com/RickGelhausen/R
 The mapped reads are visualized as wig files. Diffential expression of ORFs is evaluated with `Xtail <https://github.com/xryanglab/xtail>`_ and `Riborex <https://github.com/smithlabcode/riborex>`__.
 We used the genome for `Organism <https://www.ensembl.org/index.html>`__  with the following annotation `Gtf <https://www.ensembl.org/index.html>`__ .
 
-Results:
-
-Quality control summary by MultiQC (containing FastQC, trimming, featurecount), see Section `Quality control`_ .
-
-Mapped reads, see Section `Mapped tracks`_ .
-
-Open reading frames detected by Ribotish and Reparation for different conditions, see gff files in Section `Novel ORFs`_ .
