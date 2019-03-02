@@ -102,18 +102,20 @@ rule ribotishQuality:
         samindex=rules.genomeSamToolsIndex.output,
         bamindex="maplink/RIBO/{condition}-{replicate}.bam.bai"
     output:
-        reportpdf="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.pdf",
-        reporttxt="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.txt",
         offsetdone="maplink/RIBO/{condition, [a-zA-Z]+}-{replicate,\d+}.qualdone"
     params:
         offsetparameters="maplink/RIBO/{condition, [a-zA-Z]+}-{replicate,\d+}.bam.para.py"
+    params:
+        offsetparameters="maplink/RIBO/{condition, [a-zA-Z]+}-{replicate,\d+}.bam.para.py",
+        reporttxt="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.txt",
+        reportpdf="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.pdf"
     conda:
         "../envs/ribotish.yaml"
     threads: 10
     log:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotishquality.log"
     shell:
-        "mkdir -p ribotish; ribotish quality -v --th 0.2 -p {threads} -b {input.fp} -g {input.annotation} -o {output.reporttxt} -f {output.reportpdf} 2> {log}; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
+        "mkdir -p ribotish; ribotish quality -v --th 0.2 -p {threads} -b {input.fp} -g {input.annotation} -o {params.reporttxt} -f {params.reportpdf} 2> {log}; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
 
 rule ribotish:
     input:
