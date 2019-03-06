@@ -35,13 +35,12 @@ rule bamindex:
     shell:
         "samtools index -@ {threads} maplink/{params.prefix}"
 
-rule wig:
+rule wigrev:
     input:
         bam=rules.maplink.output,
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.bamindex.output
     output:
-        fwd=report("tracks/{method}-{condition}-{replicate}.fwd.bw", caption="../report/wig.rst", category="Mapped tracks"),
         rev=report("tracks/{method}-{condition}-{replicate}.rev.bw", caption="../report/wig.rst", category="Mapped tracks")
     conda:
         "../envs/wig.yaml"
@@ -49,7 +48,22 @@ rule wig:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand forward -b {input.bam} -o {output.rev}; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
+        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand forward -b {input.bam} -o {output.rev};"
+
+rule wigfwd:
+    input:
+        bam=rules.maplink.output,
+        genomeSize=rules.genomeSize.output,
+        bamIndex=rules.bamindex.output
+    output:
+        fwd=report("tracks/{method}-{condition}-{replicate}.fwd.bw", caption="../report/wig.rst", category="Mapped tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 5
+    params:
+        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
+    shell:
+        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
 
 rule bamcompare:
     input:
