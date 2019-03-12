@@ -21,6 +21,17 @@ rule genomeSize:
     shell:
         "mkdir -p genomes; cut -f1,2 {input[0]} > genomes/sizes.genome"
 
+rule reversecomplementGenome:
+    input:
+        rules.retrieveGenome.output
+    output:
+        "genomes/genome.rev.fa"
+    conda:
+        "../envs/biopython.yaml"
+    threads: 1
+    shell:
+        "mkdir -p genomes; SPtools/scripts/reverseComplement.py --input_fasta_filepath genomes/genome.fa --output_fasta_filepath genomes/genome.rev.fa"
+
 rule bamindex:
     input:
         rules.maplink.output,
