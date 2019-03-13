@@ -54,7 +54,7 @@ rule stopCodonTrack:
         "../envs/biopython.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string ATG,GTG,TTG --output_gff3_filepath {output}"
+        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string TAG,TGA,TAA --output_gff3_filepath {output}"
 
 rule rbsTrack:
     input:
@@ -66,7 +66,7 @@ rule rbsTrack:
         "../envs/biopython.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string TAG,TGA,TAA --output_gff3_filepath {output}"
+        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string AGGAGGT --output_gff3_filepath {output}"
 
 
 rule bamindex:
