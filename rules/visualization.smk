@@ -66,7 +66,7 @@ rule rbsTrack:
         "../envs/biopython.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string AGGAGGT --output_gff3_filepath {output}"
+        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string GGAGG --output_gff3_filepath {output}"
 
 
 rule bamindex:
