@@ -94,7 +94,7 @@ rule coveragedepth:
 
 rule multiqc:
     input:
-        expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
+        expand("tracks/{condition}.ribotish.gff", condition=set(samples["condition"])),
         expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/raw/{method}-{condition}-{replicate}-raw_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),

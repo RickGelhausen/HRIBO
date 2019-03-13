@@ -10,20 +10,9 @@ rule mergeConditions:
     shell:
         "mkdir -p tracks; cat {input.ribotish} > {output}.unsorted; cat {input.reparation} >> {output}.unsorted; bedtools sort -i {output}.unsorted > {output};"
 
-#rule noverlap:
-#    input:
-#        mergedGff="tracks/{condition}.merged.gff"
-#    output:
-#         report("tracks/{condition}.filtered.gff", caption="../report/novelfiltered.rst", category="Novel ORFs")
-#    conda:
-#        "../envs/mergetools.yaml"
-#    threads: 1
-#    shell:
-#        "mkdir -p tracks; SPtools/scripts/noverlapper.py -i {input.mergedGff} -o {output}"
-
 rule mergeAll:
     input:
-        mergedGff=expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"])
+        mergedGff=expand("tracks/{condition}.merged.gff", zip, condition=set(samples["condition"])))
     output:
         report("tracks/all.gff", caption="../report/novelall.rst", category="Novel ORFs")
     conda:
