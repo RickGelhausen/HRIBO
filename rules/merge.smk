@@ -12,7 +12,7 @@ rule mergeConditions:
 
 rule mergeAll:
     input:
-        mergedGff=expand("tracks/{condition}.merged.gff", zip, condition=set(samples["condition"])))
+        mergedGff=expand("tracks/{condition}.merged.gff", zip, condition=set(samples["condition"]))
     output:
         report("tracks/all.gff", caption="../report/novelall.rst", category="Novel ORFs")
     conda:
