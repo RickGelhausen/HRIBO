@@ -32,6 +32,43 @@ rule reversecomplementGenome:
     shell:
         "mkdir -p genomes; SPtools/scripts/reverseComplement.py --input_fasta_filepath genomes/genome.fa --output_fasta_filepath genomes/genome.rev.fa"
 
+rule startCodonTrack:
+    input:
+        fwd=rules.retrieveGenome.output,
+        rev=rules.reversecomplementGenome.output
+    output:
+        "tracks/potentialStartCodons.gff"
+    conda:
+        "../envs/biopython.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string ATG,GTG,TTG --output_gff3_filepath {output}"
+
+rule stopCodonTrack:
+    input:
+        fwd=rules.retrieveGenome.output,
+        rev=rules.reversecomplementGenome.output
+    output:
+        "tracks/potentialStopCodons.gff"
+    conda:
+        "../envs/biopython.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string ATG,GTG,TTG --output_gff3_filepath {output}"
+
+rule rbsTrack:
+    input:
+        fwd=rules.retrieveGenome.output,
+        rev=rules.reversecomplementGenome.output
+    output:
+        "tracks/potentialRibosomeBindingSite.gff"
+    conda:
+        "../envs/biopython.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string TAG,TGA,TAA --output_gff3_filepath {output}"
+
+
 rule bamindex:
     input:
         rules.maplink.output,
