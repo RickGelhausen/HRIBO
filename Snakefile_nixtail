@@ -52,6 +52,7 @@ else:
           expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           "qc/multi/multiqc_report.html",
           "xtail/newAnnotation.gff",
+          expand("figures/{condition}-{replicate}_metagene.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples["replicate"]),
           "figures/heatmap_SpearmanCorr_readCounts.pdf"
 
 
