@@ -26,7 +26,8 @@ def concatGFF(args):
                 mergedGFF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
         else:
             mergedGFF.to_csv(sys.stdout, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
-
+    else:
+      open(args.output_file, 'a').close() 
 
 def main():
     # store commandline args

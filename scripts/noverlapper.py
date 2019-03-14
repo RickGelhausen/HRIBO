@@ -97,9 +97,11 @@ def main():
     parser.add_argument("-o", "--outputGFF", action="store", dest="outputGFF", required=True
                                            , help= "the output file name (gff3 format)")
     args = parser.parse_args()
-
-    newDF = handle_overlap(args)
-    newDF.to_csv(args.outputGFF, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
+    if os.stat(args.inputGFF).st_size == 0:
+       open(args.outputGFF, 'a').close()
+    else:
+       newDF = handle_overlap(args)
+       newDF.to_csv(args.outputGFF, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
 
 

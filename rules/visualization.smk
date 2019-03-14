@@ -21,6 +21,54 @@ rule genomeSize:
     shell:
         "mkdir -p genomes; cut -f1,2 {input[0]} > genomes/sizes.genome"
 
+rule reversecomplementGenome:
+    input:
+        rules.retrieveGenome.output
+    output:
+        "genomes/genome.rev.fa"
+    conda:
+        "../envs/biopython.yaml"
+    threads: 1
+    shell:
+        "mkdir -p genomes; SPtools/scripts/reverseComplement.py --input_fasta_filepath genomes/genome.fa --output_fasta_filepath genomes/genome.rev.fa"
+
+rule startCodonTrack:
+    input:
+        fwd=rules.retrieveGenome.output,
+        rev=rules.reversecomplementGenome.output
+    output:
+        "tracks/potentialStartCodons.gff"
+    conda:
+        "../envs/biopython.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string ATG,GTG,TTG --output_gff3_filepath {output}"
+
+rule stopCodonTrack:
+    input:
+        fwd=rules.retrieveGenome.output,
+        rev=rules.reversecomplementGenome.output
+    output:
+        "tracks/potentialStopCodons.gff"
+    conda:
+        "../envs/biopython.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string TAG,TGA,TAA --output_gff3_filepath {output}"
+
+rule rbsTrack:
+    input:
+        fwd=rules.retrieveGenome.output,
+        rev=rules.reversecomplementGenome.output
+    output:
+        "tracks/potentialRibosomeBindingSite.gff"
+    conda:
+        "../envs/biopython.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/motif2GFF3.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string GGAGG --output_gff3_filepath {output}"
+
+
 rule bamindex:
     input:
         rules.maplink.output,
@@ -35,13 +83,12 @@ rule bamindex:
     shell:
         "samtools index -@ {threads} maplink/{params.prefix}"
 
-rule wig:
+rule wigrev:
     input:
         bam=rules.maplink.output,
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.bamindex.output
     output:
-        fwd=report("tracks/{method}-{condition}-{replicate}.fwd.bw", caption="../report/wig.rst", category="Mapped tracks"),
         rev=report("tracks/{method}-{condition}-{replicate}.rev.bw", caption="../report/wig.rst", category="Mapped tracks")
     conda:
         "../envs/wig.yaml"
@@ -49,7 +96,22 @@ rule wig:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand forward -b {input.bam} -o {output.rev}; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
+        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand forward -b {input.bam} -o {output.rev};"
+
+rule wigfwd:
+    input:
+        bam=rules.maplink.output,
+        genomeSize=rules.genomeSize.output,
+        bamIndex=rules.bamindex.output
+    output:
+        fwd=report("tracks/{method}-{condition}-{replicate}.fwd.bw", caption="../report/wig.rst", category="Mapped tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 5
+    params:
+        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
+    shell:
+        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
 
 rule bamcompare:
     input:

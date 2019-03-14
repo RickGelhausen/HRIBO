@@ -58,7 +58,10 @@ if TISHMODE == "TISONLY":
          "qc/multi/multiqc_report.html",
          expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
          "xtail/newAnnotation.gff",
-         "figures/heatmap_SpearmanCorr_readCounts.pdf"
+         "figures/heatmap_SpearmanCorr_readCounts.pdf",
+         "tracks/potentialStopCodons.gff",
+         "tracks/potentialStartCodons.gff",
+         "tracks/potentialRibosomeBindingSite.gff"
 
 else:
    rule all:
@@ -78,7 +81,10 @@ else:
          expand("figures/{condition}-{replicate}_metagene.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples.loc[samples["method"] == "RIBO", "replicate"]),
          expand("tracks/{condition}.merged.gff", zip, condition=samples["condition"]),
          "xtail/newAnnotation.gff",
-         "figures/heatmap_SpearmanCorr_readCounts.pdf"
+         "figures/heatmap_SpearmanCorr_readCounts.pdf",
+         "tracks/potentialStopCodons.gff",
+         "tracks/potentialStartCodons.gff",
+         "tracks/potentialRibosomeBindingSite.gff"
 
 onsuccess:
     print("Done, no error")

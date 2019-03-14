@@ -58,9 +58,20 @@ rule fastqcrrnafilter:
     shell:
         "mkdir -p qc/norRNA; fastqc -o qc/norRNA -t {threads} {input}; mv qc/norRNA/{params.prefix}_fastqc.html {output.html}; mv qc/norRNA/{params.prefix}_fastqc.zip {output.zip}"
 
-rule featurescounts:
+rule gff2gtf:
     input:
         annotation={rules.retrieveAnnotation.output},
+    output:
+        gtf="qc/featurecount/annotation.gtf",
+    conda:
+        "../envs/cufflink.yaml"
+    threads: 1
+    shell:
+        "mkdir -p qc/featurecount; gffread {input.annotation} -T -o {output.gtf}"
+
+rule featurescounts:
+    input:
+        annotation={rules.gff2gtf.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/featurecount/{method}-{condition}-{replicate}.txt",
@@ -68,7 +79,7 @@ rule featurescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/featurecount; featureCounts -T {threads} -t exon -g gene -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/featurecount; featureCounts -T {threads} -t exon -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule coveragedepth:
     input:
@@ -83,7 +94,7 @@ rule coveragedepth:
 
 rule multiqc:
     input:
-        expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
+        expand("tracks/{condition}.ribotish.gff", condition=set(samples["condition"])),
         expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/raw/{method}-{condition}-{replicate}-raw_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),

@@ -34,6 +34,11 @@ def createNTuple(args, row):
     # new content
     chromosome, rest = ORF_locus.split(":")
     start, stop = rest.split("-")
+    # modify coordinates to include stop codon
+    if strand is '+':
+       stop = str(int(stop) + 3)
+    if strand is '-':
+       start = str(int(start) -3)
 
     seqName = chromosome
     source = "reparation"
