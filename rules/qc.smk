@@ -64,7 +64,7 @@ rule gff2gtf:
     output:
         gtf="qc/featurecount/annotation.gtf",
     conda:
-        "../envs/cufflink.yaml"
+        "../envs/cufflinks.yaml"
     threads: 1
     shell:
         "mkdir -p qc/featurecount; gffread {input.annotation} -T -o {output.gtf}"
