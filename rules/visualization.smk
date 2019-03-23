@@ -96,7 +96,7 @@ rule wigrev:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand forward -b {input.bam} -o {output.rev};"
+        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --scaleFactor=-1 --binSize=1 --filterRNAstrand forward -b {input.bam} -o {output.rev};"
 
 rule wigfwd:
     input:
