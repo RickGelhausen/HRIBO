@@ -36,9 +36,9 @@ def createNTuple(args, row):
     start, stop = rest.split("-")
     # modify coordinates to include stop codon
     if strand is '+':
-       stop = str(int(stop) + 2)
+       stop = str(int(stop) + 3)
     if strand is '-':
-       start = str(int(start) -2)
+       start = str(int(start) -3)
 
     seqName = chromosome
     source = "reparation"
