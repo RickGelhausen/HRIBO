@@ -121,6 +121,8 @@ else:
 include: "rules/reparation.smk"
 #xtail
 include: "rules/xtail.smk"
+#metagene
+include: "rules/auxillary.smk"
 #xtail
 #include: "rules/xtailclassic.smk"
 #multiqc

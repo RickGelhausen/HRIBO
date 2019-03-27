@@ -94,8 +94,9 @@ else:
 include: "rules/reparation.smk"
 #xtail
 include: "rules/xtail.smk"
+#metagene
+include: "rules/auxillary.smk"
 #multiqc
 include: "rules/qc.smk"
 #report
 #include: "rules/report.smk"
-
