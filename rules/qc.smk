@@ -71,7 +71,7 @@ rule gff2gtf:
 
 rule featurescounts:
     input:
-        annotation={rules.gff2gtf.output},
+        annotation={rules.gff2gtf.output.gtf},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/featurecount/{method}-{condition}-{replicate}.txt",
@@ -88,7 +88,7 @@ rule coveragedepth:
         "coverage/{method}-{condition}-{replicate}.bed"
     conda:
         "../envs/mergetools.yaml"
-    threads: 8
+    threads: 1
     shell:
         "mkdir -p coverage; bedtools genomecov -ibam {input} -bg > {output}"
 
