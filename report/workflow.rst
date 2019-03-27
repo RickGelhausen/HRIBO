@@ -25,4 +25,4 @@ A good strategy is to compare the combined.gff track with the established annota
 
 Loci of interest can be further investigated by loading the TPM normalized, strand specific big wig files, which show how strong the detected signal was for a specific sample.
 
-Additionally the genome is screened for potential start(ATG,GTG,TTG), stop(TAG,TGA,TAA) codons and ribosome binding sites(AGGAG), which can be loaded via the potentialRibosomeBindingSite.gff, potentialStartCodon.gff and potentialStopCodon.gff.
+Additionally the genome is screened for potential start(ATG,GTG,TTG), stop(TAG,TGA,TAA) codons and ribosome binding sites(AAGG), which can be loaded via the potentialRibosomeBindingSite.gff, potentialStartCodon.gff and potentialStopCodon.gff.
