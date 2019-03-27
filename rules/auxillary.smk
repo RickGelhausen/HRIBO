@@ -9,26 +9,37 @@ rule processAnnotation:
     shell:
         "mkdir -p annotation; python3 ribo_benchmark/scripts/processAnnotation.py -a {input.annotation} -o {output}"
 
-rule generateMetageneRoi:
+rule generateMetageneRoiStart:
     input:
         annotation=rules.processAnnotation.output
     output:
-        "offsets/metagene_rois.txt"
+        "offsets/metagene_start_rois.txt"
     conda:
-        "../envs/auxillary.yaml"
+        "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p offsets; metagene generate -q offsets/metagene --landmark cds_start --annotation_files {input.annotation}"
+        "mkdir -p offsets; metagene generate -q offsets/metagene_start --landmark cds_start --annotation_files {input.annotation}"
+
+rule generateMetageneRoiStop:
+    input:
+        annotation=rules.processAnnotation.output
+    output:
+        "offsets/metagene_stop_rois.txt"
+    conda:
+        "../envs/plastid.yaml"
+    threads: 1
+    shell:
+        "mkdir -p offsets; metagene generate -q offsets/metagene_stop --landmark cds_stop --annotation_files {input.annotation}"
 
 rule psiteOffsets:
     input:
-        rois=rules.generateMetageneRoi.output,
+        rois=rules.generateMetageneRoiStart.output,
         bam="maplink/{method}-{condition}-{replicate}.bam",
         bamindex="maplink/{method}-{condition}-{replicate}.bam.bai"
     output:
         psite="offsets/{method}-{condition}-{replicate}_p_offsets.txt"
     conda:
-        "../envs/auxillary.yaml"
+        "../envs/plastid.yaml"
     threads: 1
     params:
         prefix=lambda wildcards: "{wildcards.method}-{wildcards.condition}-{wildcards.replicate}"

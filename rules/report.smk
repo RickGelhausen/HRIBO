@@ -32,10 +32,6 @@ rule reparationreport:
         roc="figures/{condition}-{replicate}_roc.jpg",
         psite="figures/{condition}-{replicate}_psite.png",
         scurve="figures/{condition}-{replicate}_scurve.jpg"
-        #metagene=report("figures/{condition}-{replicate}_metagene.jpg", caption="../report/reparation_metagene.rst", category="Novel ORFs - Reparation"),
-        #roc=report("figures/{condition}-{replicate}_roc.jpg", caption="../report/reparation_roc.rst", category="Novel ORFs - Reparation"),
-        #psite=report("figures/{condition}-{replicate}_psite.png", caption="../report/reparation_psite.rst", category="Novel ORFs - Reparation"),
-        #scurve=report("figures/{condition}-{replicate}_scurve.jpg", caption="../report/reparation_scurve.rst", category="Novel ORFs - Reparation")
     conda:
         "../envs/imagemagick.yaml"
     threads: 1

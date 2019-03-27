@@ -88,7 +88,7 @@ rule coveragedepth:
         "coverage/{method}-{condition}-{replicate}.bed"
     conda:
         "../envs/mergetools.yaml"
-    threads: 8
+    threads: 1
     shell:
         "mkdir -p coverage; bedtools genomecov -ibam {input} -bg > {output}"
 

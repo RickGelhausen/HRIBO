@@ -8,3 +8,14 @@ rule ribotishGFF:
     threads: 1
     shell:
         "mkdir -p tracks; SPtools/scripts/ribotish.py {input} --condition {wildcards.condition} --output_gff3_filepath {output}"
+
+rule ribotishAnnotation:
+    input:
+        annotation={rules.gff2gtf.output}
+    output:
+        "ribotish/annotation_processed.gtf"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p ribotish; SPtools/scripts/createRiboTISHannotation.py -a {input.annotation} -o {output}

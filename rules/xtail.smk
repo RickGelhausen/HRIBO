@@ -32,8 +32,6 @@ rule cdsNormalizedCounts:
     shell: ("mkdir -p normalization; SPtools/scripts/generate_raw_counts.R -b maplink/ -a {input.annotation} -t SPtools/samples.tsv -r {output.raw};")
 
 rule contrastInput:
-    #params:
-    #    contrasts=expand("{contrastpair}", contrastpair=lambda wildcards: getContrast(wildcards))
     output:
         "contrasts/{contrast}"
     run:
@@ -53,12 +51,8 @@ rule xtail:
         rplot="xtail/r_{contrast}.pdf"
     conda:
         "../envs/xtail.yaml"
-    #params:
-        #contrast="-c {}".format(lambda wildcards: getContrast(wildcards))
-        #contrast=expand("{contrastpair}", contrastpair=lambda wildcards: getContrast(wildcards))
     threads: 1
     shell: ("mkdir -p xtail; SPtools/scripts/xtail_classic.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.table} -f {output.fcplot} -p {output.rplot};")
-    #shell: ("mkdir -p xtail; SPtools/scripts/xtail_normalized_counts.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.normreads} -x {output.table} -f {output.fcplot} -p {output.rplot};")
 
 rule riborex:
     input:
@@ -68,9 +62,6 @@ rule riborex:
         tabledeseq2="riborex/{contrast}_deseq2.csv",
     conda:
         "../envs/riborex.yaml"
-    #params:
-        #contrast="-c {}".format(lambda wildcards: getContrast(wildcards))
-        #contrast=expand("{contrastpair}", contrastpair=lambda wildcards: getContrast(wildcards))
     threads: 1
     shell: ("mkdir -p riborex; SPtools/scripts/riborex.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.tabledeseq2};")
 
@@ -82,16 +73,3 @@ rule riborexresults:
         tablesignificant=report("riborex/{contrast}_significant.csv", caption="../report/riborex.rst", category="Regulation")
     threads: 1
     shell: ("mkdir -p riborex; (head -n 2 {input.tabledeseq2} && tail -n +3 {input.tabledeseq2} | sort -r -n -t',' -k 7) > {output.tablesorted};  awk -F ',' 'NR==1; (NR>1) && ($7 < 0.05 )' {output.tablesorted} > {output.tablesignificant};")
-
-rule xtailreport:
-    input:
-        fcplot="xtail/fc_{contrast}.pdf",
-        rplot="xtail/r_{contrast}.pdf",
-    output:
-        fcplot=report("figures/fc_{contrast}.jpg", caption="../report/xtail_fc.rst", category="Regulation"),
-        rplot=report("figures/r_{contrast}.jpg", caption="../report/xtail_r.rst", category="Regulation")
-    conda:
-        "../envs/imagemagick.yaml"
-    threads: 1
-    shell: ("mkdir -p figures; convert -density 100 -trim {input.fcplot}  -quality 100  -flatten -sharpen 0x1.0 {output.fcplot}; convert -density 100 -trim {input.rplot}  -quality 100  -flatten -sharpen 0x1.0 {output.rplot}; convert -density 100 -trim {input.fcplot}  -quality 100  -flatten -sharpen 0x1.0 {output.fcplot}; convert -density 100 -trim {input.rplot}  -quality 100  -flatten -sharpen 0x1.0 {output.rplot}; ")
-
