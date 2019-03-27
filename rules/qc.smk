@@ -71,7 +71,7 @@ rule gff2gtf:
 
 rule featurescounts:
     input:
-        annotation={rules.gff2gtf.output},
+        annotation={rules.gff2gtf.output.gtf},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/featurecount/{method}-{condition}-{replicate}.txt",
