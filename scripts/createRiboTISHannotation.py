@@ -69,25 +69,6 @@ def createNTuple(row, s0=None, s1=None, s2=None, s3=None, s4=None, s5=None, s6=N
         c8 = s8
     return nTuple(c0, c1, c2, c3, c4, c5, c6, c7, c8)
 
-# calculate the start codon for a given gene row
-def generateStartCodon(row, newAttr):
-    if getattr(row, "_6") == "+":
-        newRightBoundary = str(int(getattr(row, "_3")) + 2)
-        return createNTuple(row, s1="generated", s2="start_codon", s4=newRightBoundary,s8=newAttr)
-    else:
-        newLeftBoundary = str(int(getattr(row, "_4") - 2))
-        return createNTuple(row, s1="generated", s2="start_codon", s3=newLeftBoundary,s8=newAttr)
-
-
-# calculate the stop codon for a given cds row (ensembl style)
-def generateStopCodon(row, newAttr):
-    if getattr(row, "_6") == "+":
-        newLeftBoundary = str(int(getattr(row, "_4") - 2))
-        return createNTuple(row, s1="generated", s2="stop_codon", s3=newLeftBoundary,s8=newAttr)
-    else:
-        newRightBoundary = str(int(getattr(row, "_3")) + 2)
-        return createNTuple(row, s1="generated", s2="stop_codon",s4=newRightBoundary,s8=newAttr)
-
 # go through each row of the dataframe and add missing features
 def create_new_dataframe(args, annDF, createExon=True):
     rows = []
@@ -110,7 +91,7 @@ def change_annotation(args):
         sys.exit("Error reading the annotation file, please ensure that it is formatted correctly.\n"\
                 +"Exiting with:\n   %s" % error)
 
-    if "exon" in annotationDF[2]:
+    if "exon" in annotationDF[2].values:
         annotationDF = create_new_dataframe(args, annotationDF, createExon=False)
     else:
         annotationDF = create_new_dataframe(args, annotationDF)
