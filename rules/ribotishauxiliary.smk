@@ -18,4 +18,4 @@ rule ribotishAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p ribotish; SPtools/scripts/createRiboTISHannotation.py -a {input.annotation} -o {output}"
+        "mkdir -p ribotish; SPtools/scripts/createRiboTISHannotation.py -a {input.annotation} --annotationOutput {output}"
