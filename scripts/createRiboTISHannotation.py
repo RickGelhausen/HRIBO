@@ -86,11 +86,21 @@ def generateStopCodon(row, newAttr):
         newRightBoundary = str(int(getattr(row, "_3")) + 2)
         return createNTuple(row, s1="generated", s2="stop_codon",s4=newRightBoundary,s8=newAttr)
 
-# create exon
-def generateExon(row, newAttr):
-    return createNTuple(row, s1="generated", s2="exon", s8=newAttr)
+# go through each row of the dataframe and add missing features
+def create_new_dataframe(args, annDF, createExon=True):
+    rows = []
+    for row in annDF.itertuples(index=False, name='Pandas'):
+        attributes = getattr(row, "_8")
+        if not "gene_id" in attributes:
+            attrSplit = attributes.split(";")
+            attributes = "gene_id " + attrSplit[0].split(" ")[1]+ "; " + attrSplit[0]
+        if createExon:
+            rows.append(createNTuple(row, s2="exon", s8=attributes))
+        rows.append(createNTuple(row, s8=attributes))
 
+    return pd.DataFrame.from_records(rows, columns=[0,1,2,3,4,5,6,7,8])
 
+# update annotation according to what is missing
 def change_annotation(args):
     try:
         annotationDF = pd.read_csv(args.annotation, sep="\t", comment="#", header=None)
@@ -98,17 +108,12 @@ def change_annotation(args):
         sys.exit("Error reading the annotation file, please ensure that it is formatted correctly.\n"\
                 +"Exiting with:\n   %s" % error)
 
-    rows = []
-    for row in annotationDF.itertuples(index=False, name='Pandas'):
-        attributes = getattr(row, "_8")
-        if not "gene_id" in attributes:
-            attrSplit = attributes.split(";")
-            attributes = "gene_id " + attrSplit[0].split(" ")[1]+ "; " + attrSplit[0]
+    if "exon" in annotationDF[2]:
+        annotationDF = create_new_dataframe(args, annotationDF, createExon=False)
+    else:
+        annotationDF = create_new_dataframe(args, annotationDF)
 
-        rows.append(createNTuple(row, s2="exon", s8=attributes))
-        rows.append(createNTuple(row, s8=attributes))
-
-    return pd.DataFrame.from_records(rows, columns=[0,1,2,3,4,5,6,7,8])
+    return annotationDF
 
 def main():
     # store commandline args
