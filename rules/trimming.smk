@@ -24,9 +24,10 @@ rule trim:
         fastq="trimmed/{method}-{condition}-{replicate}.fastq"
     params:
         adapter=lambda wildcards, output: ("" if not ADAPTERS else (" ".join([" -a %s" % adapter for adapter in ADAPTERS.split(",")]))),
-        quality=" -q 20 --trim-n "
+        quality=" -q 20 --trim-n ",
+        filtering=" -m 10 "
     conda:
         "../envs/cutadapt.yaml"
     threads: 20
     shell:
-        "mkdir -p trimmed; cutadapt -j {threads} {params.adapter} {params.quality}  -o {output.fastq} {input.fastq}"
+        "mkdir -p trimmed; cutadapt -j {threads} {params.adapter} {params.quality} {params.filtering} -o {output.fastq} {input.fastq}"
