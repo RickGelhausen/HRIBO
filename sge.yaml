@@ -202,8 +202,8 @@ rrnafilter:
 
 # trimming.smk
 trim:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=30G"
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=2G"
 
 # visualization.smk
 genomeSamToolsIndex:
