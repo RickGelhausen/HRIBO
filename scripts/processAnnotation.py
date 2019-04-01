@@ -80,30 +80,42 @@ def process_annotation(args):
     # read input annotation
     annDF = pd.read_csv(args.annotation, sep="\t", comment="#", header=None)
 
-    # gff2
-    # only accept rows that contain gene_id or transcript_id, then generate the missing
-    annDF = annDF[annDF[8].str.contains("gene_id") | annDF[8].str.contains("transcript_id")]
+    # check if gff2/gtf or gff3 format
 
-    # ensure that the separation of attributes is done correctly
-    rows = []
-    for row in annDF.itertuples(index=False, name='Pandas'):
-        # ignore entries that do not contain wanted features
-        if getattr(row, "_2").lower() not in allowedFeatures:
-            continue
+    # number of entries containing ID=
+    trueValues = sum(annDF[8].str.contains("ID=").tolist())
+    # number of rows
+    nrows = len(annDF.index)
+    # if 75% of all rows contain ID= it is likely a gff3
+    if trueValues >= nrows * 0.75:
+        # gff3
+        annDF.to_csv(args.output, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
+        line_pre_adder(args.output, "##gff-version 3")
+    else:
+        # gff2
+        # only accept rows that contain gene_id or transcript_id, then generate the missing
+        annDF = annDF[annDF[8].str.contains("gene_id") | annDF[8].str.contains("transcript_id")]
 
-        attributes = getattr(row, "_8")
-        attrSplit = list(filter(None, re.split('[ ;]', attributes)))
+        # ensure that the separation of attributes is done correctly
+        rows = []
+        for row in annDF.itertuples(index=False, name='Pandas'):
+            # ignore entries that do not contain wanted features
+            if getattr(row, "_2").lower() not in allowedFeatures:
+                continue
 
-        # if either gene_id or transcript_id is missing, add an empty one
-        if "gene_id" in attributes:
-            if not "transcript_id" in attributes:
-                attrSplit = attrSplit[:2] + ['transcript_id','%s' % (attrSplit[attrSplit.index("gene_id")+1])] + attrSplit[2:]
-        elif "transcript_id" in attributes:
-            if not "gene_id" in attributes:
-                attrSplit = ['gene_id','%s' % (attrSplit[attrSplit.index("transcript_id")+1])] + attrSplit
+            attributes = getattr(row, "_8")
+            attrSplit = list(filter(None, re.split('[ ;]', attributes)))
 
-        attributes = combineSplit(attrSplit)
-        rows.append(createNTuple(row, s8=attributes))
+            # if either gene_id or transcript_id is missing, add an empty one
+            if "gene_id" in attributes:
+                if not "transcript_id" in attributes:
+                    attrSplit = attrSplit[:2] + ['transcript_id','""'] + attrSplit[2:]
+            elif "transcript_id" in attributes:
+                if not "gene_id" in attributes:
+                    attrSplit = ['gene_id','""'] + attrSplit
+
+            attributes = combineSplit(attrSplit)
+            rows.append(createNTuple(row, s8=attributes))
 
         annDF = pd.DataFrame.from_records(rows, columns=[0,1,2,3,4,5,6,7,8])
 
@@ -114,10 +126,8 @@ def process_annotation(args):
 def main():
     # store commandline args
     parser = argparse.ArgumentParser(description='process the annotation for use with plastid')
-    parser.add_argument("-a", "--annotation", action="store", dest="annotation"
-                            , required=True, help= "the input annotation file.")
-    parser.add_argument("-o", "--output", action="store", dest="output"
-                            , required=True, help= "the processed annotation file.")
+    parser.add_argument("-a", "--annotation", action="store", dest="annotation", required=True, help= "the input annotation file.")
+    parser.add_argument("-o", "--output", action="store", dest="output", required=True, help= "the processed annotation file.")
     args = parser.parse_args()
 
     process_annotation(args)
