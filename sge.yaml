@@ -258,6 +258,14 @@ annotationBigBed:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=30G"
 
+colorBigWig:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=2G"
+
+colorGFF:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=2G"
+
 # xtail.smk
 longestTranscript:
   parallelenvironment : 'smp 1'
