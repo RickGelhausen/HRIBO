@@ -19,7 +19,11 @@ generateMetageneRoiStop:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
 
-psiteOffsets:
+psiteOffsetsStart:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=4G"
+
+psiteOffsetsStop:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
 
