@@ -160,39 +160,47 @@ rule annotationBigBed:
 
 rule colorBigWig:
     input:
-        infwd= "tracks/{method}-{condition}-{replicate}.fwd.bw"
+        infwd= "tracks/{method}-{condition}-{replicate}.fwd.bw",
         inrev= "tracks/{method}-{condition}-{replicate}.rev.bw"
     output:
-        outfwd= "tracks/{method}-{condition}-{replicate}.fwd.bedgraph"
-        outrev= "tracks/{method}-{condition}-{replicate}.rev.bedgraph"
+        outfwd= "tracks/color/{method}-{condition}-{replicate}.fwd.bedgraph.gz",
+        outrev= "tracks/color/{method}-{condition}-{replicate}.rev.bedgraph.gz"
     conda:
         "../envs/color.yaml"
     threads: 1
+    params:
+        unzippedfwd=lambda wildcards, output: (os.path.splitext(output.outfwd)[0]),
+        unzippedrev=lambda wildcards, output: (os.path.splitext(output.outrev)[0])
     shell:
         """
         set +e
-        mkdir -p tracks
-        bigWigToWig {input.infwd} {output.outfwd}
-        bigWigToWig {input.inrev} {output.outrev}
-        sed -i '2s/^/track type=wiggle_0 visibility=full color=0,0,128 autoscale=on\n/' {output.outfwd}
-        sed -i '2s/^/track type=wiggle_0 visibility=full color=0,130,200 autoscale=on\n/' {output.outrev}
+        mkdir -p tracks/color
+        bigWigToWig {input.infwd} {params.unzippedfwd}
+        bigWigToWig {input.inrev} {params.unzippedrev}
+        sed -i '2s/^/track type=wiggle_0 visibility=full color=0,0,128 autoscale=on\\n/' {params.unzippedfwd}
+        sed -i '2s/^/track type=wiggle_0 visibility=full color=0,130,200 autoscale=on\\n/' {params.unzippedrev}
+        gzip -f {params.unzippedfwd}
+        gzip -f {params.unzippedrev}
         """
 
 rule colorGFF:
     input:
-        rbs="tracks/potentialRibosomeBindingSite.gff"
-        start="tracks/potentialStartCodons.gff"
+        rbs="tracks/potentialRibosomeBindingSite.gff",
+        start="tracks/potentialStartCodons.gff",
         stop="tracks/potentialStopCodons.gff"
     output:
-        outrbs="tracks/potentialRibosomeBindingSite.gff"
-        outstart="tracks/potentialStartCodons.gff"
-        outstop="tracks/potentialStopCodons.gff"
+        outrbs="tracks/color/potentialRibosomeBindingSite.gff",
+        outstart="tracks/color/potentialStartCodons.gff",
+        outstop="tracks/color/potentialStopCodons.gff"
     threads: 1
     shell:
         """
         set +e
-        mkdir -p tracks
-        sed -i '1s/^/track type=wiggle_0 visibility=full color=145,30,180 autoscale=on\n/' {output.outrbs}
-        sed -i '1s/^/track type=wiggle_0 visibility=full color=210,245,60 autoscale=on\n/' {output.outstart}
-        sed -i '1s/^/track type=wiggle_0 visibility=full color=230,25,75 autoscale=on\n/' {output.outstop}
+        mkdir -p tracks/color
+        cp {input.rbs} ./tracks/color/
+        cp {input.start} ./tracks/color/
+        cp {input.stop} ./tracks/color/
+        sed -i '1s/^/#track type=wiggle_0 visibility=full color=145,30,180 autoscale=on\\n/' {output.outrbs}
+        sed -i '1s/^/#track type=wiggle_0 visibility=full color=210,245,60 autoscale=on\\n/' {output.outstart}
+        sed -i '1s/^/#track type=wiggle_0 visibility=full color=230,25,75 autoscale=on\\n/' {output.outstop}
         """
