@@ -200,7 +200,7 @@ rule colorGFF:
         cp {input.rbs} ./tracks/color/
         cp {input.start} ./tracks/color/
         cp {input.stop} ./tracks/color/
-        sed -i '1s/^/#track type=wiggle_0 visibility=full color=145,30,180 autoscale=on\\n/' {output.outrbs}
-        sed -i '1s/^/#track type=wiggle_0 visibility=full color=210,245,60 autoscale=on\\n/' {output.outstart}
-        sed -i '1s/^/#track type=wiggle_0 visibility=full color=230,25,75 autoscale=on\\n/' {output.outstop}
+        sed -i '1s/^/##track type=wiggle_0 visibility=full color=145,30,180 autoscale=on\\n/' {output.outrbs}
+        sed -i '1s/^/##track type=wiggle_0 visibility=full color=210,245,60 autoscale=on\\n/' {output.outstart}
+        sed -i '1s/^/##track type=wiggle_0 visibility=full color=230,25,75 autoscale=on\\n/' {output.outstop}
         """
