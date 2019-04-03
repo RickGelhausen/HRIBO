@@ -59,13 +59,11 @@ rule ribotishQualityTIS:
        offsetdone="maplink/TIS/{condition, [a-zA-Z]+}-{replicate,\d+}.qualdone"
    params:
        offsetparameters="maplink/TIS/{condition, [a-zA-Z]+}-{replicate,\d+}.bam.para.py"
-   conda:
-       "../envs/ribotish.yaml"
    threads: 10
    log:
        "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotishquality.log"
    shell:
-       "mkdir -p ribotish; ribotish quality -v -p {threads} -b {input.fp} -t -g {input.annotation} -o {output.reporttxt} -f {output.reportpdf} 2> {log}; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
+       "conda activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish quality -v -p {threads} -b {input.fp} -t -g {input.annotation} -o {output.reporttxt} -f {output.reportpdf} 2> {log}; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
 
 rule ribotish:
     input:
@@ -81,10 +79,8 @@ rule ribotish:
     params:
         tislist= lambda wildcards, input: ','.join(list(set(input.tis))),
         codons= lambda wildcards: ("" if not CODONS else (" --alt --altcodons " + CODONS)),
-    conda:
-        "../envs/ribotish.yaml"
     threads: 10
     log:
         "logs/{condition, [a-zA-Z]+}_ribotish.log"
     shell:
-        "mkdir -p ribotish; ribotish predict --harr -v {params.codons} -p {threads} -t {params.tislist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
+        "conda activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish predict --harr -v {params.codons} -p {threads} -t {params.tislist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"

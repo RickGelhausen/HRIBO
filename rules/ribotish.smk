@@ -59,13 +59,11 @@ rule ribotishQualityRIBO:
         offsetparameters="maplink/RIBO/{condition, [a-zA-Z]+}-{replicate,\d+}.bam.para.py",
         reporttxt="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.txt",
         reportpdf="ribotish/{condition, [a-zA-Z]+}-{replicate,\d+}-qual.pdf"
-    conda:
-        "../envs/ribotish.yaml"
     threads: 10
     log:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotishquality.log"
     shell:
-        "mkdir -p ribotish; ribotish quality -v -p {threads} -b {input.fp} -g {input.annotation} -o {params.reporttxt} -f {params.reportpdf} 2> {log} || true; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
+        "conda activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish quality -v -p {threads} -b {input.fp} -g {input.annotation} -o {params.reporttxt} -f {params.reportpdf} 2> {log}; touch {output.offsetdone}"
 
 
 rule ribotish:
@@ -82,10 +80,8 @@ rule ribotish:
     params:
         fplist= lambda wildcards, input: ','.join(list(set(input.fp))),
         codons= lambda wildcards: ("" if not CODONS else (" --alt --altcodons " + CODONS)),
-    conda:
-        "../envs/ribotish.yaml"
     threads: 10
     log:
         "logs/{condition, [a-zA-Z]+}_ribotish.log"
     shell:
-        "mkdir -p ribotish; ribotish predict --harr -v {params.codons} -p {threads} -b {params.fplist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
+        "conda activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish predict --harr -v {params.codons} -p {threads} -b {params.fplist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
