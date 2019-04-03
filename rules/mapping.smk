@@ -19,8 +19,7 @@ rule map:
         genomeSegemehlIndex="genomeSegemehlIndex/genome.idx",
         fastq="norRNA/{method}-{condition}-{replicate}.fastq",
     output:
-        sammulti="sammulti/{method}-{condition}-{replicate}.sam",
-        unmapped="sammulti/unmapped/{method}-{condition}-{replicate}.sam"
+        sammulti="sammulti/{method}-{condition}-{replicate}.sam"
     conda:
         "../envs/segemehl.yaml"
     threads: 20
@@ -29,7 +28,7 @@ rule map:
     log:
         "logs/{method}-{condition}-{replicate}_segemehl.log"
     shell:
-        "mkdir -p sammulti; mkdir -p sammulti/unmapped; segemehl.x -s -e -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sammulti} -u {output.unmapped} 2> {log}"
+        "mkdir -p sammulti; segemehl.x -e -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sammulti} 2> {log}"
 
 rule samuniq:
     input:
@@ -43,7 +42,9 @@ rule samuniq:
         """
         set +e
         mkdir -p sam
-        samtools view  -H <(cat {input.sammulti}) | grep '@HD' > {output.sam}
+        awk '$2 == "4"' {input.sammulti} > {input.sammulti}.unmapped
+        awk '$2 != "4"' {input.sammulti} > {input.sammulti}
+        samtools view -H <(cat {input.sammulti}) | grep '@HD' > {output.sam}
         samtools view -H <(cat {input.sammulti}) | grep '@SQ' | sort -t$'\t' -k1,1 -k2,2V >> {output.sam}
         samtools view -H <(cat {input.sammulti}) | grep '@RG' >> {output.sam}
         samtools view -H <(cat {input.sammulti}) | grep '@PG' >> {output.sam}
