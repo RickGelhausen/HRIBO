@@ -3,3 +3,4 @@ channels:
  - bioconda
 dependencies:
  - samtools =1.9
+ - gawk =4.2.1

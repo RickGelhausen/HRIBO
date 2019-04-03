@@ -43,7 +43,7 @@ rule samuniq:
         set +e
         mkdir -p sam
         awk '$2 == "4"' {input.sammulti} > {input.sammulti}.unmapped
-        awk '$2 != "4"' {input.sammulti} > {input.sammulti}
+        gawk -i inplace '$2 != "4"' {input.sammulti}
         samtools view -H <(cat {input.sammulti}) | grep '@HD' > {output.sam}
         samtools view -H <(cat {input.sammulti}) | grep '@SQ' | sort -t$'\t' -k1,1 -k2,2V >> {output.sam}
         samtools view -H <(cat {input.sammulti}) | grep '@RG' >> {output.sam}
