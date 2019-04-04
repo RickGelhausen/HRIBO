@@ -63,7 +63,7 @@ rule ribotishQualityTIS:
    log:
        "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotishquality.log"
    shell:
-       "conda activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish quality -v -p {threads} -b {input.fp} -t -g {input.annotation} -o {output.reporttxt} -f {output.reportpdf} 2> {log}; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
+       "conda activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish quality -v -p {threads} -b {input.fp} -t -g {input.annotation} -o {output.reporttxt} -f {output.reportpdf} 2> {log} || true; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
 
 rule ribotish:
     input:
@@ -83,4 +83,4 @@ rule ribotish:
     log:
         "logs/{condition, [a-zA-Z]+}_ribotish.log"
     shell:
-        "conda activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish predict --harr -v {params.codons} -p {threads} -t {params.tislist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
+        "source activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish predict --harr -v {params.codons} -p {threads} -t {params.tislist} -g {input.annotation} -f {input.genome} -o {output.filtered} 2> {log}"
