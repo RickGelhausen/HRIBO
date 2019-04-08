@@ -31,9 +31,21 @@ rule filterAll:
     shell:
         "mkdir -p tracks; SPtools/scripts/noverlapper.py -i {input} -o {output}"
 
+rule reannotatedORFs:
+    input:
+        annotation="annotation/annotation.gtf",
+        combined="tracks/combined.gff"
+    output:
+        "tracks/combined_annotated.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/reannotateORFs.py -a {input.annotation} -c {input.combined} -o {output}"
+
 rule newAnnotation:
     input:
-        newOrfs="tracks/combined.gff",
+        newOrfs="tracks/combined_annotated.gff",
         currentAnnotation="annotation/annotation.gtf"
     output:
         "xtail/newAnnotation.gff"
@@ -42,4 +54,3 @@ rule newAnnotation:
     threads: 1
     shell:
         "mkdir -p tracks; SPtools/scripts/concatGFF.py {input.newOrfs} {input.currentAnnotation} -o {output}"
-
