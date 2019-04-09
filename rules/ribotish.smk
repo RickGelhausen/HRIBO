@@ -63,7 +63,7 @@ rule ribotishQualityRIBO:
     log:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotishquality.log"
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish quality -v -p {threads} -b {input.fp} -g {input.annotation} -o {params.reporttxt} -f {params.reportpdf} 2> {log}; || true; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
+        "source activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish quality -v -p {threads} -b {input.fp} -g {input.annotation} -o {params.reporttxt} -f {params.reportpdf} 2> {log} || true; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
 
 
 rule ribotish:
