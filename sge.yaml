@@ -27,6 +27,10 @@ psiteOffsetsStop:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
 
+generateReadCounts:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
 # mapping.smk
 genomeSegemehlIndex:
   parallelenvironment : 'smp 20'
