@@ -2,7 +2,7 @@ def getGFFtype(filename):
     try:
         with open(filename, "r") as f:
             first_line = f.readline().strip()
-        
+
         if first_line == "##gff-version 3":
             return "GFF3"
         else:
@@ -73,3 +73,20 @@ rule psiteOffsetsStop:
     shell:
         "mkdir -p offsets/stop; psite -q {input.rois} offsets/stop/{wildcards.method}-{wildcards.condition}-{wildcards.replicate} --min_length 29 --max_length 35 --require_upstream --count_files {input.bam}"
 
+rule generateReadCounts:
+    input:
+        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+        combined="tracks/combined_annotated.gff"
+    output:
+        "auxillary/read_counts.bed"
+    conda:
+        "../envs/bedtools.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxillary
+        awk '{print $0,$3,$4}' {input.combined} > tmp.bed
+        bedtools multicov -bams {input.bam} -bed tmp.bed > {output}
+        sed -i '1s;^;{input.bam};' {output}
+        """
