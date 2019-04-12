@@ -86,7 +86,7 @@ rule generateReadCounts:
     shell:
         """
         mkdir -p auxillary
-        awk '{{print $0, $3, $4}}' {input.combined} > tmp.bed
+        cut -f1,4,5 {input.combined} > tmp.bed 
         bedtools multicov -bams {input.bam} -bed tmp.bed > {output}
         sed -i '1s;^;{input.bam};' {output}
         """
