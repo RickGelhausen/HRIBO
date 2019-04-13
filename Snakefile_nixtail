@@ -42,7 +42,14 @@ if TISHMODE == "TISONLY":
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "tracks/potentialStopCodons.gff",
           "tracks/potentialStartCodons.gff",
-          "tracks/potentialRibosomeBindingSite.gff"
+          "tracks/potentialRibosomeBindingSite.gff",
+          "offsets/metagene_start_rois.txt",
+          "offsets/metagene_stop_rois.txt",
+          expand("offsets/start/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("offsets/stop/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("tracks/color/{method}-{condition}-{replicate}.fwd.bedgraph.gz", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          "tracks/color/potentialStartCodons.gff",
+          "auxillary/summary.xlsx"
 else:
    rule all:
       input:
@@ -59,7 +66,14 @@ else:
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "tracks/potentialStopCodons.gff",
           "tracks/potentialStartCodons.gff",
-          "tracks/potentialRibosomeBindingSite.gff"
+          "tracks/potentialRibosomeBindingSite.gff",
+          "offsets/metagene_start_rois.txt",
+          "offsets/metagene_stop_rois.txt",
+          expand("offsets/start/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("offsets/stop/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("tracks/color/{method}-{condition}-{replicate}.fwd.bedgraph.gz", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          "tracks/color/potentialStartCodons.gff",
+          "auxillary/summary.xlsx"
 
 onsuccess:
     print("Done, no error")

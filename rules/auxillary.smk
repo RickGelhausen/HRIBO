@@ -103,3 +103,15 @@ rule totalMappedReads:
     threads: 1
     shell:
         "mkdir -p auxillary; SPtools/scripts/tmp.py -b {input.bam} -o {output}"
+
+rule createExcelSummary:
+    input:
+        total="auxillary/total_mapped_reads.txt",
+        reads="auxillary/read_counts.bed"
+    output:
+        "auxillary/summary.xlsx"
+    conda:
+        "../envs/plastid.yaml"
+    threads: 1
+    shell:
+        "mkdir -p auxillary; SPtools/scripts/excel.py -t {input.total} -r {input.reads} -o {output}" 

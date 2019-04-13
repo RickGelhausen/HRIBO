@@ -27,9 +27,13 @@ psiteOffsetsStop:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
 
-totalMappedReads:
+createExcelSummary:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=8G"
+
+#totalMappedReads:
+#  parallelenvironment : 'smp 1'
+#  memory: "h_vmem=8G"
 
 # mapping.smk
 genomeSegemehlIndex:
