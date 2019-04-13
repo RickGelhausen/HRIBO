@@ -88,7 +88,8 @@ rule generateReadCounts:
         mkdir -p auxillary
         cut -f1,4,5,7,9 {input.combined} > tmp.bed 
         bedtools multicov -bams {input.bam} -bed tmp.bed > {output}
-        sed -i '1s;^;{input.bam};' {output}
+        sed -i '1i \# {input.bam}\n' {output}
+        rm tmp.bed
         """
 
 rule totalMappedReads:
