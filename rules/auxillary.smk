@@ -73,20 +73,14 @@ rule psiteOffsetsStop:
     shell:
         "mkdir -p offsets/stop; psite -q {input.rois} offsets/stop/{wildcards.method}-{wildcards.condition}-{wildcards.replicate} --min_length 29 --max_length 35 --require_upstream --count_files {input.bam}"
 
-rule generateReadCounts:
+rule totalMappedReads:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-        combined="tracks/combined_annotated.gff"
     output:
-        "auxillary/read_counts.bed"
+        "auxillary/total_mapped_reads.txt"
     conda:
-        "../envs/bedtools.yaml"
+        "../envs/plastid.yaml"
     threads: 1
     shell:
-        """
-        mkdir -p auxillary
-        awk '{print $0,$3,$4}' {input.combined} > tmp.bed
-        bedtools multicov -bams {input.bam} -bed tmp.bed > {output}
-        sed -i '1s;^;{input.bam};' {output}
-        """
+        "mkdir -p auxillary; SPtools/scripts/tmp.py -b {input.bam} -o {output}"

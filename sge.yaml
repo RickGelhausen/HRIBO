@@ -27,7 +27,7 @@ psiteOffsetsStop:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
 
-generateReadCounts:
+totalMappedReads:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=8G"
 
@@ -64,10 +64,6 @@ mergeAll:
 filterAll:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
-
-reannotatedORFs:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=8G"
 
 newAnnonation:
   parallelenvironment : 'smp 1'
