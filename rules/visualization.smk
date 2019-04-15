@@ -113,6 +113,53 @@ rule wigfwd:
     shell:
         "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
 
+rule readcountstats:
+    input:
+        bam=rules.maplink.output,
+        genomeSize=rules.genomeSize.output,
+        bamIndex=rules.bamindex.output
+    output:
+        stat="maplink/{method}-{condition}-{replicate}.readstat"
+    conda:
+        "../envs/coverage.yaml"
+    threads: 1
+    params:
+        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p tracks; readstat.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+
+rule minreadcounts:
+    input:
+        stats=expand("maplink/{method}-{condition}-{replicate}.readstat", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+    output:
+        minreads="maplink/minreads.txt"
+    conda:
+        "../envs/coverage.yaml"
+    threads: 1
+    params:
+        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p tracks; minreads.py {input.stats} > {output.minreads}; source deactivate;"
+
+rule centeredwig:
+    input:
+        bam=rules.maplink.output,
+        genomeSize=rules.genomeSize.output,
+        bamIndex=rules.bamindex.output,
+        stats="maplink/{method}-{condition}-{replicate}.readstat",
+        min="maplink/minreads.txt"
+    output:
+        fwd="centeredtracks/{method}-{condition}-{replicate}.centered.forward.wig",
+        rev="centeredtracks/{method}-{condition}-{replicate}.centered.reverse.wig"
+    conda:
+        "../envs/coverage.yaml"
+    threads: 5
+    params:
+        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
+        prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p centeredtracks; coverage.py --bam_path {input.bam} --wiggle_file_path {params.prefixpath} --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {inputs.min}; source deactivate;"
+
 rule bamcompare:
     input:
         "qc/multi/multiqc_report.html"
