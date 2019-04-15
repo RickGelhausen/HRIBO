@@ -119,22 +119,18 @@ rule readcountstats:
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.bamindex.output
     output:
-        stat="maplink/{method}-{condition}-{replicate}.readstat"
-    conda:
-        "../envs/coverage.yaml"
+        stat="maplink/{method}-{condition}-{replicate}.readstats"
     threads: 1
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p tracks; readstat.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p tracks; readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
 
 rule minreadcounts:
     input:
-        stats=expand("maplink/{method}-{condition}-{replicate}.readstat", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+        stats=expand("maplink/{method}-{condition}-{replicate}.readstats", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         minreads="maplink/minreads.txt"
-    conda:
-        "../envs/coverage.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
@@ -146,16 +142,14 @@ rule centeredwig:
         bam=rules.maplink.output,
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.bamindex.output,
-        stats="maplink/{method}-{condition}-{replicate}.readstat",
+        stats="maplink/{method}-{condition}-{replicate}.readstats",
         min="maplink/minreads.txt"
     output:
         fwd="centeredtracks/{method}-{condition}-{replicate}.centered.forward.wig",
         rev="centeredtracks/{method}-{condition}-{replicate}.centered.reverse.wig"
-    conda:
-        "../envs/coverage.yaml"
-    threads: 5
+    threads: 1
     params:
-        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
+        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0]),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
         "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p centeredtracks; coverage.py --bam_path {input.bam} --wiggle_file_path {params.prefixpath} --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {inputs.min}; source deactivate;"
