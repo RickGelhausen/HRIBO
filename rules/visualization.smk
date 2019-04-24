@@ -1,3 +1,5 @@
+from pathlib import Path
+
 rule genomeSamToolsIndex:
     input:
         rules.retrieveGenome.output
@@ -121,8 +123,6 @@ rule readcountstats:
     output:
         stat="maplink/{method}-{condition}-{replicate}.readstats"
     threads: 1
-    params:
-        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
         "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p tracks; readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
 
@@ -145,14 +145,14 @@ rule centeredwig:
         stats="maplink/{method}-{condition}-{replicate}.readstats",
         min="maplink/minreads.txt"
     output:
-        fwd="centeredtracks/{method}-{condition}-{replicate}.centered.forward.wig",
-        rev="centeredtracks/{method}-{condition}-{replicate}.centered.reverse.wig"
+        fwd="centeredtracks/{method}-{condition}-{replicate}.centered.raw.forward.wig",
+        rev="centeredtracks/{method}-{condition}-{replicate}.centered.raw.reverse.wig"
     threads: 1
     params:
-        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0]),
+        prefix=lambda wildcards, output: Path(output[0]).stem,
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p centeredtracks; coverage.py --bam_path {input.bam} --wiggle_file_path {params.prefixpath} --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {inputs.min}; source deactivate;"
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p centeredtracks; coverage.py --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
 
 rule bamcompare:
     input:

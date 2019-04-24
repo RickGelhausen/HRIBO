@@ -1,10 +1,10 @@
 __default__:
   jobname: "{rule}"
-  parallelenvironment : 'smp 8'
+  parallelenvironment : 'smp 5'
   logoutputdir : "$PWD/logs"
   erroroutputdir : "$PWD/logs"
   joinlogs : 'y'
-  memory: "h_vmem=8G"
+  memory: "h_vmem=6G"
 
 # auxillary.smk
 processAnnotation:
