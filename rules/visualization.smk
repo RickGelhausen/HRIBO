@@ -145,11 +145,11 @@ rule centeredwig:
         stats="maplink/{method}-{condition}-{replicate}.readstats",
         min="maplink/minreads.txt"
     output:
-        fwd="centeredtracks/{method}-{condition}-{replicate}.centered.raw.forward.wig",
-        rev="centeredtracks/{method}-{condition}-{replicate}.centered.raw.reverse.wig"
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig"
     threads: 1
     params:
-        prefix=lambda wildcards, output: Path(output[0]).stem,
+        prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
         "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p centeredtracks; coverage.py --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
