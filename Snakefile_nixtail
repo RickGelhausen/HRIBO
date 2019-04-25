@@ -49,7 +49,7 @@ if TISHMODE == "TISONLY":
           #expand("offsets/stop/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("tracks/color/{method}-{condition}-{replicate}.fwd.bedgraph.gz", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           "tracks/color/potentialStartCodons.gff",
-          "auxillary/summary.xlsx"
+          "auxiliary/summary.xlsx"
 else:
    rule all:
       input:
@@ -73,7 +73,7 @@ else:
           #expand("offsets/stop/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("tracks/color/{method}-{condition}-{replicate}.fwd.bedgraph.gz", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           "tracks/color/potentialStartCodons.gff",
-          "auxillary/summary.xlsx"
+          "auxiliary/summary.xlsx"
 
 onsuccess:
     print("Done, no error")
@@ -109,7 +109,7 @@ include: "rules/reparation.smk"
 #xtail
 include: "rules/xtail.smk"
 #metagene
-include: "rules/auxillary.smk"
+include: "rules/auxiliary.smk"
 #multiqc
 include: "rules/qc.smk"
 #report

@@ -6,7 +6,7 @@ __default__:
   joinlogs : 'y'
   memory: "h_vmem=6G"
 
-# auxillary.smk
+# auxiliary.smk
 processAnnotation:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=2G"

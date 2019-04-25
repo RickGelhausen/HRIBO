@@ -2,7 +2,7 @@ def getGFFtype(filename):
     try:
         with open(filename, "r") as f:
             first_line = f.readline().strip()
-        
+
         if first_line == "##gff-version 3":
             return "GFF3"
         else:
@@ -79,14 +79,14 @@ rule generateReadCounts:
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         combined="tracks/combined_annotated.gff"
     output:
-        "auxillary/read_counts.bed"
+        "auxiliary/read_counts.bed"
     conda:
         "../envs/bedtools.yaml"
     threads: 1
     shell:
         """
-        mkdir -p auxillary
-        cut -f1,4,5,7,9 {input.combined} > tmp.bed 
+        mkdir -p auxiliary
+        cut -f1,4,5,7,9 {input.combined} > tmp.bed
         bedtools multicov -bams {input.bam} -bed tmp.bed > {output}
         sed -i '1i \# {input.bam}\n' {output}
         rm tmp.bed
@@ -97,21 +97,21 @@ rule totalMappedReads:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
-        "auxillary/total_mapped_reads.txt"
+        "auxiliary/total_mapped_reads.txt"
     conda:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxillary; SPtools/scripts/tmp.py -b {input.bam} -o {output}"
+        "mkdir -p auxiliary; SPtools/scripts/tmp.py -b {input.bam} -o {output}"
 
 rule createExcelSummary:
     input:
-        total="auxillary/total_mapped_reads.txt",
-        reads="auxillary/read_counts.bed"
+        total="auxiliary/total_mapped_reads.txt",
+        reads="auxiliary/read_counts.bed"
     output:
-        "auxillary/summary.xlsx"
+        "auxiliary/summary.xlsx"
     conda:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxillary; SPtools/scripts/excel.py -t {input.total} -r {input.reads} -o {output}" 
+        "mkdir -p auxiliary; SPtools/scripts/excel.py -t {input.total} -r {input.reads} -o {output}"

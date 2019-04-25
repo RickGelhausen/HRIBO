@@ -122,7 +122,7 @@ include: "rules/reparation.smk"
 #xtail
 include: "rules/xtail.smk"
 #metagene
-include: "rules/auxillary.smk"
+include: "rules/auxiliary.smk"
 #xtail
 #include: "rules/xtailclassic.smk"
 #multiqc
