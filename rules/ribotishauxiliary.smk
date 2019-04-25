@@ -11,11 +11,12 @@ rule ribotishGFF:
 
 rule ribotishAnnotation:
     input:
-        annotation="qc/featurecount/annotation.gtf"
+        annotation="qc/featurecount/annotation.gtf",
+        sizes="genomes/sizes.genome"
     output:
         "ribotish/annotation_processed.gtf"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p ribotish; SPtools/scripts/createRiboTISHannotation.py -a {input.annotation} --annotation_output {output}"
+        "mkdir -p ribotish; SPtools/scripts/createRiboTISHannotation.py -a {input.annotation} --genome_sizes {input.sizes} --annotation_output {output}"
