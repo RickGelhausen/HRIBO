@@ -39,7 +39,7 @@ rule startCodonTrack:
         fwd=rules.retrieveGenome.output,
         rev=rules.reversecomplementGenome.output
     output:
-        "tracks/potentialStartCodons.gff"
+        report("tracks/potentialStartCodons.gff", caption="../report/stopCodons.rst", category="Annotation")
     conda:
         "../envs/biopython.yaml"
     threads: 1
@@ -51,7 +51,7 @@ rule stopCodonTrack:
         fwd=rules.retrieveGenome.output,
         rev=rules.reversecomplementGenome.output
     output:
-        "tracks/potentialStopCodons.gff"
+        report("tracks/potentialStopCodons.gff", caption="../report/startCodons.rst", category="Annotation")
     conda:
         "../envs/biopython.yaml"
     threads: 1
@@ -63,7 +63,7 @@ rule rbsTrack:
         fwd=rules.retrieveGenome.output,
         rev=rules.reversecomplementGenome.output
     output:
-        "tracks/potentialRibosomeBindingSite.gff"
+        report("tracks/potentialRibosomeBindingSite.gff", caption="../report/rbsTrack.rst", category="Annotation")
     conda:
         "../envs/biopython.yaml"
     threads: 1

@@ -109,7 +109,7 @@ rule createExcelSummary:
         total="auxiliary/total_mapped_reads.txt",
         reads="auxiliary/read_counts.bed"
     output:
-        "auxiliary/summary.xlsx"
+        report("auxiliary/summary.xlsx", caption="../report/summary.rst", category="Summary table")
     conda:
         "../envs/plastid.yaml"
     threads: 1
