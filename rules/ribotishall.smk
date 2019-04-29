@@ -111,7 +111,7 @@ rule ribotishQualityRIBO:
     log:
         "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_ribotishqualityribo.log"
     shell:
-        "conda activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish quality -v -p {threads} -b {input.fp} -g {input.annotation} -o {params.reporttxt} -f {params.reportpdf} 2> {log} || true; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
+        "source activate /scratch/bi03/egg/miniconda3/envs/ribotish; mkdir -p ribotish; ribotish quality -v -p {threads} -b {input.fp} -g {input.annotation} -o {params.reporttxt} -f {params.reportpdf} 2> {log} || true; if grep -q \"offdict = {{'m0': {{}}}}\" {params.offsetparameters}; then mv {params.offsetparameters} {params.offsetparameters}.unused; fi; touch {output.offsetdone}"
 
 rule ribotishQualityTIS:
     input:
@@ -142,7 +142,7 @@ rule ribotish:
         bamindex= lambda wildcards: expand("maplink/RIBO/{{condition}}-{replicate}.bam.bai", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"]),
         tisindex= lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.bam.bai", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"]),
         ribooffsetparameters= lambda wildcards: expand("maplink/RIBO/{{condition}}-{replicate}.qualdone", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"]),
-        tisoffsetparameters= lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.qualdone", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"])
+        tisoffsetparameters= lambda wildcards: expand("maplink/TIS/{{condition}}-{replicate}.qualdone", zip, replicate=samples.loc[(samples["method"] == "TIS") & (samples["condition"] == wildcards.condition), "replicate"])
     output:
         report="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv_all.txt",
         filtered="ribotish/{condition, [a-zA-Z]+}-newORFs.tsv"

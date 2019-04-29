@@ -23,7 +23,7 @@ rule processAnnotation:
 
 rule generateMetageneRoiStart:
     input:
-        rules.processAnnotation.output
+        rules.ribotishAnnotation.output
     output:
         "offsets/metagene_start_rois.txt"
     conda:
@@ -36,7 +36,7 @@ rule generateMetageneRoiStart:
 
 rule generateMetageneRoiStop:
     input:
-        rules.processAnnotation.output
+        rules.ribotishAnnotation.output
     output:
         "offsets/metagene_stop_rois.txt"
     conda:

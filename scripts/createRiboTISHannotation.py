@@ -16,11 +16,11 @@ def create_dictionary(input_df):
         attributes = getattr(row, "_8")
 
         id = ""
-        if "gene_id" in attributes.lower():
-            attributes =  re.split('[; ]', attributes)
+        if "gene_id \"" in attributes.lower():
+            attributes = re.split('[; ]', attributes)
             id = attributes[attributes.index("gene_id")+1].replace("\"", "")
 
-        elif "transcript_id" in attributes.lower():
+        elif "transcript_id \"" in attributes.lower():
             attributes =  re.split('[; ]', attributes)
             id = attributes[attributes.index("transcript_id")+1].replace("\"", "")
 
