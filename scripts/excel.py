@@ -46,7 +46,7 @@ def parse_orfs(args):
     nTuple = collections.namedtuple('Pandas', name_list)
     # read gff file
     rows = []
-    header = ["orfID", "start", "stop", "strand", "length"] + wildcards + ["annotated"]
+    header = ["orfID", "start", "stop", "strand", "length"] + wildcards + ["evidence","annotated"]
     rows.append(nTuple(*header))
     for row in read_df.itertuples(index=False, name='Pandas'):
         start = getattr(row, "_1")
