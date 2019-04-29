@@ -40,7 +40,7 @@ def parse_orfs(args):
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
     # id + start + stop + strand + length + rest
-    column_count = len(read_df.columns) + 1
+    column_count = len(read_df.columns) + 2
 
     name_list = ["s%s" % str(x) for x in range(column_count)]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -56,10 +56,12 @@ def parse_orfs(args):
 
         attribute_list = re.split('[;=]', attributes)
         id = attribute_list[attribute_list.index("ID")+1]
+
         annotated="NA"
         if "annotated" in attribute_list:
             annotated = attribute_list[attribute_list.index("annotated")+1]
 
+        evidence = attribute_list[attribute_list.index("Evidence")+1]
         length = stop - start + 1
 
         read_list = [getattr(row, "_%s" %x) for x in range(5,len(row))]
@@ -68,7 +70,7 @@ def parse_orfs(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[wildcards[idx]], val, length))
 
-        result = [id, start, stop, strand, length] + rpkm_list + [annotated]
+        result = [id, start, stop, strand, length] + rpkm_list + [evidence, annotated]
         rows.append(nTuple(*result))
 
     excel_df = pd.DataFrame.from_records(rows, columns=[x for x in range(column_count)])
