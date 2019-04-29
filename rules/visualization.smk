@@ -113,7 +113,7 @@ rule wigfwd:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
+        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --binSize=1 --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
 
 rule readcountstats:
     input:
