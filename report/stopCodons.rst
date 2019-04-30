@@ -1,1 +1,1 @@
-Genom browser track with possible stop codons.
+Genome browser track with possible stop codons.

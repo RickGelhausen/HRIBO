@@ -36,7 +36,7 @@ rule reannotatedORFs:
         annotation="annotation/annotation.gtf",
         combined="tracks/combined.gff"
     output:
-        "tracks/combined_annotated.gff"
+        report("tracks/combined_annotated.gff", caption="../report/combined_annotation.rst", category="Novel ORFs")
     conda:
         "../envs/mergetools.yaml"
     threads: 1
