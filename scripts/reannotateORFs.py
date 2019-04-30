@@ -96,9 +96,9 @@ def fill_annotation_dict(args):
                 description = getattr(row, "_8")
                 attributes = [x.lower() for x in re.split('[; ]', description)]
                 if "locus_tag" in attributes:
-                    id = attributes[attributes.index("locus_tag")+1]
+                    id = attributes[attributes.index("locus_tag")+1].replace("\"", "")
                 else:
-                    id = attributes[attributes.index("gene_id")+1]
+                    id = attributes[attributes.index("gene_id")+1].replace("\"", "")
 
                 # update the annotation dictionary
                 if start in annotation_dict:
