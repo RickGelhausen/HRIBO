@@ -2,4 +2,5 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
+ - ucsc-wigtobigwig =377
  - deeptools =3.2.0

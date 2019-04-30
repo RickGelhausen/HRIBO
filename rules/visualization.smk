@@ -154,6 +154,31 @@ rule centeredwig:
     shell:
         "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p centeredtracks; coverage.py --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
 
+rule wigtobigwigforward:
+    input:
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("centeredtracks/{method}-{condition}-{replicate}.raw.forward.bw", caption="../report/centeredwig.rst", category="Centered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule wigtobigwigreverse:
+    input:
+        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("centeredtracks/{method}-{condition}-{replicate}.raw.reverse.bw", caption="../report/centeredwig.rst", category="Centered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+
 rule bamcompare:
     input:
         "qc/multi/multiqc_report.html"
