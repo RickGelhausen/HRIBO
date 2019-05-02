@@ -362,7 +362,7 @@ rule threeprimewigtobigwigrawforward:
         fwd="threeprimetracks/{method}-{condition}-{replicate}.raw.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
-        fwd=report("threeprime/{method}-{condition}-{replicate}.raw.forward.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
+        fwd=report("threeprimetracks/{method}-{condition}-{replicate}.raw.forward.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
