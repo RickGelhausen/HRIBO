@@ -269,7 +269,7 @@ rule fiveprimewigtobigwigrawforward:
         fwd="fiveprimetracks/{method}-{condition}-{replicate}.raw.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
-        fwd=report("fiveprimetracks/{method}-{condition}-{replicate}.raw.forward.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mappping tracks")
+        fwd=report("fiveprimetracks/{method}-{condition}-{replicate}.raw.forward.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -278,10 +278,10 @@ rule fiveprimewigtobigwigrawforward:
 
 rule fiveprimewigtobigwigrawreverse:
     input:
-        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        rev="fiveprimetracks/{method}-{condition}-{replicate}.raw.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
-        rev=report("fiveprimetracks/{method}-{condition}-{replicate}.raw.reverse.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mappping tracks")
+        rev=report("fiveprimetracks/{method}-{condition}-{replicate}.raw.reverse.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -290,10 +290,10 @@ rule fiveprimewigtobigwigrawreverse:
 
 rule fiveprimewigtobigwigminforward:
     input:
-        fwd="centeredtracks/{method}-{condition}-{replicate}.min.forward.wig",
+        fwd="fiveprimetracks/{method}-{condition}-{replicate}.min.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
-        fwd=report("fiveprimetracks/{method}-{condition}-{replicate}.min.forward.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mappping tracks")
+        fwd=report("fiveprimetracks/{method}-{condition}-{replicate}.min.forward.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -305,7 +305,7 @@ rule fiveprimewigtobigwigminreverse:
         rev="fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
-        rev=report("fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mappping tracks")
+        rev=report("fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -317,7 +317,7 @@ rule fiveprimewigtobigwigmilforward:
         fwd="fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
-        fwd=report("fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mappping tracks")
+        fwd=report("fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -329,7 +329,7 @@ rule fiveprimewigtobigwimilgreverse:
         rev="fiveprimetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
-        rev=report("centeredtracks/{method}-{condition}-{replicate}.mil.reverse.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mappping tracks")
+        rev=report("fiveprimetracks/{method}-{condition}-{replicate}.mil.reverse.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -359,10 +359,10 @@ rule threeprimewig:
 
 rule threeprimewigtobigwigrawforward:
     input:
-        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        fwd="threeprimetracks/{method}-{condition}-{replicate}.raw.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
-        fwd=report("threeprime/{method}-{condition}-{replicate}.raw.forward.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mappping tracks")
+        fwd=report("threeprime/{method}-{condition}-{replicate}.raw.forward.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -371,10 +371,10 @@ rule threeprimewigtobigwigrawforward:
 
 rule threeprimewigtobigwigrawreverse:
     input:
-        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        rev="threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
-        rev=report("threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mappping tracks")
+        rev=report("threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -383,10 +383,10 @@ rule threeprimewigtobigwigrawreverse:
 
 rule threeprimewigtobigwigminforward:
     input:
-        fwd="centeredtracks/{method}-{condition}-{replicate}.min.forward.wig",
+        fwd="threeprimetracks/{method}-{condition}-{replicate}.min.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
-        fwd=report("threeprimetracks/{method}-{condition}-{replicate}.min.forward.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mappping tracks")
+        fwd=report("threeprimetracks/{method}-{condition}-{replicate}.min.forward.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -395,10 +395,10 @@ rule threeprimewigtobigwigminforward:
 
 rule threeprimewigtobigwigminreverse:
     input:
-        rev="threetracks/{method}-{condition}-{replicate}.min.reverse.wig",
+        rev="threeprimetracks/{method}-{condition}-{replicate}.min.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
-        rev=report("threeprimetracks/{method}-{condition}-{replicate}.min.reverse.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mappping tracks")
+        rev=report("threeprimetracks/{method}-{condition}-{replicate}.min.reverse.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -407,10 +407,10 @@ rule threeprimewigtobigwigminreverse:
 
 rule threeprimewigtobigwigmilforward:
     input:
-        fwd="threetracks/{method}-{condition}-{replicate}.mil.forward.wig",
+        fwd="threeprimetracks/{method}-{condition}-{replicate}.mil.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
-        fwd=report("threeprimetracks/{method}-{condition}-{replicate}.mil.forward.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mappping tracks")
+        fwd=report("threeprimetracks/{method}-{condition}-{replicate}.mil.forward.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
@@ -419,10 +419,10 @@ rule threeprimewigtobigwigmilforward:
 
 rule threeprimewigtobigwigmilreverse:
     input:
-        rev="threetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
+        rev="threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
-        rev=report("threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mappping tracks")
+        rev=report("threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
