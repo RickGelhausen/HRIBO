@@ -160,10 +160,10 @@ rule centeredwig:
     output:
         fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
         rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig",
-        "centeredtracks/{method}-{condition}-{replicate}.mil.forward.wig",
-        "centeredtracks/{method}-{condition}-{replicate}.mil.reverse.wig",
-        fwd="centeredtracks/{method}-{condition}-{replicate}.min.forward.wig",
-        rev="centeredtracks/{method}-{condition}-{replicate}.min.reverse.wig"
+        fmil="centeredtracks/{method}-{condition}-{replicate}.mil.forward.wig",
+        rmil="centeredtracks/{method}-{condition}-{replicate}.mil.reverse.wig",
+        fmin="centeredtracks/{method}-{condition}-{replicate}.min.forward.wig",
+        rmin="centeredtracks/{method}-{condition}-{replicate}.min.reverse.wig"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
@@ -253,10 +253,10 @@ rule fiveprimewig:
     output:
         fwd="fiveprimetracks/{method}-{condition}-{replicate}.raw.forward.wig",
         rev="fiveprimetracks/{method}-{condition}-{replicate}.raw.reverse.wig",
-        "fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.wig",
-        "fiveprimetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
-        "fiveprimetracks/{method}-{condition}-{replicate}.min.forward.wig",
-        "fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.wig"
+        fmil="fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.wig",
+        rmil="fiveprimetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
+        fmin="fiveprimetracks/{method}-{condition}-{replicate}.min.forward.wig",
+        rmin="fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.wig"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
@@ -346,10 +346,10 @@ rule threeprimewig:
     output:
         fwd="threeprimetracks/{method}-{condition}-{replicate}.raw.forward.wig",
         rev="threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.wig",
-        "threeprimetracks/{method}-{condition}-{replicate}.mil.forward.wig",
-        "threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
-        "threeprimetracks/{method}-{condition}-{replicate}.min.forward.wig",
-        "threeprimetracks/{method}-{condition}-{replicate}.min.reverse.wig"
+        fmil="threeprimetracks/{method}-{condition}-{replicate}.mil.forward.wig",
+        rmil="threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
+        fmin="threeprimetracks/{method}-{condition}-{replicate}.min.forward.wig",
+        rmin="threeprimetracks/{method}-{condition}-{replicate}.min.reverse.wig"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
