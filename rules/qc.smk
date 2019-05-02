@@ -103,7 +103,24 @@ rule multiqc:
         expand("qc/map/{method}-{condition}-{replicate}-map_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/featurecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("centeredtracks/{method}-{condition}-{replicate}.raw.forward.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("centeredtracks/{method}-{condition}-{replicate}.raw.reverse.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+        expand("centeredtracks/{method}-{condition}-{replicate}.raw.reverse.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("centeredtracks/{method}-{condition}-{replicate}.mil.forward.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("centeredtracks/{method}-{condition}-{replicate}.mil.reverse.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("centeredtracks/{method}-{condition}-{replicate}.min.forward.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("centeredtracks/{method}-{condition}-{replicate}.min.reverse.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("fiveprimetracks/{method}-{condition}-{replicate}.raw.forward.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("fiveprimetracks/{method}-{condition}-{replicate}.raw.reverse.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("fiveprimetracks/{method}-{condition}-{replicate}.mil.reverse.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("fiveprimetracks/{method}-{condition}-{replicate}.min.forward.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("threeprimetracks/{method}-{condition}-{replicate}.raw.forward.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("threeprimetracks/{method}-{condition}-{replicate}.mil.forward.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("threeprimetracks/{method}-{condition}-{replicate}.min.forward.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("threeprimetracks/{method}-{condition}-{replicate}.min.reverse.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+
     output:
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")
     params:
