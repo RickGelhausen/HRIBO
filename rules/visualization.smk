@@ -177,6 +177,184 @@ rule wigtobigwigreverse:
     threads: 1
     shell:
         "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+	
+rule fiveprimewig:
+    input:
+        bam=rules.maplink.output,
+        genomeSize=rules.genomeSize.output,
+        bamIndex=rules.bamindex.output,
+        stats="maplink/{method}-{condition}-{replicate}.readstats",
+        min="maplink/minreads.txt"
+    output:
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig"
+    threads: 1
+    params:
+        prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
+        prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p centeredtracks; coverage.py --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+
+rule fiveprimewigtobigwigforward:
+    input:
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("centeredtracks/{method}-{condition}-{replicate}.raw.forward.bw", caption="../report/centeredwig.rst", category="Centered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule fiveprimewigtobigwigreverse:
+    input:
+        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("centeredtracks/{method}-{condition}-{replicate}.raw.reverse.bw", caption="../report/centeredwig.rst", category="Centered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+rule fiveprimewigtobigwigforward:
+    input:
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("centeredtracks/{method}-{condition}-{replicate}.raw.forward.bw", caption="../report/centeredwig.rst", category="Centered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule fiveprimewigtobigwigreverse:
+    input:
+        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("centeredtracks/{method}-{condition}-{replicate}.raw.reverse.bw", caption="../report/centeredwig.rst", category="Centered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+rule fiveprimewigtobigwigmilforward:
+    input:
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("centeredtracks/{method}-{condition}-{replicate}.mil.forward.bw", caption="../report/centeredwig.rst", category="Centered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule fiveprimewigtobigwimilgreverse:
+    input:
+        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("centeredtracks/{method}-{condition}-{replicate}.mil.reverse.bw", caption="../report/centeredwig.rst", category="Centered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+rule threeprimewig:
+    input:
+        bam=rules.maplink.output,
+        genomeSize=rules.genomeSize.output,
+        bamIndex=rules.bamindex.output,
+        stats="maplink/{method}-{condition}-{replicate}.readstats",
+        min="maplink/minreads.txt"
+    output:
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig"
+    threads: 1
+    params:
+        prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
+        prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p centeredtracks; coverage.py --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+
+rule threeprimewigtobigwigrawforward:
+    input:
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("centeredtracks/{method}-{condition}-{replicate}.raw.forward.bw", caption="../report/threeprimewig.rst", category="3' tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule threeprimewigtobigwigrawreverse:
+    input:
+        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("centeredtracks/{method}-{condition}-{replicate}.raw.reverse.bw", caption="../report/threeprimewig.rst", category="3' - tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+rule threeprimewigtobigwigminforward:
+    input:
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("centeredtracks/{method}-{condition}-{replicate}.min.forward.bw", caption="../report/threeprimewig.rst", category="3' tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule threeprimewigtobigwigminreverse:
+    input:
+        rev="threetracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("centeredtracks/{method}-{condition}-{replicate}.min.reverse.bw", caption="../report/threeprimewig.rst", category="3' - tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+rule threeprimewigtobigwigmilforward:
+    input:
+        fwd="threetracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("centeredtracks/{method}-{condition}-{replicate}.mil.forward.bw", caption="../report/threeprimewig.rst", category="3' tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule threeprimewigtobigwigmilreverse:
+    input:
+        rev="threetracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("centeredtracks/{method}-{condition}-{replicate}.mil.reverse.bw", caption="../report/threeprimewig.rst", category="3' - tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
 
 
 rule bamcompare:
