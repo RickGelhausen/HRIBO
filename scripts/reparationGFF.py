@@ -39,7 +39,7 @@ def createNTuple(args, row):
        start = str(int(start)) # due to bug in reparation
        stop = str(int(stop) + 3)
     if strand is '-':
-       start = str(int(start) + 3)
+       start = str(int(start) - 3)
        stop = str(int(stop)) # due to bug in reparation
         
     seqName = chromosome
