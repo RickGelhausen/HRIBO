@@ -70,9 +70,9 @@ def fill_annotation_dict(args):
 
                 # gene name
                 if "name" in attributes:
-                    name = attributes[attributes.index("gene") + 1]
-                elif "gene" in attributes:
                     name = attributes[attributes.index("name") + 1]
+                elif "gene" in attributes:
+                    name = attributes[attributes.index("gene") + 1]
                 else:
                     name = "NA"
 
