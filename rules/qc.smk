@@ -117,8 +117,8 @@ rule multiqc:
         expand("threeprimetracks/{method}-{condition}-{replicate}.raw.forward.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("threeprimetracks/{method}-{condition}-{replicate}.mil.forward.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.threepirime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("threeprimetracks/{method}-{condition}-{replicate}.min.forward.threprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("threeprimetracks/{method}-{condition}-{replicate}.min.forward.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("threeprimetracks/{method}-{condition}-{replicate}.min.reverse.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
 
     output:
