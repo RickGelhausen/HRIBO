@@ -158,12 +158,12 @@ rule centeredwig:
         stats="maplink/{method}-{condition}-{replicate}.readstats",
         min="maplink/minreads.txt"
     output:
-        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.centered.wig",
-        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.centered.wig",
-        fmil="centeredtracks/{method}-{condition}-{replicate}.mil.forward.centered.wig",
-        rmil="centeredtracks/{method}-{condition}-{replicate}.mil.reverse.centered.wig",
-        fmin="centeredtracks/{method}-{condition}-{replicate}.min.forward.centered.wig",
-        rmin="centeredtracks/{method}-{condition}-{replicate}.min.reverse.centered.wig"
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        fmil="centeredtracks/{method}-{condition}-{replicate}.mil.forward.wig",
+        rmil="centeredtracks/{method}-{condition}-{replicate}.mil.reverse.wig",
+        fmin="centeredtracks/{method}-{condition}-{replicate}.min.forward.wig",
+        rmin="centeredtracks/{method}-{condition}-{replicate}.min.reverse.wig"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.centered.wig'),
@@ -173,7 +173,7 @@ rule centeredwig:
 
 rule wigtobigwigrawforward:
     input:
-        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.centered.wig",
+        fwd="centeredtracks/{method}-{condition}-{replicate}.raw.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
         fwd=report("centeredtracks/{method}-{condition}-{replicate}.raw.forward.centered.bw", caption="../report/centeredwig.rst", category="Centered tracks")
@@ -185,7 +185,7 @@ rule wigtobigwigrawforward:
 
 rule wigtobigwigminrawreverse:
     input:
-        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.centered.wig",
+        rev="centeredtracks/{method}-{condition}-{replicate}.raw.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
         rev=report("centeredtracks/{method}-{condition}-{replicate}.raw.reverse.centered.bw", caption="../report/centeredwig.rst", category="Centered tracks")
@@ -197,7 +197,7 @@ rule wigtobigwigminrawreverse:
 
 rule wigtobigwigminforward:
     input:
-        fwd="centeredtracks/{method}-{condition}-{replicate}.min.forward.centered.wig",
+        fwd="centeredtracks/{method}-{condition}-{replicate}.min.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
         fwd=report("centeredtracks/{method}-{condition}-{replicate}.min.forward.centered.bw", caption="../report/centeredwig.rst", category="Centered tracks")
@@ -209,7 +209,7 @@ rule wigtobigwigminforward:
 
 rule wigtobigwigminreverse:
     input:
-        rev="centeredtracks/{method}-{condition}-{replicate}.min.reverse.centered.wig",
+        rev="centeredtracks/{method}-{condition}-{replicate}.min.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
         rev=report("centeredtracks/{method}-{condition}-{replicate}.min.reverse.centered.bw", caption="../report/centeredwig.rst", category="Centered tracks")
@@ -221,7 +221,7 @@ rule wigtobigwigminreverse:
 
 rule wigtobigwigmilforward:
     input:
-        fwd="centeredtracks/{method}-{condition}-{replicate}.mil.forward.centered.wig",
+        fwd="centeredtracks/{method}-{condition}-{replicate}.mil.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
         fwd=report("centeredtracks/{method}-{condition}-{replicate}.mil.forward.centered.bw", caption="../report/centeredwig.rst", category="Centered tracks")
@@ -233,7 +233,7 @@ rule wigtobigwigmilforward:
 
 rule wigtobigwigmilreverse:
     input:
-        rev="centeredtracks/{method}-{condition}-{replicate}.mil.reverse.centered.wig",
+        rev="centeredtracks/{method}-{condition}-{replicate}.mil.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
         rev=report("centeredtracks/{method}-{condition}-{replicate}.mil.reverse.centered.bw", caption="../report/centeredwig.rst", category="Centered tracks")
@@ -251,12 +251,12 @@ rule fiveprimewig:
         stats="maplink/{method}-{condition}-{replicate}.readstats",
         min="maplink/minreads.txt"
     output:
-        fwd="fiveprimetracks/{method}-{condition}-{replicate}.raw.forward.fiveprime.wig",
-        rev="fiveprimetracks/{method}-{condition}-{replicate}.raw.reverse.fiveprime.wig",
-        fmil="fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.fiveprime.wig",
-        rmil="fiveprimetracks/{method}-{condition}-{replicate}.mil.reverse.fiveprime.wig",
-        fmin="fiveprimetracks/{method}-{condition}-{replicate}.min.forward.fiveprime.wig",
-        rmin="fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.fiveprime.wig"
+        fwd="fiveprimetracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        rev="fiveprimetracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        fmil="fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.wig",
+        rmil="fiveprimetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
+        fmin="fiveprimetracks/{method}-{condition}-{replicate}.min.forward.wig",
+        rmin="fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.wig"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.fiveprime.wig'),
@@ -266,7 +266,7 @@ rule fiveprimewig:
 
 rule fiveprimewigtobigwigrawforward:
     input:
-        fwd="fiveprimetracks/{method}-{condition}-{replicate}.raw.forward.fiveprime.wig",
+        fwd="fiveprimetracks/{method}-{condition}-{replicate}.raw.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
         fwd=report("fiveprimetracks/{method}-{condition}-{replicate}.raw.forward.fiveprime.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
@@ -278,7 +278,7 @@ rule fiveprimewigtobigwigrawforward:
 
 rule fiveprimewigtobigwigrawreverse:
     input:
-        rev="fiveprimetracks/{method}-{condition}-{replicate}.raw.reverse.fiveprime.wig",
+        rev="fiveprimetracks/{method}-{condition}-{replicate}.raw.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
         rev=report("fiveprimetracks/{method}-{condition}-{replicate}.raw.reverse.fiveprime.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
@@ -290,7 +290,7 @@ rule fiveprimewigtobigwigrawreverse:
 
 rule fiveprimewigtobigwigminforward:
     input:
-        fwd="fiveprimetracks/{method}-{condition}-{replicate}.min.forward.fiveprime.wig",
+        fwd="fiveprimetracks/{method}-{condition}-{replicate}.min.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
         fwd=report("fiveprimetracks/{method}-{condition}-{replicate}.min.forward.fiveprime.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
@@ -302,7 +302,7 @@ rule fiveprimewigtobigwigminforward:
 
 rule fiveprimewigtobigwigminreverse:
     input:
-        rev="fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.fiveprime.wig",
+        rev="fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
         rev=report("fiveprimetracks/{method}-{condition}-{replicate}.min.reverse.fiveprime.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
@@ -314,7 +314,7 @@ rule fiveprimewigtobigwigminreverse:
 
 rule fiveprimewigtobigwigmilforward:
     input:
-        fwd="fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.fiveprime.wig",
+        fwd="fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
         fwd=report("fiveprimetracks/{method}-{condition}-{replicate}.mil.forward.fiveprime.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
@@ -326,7 +326,7 @@ rule fiveprimewigtobigwigmilforward:
 
 rule fiveprimewigtobigwimilgreverse:
     input:
-        rev="fiveprimetracks/{method}-{condition}-{replicate}.mil.reverse.fiveprime.wig",
+        rev="fiveprimetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
         rev=report("fiveprimetracks/{method}-{condition}-{replicate}.mil.reverse.fiveprime.bw", caption="../report/fiveprimewig.rst", category="5' single nucleotide mapping tracks")
@@ -344,12 +344,12 @@ rule threeprimewig:
         stats="maplink/{method}-{condition}-{replicate}.readstats",
         min="maplink/minreads.txt"
     output:
-        fwd="threeprimetracks/{method}-{condition}-{replicate}.raw.forward.threeprime.wig",
-        rev="threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.threeprime.wig",
-        fmil="threeprimetracks/{method}-{condition}-{replicate}.mil.forward.threeprime.wig",
-        rmil="threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.threeprime.wig",
-        fmin="threeprimetracks/{method}-{condition}-{replicate}.min.forward.threeprime.wig",
-        rmin="threeprimetracks/{method}-{condition}-{replicate}.min.reverse.threeprime.wig"
+        fwd="threeprimetracks/{method}-{condition}-{replicate}.raw.forward.wig",
+        rev="threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.wig",
+        fmil="threeprimetracks/{method}-{condition}-{replicate}.mil.forward.wig",
+        rmil="threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
+        fmin="threeprimetracks/{method}-{condition}-{replicate}.min.forward.wig",
+        rmin="threeprimetracks/{method}-{condition}-{replicate}.min.reverse.wig"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
@@ -359,7 +359,7 @@ rule threeprimewig:
 
 rule threeprimewigtobigwigrawforward:
     input:
-        fwd="threeprimetracks/{method}-{condition}-{replicate}.raw.forward.threeprime.wig",
+        fwd="threeprimetracks/{method}-{condition}-{replicate}.raw.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
         fwd=report("threeprimetracks/{method}-{condition}-{replicate}.raw.forward.threeprime.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
@@ -371,7 +371,7 @@ rule threeprimewigtobigwigrawforward:
 
 rule threeprimewigtobigwigrawreverse:
     input:
-        rev="threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.threeprime.wig",
+        rev="threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
         rev=report("threeprimetracks/{method}-{condition}-{replicate}.raw.reverse.threeprime.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
@@ -383,7 +383,7 @@ rule threeprimewigtobigwigrawreverse:
 
 rule threeprimewigtobigwigminforward:
     input:
-        fwd="threeprimetracks/{method}-{condition}-{replicate}.min.forward.threeprime.wig",
+        fwd="threeprimetracks/{method}-{condition}-{replicate}.min.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
         fwd=report("threeprimetracks/{method}-{condition}-{replicate}.min.forward.threeprime.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
@@ -395,7 +395,7 @@ rule threeprimewigtobigwigminforward:
 
 rule threeprimewigtobigwigminreverse:
     input:
-        rev="threeprimetracks/{method}-{condition}-{replicate}.min.reverse.threeprime.wig",
+        rev="threeprimetracks/{method}-{condition}-{replicate}.min.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
         rev=report("threeprimetracks/{method}-{condition}-{replicate}.min.reverse.threeprime.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
@@ -407,7 +407,7 @@ rule threeprimewigtobigwigminreverse:
 
 rule threeprimewigtobigwigmilforward:
     input:
-        fwd="threeprimetracks/{method}-{condition}-{replicate}.mil.forward.threeprime.wig",
+        fwd="threeprimetracks/{method}-{condition}-{replicate}.mil.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
         fwd=report("threeprimetracks/{method}-{condition}-{replicate}.mil.forward.threeprime.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
@@ -419,7 +419,7 @@ rule threeprimewigtobigwigmilforward:
 
 rule threeprimewigtobigwigmilreverse:
     input:
-        rev="threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.threeprime.wig",
+        rev="threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
         rev=report("threeprimetracks/{method}-{condition}-{replicate}.mil.reverse.threeprime.bw", caption="../report/threeprimewig.rst", category="3' single nucleotide mapping tracks")
