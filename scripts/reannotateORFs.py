@@ -62,14 +62,19 @@ def fill_annotation_dict(args):
                 strand = getattr(row, "_6")
                 description = getattr(row, "_8")
                 attributes = [x.lower() for x in re.split('[;=]', description)]
+                # locus_tag
                 if "locus_tag" in attributes:
-                    id = attributes[attributes.index("locus_tag") + 1]
-                elif "gene" in attributes:
-                    id = attributes[attributes.index("gene") + 1]
-                elif "name" in attributes:
-                    id = attributes[attributes.index("name") + 1]
+                    locus_tag = attributes[attributes.index("locus_tag") + 1]
                 else:
-                    id = attributes[attributes.index("id") + 1]
+                    locus_tag = attributes[attributes.index("id") + 1]
+
+                # gene name
+                if "name" in attributes:
+                    name = attributes[attributes.index("gene") + 1]
+                elif "gene" in attributes:
+                    name = attributes[attributes.index("name") + 1]
+                else:
+                    name = "NA"
 
                 # update the annotation dictionary
                 if start in annotation_dict:
@@ -77,28 +82,37 @@ def fill_annotation_dict(args):
                         if strand in annotation_dict[start][stop]:
                             print("Duplicate found!")
                         else:
-                            annotation_dict[start][stop][strand] = id
+                            annotation_dict[start][stop][strand] = (locus_tag, name)
                     else:
                         annotation_dict[start][stop] = {}
-                        annotation_dict[start][stop][strand] = id
+                        annotation_dict[start][stop][strand] = (locus_tag, name)
                 else:
                     annotation_dict[start] = {}
                     annotation_dict[start][stop] = {}
-                    annotation_dict[start][stop][strand] = id
+                    annotation_dict[start][stop][strand] = (locus_tag, name)
     else: # gtf
         # build dictionary
         for row in annotation_df.itertuples(index=False, name='Pandas'):
-            # using "cds" for gff3 files as it contains most information
+            # using "cds" for gtf files as it contains most information
             if getattr(row, "_2").lower() == "cds":
                 start = getattr(row, "_3")
                 stop = getattr(row, "_4")
                 strand = getattr(row, "_6")
                 description = getattr(row, "_8")
                 attributes = [x.lower() for x in re.split('[; ]', description)]
+                # locus_tag
                 if "locus_tag" in attributes:
-                    id = attributes[attributes.index("locus_tag")+1].replace("\"", "")
+                    locus_tag = attributes[attributes.index("locus_tag")+1].replace("\"", "")
                 else:
-                    id = attributes[attributes.index("gene_id")+1].replace("\"", "")
+                    locus_tag = attributes[attributes.index("gene_id")+1].replace("\"", "")
+
+                # name
+                if "gene_name" in attributes:
+                    name = attributes[attributes.index("gene_name")+1].replace("\"", "")
+                elif "transcript_name" in attributes:
+                    name = attributes[attributes.index("transcript_name")+1].replace("\"", "")
+                else:
+                    name = "NA"
 
                 # update the annotation dictionary
                 if start in annotation_dict:
@@ -106,14 +120,14 @@ def fill_annotation_dict(args):
                         if strand in annotation_dict[start][stop]:
                             print("Duplicate found!")
                         else:
-                            annotation_dict[start][stop][strand] = id
+                            annotation_dict[start][stop][strand] = (locus_tag, name)
                     else:
                         annotation_dict[start][stop] = {}
-                        annotation_dict[start][stop][strand] = id
+                        annotation_dict[start][stop][strand] = (locus_tag, name)
                 else:
                     annotation_dict[start] = {}
                     annotation_dict[start][stop] = {}
-                    annotation_dict[start][stop][strand] = id
+                    annotation_dict[start][stop][strand] = (locus_tag, name)
 
     return annotation_dict
 
@@ -130,8 +144,9 @@ def reannotate_ORFs(args):
         stop = getattr(row, "_4")
         strand = getattr(row, "_6")
         try:
-            new_id = annotation_dict[start][stop][strand]
-            rows.append(create_ntuple(row, s8="%s;annotated=%s" % (getattr(row, "_8"), new_id)))
+            locus_tag = annotation_dict[start][stop][strand][0]
+            name = annotation_dict[start][stop][strand][1]
+            rows.append(create_ntuple(row, s8="%s;annotated=%s;name=%s" % (getattr(row, "_8"), locus_tag, name)))
         except KeyError:
             rows.append(row)
 

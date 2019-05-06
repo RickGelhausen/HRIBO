@@ -40,13 +40,13 @@ def parse_orfs(args):
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
     # id + start + stop + strand + length + rest
-    column_count = len(read_df.columns) + 2
+    column_count = len(read_df.columns) + 3
 
     name_list = ["s%s" % str(x) for x in range(column_count)]
     nTuple = collections.namedtuple('Pandas', name_list)
     # read gff file
     rows = []
-    header = ["orfID", "start", "stop", "strand", "length"] + wildcards + ["evidence","annotated"]
+    header = ["orfID", "start", "stop", "strand", "length"] + wildcards + ["evidence","annotated", "name"]
     rows.append(nTuple(*header))
     for row in read_df.itertuples(index=False, name='Pandas'):
         start = getattr(row, "_1")
@@ -61,6 +61,10 @@ def parse_orfs(args):
         if "annotated" in attribute_list:
             annotated = attribute_list[attribute_list.index("annotated")+1]
 
+        name="NA"
+        if "name" in attribute_list:
+            name = attribute_list[attribute_list.index("name")+1]
+
         evidence = attribute_list[attribute_list.index("Evidence")+1]
         length = stop - start + 1
 
@@ -70,7 +74,7 @@ def parse_orfs(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[wildcards[idx]], val, length))
 
-        result = [id, start, stop, strand, length] + rpkm_list + [evidence, annotated]
+        result = [id, start, stop, strand, length] + rpkm_list + [evidence, annotated, name]
         rows.append(nTuple(*result))
 
     excel_df = pd.DataFrame.from_records(rows, columns=[x for x in range(column_count)])
