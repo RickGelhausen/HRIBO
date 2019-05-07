@@ -34,7 +34,7 @@ rule samuniq:
     input:
         sammulti="sammulti/{method}-{condition}-{replicate}.sam"
     output:
-        sam="sam/{method}-{condition}-{replicate}.sam"
+        sam="sam/{method}-{condition}-{replicate}.rawsam"
     conda:
         "../envs/samtools.yaml"
     threads: 20
@@ -59,6 +59,15 @@ rule samuniq:
         """
         #"mkdir -p sam; samtools view  -H <(cat {input.sammulti}) | grep '@HD' > {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@SQ' | sort -t$'\t' -k1,1 -k2,2V >> {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@RG' >> {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@PG' >> {output.sam}; cat {input.sammulti} |grep -v '^@' | grep -w 'NH:i:1' >> {output.sam}"
 
+rule samstrandswap:
+    input:
+        sam="sam/{method}-{condition}-{replicate}.rawsam"
+    output:
+        sam="sam/{method}-{condition}-{replicate}.sam"
+    threads: 1
+    params:
+         method=lambda wildcards: wildcards.method
+    shell: "if [ \"{params.method}\" == \"NOTSET\" ]; then SPtools/scripts/samstrandinverter.py --sam_in_filepath={input.sam} --sam_out_filepath={output.sam}; else cp {input.sam} {output.sam}; fi"
 
 rule samtobam:
     input:
