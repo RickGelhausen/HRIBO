@@ -49,16 +49,15 @@ def createNTuple(row, s0=None, s1=None, s2=None, s3=None, s4=None, s5=None, s6=N
 def create_dictionary(inputDF):
     geneDict = dict()
     for row in inputDF.itertuples(index=False, name='Pandas'):
-        commentPart = getattr(row, "_8").split(";")
-        for opt in commentPart:
-            if "ID" in opt:
-                geneID = opt.split("=")[1]
+        attributes = re.split('[;=]', getattr(row, "_8"))
+        if "ID" in attributes:
+            geneID = attributes[attributes.index("ID")+1]
 
-                # save the row into the dictionary and ensure gene_id is written in lowercase
-                if geneID in geneDict:
-                    geneDict[geneID].append(createNTuple(row))
-                else:
-                    geneDict[geneID] = [createNTuple(row)]
+            # save the row into the dictionary and ensure gene_id is written in lowercase
+            if geneID in geneDict:
+                geneDict[geneID].append(createNTuple(row))
+            else:
+                geneDict[geneID] = [createNTuple(row)]
     return geneDict
 
 def handle_overlap(args):
@@ -71,18 +70,20 @@ def handle_overlap(args):
     rows = []
     for key in geneDict.keys():
         sampleRow = geneDict[key][0]
-        cm = set()
+        evidence = set()
+        orftype = set()
         for row in geneDict[key]:
-            attributes = getattr(row, "s8").split(";")
-            for opt in attributes:
-                if "Condition" in opt:
-                    condition = opt.split("=")[1]
-                if "Method" in opt:
-                    method = opt.split("=")[1]
+            attributes = re.split('[;=]', getattr(row, "s8"))
+            if "Condition" in attributes and "Method" in attributes:
+                condition = attributes[attributes.index("Condition")+1]
+                method = attributes[attributes.index("Method")+1]
+                evidence.add(method + "-" + condition)
 
-            cm.add(method + "-" + condition)
+            if "ORF_type" in attributes:
+                orftype.add(attributes[attributes.index("ORF_type")+1])
 
-        attribute = "ID="+key+";Name="+key+";Evidence="+",".join(cm)
+
+        attribute = "ID="+key+";Name="+key+";ORF_type="+",".join(orftype)+";Evidence="+",".join(evidence)
         rows.append(createNTuple(sampleRow,s1="merged",s8=attribute))
 
     return pd.DataFrame.from_records(rows, columns=[0,1,2,3,4,5,6,7,8])

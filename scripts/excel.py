@@ -35,18 +35,18 @@ def parse_orfs(args):
         wildcards = f.readline()
 
     wildcards = wildcards.replace("# ", "").split()
-    wildcards = [os.path.splitext(os.path.basename(card))[0] for card in wildcards]
+    wildcards = [os.path.splitext(os.path.basename(card))[0] + "_rpkm" for card in wildcards]
 
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
     # id + start + stop + strand + length + rest
-    column_count = len(read_df.columns) + 3
+    column_count = len(read_df.columns) + 4                      # ADD HERE
 
     name_list = ["s%s" % str(x) for x in range(column_count)]
     nTuple = collections.namedtuple('Pandas', name_list)
     # read gff file
     rows = []
-    header = ["orfID", "start", "stop", "strand", "length"] + wildcards + ["evidence","annotated", "name"]
+    header = ["orfID", "start", "stop", "strand", "length"] + wildcards + ["evidence","annotated", "name", "ORF_type"] # ADD HERE
     rows.append(nTuple(*header))
     for row in read_df.itertuples(index=False, name='Pandas'):
         start = getattr(row, "_1")
@@ -66,6 +66,10 @@ def parse_orfs(args):
             name = attribute_list[attribute_list.index("name")+1]
 
         evidence = attribute_list[attribute_list.index("Evidence")+1]
+        orftype = attribute_list[attribute_list.index("ORF_type")+1]
+        if orftype == "":
+            orftype = "NA"
+
         length = stop - start + 1
 
         read_list = [getattr(row, "_%s" %x) for x in range(5,len(row))]
@@ -74,7 +78,7 @@ def parse_orfs(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[wildcards[idx]], val, length))
 
-        result = [id, start, stop, strand, length] + rpkm_list + [evidence, annotated, name]
+        result = [id, start, stop, strand, length] + rpkm_list + [evidence, annotated, name, orftype] # ADD HERE
         rows.append(nTuple(*result))
 
     excel_df = pd.DataFrame.from_records(rows, columns=[x for x in range(column_count)])
@@ -84,7 +88,7 @@ def parse_orfs(args):
 
 def main():
     # store commandline args
-    parser = argparse.ArgumentParser(description='create excel files containing \
+    parser = argparse.ArgumentParser(description='create excel files containing: \
                                                 id, start, stop, orflength, potential RBS, rpkm')
     #parser.add_argument("-a", "--annotation_combine", action="store", dest="combined", required=True, help= "orf gff file.")
     #parser.add_argument("-g", "--genome", action="store", dest="genome", required=True, help= "reference genome")
