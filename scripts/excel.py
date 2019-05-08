@@ -35,7 +35,7 @@ def parse_orfs(args):
         wildcards = f.readline()
 
     wildcards = wildcards.replace("# ", "").split()
-    wildcards = [os.path.splitext(os.path.basename(card))[0] + "_rpkm" for card in wildcards]
+    wildcards = [os.path.splitext(os.path.basename(card))[0] for card in wildcards]
 
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
@@ -46,7 +46,7 @@ def parse_orfs(args):
     nTuple = collections.namedtuple('Pandas', name_list)
     # read gff file
     rows = []
-    header = ["orfID", "start", "stop", "strand", "length"] + wildcards + ["evidence","annotated", "name", "ORF_type"] # ADD HERE
+    header = ["orfID", "start", "stop", "strand", "length"] + [card + "_rpkm" for card in wildcards] + ["evidence","annotated", "name", "ORF_type"] # ADD HERE
     rows.append(nTuple(*header))
     for row in read_df.itertuples(index=False, name='Pandas'):
         start = getattr(row, "_1")
