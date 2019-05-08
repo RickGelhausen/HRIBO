@@ -5,8 +5,9 @@ import os
 import pandas as pd
 import collections
 
-# from Bio.Seq import Seq
-# from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio import SeqIO
+from Bio.Alphabet import generic_dna
 
 def calculate_rpkm(total_mapped, read_count, read_length):
     """
@@ -14,12 +15,29 @@ def calculate_rpkm(total_mapped, read_count, read_length):
     """
     return "%.2f" % ((read_count * 1000000000) / (total_mapped * read_length))
 
+def get_genome_information(genome, start, stop, strand):
+    genome_snipped = genome[start:stop+1]
+    # retrieve the nucleotide sequence with correct strand
+    if strand == "+":
+        nucleotide_seq = genome_snipped
+    else:
+        nucleotide_seq = genome_snipped[::-1]
+
+    # get start and stop codons
+    start_codon = nucleotide_seq[0:3]
+    stop_codon = nucleotide_seq[-3:]
+
+    # translate nucleotide_seq to aminoacid sequence
+    coding_dna = Seq(nucleotide_seq, generic_dna)
+    aa_seq = str(coding_dna.translate(table=11))
+    return start_codon, stop_codon, nucleotide_seq, aa_seq
+
 def parse_orfs(args):
     # read the genome file
-    # genome_file = SeqIO.parse(args.genome, "fasta")
-    # genome_dict = dict()
-    # for entry in genome_file:
-    #     genome_dict[str(entry.id)] = str(entry.seq)
+    genome_file = SeqIO.parse(args.genome, "fasta")
+    genome_dict = dict()
+    for entry in genome_file:
+        genome_dict[str(entry.id)] = str(entry.seq)
 
     # get the total mapped reads for each bam file
     total_mapped_dict = {}
@@ -40,19 +58,22 @@ def parse_orfs(args):
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
     # id + start + stop + strand + length + rest
-    column_count = len(read_df.columns) + 4                      # ADD HERE
+    column_count = len(read_df.columns) + 8                      # ADD HERE
 
     name_list = ["s%s" % str(x) for x in range(column_count)]
     nTuple = collections.namedtuple('Pandas', name_list)
     # read gff file
     rows = []
-    header = ["orfID", "start", "stop", "strand", "length"] + [card + "_rpkm" for card in wildcards] + ["evidence","annotated", "name", "ORF_type"] # ADD HERE
+    header = ["orfID", "start", "stop", "strand", "length"] + [card + "_rpkm" for card in wildcards] + ["evidence", "annotated", "name", "ORF_type", "start_codon", "stop_codon", "nucleotide_seq", "aminoacid_seq"] # ADD HERE
     rows.append(nTuple(*header))
     for row in read_df.itertuples(index=False, name='Pandas'):
+        accession = getattr(row, "_0")
         start = getattr(row, "_1")
         stop = getattr(row, "_2")
         strand = getattr(row, "_3")
         attributes = getattr(row, "_4")
+
+        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[accession], start, stop, strand)
 
         attribute_list = re.split('[;=]', attributes)
         id = attribute_list[attribute_list.index("ID")+1]
@@ -78,7 +99,7 @@ def parse_orfs(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[wildcards[idx]], val, length))
 
-        result = [id, start, stop, strand, length] + rpkm_list + [evidence, annotated, name, orftype] # ADD HERE
+        result = [id, start, stop, strand, length] + rpkm_list + [evidence, annotated, name, orftype, start_codon, stop_codon, nucleotide_seq, aa_seq] # ADD HERE
         rows.append(nTuple(*result))
 
     excel_df = pd.DataFrame.from_records(rows, columns=[x for x in range(column_count)])
@@ -91,7 +112,7 @@ def main():
     parser = argparse.ArgumentParser(description='create excel files containing: \
                                                 id, start, stop, orflength, potential RBS, rpkm')
     #parser.add_argument("-a", "--annotation_combine", action="store", dest="combined", required=True, help= "orf gff file.")
-    #parser.add_argument("-g", "--genome", action="store", dest="genome", required=True, help= "reference genome")
+    parser.add_argument("-g", "--genome", action="store", dest="genome", required=True, help= "reference genome")
     parser.add_argument("-t", "--total_mapped_reads", action="store", dest="total_mapped", required=True\
                                                     , help= "file containing the total mapped reads for all alignment files.")
     parser.add_argument("-r", "--mapped_reads", action="store", dest="reads", required=True, help= "file containing the individual read counts")
