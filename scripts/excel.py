@@ -72,7 +72,7 @@ def parse_orfs(args):
         strand = getattr(row, "_3")
         attributes = getattr(row, "_4")
 
-        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[accession], start, stop, strand)
+        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[accession], start-1, stop-1, strand)
 
         attribute_list = re.split('[;=]', attributes)
         id = attribute_list[attribute_list.index("ID")+1]
