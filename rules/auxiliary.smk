@@ -107,11 +107,12 @@ rule totalMappedReads:
 rule createExcelSummary:
     input:
         total="auxiliary/total_mapped_reads.txt",
-        reads="auxiliary/read_counts.bed"
+        reads="auxiliary/read_counts.bed",
+        genome="genomes/genome.fa"
     output:
         report("auxiliary/summary.xlsx", caption="../report/summary.rst", category="Summary table")
     conda:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/excel.py -t {input.total} -r {input.reads} -o {output}"
+        "mkdir -p auxiliary; SPtools/scripts/excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
