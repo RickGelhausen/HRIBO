@@ -16,12 +16,11 @@ def calculate_rpkm(total_mapped, read_count, read_length):
     return "%.2f" % ((read_count * 1000000000) / (total_mapped * read_length))
 
 def get_genome_information(genome, start, stop, strand):
-    genome_snipped = genome[start:stop+1]
     # retrieve the nucleotide sequence with correct strand
     if strand == "+":
-        nucleotide_seq = genome_snipped
+        nucleotide_seq = genome[0][start:stop+1]
     else:
-        nucleotide_seq = genome_snipped[::-1]
+        nucleotide_seq = genome[1][start:stop+1]
 
     # get start and stop codons
     start_codon = nucleotide_seq[0:3]
@@ -37,7 +36,7 @@ def parse_orfs(args):
     genome_file = SeqIO.parse(args.genome, "fasta")
     genome_dict = dict()
     for entry in genome_file:
-        genome_dict[str(entry.id)] = str(entry.seq)
+        genome_dict[str(entry.id)] = (str(entry.seq),str(entry.seq)[::-1])
 
     # get the total mapped reads for each bam file
     total_mapped_dict = {}
