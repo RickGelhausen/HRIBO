@@ -20,7 +20,7 @@ def get_genome_information(genome, start, stop, strand):
     if strand == "+":
         nucleotide_seq = genome[0][start:stop+1]
     else:
-        nucleotide_seq = genome[1][start:stop+1]
+        nucleotide_seq = genome[1][start:stop+1][::-1]
 
     # get start and stop codons
     start_codon = nucleotide_seq[0:3]
@@ -36,8 +36,9 @@ def parse_orfs(args):
     genome_file = SeqIO.parse(args.genome, "fasta")
     genome_dict = dict()
     for entry in genome_file:
-        genome_dict[str(entry.id)] = (str(entry.seq),str(entry.seq)[::-1])
-
+        genome_dict[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
+        with open("test-rev.txt", "w") as f:
+            f.write(str(entry.seq.complement()))
     # get the total mapped reads for each bam file
     total_mapped_dict = {}
     with open(args.total_mapped, "r") as f:
