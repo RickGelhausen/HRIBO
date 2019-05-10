@@ -28,7 +28,7 @@ def get_genome_information(genome, start, stop, strand):
 
     # translate nucleotide_seq to aminoacid sequence
     coding_dna = Seq(nucleotide_seq, generic_dna)
-    aa_seq = str(coding_dna.translate(table=11))
+    aa_seq = str(coding_dna.translate(table=11,to_stop=True))
     return start_codon, stop_codon, nucleotide_seq, aa_seq
 
 def parse_orfs(args):

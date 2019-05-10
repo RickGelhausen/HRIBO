@@ -9,7 +9,15 @@ Results:
 
 Quality control summary by MultiQC (containing FastQC, trimming, featurecount), see Section `Quality control`_ .
 
-Mapped reads, see Section `Mapped tracks`_ .
+There are four categories of coverage tracks for mapped reads, all computed with single nucleotide mapping. 
+
+See Section `Global tracks`_ using the full read length for coverage file computation.
+
+See Section `Centered tracks`_ using only the nucleotides in the center of the read for coverage file computation.
+
+See Section `5' single nucleotide mapping tracks`_ using only the nucleotide at the five prime end of the read for coverage file computation.
+
+See Section `3' single nucleotide mapping tracks`_ using only the nucleotide at the three prime end of the read for coverage file computation.
 
 Open reading frames detected by Ribotish and Reparation for different conditions, see gff files in Section `Novel ORFs`_ .
 
