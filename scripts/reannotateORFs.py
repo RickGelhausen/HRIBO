@@ -57,9 +57,9 @@ def fill_annotation_dict(args):
         for row in annotation_df.itertuples(index=False, name='Pandas'):
             # using "gene" for gff3 files as it contains most information
             if getattr(row, "_2").lower() == "gene":
-                start = getattr(row, "_3")
-                stop = getattr(row, "_4")
-                strand = getattr(row, "_6")
+                start = str(getattr(row, "_3"))
+                stop = str(getattr(row, "_4"))
+                strand = str(getattr(row, "_6"))
                 description = getattr(row, "_8")
                 attributes = [x.lower() for x in re.split('[;=]', description)]
                 # locus_tag
@@ -91,13 +91,14 @@ def fill_annotation_dict(args):
                     annotation_dict[start][stop] = {}
                     annotation_dict[start][stop][strand] = (locus_tag, name)
     else: # gtf
+        print("gtf detected")
         # build dictionary
         for row in annotation_df.itertuples(index=False, name='Pandas'):
             # using "cds" for gtf files as it contains most information
-            if getattr(row, "_2").lower() == "cds":
-                start = getattr(row, "_3")
-                stop = getattr(row, "_4")
-                strand = getattr(row, "_6")
+            if getattr(row, "_2").lower() == "exon":
+                start = str(getattr(row, "_3"))
+                stop = str(getattr(row, "_4"))
+                strand = str(getattr(row, "_6"))
                 description = getattr(row, "_8")
                 attributes = [x.lower() for x in re.split('[; ]', description)]
                 # locus_tag
@@ -128,7 +129,6 @@ def fill_annotation_dict(args):
                     annotation_dict[start] = {}
                     annotation_dict[start][stop] = {}
                     annotation_dict[start][stop][strand] = (locus_tag, name)
-
     return annotation_dict
 
 """
@@ -140,9 +140,9 @@ def reannotate_ORFs(args):
     rows = []
     combined_df = pd.read_csv(args.combinedGFF, comment="#", header=None, sep="\t")
     for row in combined_df.itertuples(index=False, name='Pandas'):
-        start = getattr(row, "_3")
-        stop = getattr(row, "_4")
-        strand = getattr(row, "_6")
+        start = str(getattr(row, "_3"))
+        stop = str(getattr(row, "_4"))
+        strand = str(getattr(row, "_6"))
         try:
             locus_tag = annotation_dict[start][stop][strand][0]
             name = annotation_dict[start][stop][strand][1]
