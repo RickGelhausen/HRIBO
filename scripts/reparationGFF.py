@@ -41,7 +41,7 @@ def createNTuple(args, row):
     if strand is '-':
        start = str(int(start) - 3)
        stop = str(int(stop)) # due to bug in reparation
-        
+
     seqName = chromosome
     source = "reparation"
     type = "CDS"
@@ -52,7 +52,8 @@ def createNTuple(args, row):
               + ";ORF_type=" + ORF_type + ";Length=" + length + ";Ribo_count=" + ribo_count \
               + ";Ribo_rpkm=" + ribo_rpkm + ";Ribo_coverage=" + ribo_coverage + ";SD_score=" + SD_score \
               + ";SD_pos=" + SD_pos + ";Prob=" + prob + ";Reference=" + Reference \
-              + ";Distance_from_aTIS=" + Distance_from_aTIS + ";Condition=" + args.condition + ";Method=reparation"
+              + ";Distance_from_aTIS=" + Distance_from_aTIS + ";Condition=" + args.condition \
+              + ";Replicate=" + args.replicate + ";Method=reparation"
 
     return nTuple(seqName, source, type, start, stop, score, strand, phase, attribute)
 
@@ -76,6 +77,8 @@ def main():
                                           , help= "the input file. (created by reparation)")
     parser.add_argument("-c", "--condition", action="store", dest="condition", required=True
                                           , help= "the condition of the current file")
+    parser.add_argument("-r", "--replicate", action="store", dest="replicate", required=True
+                                          , help= "the replicate of the current file")
     parser.add_argument("-o", "--outputGFF", action="store", dest="outputGFF", required=True
                                            , help= "the output file name (gff3 format)")
 

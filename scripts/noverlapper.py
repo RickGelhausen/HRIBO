@@ -74,7 +74,12 @@ def handle_overlap(args):
         orftype = set()
         for row in geneDict[key]:
             attributes = re.split('[;=]', getattr(row, "s8"))
-            if "Condition" in attributes and "Method" in attributes:
+            if "Condition" in attributes and "Method" in attributes and "Replicate" in attributes:
+                condition = attributes[attributes.index("Condition")+1]
+                method = attributes[attributes.index("Method")+1]
+                replicate = attributes[attributes.index("Replicate")+1]
+                evidence.add(method + "-" + condition + "-" + replicate)
+            elif "Condition" in attributes and "Method" in attributes:
                 condition = attributes[attributes.index("Condition")+1]
                 method = attributes[attributes.index("Method")+1]
                 evidence.add(method + "-" + condition)
@@ -91,8 +96,7 @@ def handle_overlap(args):
 
 def main():
     # store commandline args
-    parser = argparse.ArgumentParser(description='removes duplicate intervals and finds\
-                                                    the longest non-overlapping interval')
+    parser = argparse.ArgumentParser(description='condense duplicates into one entry')
     parser.add_argument("-i", "--inputGFF", action="store", dest="inputGFF", required=True
                                           , help= "the input file (gff3 format).")
     parser.add_argument("-o", "--outputGFF", action="store", dest="outputGFF", required=True
