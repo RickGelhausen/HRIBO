@@ -105,10 +105,8 @@ def main():
     if os.stat(args.inputGFF).st_size == 0:
         open(args.outputGFF, 'a').close()
     else:
-        with open(args.outputGFF, "w") as f:
-            f.write("##gff-version 3\n")
-            newDF = handle_overlap(args)
-            newDF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
+        newDF = handle_overlap(args)
+        newDF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
 
 
