@@ -71,8 +71,6 @@ def fill_annotation_dict(args):
                 # gene name
                 if "name" in attributes:
                     name = attributes[attributes.index("name") + 1]
-                elif "gene" in attributes:
-                    name = attributes[attributes.index("gene") + 1]
                 else:
                     name = "NA"
 
@@ -146,7 +144,13 @@ def reannotate_ORFs(args):
         try:
             locus_tag = annotation_dict[start][stop][strand][0]
             name = annotation_dict[start][stop][strand][1]
-            rows.append(create_ntuple(row, s8="%s;annotated=%s;name=%s" % (getattr(row, "_8"), locus_tag, name)))
+            if name = "NA":
+                rows.append(create_ntuple(row, s8="%s;locus_tag=%s" % (getattr(row, "_8"), locus_tag)))
+            else:
+                attributes = re.split('[;=]', getattr(row, "_8"))
+                attributes[attributes.index("Name")+1] = name
+                attributes = ";".join(["%s=%s" % (attributes[i], attributes[i+1]) for i in range(0,len(attributes),2)])
+                rows.append(create_ntuple(row, s8="%s;locus_tag=%s" % (attributes, locus_tag)))
         except KeyError:
             rows.append(row)
 

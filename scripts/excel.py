@@ -79,8 +79,8 @@ def parse_orfs(args):
         id = attribute_list[attribute_list.index("ID")+1]
 
         annotated="NA"
-        if "annotated" in attribute_list:
-            annotated = attribute_list[attribute_list.index("annotated")+1]
+        if "locus_tag" in attribute_list:
+            annotated = attribute_list[attribute_list.index("locus_tag")+1]
 
         name="NA"
         if "name" in attribute_list:
