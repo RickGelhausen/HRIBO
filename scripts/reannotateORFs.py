@@ -144,7 +144,7 @@ def reannotate_ORFs(args):
         try:
             locus_tag = annotation_dict[start][stop][strand][0]
             name = annotation_dict[start][stop][strand][1]
-            if name = "NA":
+            if name == "NA":
                 rows.append(create_ntuple(row, s8="%s;locus_tag=%s" % (getattr(row, "_8"), locus_tag)))
             else:
                 attributes = re.split('[;=]', getattr(row, "_8"))

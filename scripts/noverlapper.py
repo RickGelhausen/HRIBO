@@ -106,7 +106,7 @@ def main():
         open(args.outputGFF, 'a').close()
     else:
         newDF = handle_overlap(args)
-        newDF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
+        newDF.to_csv(args.outputGFF, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
 
 
