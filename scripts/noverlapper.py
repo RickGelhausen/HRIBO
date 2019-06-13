@@ -103,10 +103,12 @@ def main():
                                            , help= "the output file name (gff3 format)")
     args = parser.parse_args()
     if os.stat(args.inputGFF).st_size == 0:
-       open(args.outputGFF, 'a').close()
+        open(args.outputGFF, 'a').close()
     else:
-       newDF = handle_overlap(args)
-       newDF.to_csv(args.outputGFF, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
+        with open(args.outputGFF, "w") as f:
+            f.write("##gff-version 3\n")
+            newDF = handle_overlap(args)
+            newDF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
 
 
