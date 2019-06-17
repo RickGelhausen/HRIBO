@@ -88,7 +88,7 @@ def handle_overlap(args):
                 orftype.add(attributes[attributes.index("ORF_type")+1])
 
 
-        attribute = "ID="+key+";Name="+key+";ORF_type="+",".join(orftype)+";Evidence="+",".join(evidence)
+        attribute = "ID="+key+";Name="+key+";ORF_type="+",".join(orftype)+";Evidence="+" ".join(evidence)
         rows.append(createNTuple(sampleRow,s1="merged",s8=attribute))
 
     return pd.DataFrame.from_records(rows, columns=[0,1,2,3,4,5,6,7,8])
