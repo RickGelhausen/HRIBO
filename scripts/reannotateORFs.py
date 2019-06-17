@@ -168,7 +168,9 @@ def main():
     with open(args.outputGFF, "w") as f:
         f.write("##gff-version 3\n")
     with open(args.outputGFF, "a") as f:
-        reannotate_ORFs(args).to_csv(f, header=None, sep="\t", index=False, quoting=csv.QUOTE_NONE)
+        df = reannotate_ORFs(args)
+        df.sort_values(by=[0,3,4], inplace=True)
+        df.to_csv(f, header=None, sep="\t", index=False, quoting=csv.QUOTE_NONE)
 
 if __name__ == '__main__':
     main()
