@@ -3,7 +3,7 @@ import re
 import pandas as pd
 import itertools as iter
 from snakemake.utils import validate, min_version
-min_version("5.4.2")
+min_version("5.5.1")
 
 ADAPTERS=config["adapter"]
 INDEXPATH=config["genomeindexpath"]
