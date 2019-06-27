@@ -50,13 +50,15 @@ rule rrnafilter:
         "trimmed/{method}-{condition}-{replicate}.fastq",
         rules.rrnaindex.output
     output:
-        "norRNA/{method}-{condition}-{replicate}.fastq"
+        norrna="norRNA/{method}-{condition}-{replicate}.fastq",
+        rrna="norRNA/rRNA/reject/{method}-{condition}-{replicate}.fastq"
     conda:
         "../envs/sortmerna.yaml"
     params:
-        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0]),
+        prefix=lambda wildcards, output: (os.path.splitext(output.norrna)[0]),
+        rejectprefix=lambda wildcards, output: (os.path.splitext(output.rrna)[0]),
         dbstring = get_indexfiles()
     threads: 20
     shell:
-        "mkdir -p norRNA; mkdir -p norRNA/rRNA; sortmerna -a {threads} --ref {params.dbstring} --reads {input[0]} --num_alignments 1 --fastx --aligned norRNA/rRNA/reject --other {params.prefix} 2> /dev/null"
+        "mkdir -p norRNA; mkdir -p norRNA/rRNA; sortmerna -a {threads} --ref {params.dbstring} --reads {input[0]} --num_alignments 1 --fastx --log --aligned {params.rejectprefix} --other {params.prefix} 2> /dev/null"
 

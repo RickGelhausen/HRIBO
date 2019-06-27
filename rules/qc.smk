@@ -13,6 +13,21 @@ rule fastqcmapped:
     shell:
         "mkdir -p qc/map; fastqc -o qc/map -t {threads} -f sam_mapped {input.sam}; mv qc/map/{params.prefix}_fastqc.html {output.html}; mv qc/map/{params.prefix}_fastqc.zip {output.zip}"
 
+rule fastqcmulti:
+    input:
+        sam="sammulti/{method}-{condition}-{replicate}.sam"
+    output:
+        html="qc/sammulti/{method}-{condition}-{replicate}-map_fastqc.html",
+        zip="qc/sammulti/{method}-{condition}-{replicate}-map_fastqc.zip",
+        #report("qc/sammulti/{method}-{condition}-{replicate}-map.html", caption="../report/fastqcmapped.rst", category="Mapped reads")
+    conda:
+        "../envs/fastqc.yaml"
+    threads: 8
+    params:
+        prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.sam))[0])
+    shell:
+        "mkdir -p qc/sammulti; fastqc -o qc/sammulti -t {threads} -f sam_mapped {input.sam}; mv qc/sammulti/{params.prefix}_fastqc.html {output.html}; mv qc/sammulti/{params.prefix}_fastqc.zip {output.zip}"
+
 rule fastqcraw:
     input:
         reads=getfastq,
@@ -99,6 +114,7 @@ rule multiqc:
         expand("qc/trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/norRNA/{method}-{condition}-{replicate}-norRNA_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/map/{method}-{condition}-{replicate}-map_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/sammulti/{method}-{condition}-{replicate}-map_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/featurecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")
@@ -109,4 +125,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/raw qc/trimmed qc/norRNA qc/map qc/featurecount trimmed  2> {log}"
+        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} norRNA/rRNA/reject qc/sammulti qc/raw qc/trimmed qc/norRNA qc/map qc/featurecount trimmed  2> {log}"
