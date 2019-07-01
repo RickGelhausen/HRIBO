@@ -1,99 +1,430 @@
 __default__:
   jobname: "{rule}"
   qname: "long"
-  resources : 'nodes=1:ppn=8'
+  resources : 'nodes=1:ppn=1,pmem=8'
   logoutputdir : "$PWD/logs"
   erroroutputdir : "$PWD/logs"
 
-retrieveGenome:
-  resources : 'nodes=1:ppn=1'
+
+# auxillary.smk
+processAnnotation:
+  resources : 'nodes=1:ppn=1,pmem=4'
   qname: "short"
 
-retrieveAnnotation:
-  resources : 'nodes=1:ppn=1'
+generateMetageneRoiStart:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+generateMetageneRoiStop:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+psiteOffsetsStart:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+psiteOffsetsStop:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+generateReadCounts:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+totalMappedReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-genomeSamToolsIndex:
-  resources : 'nodes=1:ppn=1'
-
-rrnaretrieve:
-  resources : 'nodes=1:ppn=1'
+createExcelSummary:
+  resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-rrnaindex:
-  resources : 'nodes=1:ppn=1'
 
-rrnafilter:
-  resources : 'nodes=1:ppn=20'
-
-trim:
-  resources : 'nodes=1:ppn=1'
-
-fastqc:
-  resources : 'nodes=1:ppn=6'
-  qname: "short"
-
-genomeIndex:
-  resources : 'nodes=1:ppn=20'
+# mapping.smk
+genomeSegemehlIndex:
+  resources : 'nodes=1:ppn=20,pmem=2'
 
 map:
-  resources : 'nodes=1:ppn=20'
+  resources : 'nodes=1:ppn=20,pmem=2'
 
-maplink:
-  resources : 'nodes=1:ppn=1'
-  qname: "tiny"
+samuniq:
+  resources : 'nodes=1:ppn=20,pmem=2'
 
-ribotish:
-  resources : 'nodes=1:ppn=10'
-
-longestTranscript:
-  resources : 'nodes=1:ppn=1'
-
-normalizedCounts:
-  resources : 'nodes=1:ppn=1'
-
-genomeSize:
-  resources : 'nodes=1:ppn=1'
-
-bamindex:
-  resources : 'nodes=1:ppn=20'
-
-wig:
-  resources : 'nodes=1:ppn=5'
-
-annotationBed:
-  resources : 'nodes=1:ppn=1'
-
-annotationBigBed:
-  resources : 'nodes=1:ppn=1'
-
-reparation:
-  resources : 'nodes=1:ppn=20'
-
-uniprotDBRetrieve:
-  resources : 'nodes=1:ppn=1'
+samstrandswap:
+  resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
 samtobam:
-  resources : 'nodes=1:ppn=20'
+  resources : 'nodes=1:ppn=20,pmem=2'
 
-reparationGFF:
-  resources : 'nodes=1:ppn=1'
+maplink:
+  resources : 'nodes=1:ppn=1,pmem=2'
+  qname: "short"
 
-concatReparation:
-  resources : 'nodes=1:ppn=1'
 
-noverlap:
-  resources : 'nodes=1:ppn=1'
-
+# merge + tis
 mergeConditions:
-  resources : 'nodes=1:ppn=1'
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
 
 mergeAll:
-  resources : 'nodes=1:ppn=1'
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
 
 filterAll:
-  resources : 'nodes=1:ppn=1'
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+reannotatedORFs:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
 
 newAnnotation:
-  resources : 'nodes=1:ppn=1'
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+
+# preprocessing.smk
+retrieveGenome:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+retrieveAnnotation:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+# qc
+fastqcmapped:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+fastqcmulti:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+fastqcraw:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+fastqctrimmed:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+fastqcrrnafilter:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+gff2gtf:
+  resources : 'nodes=1:ppn=1,pmem=4'
+  qname: "short"
+
+featurescounts:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+coveragedepth:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+multiqc:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+# maplink.smk + tis
+maplink:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+ribomaplink:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+ribobamindexlink:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+rnamaplink:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+rnabamindexlink:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+tismaplink:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+tisbamindexlink:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+rnatismaplink:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+rnatisbamindexlink:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+# reparation
+reparation:
+  resources : 'nodes=1:ppn=20,pmem=2'
+
+uniprotDBRetrieve:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+reparationGFF:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+concatReparation:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+# ribotish
+ribotish:
+  resources : 'nodes=1:ppn=10,pmem=2'
+
+ribotishQualityTIS:
+  resources : 'nodes=1:ppn=10,pmem=2'
+
+ribotishQualityRIBO:
+  resources : 'nodes=1:ppn=10,pmem=2'
+
+ribotishAnnotation:
+  resources : 'nodes=1:ppn=1,pmem=4'
+  qname: "short"
+
+ribotishGFF:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+
+# report
+xtailreport:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+ribotishreport:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+reparationreport:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+
+# rrnafiltering.smk
+rrnaretrieve:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+rrnaindex:
+  resources : 'nodes=1:ppn=1,pmem=20'
+
+rrnafilter:
+  resources : 'nodes=1:ppn=20,pmem=2'
+
+
+# trimming.smk
+linktrim:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+trim:
+resources : 'nodes=1:ppn=20,pmem=2'
+
+
+# visualization
+genomeSamToolsIndex:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+genomeSize:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+bamindex:
+  resources : 'nodes=1:ppn=20,pmem=2'
+
+reversecomplementGenome:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+startCodonTrack:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+alternativeStartCodonTrack:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+stopCodonTrack:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+rbsTrack:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+readcountstats:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+minreadcounts:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+globalwig:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+globalwigtobigwigrawforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+globalwigtobigwigminrawreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+globalwigtobigwigminforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+globalwigtobigwigminreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+globalwigtobigwigmilforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+globalwigtobigwigmilreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+centeredwig:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+centeredwigtobigwigrawforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+centeredwigtobigwigminrawreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+centeredwigtobigwigminforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+centeredwigtobigwigminreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+centeredwigtobigwigmilforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+centeredwigtobigwigmilreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+fiveprimewig:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+fiveprimewigtobigwigrawforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+fiveprimewigtobigwigminrawreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+fiveprimewigtobigwigminforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+fiveprimewigtobigwigminreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+fiveprimewigtobigwigmilforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+fiveprimewigtobigwigmilreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+threeprimewig:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+threeprimewigtobigwigrawforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+threeprimewigtobigwigminrawreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+threeprimewigtobigwigminforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+threeprimewigtobigwigminreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+threeprimewigtobigwigmilforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+threeprimewigtobigwigmilreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+bamcompare:
+  resources : 'nodes=1:ppn=5,pmem=4'
+
+plotCorrelation:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+annotationBed:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+annotationBigBed:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+colorBigWig:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+colorGFF:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+# xtail
+longestTranscript:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+sizeFactors:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+cdsNormalizedCounts:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+contrastInput:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+xtail:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+riborex:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+riborexresults:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+xtailclassicnormalize:
+  resources : 'nodes=1:ppn=1,pmem=8'
