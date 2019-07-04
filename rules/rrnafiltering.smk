@@ -32,33 +32,32 @@ rule rrnaretrieve:
         outputName = os.path.basename(input[0])
         shell("mkdir -p rRNA_databases; mv {input} rRNA_databases/{outputName}")
 
-rule rrnaindex:
+rule rrnaannotation:
     input:
-        ["rRNA_databases/{rrnadb}.fasta".format(rrnadb=rrnadb) for rrnadb in get_dbs()]
+        annotation=rules.ribotishAnnotation.output
     output:
-        ["index/rRNA/{rrnadb}.bursttrie_0.dat".format(rrnadb=rrnadb) for rrnadb in get_dbs()]
+        annotation="annotation/rrna.gtf"
     conda:
-        "../envs/sortmerna.yaml"
+        "../envs/gawk.yaml"
     params:
         dbstring = get_indexfiles()
     threads: 1
     shell:
-        "mkdir -p index/rRNA; indexdb_rna --ref {params.dbstring}"
+        "mkdir -p index/annotation; cat {input.annotation} | awk '{if ($3 == "rrna") print $0;}' > {output.annotation}"
 
 rule rrnafilter:
     input:
-        "trimmed/{method}-{condition}-{replicate}.fastq",
-        rules.rrnaindex.output
+        mapuniq="sam/{method}-{condition}-{replicate}.sam",
+        annotation="annotation/rrna.gtf"	
     output:
-        norrna="norRNA/{method}-{condition}-{replicate}.fastq",
-        rrna="norRNA/rRNA/reject/{method}-{condition}-{replicate}.fastq"
+        mapuniqnorrna="mapuniqnorrna/{method}-{condition}-{replicate}.sam"
     conda:
-        "../envs/sortmerna.yaml"
+        "../envs/beedtools.yaml"
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output.norrna)[0]),
         rejectprefix=lambda wildcards, output: (os.path.splitext(output.rrna)[0]),
         dbstring = get_indexfiles()
     threads: 20
     shell:
-        "mkdir -p norRNA; mkdir -p norRNA/rRNA; sortmerna -a {threads} --ref {params.dbstring} --reads {input[0]} --num_alignments 1 --fastx --log --aligned {params.rejectprefix} --other {params.prefix} 2> /dev/null"
+        "mkdir -p norRNA; mkdir -p "mapuniqnorrna; bedtools intersect -v -a {input.mapuniq} -b {input.annotation}"
 
