@@ -8,7 +8,7 @@ def get_dbs():
         dbs=["rfam-5.8s-database-id98","rfam-5s-database-id98","silva-euk-18s-id95","silva-euk-28s-id98"]
     elif group == "Bacteria":
         dbs=["rfam-5s-database-id98","silva-bac-23s-id98","silva-bac-16s-id90"]
-    elif group == "Archea":
+    elif group == "Archaea":
         dbs=["rfam-5s-database-id98","silva-arc-16s-id95","silva-arc-23s-id98"]
     else:
         dbs=[]
