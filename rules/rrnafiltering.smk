@@ -34,16 +34,14 @@ rule rrnaretrieve:
 
 rule rrnaannotation:
     input:
-        annotation=rules.ribotishAnnotation.output
+        annotation=rules.retrieveAnnotation.output
     output:
         annotation="annotation/rrna.gtf"
     conda:
         "../envs/gawk.yaml"
-    params:
-        dbstring = get_indexfiles()
     threads: 1
     shell:
-        "mkdir -p index/annotation; cat {input.annotation} | awk '{if ($3 == "rrna") print $0;}' > {output.annotation}"
+        "mkdir -p index/annotation; cat {input.annotation} | awk '{{if ($3 == \"rrna\") print $0;}}' > {output.annotation}"
 
 rule rrnafilter:
     input:
@@ -52,12 +50,8 @@ rule rrnafilter:
     output:
         mapuniqnorrna="mapuniqnorrna/{method}-{condition}-{replicate}.sam"
     conda:
-        "../envs/beedtools.yaml"
-    params:
-        prefix=lambda wildcards, output: (os.path.splitext(output.norrna)[0]),
-        rejectprefix=lambda wildcards, output: (os.path.splitext(output.rrna)[0]),
-        dbstring = get_indexfiles()
+        "../envs/bedtools.yaml"
     threads: 20
     shell:
-        "mkdir -p norRNA; mkdir -p "mapuniqnorrna; bedtools intersect -v -a {input.mapuniq} -b {input.annotation}"
+        "mkdir -p norRNA; mkdir -p mapuniqnorrna; bedtools intersect -v -a {input.mapuniq} -b {input.annotation} > {output.mapuniqnorrna}"
 
