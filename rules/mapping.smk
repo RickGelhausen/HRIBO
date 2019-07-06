@@ -72,9 +72,9 @@ rule samstrandswap:
 
 rule samtobam:
     input:
-        sam="mapuniqnorrna/{method}-{condition}-{replicate}.sam"
+        sam="sam/{method}-{condition}-{replicate}.sam"
     output:
-        bam="bam/{method}-{condition}-{replicate}.bam"
+        bam="rRNAbam/{method}-{condition}-{replicate}.bam"
     conda:
         "../envs/samtools.yaml"
     threads: 20
