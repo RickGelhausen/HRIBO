@@ -60,7 +60,7 @@ rule fastqctrimmed:
 
 rule fastqcrrnafilter:
     input:
-        reads="norRNA/{method}-{condition}-{replicate}.fastq"
+        reads="bam/{method}-{condition}-{replicate}.bam"
     output:
         html="qc/norRNA/{method}-{condition}-{replicate}-norRNA_fastqc.html",
         zip="qc/norRNA/{method}-{condition}-{replicate}-norRNA_fastqc.zip"
@@ -77,16 +77,17 @@ rule gff2gtf:
     input:
         annotation={rules.retrieveAnnotation.output},
     output:
-        gtf="qc/featurecount/annotation.gtf",
+        gtfcds="qc/featurecount/annotation.gtf",
+        gtfall="qc/featurecount/annotationall.gtf"
     conda:
         "../envs/cufflinks.yaml"
     threads: 1
     shell:
-        "mkdir -p qc/featurecount; gffread {input.annotation} -T -o {output.gtf}"
+        "mkdir -p qc/featurecount; gffread {input.annotation} -o {output.gtfall}; gffread -T {input.annotation} -o {output.gtfcds};"
 
 rule featurescounts:
     input:
-        annotation={rules.gff2gtf.output.gtf},
+        annotation={rules.gff2gtf.output.gtfall},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/featurecount/{method}-{condition}-{replicate}.txt",
@@ -94,7 +95,44 @@ rule featurescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/featurecount; featureCounts -T {threads} -t exon -g transcript_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/featurecount; featureCounts -T {threads} -t gene -g ID -a {input.annotation} -o {output.txt} {input.bam}"
+
+rule trnafeaturescounts:
+    input:
+        annotation={rules.gff2gtf.output.gtfall},
+        bam="bam/{method}-{condition}-{replicate}.bam"
+    output:
+        txt="qc/trnafeaturecount/{method}-{condition}-{replicate}.txt",
+    conda:
+        "../envs/subread.yaml"
+    threads: 8
+    shell:
+        "mkdir -p qc/trnafeaturecount; featureCounts -T {threads} -t tRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
+
+rule rrnafeaturescounts:
+    input:
+        annotation={rules.gff2gtf.output.gtfall},
+        bam="bam/{method}-{condition}-{replicate}.bam"
+    output:
+        txt="qc/rrnafeaturecount/{method}-{condition}-{replicate}.txt",
+    conda:
+        "../envs/subread.yaml"
+    threads: 8
+    shell:
+        "mkdir -p qc/rrnafeaturecount; featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
+
+rule ncrnafeaturescounts:
+    input:
+        annotation={rules.gff2gtf.output.gtfall},
+        bam="bam/{method}-{condition}-{replicate}.bam"
+    output:
+        txt="qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt",
+    conda:
+        "../envs/subread.yaml"
+    threads: 8
+    shell:
+        "mkdir -p qc/ncrnarnafeaturecount; featureCounts -T {threads} -t ncRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
+
 
 rule coveragedepth:
     input:
@@ -115,7 +153,10 @@ rule multiqc:
         expand("qc/norRNA/{method}-{condition}-{replicate}-norRNA_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/unique/{method}-{condition}-{replicate}-map_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/mapped/{method}-{condition}-{replicate}-map_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("qc/featurecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+        expand("qc/featurecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/trnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/rrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")
     params:
@@ -125,4 +166,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} norRNA/rRNA/reject qc/mapped qc/raw qc/trimmed qc/norRNA qc/unique qc/featurecount trimmed  2> {log}"
+        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/mapped qc/raw qc/trimmed qc/norRNA qc/unique qc/featurecount qc/trnafeaturecount qc/rrnafeaturecount qc/ncrnafeaturecount  trimmed  2> {log}"
