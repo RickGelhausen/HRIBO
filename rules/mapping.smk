@@ -17,7 +17,7 @@ rule map:
     input:
         genome=rules.retrieveGenome.output,
         genomeSegemehlIndex="genomeSegemehlIndex/genome.idx",
-        fastq="norRNA/{method}-{condition}-{replicate}.fastq",
+        fastq="trimmed/{method}-{condition}-{replicate}.fastq",
     output:
         sammulti="sammulti/{method}-{condition}-{replicate}.sam"
     conda:
@@ -69,16 +69,18 @@ rule samstrandswap:
          method=lambda wildcards: wildcards.method
     shell: "if [ \"{params.method}\" == \"NOTSET\" ]; then SPtools/scripts/samstrandinverter.py --sam_in_filepath={input.sam} --sam_out_filepath={output.sam}; else cp {input.sam} {output.sam}; fi"
 
+
 rule samtobam:
     input:
         sam="sam/{method}-{condition}-{replicate}.sam"
     output:
-        bam="bam/{method}-{condition}-{replicate}.bam"
+        bam="rRNAbam/{method}-{condition}-{replicate}.bam"
     conda:
         "../envs/samtools.yaml"
     threads: 20
     shell:
         "mkdir -p bam; samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output.bam} -O bam"
+
 
 rule maplink:
     input:

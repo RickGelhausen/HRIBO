@@ -2,4 +2,4 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - multiqc =1.7
+ -  gawk =5.0.1
