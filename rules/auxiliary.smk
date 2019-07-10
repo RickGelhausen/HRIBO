@@ -73,23 +73,42 @@ rule psiteOffsetsStop:
     shell:
         "mkdir -p offsets/stop; psite -q {input.rois} offsets/stop/{wildcards.method}-{wildcards.condition}-{wildcards.replicate} --min_length 29 --max_length 35 --require_upstream --count_files {input.bam}"
 
-rule generateReadCounts:
+rule generateCombinedReadCounts:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         combined="tracks/combined_annotated.gff"
     output:
-        "auxiliary/read_counts.bed"
+        "auxiliary/combined_read_counts.bed"
     conda:
         "../envs/bedtools.yaml"
     threads: 1
     shell:
         """
         mkdir -p auxiliary
-        cut -f1,4,5,7,9 {input.combined} > tmp.bed
-        bedtools multicov -bams {input.bam} -bed tmp.bed > {output}
+        cut -f1,4,5,7,9 {input.combined} > tmp_combined.bed
+        bedtools multicov -bams {input.bam} -bed tmp_combined.bed > {output}
         sed -i '1i \# {input.bam}\n' {output}
-        rm tmp.bed
+        rm tmp_combined.bed
+        """
+
+generateAnnotationReadCounts:
+    input:
+        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        annotation="annotation/annotation.gtf"
+    output:
+        "auxiliary/annotation_read_counts.bed"
+    conda:
+        "../envs/bedtools.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary
+        cut -f1,4,5,7,9 {input.annotation} > tmp_annotation.bed
+        bedtools multicov -bams {input.bam} -bed tmp_annotation.bed > {output}
+        sed -i '1i \# {input.bam}\n' {output}
+        rm tmp_annotation.bed
         """
 
 rule totalMappedReads:
@@ -97,17 +116,32 @@ rule totalMappedReads:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
-        "auxiliary/total_mapped_reads.txt"
+        mapped="auxiliary/total_mapped_reads.txt",
+        length="auxiliary/average_read_lengths.txt"
     conda:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/tmp.py -b {input.bam} -o {output}"
+        "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+
+rule createExcelAnnotation:
+    input:
+        total="auxilary/total_mapped_reads.txt",
+        reads="auxilary/annotation_read_counts.bed",
+        length="auxilary/average_read_lengths.txt"
+    output:
+        rpkm= "auxiliary/annotation_rpkm.xlsx",
+        tpm= "auxiliary/annotation_tpm.xlsx"
+    conda:
+        "../envs/plastid.yaml"
+    threads: 1
+    shell:
+        "mkdir -p auxiliary; SPtools/scripts/measures_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule createExcelSummary:
     input:
         total="auxiliary/total_mapped_reads.txt",
-        reads="auxiliary/read_counts.bed",
+        reads="auxiliary/combined_read_counts.bed",
         genome="genomes/genome.fa"
     output:
         report("auxiliary/summary.xlsx", caption="../report/summary.rst", category="Summary table")
@@ -115,4 +149,4 @@ rule createExcelSummary:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; SPtools/scripts/summary_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"

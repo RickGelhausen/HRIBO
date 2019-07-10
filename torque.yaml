@@ -23,10 +23,17 @@ psiteOffsetsStart:
 psiteOffsetsStop:
   resources : 'nodes=1:ppn=1,pmem=8'
 
-generateReadCounts:
+generateCombinedReadCounts:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+generateAnnotationReadCounts:
   resources : 'nodes=1:ppn=1,pmem=8'
 
 totalMappedReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+createExcelAnnotation:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
