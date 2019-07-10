@@ -99,7 +99,7 @@ def generate_excel_files(args):
         ###################################### TPM ##########################################
         tpm_list = []
         for idx, val in enumerate(read_list):
-            tpm_list.append(calculate_tpm, normalize_factor_dict[wildcards[idx]], val, length, average_length_dict[wildcards[idx]]])
+            tpm_list.append(calculate_tpm, normalize_factor_dict[wildcards[idx]], val, length, average_length_dict[wildcards[idx]])
 
         result_tpm = [id, start, stop, strand, length] + tpm_list
         rows_tpm.append(nTuple(*result_tpm))
