@@ -229,7 +229,7 @@ linktrim:
   qname: "short"
 
 trim:
-resources : 'nodes=1:ppn=20,pmem=2'
+  resources : 'nodes=1:ppn=20,pmem=2'
 
 
 # visualization
