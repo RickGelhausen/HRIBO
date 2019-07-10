@@ -104,8 +104,8 @@ def generate_excel_files(args):
         result_tpm = [id, start, stop, strand, length] + tpm_list
         rows_tpm.append(nTuple(*result_tpm))
 
-    excel_rpkm_df = pd.DataFrame.from_records(rows, columns=[x for x in range(column_count)])
-    excel_tpm_df = pd.DataFrame.from_records(rows, columns=[x for x in range(column_count)])
+    excel_rpkm_df = pd.DataFrame.from_records(rows_rpkm, columns=[x for x in range(column_count)])
+    excel_tpm_df = pd.DataFrame.from_records(rows_tpm, columns=[x for x in range(column_count)])
 
     excel_rpkm_df.to_excel(args.rpkm, sheet_name=args.sheet_name)
     excel_tpm_df.to_excel(args.tpm, sheet_name=args.sheet_name)
