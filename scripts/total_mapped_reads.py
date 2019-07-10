@@ -17,6 +17,7 @@ def count_mapped_reads(args):
     for bamfile in args.bamfiles:
         alignment_file = pysam.AlignmentFile(bamfile)
         total_mapped = 0
+        total_length = 0
         for read in alignment_file.fetch():
             # get required attributes
             flag = int(read.flag) # flag: 0-forward-strand 4-unmapped 16-reverse-strand

@@ -74,6 +74,8 @@ if TISHMODE == "TISONLY":
           #expand("offsets/stop/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           #expand("tracks/color/{method}-{condition}-{replicate}.fwd.bedgraph.gz", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           "tracks/color/potentialStartCodons.gff",
+          "auxiliary/annotation_rpkm.xlsx",
+          "auxiliary/annotation_tpm.xlsx",
           "auxiliary/summary.xlsx"
 else:
    rule all:
@@ -123,6 +125,8 @@ else:
           #expand("offsets/stop/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           #expand("tracks/color/{method}-{condition}-{replicate}.fwd.bedgraph.gz", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           "tracks/color/potentialStartCodons.gff",
+          "auxiliary/annotation_rpkm.xlsx",
+          "auxiliary/annotation_tpm.xlsx",
           "auxiliary/summary.xlsx"
 
 onsuccess:

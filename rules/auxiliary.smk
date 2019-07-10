@@ -92,7 +92,7 @@ rule generateCombinedReadCounts:
         rm tmp_combined.bed
         """
 
-generateAnnotationReadCounts:
+rule generateAnnotationReadCounts:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -126,9 +126,9 @@ rule totalMappedReads:
 
 rule createExcelAnnotation:
     input:
-        total="auxilary/total_mapped_reads.txt",
-        reads="auxilary/annotation_read_counts.bed",
-        length="auxilary/average_read_lengths.txt"
+        total="auxiliary/total_mapped_reads.txt",
+        reads="auxiliary/annotation_read_counts.bed",
+        length="auxiliary/average_read_lengths.txt"
     output:
         rpkm= "auxiliary/annotation_rpkm.xlsx",
         tpm= "auxiliary/annotation_tpm.xlsx"
@@ -136,7 +136,7 @@ rule createExcelAnnotation:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/measures_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; SPtools/scripts/measures_excel.py -t {input.total} -r {input.reads} -l {input.length} --out_tpm {output.tpm} --out_rpkm {output.rpkm}"
 
 rule createExcelSummary:
     input:
