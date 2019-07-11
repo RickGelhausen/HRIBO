@@ -120,6 +120,20 @@ rule generateAnnotationReadCounts:
         rm tmp_annotation.bed
         """
 
+rule annotationToBed:
+    input:
+        annotation="auxiliary/annotation_uniq.gtf"
+    output:
+        "auxiliary/annotation_uniq.bed"
+    conda:
+        "../envs/bedtools.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary
+        cut -f1,4,5,7,9 {input.annotation} > {output}
+        """
+
 rule totalMappedReads:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -136,7 +150,7 @@ rule calculateAverageLengths:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="auxiliary/annotation_uniq.gtf"
+        annotation="auxiliary/annotation_uniq.bed"
     output:
         length="auxiliary/average_read_lengths.bed",
     conda:
