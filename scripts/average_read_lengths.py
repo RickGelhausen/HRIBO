@@ -20,6 +20,8 @@ def get_read_information(args):
     # run over all input files
     for bamfile in args.bamfiles:
         alignment_file = pysam.AlignmentFile(bamfile)
+        wildcard = os.path.splitext(os.path.basename(bamfile))[0]
+        wildcards.append(wildcard)
 
         for read in alignment_file.fetch():
             # get required attributes
@@ -35,13 +37,10 @@ def get_read_information(args):
                 length = len(read.query_sequence)
                 stop = start + length
 
-
-        wildcard = os.path.splitext(os.path.basename(bamfile))[0]
-        wildcards.append(wildcard)
-        if (wildcard, reference_name, strand) in read_info_dict:
-            read_info_dict[(wildcard, reference_name, strand)].append((start, stop))
-        else:
-            read_info_dict[(wildcard, reference_name, strand)] = [(start, stop)]
+            if (wildcard, reference_name, strand) in read_info_dict:
+                read_info_dict[(wildcard, reference_name, strand)].append((start, stop))
+            else:
+                read_info_dict[(wildcard, reference_name, strand)] = [(start, stop)]
 
     return read_info_dict, wildcards
 
