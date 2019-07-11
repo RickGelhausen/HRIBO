@@ -136,7 +136,7 @@ rule calculateAverageLengths:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="annotation/annotation_uniq.gtf"
+        annotation="auxiliary/annotation_uniq.gtf"
     output:
         length="auxiliary/average_read_lengths.bed",
     conda:
