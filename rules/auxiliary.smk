@@ -87,7 +87,7 @@ rule generateCombinedReadCounts:
         """
         mkdir -p auxiliary
         cut -f1,4,5,7,9 {input.combined} > tmp_combined.bed
-        bedtools multicov -bams {input.bam} -bed tmp_combined.bed > {output}
+        bedtools multicov -s -bams {input.bam} -bed tmp_combined.bed > {output}
         sed -i '1i \# {input.bam}\n' {output}
         rm tmp_combined.bed
         """
@@ -115,7 +115,7 @@ rule generateAnnotationReadCounts:
         """
         mkdir -p auxiliary
         cut -f1,4,5,7,9 {input.annotation} > tmp_annotation.bed
-        bedtools multicov -bams {input.bam} -bed tmp_annotation.bed > {output}
+        bedtools multicov -s -bams {input.bam} -bed tmp_annotation.bed > {output}
         sed -i '1i \# {input.bam}\n' {output}
         rm tmp_annotation.bed
         """
@@ -126,18 +126,30 @@ rule totalMappedReads:
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         mapped="auxiliary/total_mapped_reads.txt",
-        length="auxiliary/average_read_lengths.txt"
     conda:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+        "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped}"
+
+rule calculateAverageLengths:
+    input:
+        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        annotation="annotation/annotation_uniq.gtf"
+    output:
+        length="auxiliary/average_read_lengths.bed",
+    conda:
+        "../envs/plastid.yaml"
+    threads: 1
+    shell:
+        "mkdir -p auxiliary; SPtools/scripts/average_read_lengths.py -b {input.bam} -a {input.annotation} -l {output.length}"
 
 rule createExcelAnnotation:
     input:
         total="auxiliary/total_mapped_reads.txt",
         reads="auxiliary/annotation_read_counts.bed",
-        length="auxiliary/average_read_lengths.txt"
+        length="auxiliary/average_read_lengths.bed"
     output:
         rpkm= "auxiliary/annotation_rpkm.xlsx",
         tpm= "auxiliary/annotation_tpm.xlsx"

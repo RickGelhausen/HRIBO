@@ -22,41 +22,62 @@ def calculate_tpm(normalize_factor, read_count, gene_length, average_length):
     return "%.2f" % ((read_count * average_length * 1000000) / (normalize_factor * gene_length))
 
 def get_normalization_factor(read_df, wildcards, average_length_dict):
+    """
+    calculate the denominator for the tpm
+    """
     normalize_factor_dict = {}
     for wildcard in wildcards:
         normalize_factor_dict[wildcard] = 0
 
     for row in read_df.itertuples(index=False, name='Pandas'):
+        reference_name = getattr(row, "_0")
         start = int(getattr(row, "_1"))
         stop = int(getattr(row, "_2"))
+        strand = getattr(row, "_3")
 
         read_length = stop - start + 1
 
         read_list = [getattr(row, "_%s" %x) for x in range(5,len(row))]
         for idx, val in enumerate(read_list):
-            normalize_factor_dict[wildcards[idx]] += (int(val) * average_length_dict[wildcards[idx]]) / read_length
+            d_key = (wildcards[idx], reference_name, start, stop, strand)
+            normalize_factor_dict[(wildcards[idx], reference_name)] += (int(val) * average_length_dict[d_key]) / read_length
 
     return normalize_factor_dict
 
+def get_average_lengths(args, wildcards):
+    """
+    create a dictionary containing the average_read_lengths
+    """
+    length_df = pd.read_csv(args.length, sep= "\t", comment="#", header=None)
+
+    average_length_dict = {}
+    for row in length_df.itertuples(index=False, name='Pandas'):
+        reference_name = getattr(row, "_0")
+        start = int(getattr(row, "_1"))
+        stop = int(getattr(row, "_2"))
+        strand = getattr(row, "_3")
+
+        for idx in range(len(wildcards)):
+            average_length = float(getattr(row, "_%s") % (4+ idx))
+
+            average_length_dict[(wildcard, reference_name, start, stop, strand)] = average_length
+
+    return average_length_dict
+
 
 def generate_excel_files(args):
+    """
+    generate and excel file for rpkm and one for tpm
+    """
     # total_mapped_reads
     total_mapped_dict = {}
     with open(args.total_mapped, "r") as f:
         total = f.readlines()
 
     for line in total:
-        key, value = line.strip().split("\t")
-        total_mapped_dict[key] = int(value)
+        wildcard, reference_name, value = line.strip().split("\t")
+        total_mapped_dict[(wildcard, reference_name)] = int(value)
 
-    # average read length
-    average_length_dict = {}
-    with open(args.length, "r") as f:
-        total = f.readlines()
-
-    for line in total:
-        key, value = line.strip().split("\t")
-        average_length_dict[key] = float(value)
 
     # read the comment containing the wildcards
     with open(args.reads, "r") as f:
@@ -64,6 +85,8 @@ def generate_excel_files(args):
 
     wildcards = wildcards.replace("# ", "").split()
     wildcards = [os.path.splitext(os.path.basename(card))[0] for card in wildcards]
+
+    average_length_dict = get_average_lengths(args, wildcards)
 
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
     column_count = len(read_df.columns)
@@ -80,7 +103,7 @@ def generate_excel_files(args):
 
     normalize_factor_dict = get_normalization_factor(read_df, wildcards, average_length_dict)
     for row in read_df.itertuples(index=False, name='Pandas'):
-        id = getattr(row, "_0")
+        reference_name = getattr(row, "_0")
         start = getattr(row, "_1")
         stop = getattr(row, "_2")
         strand = getattr(row, "_3")
@@ -91,7 +114,7 @@ def generate_excel_files(args):
         ###################################### RPKM ##########################################
         rpkm_list = []
         for idx, val in enumerate(read_list):
-            rpkm_list.append(calculate_rpkm(total_mapped_dict[wildcards[idx]], val, length))
+            rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
         result_rpkm = [id, start, stop, strand, length] + rpkm_list
         rows_rpkm.append(nTuple(*result_rpkm))
@@ -99,9 +122,10 @@ def generate_excel_files(args):
         ###################################### TPM ##########################################
         tpm_list = []
         for idx, val in enumerate(read_list):
-            tpm_list.append(calculate_tpm(normalize_factor_dict[wildcards[idx]], val, length, average_length_dict[wildcards[idx]]))
+            d_key = (wildcards[idx], reference_name, start, stop, strand)
+            tpm_list.append(calculate_tpm(normalize_factor_dict[(wildcards[idx], reference_name)], val, length, average_length_dict[d_key]))
 
-        result_tpm = [id, start, stop, strand, length] + tpm_list
+        result_tpm = [reference_name, start, stop, strand, length] + tpm_list
         rows_tpm.append(nTuple(*result_tpm))
 
     excel_rpkm_df = pd.DataFrame.from_records(rows_rpkm, columns=[x for x in range(column_count)])

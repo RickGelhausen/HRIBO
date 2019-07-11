@@ -45,8 +45,8 @@ def parse_orfs(args):
         total = f.readlines()
 
     for line in total:
-        key, value = line.strip().split("\t")
-        total_mapped_dict[key] = int(value)
+        wildcard, reference_name, value = line.strip().split("\t")
+        total_mapped_dict[(wildcard, reference_name)] = int(value)
 
     # read the comment containing the wildcards
     with open(args.reads, "r") as f:
@@ -67,13 +67,13 @@ def parse_orfs(args):
     header = ["orfID", "start", "stop", "strand", "length"] + [card + "_rpkm" for card in wildcards] + ["evidence", "annotated", "name", "ORF_type", "start_codon", "stop_codon", "nucleotide_seq", "aminoacid_seq"] # ADD HERE
     rows.append(nTuple(*header))
     for row in read_df.itertuples(index=False, name='Pandas'):
-        accession = getattr(row, "_0")
+        reference_name = getattr(row, "_0")
         start = getattr(row, "_1")
         stop = getattr(row, "_2")
         strand = getattr(row, "_3")
         attributes = getattr(row, "_4")
 
-        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[accession], start-1, stop-1, strand)
+        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[reference_name], start-1, stop-1, strand)
 
         attribute_list = re.split('[;=]', attributes)
         id = attribute_list[attribute_list.index("ID")+1]
@@ -97,7 +97,7 @@ def parse_orfs(args):
 
         rpkm_list = []
         for idx, val in enumerate(read_list):
-            rpkm_list.append(calculate_rpkm(total_mapped_dict[wildcards[idx]], val, length))
+            rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
         result = [id, start, stop, strand, length] + rpkm_list + [evidence, annotated, name, orftype, start_codon, stop_codon, nucleotide_seq, aa_seq] # ADD HERE
         rows.append(nTuple(*result))
