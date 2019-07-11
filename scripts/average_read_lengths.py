@@ -37,10 +37,10 @@ def get_read_information(args):
                 length = len(read.query_sequence)
                 stop = start + length
 
-            if (wildcard, reference_name, strand) in read_info_dict:
-                read_info_dict[(wildcard, reference_name, strand)].append((start, stop))
-            else:
-                read_info_dict[(wildcard, reference_name, strand)] = [(start, stop)]
+                if (wildcard, reference_name, strand) in read_info_dict:
+                    read_info_dict[(wildcard, reference_name, strand)].append((start, stop))
+                else:
+                    read_info_dict[(wildcard, reference_name, strand)] = [(start, stop)]
 
     return read_info_dict, wildcards
 
