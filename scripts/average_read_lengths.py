@@ -91,8 +91,8 @@ def main():
     args = parser.parse_args()
 
     read_info_dict, wildcards = get_read_information(args)
-    calculate_average_lengths(args, wildcards, read_info_dict):
-    
+    calculate_average_lengths(args, wildcards, read_info_dict)
+
 
 if __name__ == '__main__':
     main()
