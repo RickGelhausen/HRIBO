@@ -4,6 +4,7 @@ import re
 import os
 import pandas as pd
 import pysam
+import collections
 
 def amount_overlap(r1, r2):
     return max(0, min(r1[1], r2[1]) - max(r1[0], r2[0]))
