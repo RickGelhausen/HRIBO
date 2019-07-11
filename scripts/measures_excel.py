@@ -21,7 +21,7 @@ def calculate_tpm(normalize_factor, read_count, gene_length, average_length):
     """
     if read_count == 0:
         return 0
-        
+
     return "%.2f" % ((read_count * average_length * 1000000) / (normalize_factor * gene_length))
 
 def get_normalization_factor(read_df, wildcards, average_length_dict):
@@ -126,7 +126,7 @@ def generate_excel_files(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
-        result_rpkm = [id, start, stop, strand, length] + rpkm_list
+        result_rpkm = [reference_name, start, stop, strand, length] + rpkm_list
         rows_rpkm.append(nTuple(*result_rpkm))
 
         ###################################### TPM ##########################################
