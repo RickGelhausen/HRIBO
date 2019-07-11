@@ -19,6 +19,9 @@ def calculate_tpm(normalize_factor, read_count, gene_length, average_length):
     """
     calculate the tpm
     """
+    if read_count == 0:
+        return 0
+        
     return "%.2f" % ((read_count * average_length * 1000000) / (normalize_factor * gene_length))
 
 def get_normalization_factor(read_df, wildcards, average_length_dict):
@@ -33,7 +36,6 @@ def get_normalization_factor(read_df, wildcards, average_length_dict):
         strand = getattr(row, "_3")
 
         gene_length = stop - start + 1
-
 
         read_list = [getattr(row, "_%s" %x) for x in range(5,len(row))]
         for idx, val in enumerate(read_list):
