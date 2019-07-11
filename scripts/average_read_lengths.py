@@ -24,7 +24,10 @@ def get_read_information(args):
             # get required attributes
             flag = int(read.flag)
             reference_name = read.reference_name
-            strand = read.strand
+            if flag == 0:
+                strand = "+"
+            elif flag == 16:
+                strand = "-"
 
             if flag in [0,16]:
                 start = read.pos + 1 # 0 based position
