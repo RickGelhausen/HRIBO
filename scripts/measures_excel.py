@@ -73,9 +73,9 @@ def generate_excel_files(args):
     # read gff file
     rows_rpkm = []
     rows_tpm = []
-    header = ["orfID", "start", "stop", "strand", "length"] + [card + "_rpkm" for card in wildcards]
+    header = ["id", "start", "stop", "strand", "length"] + [card + "_rpkm" for card in wildcards]
     rows_rpkm.append(nTuple(*header))
-    header = ["orfID", "start", "stop", "strand", "length"] + [card + "_tpm" for card in wildcards]
+    header = ["id", "start", "stop", "strand", "length"] + [card + "_tpm" for card in wildcards]
     rows_tpm.append(nTuple(*header))
 
     normalize_factor_dict = get_normalization_factor(read_df, wildcards, average_length_dict)
