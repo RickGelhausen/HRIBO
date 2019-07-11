@@ -37,7 +37,7 @@ def get_normalization_factor(read_df, wildcards, average_length_dict):
 
         gene_length = stop - start + 1
 
-        read_list = [getattr(row, "_%s" %x) for x in range(5,len(row))]
+        read_list = [getattr(row, "_%s" %x) for x in range(6,len(row))]
         for idx, val in enumerate(read_list):
             if (wildcards[idx], reference_name) in normalize_factor_dict:
                 normalize_factor_dict[(wildcards[idx], reference_name)] += (int(val) * average_length_dict[(wildcards[idx],reference_name)]) / gene_length
