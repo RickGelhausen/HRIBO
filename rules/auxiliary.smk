@@ -131,7 +131,7 @@ rule annotationToBed:
     shell:
         """
         mkdir -p auxiliary
-        cut -f1,4,5,7,9 {input.annotation} > {output}
+        cut -f1,4,5,7 {input.annotation} > {output}
         """
 
 rule totalMappedReads:
@@ -140,30 +140,31 @@ rule totalMappedReads:
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         mapped="auxiliary/total_mapped_reads.txt",
+        length="auxiliary/average_read_lengths.txt"
     conda:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped}"
+        "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
 
-rule calculateAverageLengths:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="auxiliary/annotation_uniq.bed"
-    output:
-        length="auxiliary/average_read_lengths.bed",
-    conda:
-        "../envs/plastid.yaml"
-    threads: 1
-    shell:
-        "mkdir -p auxiliary; SPtools/scripts/average_read_lengths.py -b {input.bam} -a {input.annotation} -l {output.length}"
+# rule calculateAverageLengths:
+#     input:
+#         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+#         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+#         annotation="auxiliary/annotation_uniq.bed"
+#     output:
+#         length="auxiliary/average_read_lengths.bed",
+#     conda:
+#         "../envs/plastid.yaml"
+#     threads: 1
+#     shell:
+#         "mkdir -p auxiliary; SPtools/scripts/average_read_lengths.py -b {input.bam} -a {input.annotation} -l {output.length}"
 
 rule createExcelAnnotation:
     input:
         total="auxiliary/total_mapped_reads.txt",
         reads="auxiliary/annotation_read_counts.bed",
-        length="auxiliary/average_read_lengths.bed"
+        length="auxiliary/average_read_lengths.txt"
     output:
         rpkm= "auxiliary/annotation_rpkm.xlsx",
         tpm= "auxiliary/annotation_tpm.xlsx"

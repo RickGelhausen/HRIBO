@@ -54,7 +54,7 @@ def calculate_average_lengths(args, wildcards, read_info_dict):
     name_list = ["s%s" % str(x) for x in range(column_count)]
     nTuple = collections.namedtuple('Pandas', name_list)
 
-    rows=[]
+    rows = []
     for row in annotation_df.itertuples(index=False, name='Pandas'):
         reference_name = getattr(row, "_0")
         start = getattr(row, "_1")
@@ -82,8 +82,6 @@ def calculate_average_lengths(args, wildcards, read_info_dict):
 
     out_df = pd.DataFrame.from_records(rows, columns=[x for x in range(column_count)])
     out_df.to_csv(args.out_length, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
-
-
 
 def main():
     # store commandline args

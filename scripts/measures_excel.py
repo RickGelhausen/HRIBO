@@ -39,30 +39,29 @@ def get_normalization_factor(read_df, wildcards, average_length_dict):
 
         read_list = [getattr(row, "_%s" %x) for x in range(5,len(row))]
         for idx, val in enumerate(read_list):
-            d_key = (wildcards[idx], reference_name, start, stop, strand)
-            normalize_factor_dict[(wildcards[idx], reference_name)] += (int(val) * average_length_dict[d_key]) / read_length
+            normalize_factor_dict[(wildcards[idx], reference_name)] += (int(val) * average_length_dict[(wildcards[idx],reference_name)]) / read_length
 
     return normalize_factor_dict
 
-def get_average_lengths(args, wildcards):
-    """
-    create a dictionary containing the average_read_lengths
-    """
-    length_df = pd.read_csv(args.length, sep= "\t", comment="#", header=None)
-
-    average_length_dict = {}
-    for row in length_df.itertuples(index=False, name='Pandas'):
-        reference_name = getattr(row, "_0")
-        start = int(getattr(row, "_1"))
-        stop = int(getattr(row, "_2"))
-        strand = getattr(row, "_3")
-
-        for idx in range(len(wildcards)):
-            average_length = float(getattr(row, "_%s") % (4+ idx))
-
-            average_length_dict[(wildcard, reference_name, start, stop, strand)] = average_length
-
-    return average_length_dict
+# def get_average_lengths(args, wildcards):
+#     """
+#     create a dictionary containing the average_read_lengths
+#     """
+#     length_df = pd.read_csv(args.length, sep= "\t", comment="#", header=None)
+#
+#     average_length_dict = {}
+#     for row in length_df.itertuples(index=False, name='Pandas'):
+#         reference_name = getattr(row, "_0")
+#         start = int(getattr(row, "_1"))
+#         stop = int(getattr(row, "_2"))
+#         strand = getattr(row, "_3")
+#
+#         for idx in range(len(wildcards)):
+#             average_length = float(getattr(row, "_%s") % (4+ idx))
+#
+#             average_length_dict[(wildcard, reference_name, start, stop, strand)] = average_length
+#
+#     return average_length_dict
 
 
 def generate_excel_files(args):
@@ -78,6 +77,14 @@ def generate_excel_files(args):
         wildcard, reference_name, value = line.strip().split("\t")
         total_mapped_dict[(wildcard, reference_name)] = int(value)
 
+   # average read length
+    average_length_dict = {}
+    with open(args.length, "r") as f:
+        total = f.readlines()
+
+    for line in total:
+        wildcard, reference_name, value = line.strip().split("\t")
+        average_length_dict[(wildcard, reference_name)] = int(value)
 
     # read the comment containing the wildcards
     with open(args.reads, "r") as f:
@@ -86,7 +93,7 @@ def generate_excel_files(args):
     wildcards = wildcards.replace("# ", "").split()
     wildcards = [os.path.splitext(os.path.basename(card))[0] for card in wildcards]
 
-    average_length_dict = get_average_lengths(args, wildcards)
+    #average_length_dict = get_average_lengths(args, wildcards)
 
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
     column_count = len(read_df.columns)
@@ -122,8 +129,7 @@ def generate_excel_files(args):
         ###################################### TPM ##########################################
         tpm_list = []
         for idx, val in enumerate(read_list):
-            d_key = (wildcards[idx], reference_name, start, stop, strand)
-            tpm_list.append(calculate_tpm(normalize_factor_dict[(wildcards[idx], reference_name)], val, length, average_length_dict[d_key]))
+            tpm_list.append(calculate_tpm(normalize_factor_dict[(wildcards[idx], reference_name)], val, length, average_length_dict[(wildcards[idx], reference_name)]))
 
         result_tpm = [reference_name, start, stop, strand, length] + tpm_list
         rows_tpm.append(nTuple(*result_tpm))
