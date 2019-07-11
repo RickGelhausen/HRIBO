@@ -31,9 +31,9 @@ def count_mapped_reads(args):
                     total_mapped[reference_name] = 1
 
                 if reference_name in total_length:
-                    total_length[reference_name] += 1
+                    total_length[reference_name] += len(read.query_sequence)
                 else:
-                    total_length[reference_name] = 1
+                    total_length[reference_name] = len(read.query_sequence)
 
         wildcard = os.path.splitext(os.path.basename(bamfile))[0]
 
