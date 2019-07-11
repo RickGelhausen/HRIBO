@@ -27,7 +27,7 @@ def get_normalization_factor(read_df, wildcards, average_length_dict):
     """
     normalize_factor_dict = {}
     for wildcard in wildcards:
-        normalize_factor_dict[wildcard] = 0
+        normalize_factor_dict[(wildcard, reference_name)] = 0
 
     for row in read_df.itertuples(index=False, name='Pandas'):
         reference_name = getattr(row, "_0")
@@ -35,11 +35,15 @@ def get_normalization_factor(read_df, wildcards, average_length_dict):
         stop = int(getattr(row, "_2"))
         strand = getattr(row, "_3")
 
-        read_length = stop - start + 1
+        gene_length = stop - start + 1
+
 
         read_list = [getattr(row, "_%s" %x) for x in range(5,len(row))]
         for idx, val in enumerate(read_list):
-            normalize_factor_dict[(wildcards[idx], reference_name)] += (int(val) * average_length_dict[(wildcards[idx],reference_name)]) / read_length
+            if (wildcards[idx], reference_name) in normalize_factor_dict:
+                normalize_factor_dict[(wildcards[idx], reference_name)] += (int(val) * average_length_dict[(wildcards[idx],reference_name)]) / gene_length
+            else:
+                normalize_factor_dict[(wildcards[idx], reference_name)] = (int(val) * average_length_dict[(wildcards[idx],reference_name)]) / gene_length
 
     return normalize_factor_dict
 
