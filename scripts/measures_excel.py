@@ -26,9 +26,6 @@ def get_normalization_factor(read_df, wildcards, average_length_dict):
     calculate the denominator for the tpm
     """
     normalize_factor_dict = {}
-    for wildcard in wildcards:
-        normalize_factor_dict[(wildcard, reference_name)] = 0
-
     for row in read_df.itertuples(index=False, name='Pandas'):
         reference_name = getattr(row, "_0")
         start = int(getattr(row, "_1"))
