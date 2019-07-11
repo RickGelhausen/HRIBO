@@ -58,7 +58,7 @@ def parse_orfs(args):
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
     # id + start + stop + strand + length + rest
-    column_count = len(read_df.columns) + 8                      # ADD HERE
+    column_count = len(read_df.columns) + 7                      # ADD HERE
 
     name_list = ["s%s" % str(x) for x in range(column_count)]
     nTuple = collections.namedtuple('Pandas', name_list)

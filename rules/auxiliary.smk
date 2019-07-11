@@ -86,7 +86,7 @@ rule generateCombinedReadCounts:
     shell:
         """
         mkdir -p auxiliary
-        awk -F"\t" '{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 }' {input.combined} > tmp_combined.bed
+        awk -F'\\t' '{{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 }}' {input.combined} > tmp_combined.bed
         bedtools multicov -s -D -bams {input.bam} -bed tmp_combined.bed > {output}
         sed -i '1i \# {input.bam}\n' {output}
         rm tmp_combined.bed
@@ -114,7 +114,7 @@ rule generateAnnotationReadCounts:
     shell:
         """
         mkdir -p auxiliary
-        awk -F"\t" '{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 }' {input.annotation} > tmp_annotation.bed
+        awk -F'\t' '{{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 }}' {input.annotation} > tmp_annotation.bed
         bedtools multicov -s -D -bams {input.bam} -bed tmp_annotation.bed > {output}
         sed -i '1i \# {input.bam}\n' {output}
         rm tmp_annotation.bed

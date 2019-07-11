@@ -33,7 +33,7 @@ def get_normalization_factor(read_df, wildcards, average_length_dict):
         reference_name = getattr(row, "_0")
         start = int(getattr(row, "_1"))
         stop = int(getattr(row, "_2"))
-        strand = getattr(row, "_3")
+        strand = getattr(row, "_5")
 
         gene_length = stop - start + 1
 
@@ -99,7 +99,7 @@ def generate_excel_files(args):
     #average_length_dict = get_average_lengths(args, wildcards)
 
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
-    column_count = len(read_df.columns)
+    column_count = len(read_df.columns) - 1
 
     name_list = ["s%s" % str(x) for x in range(column_count)]
     nTuple = collections.namedtuple('Pandas', name_list)
