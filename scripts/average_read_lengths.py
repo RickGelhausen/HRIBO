@@ -38,7 +38,7 @@ def get_read_information(args):
 
         wildcard = os.path.splitext(os.path.basename(bamfile))[0]
         wildcards.append(wildcard)
-        if wildcard in read_info_dict:
+        if (wildcard, reference_name, strand) in read_info_dict:
             read_info_dict[(wildcard, reference_name, strand)].append((start, stop))
         else:
             read_info_dict[(wildcard, reference_name, strand)] = [(start, stop)]
