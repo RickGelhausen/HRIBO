@@ -92,11 +92,20 @@ rule generateCombinedReadCounts:
         rm tmp_combined.bed
         """
 
+rule generateUniqAnnotation:
+    input:
+        "annotation/annotation.gtf"
+    output:
+        "auxiliary/annotation_uniq.gtf"
+    threads: 1
+    shell:
+        "awk -F'\t' '!seen[$1 FS $4 FS $5 FS $7]++' {input} > {output}"
+
 rule generateAnnotationReadCounts:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="annotation/annotation.gtf"
+        annotation="auxiliary/annotation_uniq.gtf"
     output:
         "auxiliary/annotation_read_counts.bed"
     conda:

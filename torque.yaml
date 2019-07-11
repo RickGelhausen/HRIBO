@@ -28,6 +28,10 @@ generateCombinedReadCounts:
 
 generateAnnotationReadCounts:
   resources : 'nodes=1:ppn=1,pmem=8'
+  
+generateUniqAnnotation:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
 
 totalMappedReads:
   resources : 'nodes=1:ppn=1,pmem=8'
