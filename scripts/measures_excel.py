@@ -84,7 +84,7 @@ def generate_excel_files(args):
 
     for line in total:
         wildcard, reference_name, value = line.strip().split("\t")
-        average_length_dict[(wildcard, reference_name)] = int(value)
+        average_length_dict[(wildcard, reference_name)] = float(value)
 
     # read the comment containing the wildcards
     with open(args.reads, "r") as f:
