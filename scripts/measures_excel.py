@@ -120,7 +120,7 @@ def generate_excel_files(args):
 
 
         length = stop - start + 1
-        read_list = [getattr(row, "_%s" %x) for x in range(7,len(row))]
+        read_list = [getattr(row, "_%s" %x) for x in range(6,len(row))]
 
         ###################################### RPKM ##########################################
         rpkm_list = []

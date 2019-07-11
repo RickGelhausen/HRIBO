@@ -86,7 +86,7 @@ rule generateCombinedReadCounts:
     shell:
         """
         mkdir -p auxiliary
-        cut -f1,4,5,2,3,7,9 {input.combined} > tmp_combined.bed
+        cut -f1,4,5,9,6,7 {input.combined} > tmp_combined.bed
         bedtools multicov -s -D -bams {input.bam} -bed tmp_combined.bed > {output}
         sed -i '1i \# {input.bam}\n' {output}
         rm tmp_combined.bed
@@ -114,7 +114,7 @@ rule generateAnnotationReadCounts:
     shell:
         """
         mkdir -p auxiliary
-        cut -f1,4,5,2,3,7,9 {input.annotation} > tmp_annotation.bed
+        cut -f1,4,5,9,6,7 {input.annotation} > tmp_annotation.bed
         bedtools multicov -s -D -bams {input.bam} -bed tmp_annotation.bed > {output}
         sed -i '1i \# {input.bam}\n' {output}
         rm tmp_annotation.bed

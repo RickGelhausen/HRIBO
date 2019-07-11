@@ -71,7 +71,7 @@ def parse_orfs(args):
         start = getattr(row, "_1")
         stop = getattr(row, "_2")
         strand = getattr(row, "_5")
-        attributes = getattr(row, "_6")
+        attributes = getattr(row, "_3")
 
         start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[reference_name], start-1, stop-1, strand)
 
@@ -93,7 +93,7 @@ def parse_orfs(args):
 
         length = stop - start + 1
 
-        read_list = [getattr(row, "_%s" %x) for x in range(7,len(row))]
+        read_list = [getattr(row, "_%s" %x) for x in range(6,len(row))]
 
         rpkm_list = []
         for idx, val in enumerate(read_list):
