@@ -116,10 +116,11 @@ def generate_excel_files(args):
         reference_name = getattr(row, "_0")
         start = getattr(row, "_1")
         stop = getattr(row, "_2")
-        strand = getattr(row, "_3")
+        strand = getattr(row, "_5")
+
 
         length = stop - start + 1
-        read_list = [getattr(row, "_%s" %x) for x in range(5,len(row))]
+        read_list = [getattr(row, "_%s" %x) for x in range(7,len(row))]
 
         ###################################### RPKM ##########################################
         rpkm_list = []
