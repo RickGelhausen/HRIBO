@@ -13,7 +13,7 @@ def calculate_rpkm(total_mapped, read_count, read_length):
     """
     calculate the rpkm
     """
-    return "%.2f" % ((read_count * 1000000000) / (total_mapped * read_length))
+    return float("%.2f" % ((read_count * 1000000000) / (total_mapped * read_length)))
 
 def get_genome_information(genome, start, stop, strand):
     # retrieve the nucleotide sequence with correct strand
@@ -65,7 +65,7 @@ def parse_orfs(args):
     # read gff file
     rows = []
     header = ["orfID", "start", "stop", "strand", "length"] + [card + "_rpkm" for card in wildcards] + ["evidence", "annotated", "name", "ORF_type", "start_codon", "stop_codon", "nucleotide_seq", "aminoacid_seq"] # ADD HERE
-    rows.append(nTuple(*header))
+
     for row in read_df.itertuples(index=False, name='Pandas'):
         reference_name = getattr(row, "_0")
         start = getattr(row, "_1")
@@ -99,10 +99,10 @@ def parse_orfs(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
-        result = [id, start, stop, strand, length] + rpkm_list + [evidence, annotated, name, orftype, start_codon, stop_codon, nucleotide_seq, aa_seq] # ADD HERE
+        result = [id, int(start), int(stop), strand, int(length)] + rpkm_list + [evidence, annotated, name, orftype, start_codon, stop_codon, nucleotide_seq, aa_seq] # ADD HERE
         rows.append(nTuple(*result))
 
-    excel_df = pd.DataFrame.from_records(rows, columns=[x for x in range(column_count)])
+    excel_df = pd.DataFrame.from_records(rows, columns=[header[x] for x in range(column_count)])
 
     excel_df.to_excel(args.output, sheet_name=args.sheet_name)
 

@@ -13,7 +13,7 @@ def calculate_rpkm(total_mapped, read_count, read_length):
     """
     calculate the rpkm
     """
-    return "%.2f" % ((read_count * 1000000000) / (total_mapped * read_length))
+    return float("%.2f" % ((read_count * 1000000000) / (total_mapped * read_length)))
 
 def calculate_tpm(normalize_factor, read_count, gene_length, average_length):
     """
@@ -22,7 +22,7 @@ def calculate_tpm(normalize_factor, read_count, gene_length, average_length):
     if read_count == 0:
         return 0
 
-    return "%.2f" % ((read_count * average_length * 1000000) / (normalize_factor * gene_length))
+    return float("%.2f" % ((read_count * average_length * 1000000) / (normalize_factor * gene_length)))
 
 def get_normalization_factor(read_df, wildcards, average_length_dict):
     """
@@ -103,13 +103,12 @@ def generate_excel_files(args):
 
     name_list = ["s%s" % str(x) for x in range(column_count)]
     nTuple = collections.namedtuple('Pandas', name_list)
+
     # read gff file
     rows_rpkm = []
     rows_tpm = []
-    header = ["id", "start", "stop", "strand", "length"] + [card + "_rpkm" for card in wildcards]
-    rows_rpkm.append(nTuple(*header))
-    header = ["id", "start", "stop", "strand", "length"] + [card + "_tpm" for card in wildcards]
-    rows_tpm.append(nTuple(*header))
+    header_rpkm = ["id", "start", "stop", "strand", "length"] + [card + "_rpkm" for card in wildcards]
+    header_tpm = ["id", "start", "stop", "strand", "length"] + [card + "_tpm" for card in wildcards]
 
     normalize_factor_dict = get_normalization_factor(read_df, wildcards, average_length_dict)
     for row in read_df.itertuples(index=False, name='Pandas'):
@@ -138,8 +137,8 @@ def generate_excel_files(args):
         result_tpm = [reference_name, start, stop, strand, length] + tpm_list
         rows_tpm.append(nTuple(*result_tpm))
 
-    excel_rpkm_df = pd.DataFrame.from_records(rows_rpkm, columns=[x for x in range(column_count)])
-    excel_tpm_df = pd.DataFrame.from_records(rows_tpm, columns=[x for x in range(column_count)])
+    excel_rpkm_df = pd.DataFrame.from_records(rows_rpkm, columns=[header_rpkm[x] for x in range(column_count)])
+    excel_tpm_df = pd.DataFrame.from_records(rows_tpm, columns=[header_tpm[x] for x in range(column_count)])
 
     excel_rpkm_df.to_excel(args.rpkm, sheet_name=args.sheet_name)
     excel_tpm_df.to_excel(args.tpm, sheet_name=args.sheet_name)
