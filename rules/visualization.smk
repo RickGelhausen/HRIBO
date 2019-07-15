@@ -128,6 +128,135 @@ rule bamindex:
 #    shell:
 #        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --binSize=1 --smoothLength=0 --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
 
+rule rrnabamindex:
+    input:
+        rules.samtobam.output,
+        rules.genomeSize.output
+    output:
+        "rRNAbam/{method}-{condition}-{replicate}.bam.bai"
+    conda:
+        "../envs/samtools.yaml"
+    threads: 20
+    params:
+        prefix=lambda wildcards, output: (os.path.splitext(os.path.basename(output[0]))[0])
+    shell:
+        "samtools index -@ {threads} maplink/{params.prefix}"
+
+rule rrnareadcountstats:
+    input:
+        bam=rules.samtobam.output,
+        genomeSize=rules.genomeSize.output,
+        bamIndex=rules.rrnabamindex.output
+    output:
+        stat="rRNAbam/{method}-{condition}-{replicate}.readstats"
+    threads: 1
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p rRNAbam; readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+
+rule rrnaminreadcounts:
+    input:
+        stats=expand("rRNAbam/{method}-{condition}-{replicate}.readstats", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+    output:
+        minreads="rRNAbam/minreads.txt"
+    threads: 1
+    params:
+        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p rRNAbam; minreads.py {input.stats} > {output.minreads}; source deactivate;"
+
+rule rrnawig:
+    input:
+        bam=rules.samtobam.output,
+        genomeSize=rules.genomeSize.output,
+        bamIndex=rules.rrnabamindex.output,
+        stats="rRNAbam/{method}-{condition}-{replicate}.readstats",
+        min="rRNAbam/minreads.txt"
+    output:
+        fwd="unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
+        rev="unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.reverse.wig",
+        fmil="unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.forward.wig",
+        rmil="unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
+        fmin="unfilteredtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
+        rmin="unfilteredtracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
+    threads: 1
+    params:
+        prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
+        prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p unfilteredtracks; mkdir -p unfilteredtracks/raw; mkdir -p unfilteredtracks/mil; mkdir -p unfilteredtracks/min; coverage.py --coverage_style global --bam_path {input.bam} --wiggle_file_path unfilteredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+
+rule rrnawigtobigwigrawforward:
+    input:
+        fwd="unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.forward.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule rrnawigtobigwigminrawreverse:
+    input:
+        rev="unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.reverse.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+rule rrnawigtobigwigminforward:
+    input:
+        fwd="unfilteredtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("unfilteredtracks/min/{method}-{condition}-{replicate}.min.forward.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule rrnawigtobigwigminreverse:
+    input:
+        rev="unfilteredtracks/min/{method}-{condition}-{replicate}.min.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("unfilteredtracks/min/{method}-{condition}-{replicate}.min.reverse.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+rule rrnawigtobigwigmilforward:
+    input:
+        fwd="unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.forward.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule rrnawigtobigwigmilreverse:
+    input:
+        rev="unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.reverse.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
 rule readcountstats:
     input:
         bam=rules.maplink.output,
@@ -336,7 +465,7 @@ rule centeredwigtobigwigmilreverse:
     threads: 1
     shell:
         "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
-	
+
 rule fiveprimewig:
     input:
         bam=rules.maplink.output,

@@ -74,12 +74,12 @@ rule samtobam:
     input:
         sam="sam/{method}-{condition}-{replicate}.sam"
     output:
-        bam="rRNAbam/{method}-{condition}-{replicate}.bam"
+        "rRNAbam/{method}-{condition}-{replicate}.bam"
     conda:
         "../envs/samtools.yaml"
     threads: 20
     shell:
-        "mkdir -p bam; samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output.bam} -O bam"
+        "mkdir -p bam; samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output} -O bam"
 
 
 rule maplink:
@@ -93,4 +93,3 @@ rule maplink:
     threads: 1
     shell:
         "mkdir -p maplink; ln -s {params.inlink} {params.outlink}"
-

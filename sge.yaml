@@ -246,6 +246,10 @@ bamindex:
   parallelenvironment : 'smp 20'
   memory: "h_vmem=3G"
 
+rrnabamindex:
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=3G"
+  
 wigrev:
   parallelenvironment : 'smp 5'
   memory: "h_vmem=3G"

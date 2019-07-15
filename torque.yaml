@@ -40,7 +40,7 @@ totalMappedReads:
 annotationToBed:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
-  
+
 createExcelAnnotation:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
@@ -275,6 +275,43 @@ stopCodonTrack:
   qname: "short"
 
 rbsTrack:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+rrnabamindex:
+  resources : 'nodes=1:ppn=20,pmem=2'
+
+rrnareadcountstats:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+rrnaminreadcounts:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+rrnawig:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+rrnawigtobigwigrawforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+rrnawigtobigwigminrawreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+rrnawigtobigwigminforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+rrnawigtobigwigminreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+rrnawigtobigwigmilforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+rrnawigtobigwigmilreverse:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 

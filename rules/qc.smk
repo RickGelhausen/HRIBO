@@ -78,12 +78,23 @@ rule gff2gtf:
         annotation={rules.retrieveAnnotation.output},
     output:
         gtfcds="qc/featurecount/annotation.gtf",
-        gtfall="qc/featurecount/annotationall.gtf"
+        gtfall="qc/featurecount/annotationtmp.gtf"
     conda:
         "../envs/cufflinks.yaml"
     threads: 1
     shell:
-        "mkdir -p qc/featurecount; gffread {input.annotation} -o {output.gtfall}; gffread -T {input.annotation} -o {output.gtfcds};"
+        "mkdir -p qc/featurecount; gffread -F {input.annotation} -o {output.gtfall}; gffread -T {input.annotation} -o {output.gtfcds};"
+
+rule extractBiotype:
+    input:
+        annotation="qc/featurecount/annotationtmp.gtf"
+    output:
+        "qc/featurecount/annotationall.gtf"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p qc/featurecount; python3 biotype_to_feature.py -a {input.annotation} -o {output}"
 
 rule featurescounts:
     input:
