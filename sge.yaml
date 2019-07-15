@@ -19,6 +19,14 @@ generateMetageneRoiStop:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
 
+generateAnnotationReadCounts:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=10G"
+
+generateCombinedReadCounts:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=10G"
+    
 psiteOffsetsStart:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
