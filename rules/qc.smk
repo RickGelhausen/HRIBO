@@ -94,7 +94,7 @@ rule extractBiotype:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p qc/featurecount; python3 biotype_to_feature.py -a {input.annotation} -o {output}"
+        "mkdir -p qc/featurecount; python3 SPtools/scripts/biotype_to_feature.py -a {input.annotation} -o {output}"
 
 rule featurescounts:
     input:
