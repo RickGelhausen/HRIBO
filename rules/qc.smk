@@ -98,7 +98,7 @@ rule extractBiotype:
 
 rule featurescounts:
     input:
-        annotation={rules.gff2gtf.output.gtfall},
+        annotation={rules.extractBiotype.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/featurecount/{method}-{condition}-{replicate}.txt",
@@ -110,7 +110,7 @@ rule featurescounts:
 
 rule trnafeaturescounts:
     input:
-        annotation={rules.gff2gtf.output.gtfall},
+        annotation={rules.extractBiotype.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/trnafeaturecount/{method}-{condition}-{replicate}.txt",
@@ -122,7 +122,7 @@ rule trnafeaturescounts:
 
 rule norrnafeaturescounts:
     input:
-        annotation={rules.gff2gtf.output.gtfall},
+        annotation={rules.extractBiotype.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/norrnafeaturecount/{method}-{condition}-{replicate}.txt",
@@ -134,7 +134,7 @@ rule norrnafeaturescounts:
 
 rule rrnafeaturescounts:
     input:
-        annotation={rules.gff2gtf.output.gtfall},
+        annotation={rules.extractBiotype.output},
         bam="rRNAbam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/rrnafeaturecount/{method}-{condition}-{replicate}.txt",
@@ -147,7 +147,7 @@ rule rrnafeaturescounts:
 
 rule ncrnafeaturescounts:
     input:
-        annotation={rules.gff2gtf.output.gtfall},
+        annotation={rules.extractBiotype.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt",
