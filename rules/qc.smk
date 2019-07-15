@@ -78,27 +78,37 @@ rule gff2gtf:
         annotation={rules.retrieveAnnotation.output},
     output:
         gtfcds="qc/featurecount/annotation.gtf",
-        gtfall="qc/featurecount/annotationtmp.gtf"
     conda:
         "../envs/cufflinks.yaml"
     threads: 1
     shell:
-        "mkdir -p qc/featurecount; gffread -T -F {input.annotation} -o {output.gtfall}; gffread -T {input.annotation} -o {output.gtfcds};"
+        "mkdir -p qc/featurecount; gffread -T {input.annotation} -o {output.gtfcds};"
 
-rule extractBiotype:
+rule featurecountAnnotation:
     input:
-        annotation="qc/featurecount/annotationtmp.gtf"
+        annotation={rules.retrieveAnnotation.output},
     output:
-        "qc/featurecount/annotationall.gtf"
+        "qc/featurecount/annotationall.gtf",
     conda:
-        "../envs/mergetools.yaml"
+        "../envs/cufflinks.yaml"
     threads: 1
     shell:
-        "mkdir -p qc/featurecount; python3 SPtools/scripts/biotype_to_feature.py -a {input.annotation} -o {output}"
+        "mkdir -p qc/featurecount; SPtools/scripts/annotation_featurecount.py -a {input.annotation} -o {output};"
+
+# rule extractBiotype:
+#     input:
+#         annotation="qc/featurecount/annotationtmp.gtf"
+#     output:
+#         "qc/featurecount/annotationall.gtf"
+#     conda:
+#         "../envs/mergetools.yaml"
+#     threads: 1
+#     shell:
+#         "mkdir -p qc/featurecount; python3 biotype_to_feature.py -a {input.annotation} -o {output}"
 
 rule featurescounts:
     input:
-        annotation={rules.extractBiotype.output},
+        annotation={rules.featurecountAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/featurecount/{method}-{condition}-{replicate}.txt",
@@ -106,11 +116,11 @@ rule featurescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/featurecount; featureCounts -T {threads} -t CDS -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/featurecount; featureCounts -T {threads} -t gene -g ID -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule trnafeaturescounts:
     input:
-        annotation={rules.extractBiotype.output},
+        annotation={rules.featurecountAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/trnafeaturecount/{method}-{condition}-{replicate}.txt",
@@ -118,11 +128,11 @@ rule trnafeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/trnafeaturecount; featureCounts -T {threads} -t tRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/trnafeaturecount; featureCounts -T {threads} -t tRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule norrnafeaturescounts:
     input:
-        annotation={rules.extractBiotype.output},
+        annotation={rules.featurecountAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/norrnafeaturecount/{method}-{condition}-{replicate}.txt",
@@ -130,11 +140,11 @@ rule norrnafeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/norrnafeaturecount; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/norrnafeaturecount; featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule rrnafeaturescounts:
     input:
-        annotation={rules.extractBiotype.output},
+        annotation={rules.featurecountAnnotation.output},
         bam="rRNAbam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/rrnafeaturecount/{method}-{condition}-{replicate}.txt",
@@ -142,12 +152,12 @@ rule rrnafeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/rrnafeaturecount; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/rrnafeaturecount; featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
 
 
 rule ncrnafeaturescounts:
     input:
-        annotation={rules.extractBiotype.output},
+        annotation={rules.featurecountAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt",
@@ -155,7 +165,7 @@ rule ncrnafeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/ncrnarnafeaturecount; featureCounts -T {threads} -t ncRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/ncrnarnafeaturecount; featureCounts -T {threads} -t ncRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
 
 
 rule coveragedepth:
