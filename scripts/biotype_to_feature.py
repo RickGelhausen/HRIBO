@@ -28,10 +28,10 @@ def extract_biotype(args):
         strand = str(getattr(row, "_6"))
         phase = str(getattr(row, "_7"))
         description = getattr(row, "_8")
-        attributes = [x.replace("\"","") for x in re.split('[;=]', description) if x != ""]
+        attributes = [x.replace("\"","") for x in re.split('[; ]', description) if x != ""]
 
         rows.append(row)
-        if feature == "gene" and "gene_biotype" in attributes:
+        if feature == "CDS" and "gene_biotype" in attributes:
             gene_biotype = attributes[attributes.index("gene_biotype") + 1]
             if gene_biotype in ["ncRNA", "sRNA", "tRNA", "rRNA", "mRNA"]:
                 rows.append(nTuple(seq_name, "generated", gene_biotype, start, stop, score, strand, phase, description))
