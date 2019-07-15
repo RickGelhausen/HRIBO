@@ -103,6 +103,10 @@ fastqcmulti:
   parallelenvironment : 'smp 8'
   memory: "h_vmem=3G"
 
+fastqcuniq:
+  parallelenvironment : 'smp 8'
+  memory: "h_vmem=3G"
+
 gff2gtf:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
@@ -253,7 +257,7 @@ bamindex:
 rrnabamindex:
   parallelenvironment : 'smp 20'
   memory: "h_vmem=3G"
-  
+
 wigrev:
   parallelenvironment : 'smp 5'
   memory: "h_vmem=3G"
