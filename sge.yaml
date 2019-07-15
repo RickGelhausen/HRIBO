@@ -99,6 +99,10 @@ fastqcrrnafilter:
   parallelenvironment : 'smp 8'
   memory: "h_vmem=3G"
 
+fastqcmulti:
+  parallelenvironment : 'smp 8'
+  memory: "h_vmem=3G"
+
 gff2gtf:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
