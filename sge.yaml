@@ -109,7 +109,7 @@ fastqcrrnafilter:
 
 fastqcmulti:
   parallelenvironment : 'smp 8'
-  memory: "h_vmem=3G"
+  memory: "h_vmem=8G"
 
 fastqcuniq:
   parallelenvironment : 'smp 8'

@@ -21,7 +21,7 @@ def parse_gff3(annotation_df):
         score = getattr(row, "_5")
         strand = getattr(row, "_6")
         phase = getattr(row, "_7")
-        attributes = [x.lower() for x in re.split('[;=]', getattr(row, "_8"))]
+        attributes = [x for x in re.split('[;=]', getattr(row, "_8"))]
 
         if feature not in ["start_codon", "stop_codon"]:
             entries.append([reference_name, origin, feature, start, stop, score, strand, phase, attributes])
@@ -43,7 +43,7 @@ def parse_gff2(annotation_df):
         score = getattr(row, "_5")
         strand = getattr(row, "_6")
         phase = getattr(row, "_7")
-        attributes = [x.lower().replace("\"", "") for x in re.split('[; ]', getattr(row, "_8")) if x != ""]
+        attributes = [x.replace("\"", "") for x in re.split('[; ]', getattr(row, "_8")) if x != ""]
 
         if feature not in ["start_codon", "stop_codon"]:
             entries.append([reference_name, origin, feature, start, stop, score, strand, phase, attributes])
@@ -58,10 +58,10 @@ def create_annotation_dict(args):
     value: [unique_features,...]
     """
 
-    annnotation_df = pd.read_csv(args.annotation, sep="\t", comment="#", header=None)
+    annotation_df = pd.read_csv(args.annotation, sep="\t", comment="#", header=None)
 
-    rows_with_id = sum(annDF[8].str.contains("ID=").tolist())
-    number_of_rows = len(annDF.index)
+    rows_with_id = sum(annotation_df[8].str.contains("ID=").tolist())
+    number_of_rows = len(annotation_df.index)
 
     # gff3
     if rows_with_id >= number_of_rows * 0.75:
@@ -98,10 +98,8 @@ def generate_shortened_annotation(annotation_dict):
     ncrnaCounter=1
     geneCounter=1
     srnaCounter=1
-    for key, val in annotation_dict:
-        features = val[0]
-        attributes = val[1]
-        if "rrna" in features:
+    for key, features in annotation_dict.items():
+        if "rRNA" in features:
             rows.append(nTuple(key[0],"extracted", "rRNA", key[1], key[2],".",key[3],".", "gene_id \"rrna%s\";" % rrnaCounter))
             rrnaCounter += 1
         elif "tRNA" in features:
@@ -133,7 +131,7 @@ def main():
 
     with open(args.output, "w") as f:
         f.write("##gff-version 2\n")
-    with open(args.output, "a") as f:)
+    with open(args.output, "a") as f:
         short_annotation_df.sort_values(by=[0,3,4], inplace=True)
         short_annotation_df.to_csv(f, header=None, sep="\t", index=False, quoting=csv.QUOTE_NONE)
 
