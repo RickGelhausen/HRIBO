@@ -140,7 +140,7 @@ rule rrnabamindex:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(os.path.basename(output[0]))[0])
     shell:
-        "samtools index -@ {threads} maplink/{params.prefix}"
+        "samtools index -@ {threads} rRNAbam/{params.prefix}"
 
 rule rrnareadcountstats:
     input:
