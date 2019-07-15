@@ -155,17 +155,17 @@ rule rrnafeaturescounts:
         "mkdir -p qc/rrnafeaturecount; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
 
-#rule ncrnafeaturescounts:
-#    input:
-#        annotation={rules.featurecountAnnotation.output},
-#        bam="bam/{method}-{condition}-{replicate}.bam"
-#    output:
-#        txt="qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt",
-#    conda:
-#        "../envs/subread.yaml"
-#    threads: 8
-#    shell:
-#        "mkdir -p qc/ncrnarnafeaturecount; featureCounts -T {threads} -t ncRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+rule ncrnafeaturescounts:
+   input:
+       annotation={rules.featurecountAnnotation.output},
+       bam="bam/{method}-{condition}-{replicate}.bam"
+   output:
+       txt="qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt",
+   conda:
+       "../envs/subread.yaml"
+   threads: 8
+   shell:
+       "mkdir -p qc/ncrnarnafeaturecount; featureCounts -T {threads} -t ncRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
 
 rule coveragedepth:
@@ -191,7 +191,7 @@ rule multiqc:
         expand("qc/trnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/rrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/norrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-       # expand("qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+        expand("qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")
     params:
@@ -201,4 +201,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/mapped qc/raw qc/trimmed qc/norRNA qc/unique qc/featurecount qc/trnafeaturecount qc/rrnafeaturecount qc/norrnafeaturecount trimmed  2> {log}"
+        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/mapped qc/raw qc/trimmed qc/norRNA qc/unique qc/featurecount qc/trnafeaturecount qc/rrnafeaturecount qc/norrnafeaturecount qc/ncrnafeaturecount trimmed  2> {log}"
