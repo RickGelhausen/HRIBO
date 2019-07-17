@@ -9,6 +9,36 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.Alphabet import generic_dna
 
+def retrieve_column_information(attributes):
+    """
+    check for gff2/gff3 format and generate a list of information for the final tables
+    [locus_tag, name, product, note]
+    """
+
+    if "ID=" in attributes:
+        attribute_list =  [x for x in re.split('[;=]', attributes.lower())]
+    else:
+        attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes.lower()) if x != ""]
+
+    locus_tag = ""
+    if "locus_tag" in attribute_list:
+        locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+
+    name = ""
+    if "name" in attribute_list:
+        name = attribute_list[attribute_list.index("name")+1]
+
+    product = ""
+    if "product" in attribute_list:
+        product = attribute_list[attribute_list.index("product")+1]
+
+    note = ""
+    if "note" in attribute_list:
+        note = attribute_list[attribute_list.index("note")+1]
+
+    return [locus_tag, name, product, note]
+
+
 def calculate_rpkm(total_mapped, read_count, read_length):
     """
     calculate the rpkm
@@ -24,7 +54,7 @@ def calculate_tpm(normalize_factor, read_count, gene_length, average_length):
 
     return float("%.2f" % ((read_count * average_length * 1000000) / (normalize_factor * gene_length)))
 
-def get_normalization_factor(read_df, wildcards, average_length_dict):
+def get_normalization_factor(read_df, wildcards, average_length_dict, prefix_columns):
     """
     calculate the denominator for the tpm
     """
@@ -37,7 +67,7 @@ def get_normalization_factor(read_df, wildcards, average_length_dict):
 
         gene_length = stop - start + 1
 
-        read_list = [getattr(row, "_%s" %x) for x in range(6,len(row))]
+        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns+1,len(row))]
         for idx, val in enumerate(read_list):
             if (wildcards[idx], reference_name) in normalize_factor_dict:
                 normalize_factor_dict[(wildcards[idx], reference_name)] += (int(val) * average_length_dict[(wildcards[idx],reference_name)]) / gene_length
@@ -45,27 +75,6 @@ def get_normalization_factor(read_df, wildcards, average_length_dict):
                 normalize_factor_dict[(wildcards[idx], reference_name)] = (int(val) * average_length_dict[(wildcards[idx],reference_name)]) / gene_length
 
     return normalize_factor_dict
-
-# def get_average_lengths(args, wildcards):
-#     """
-#     create a dictionary containing the average_read_lengths
-#     """
-#     length_df = pd.read_csv(args.length, sep= "\t", comment="#", header=None)
-#
-#     average_length_dict = {}
-#     for row in length_df.itertuples(index=False, name='Pandas'):
-#         reference_name = getattr(row, "_0")
-#         start = int(getattr(row, "_1"))
-#         stop = int(getattr(row, "_2"))
-#         strand = getattr(row, "_3")
-#
-#         for idx in range(len(wildcards)):
-#             average_length = float(getattr(row, "_%s") % (4+ idx))
-#
-#             average_length_dict[(wildcard, reference_name, start, stop, strand)] = average_length
-#
-#     return average_length_dict
-
 
 def generate_excel_files(args):
     """
@@ -96,37 +105,40 @@ def generate_excel_files(args):
     wildcards = wildcards.replace("# ", "").split()
     wildcards = [os.path.splitext(os.path.basename(card))[0] for card in wildcards]
 
-    #average_length_dict = get_average_lengths(args, wildcards)
-
+    # read bed file
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
-    column_count = len(read_df.columns) - 1
 
-    name_list = ["s%s" % str(x) for x in range(column_count)]
-    nTuple = collections.namedtuple('Pandas', name_list)
-
-    # read gff file
     rows_rpkm = []
     rows_tpm = []
-    header_rpkm = ["id", "start", "stop", "strand", "length"] + [card + "_rpkm" for card in wildcards]
-    header_tpm = ["id", "start", "stop", "strand", "length"] + [card + "_tpm" for card in wildcards]
+    header_rpkm = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Product", "Note"] + [card + "_rpkm" for card in wildcards]
+    header_tpm = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Product", "Note"] + [card + "_tpm" for card in wildcards]
 
-    normalize_factor_dict = get_normalization_factor(read_df, wildcards, average_length_dict)
+    prefix_columns = len(read_df.columns) - len(wildcards)
+
+    name_list = ["s%s" % str(x) for x in range(len(header_rpkm))]
+    nTuple = collections.namedtuple('Pandas', name_list)
+    normalize_factor_dict = get_normalization_factor(read_df, wildcards, average_length_dict, prefix_columns)
     for row in read_df.itertuples(index=False, name='Pandas'):
         reference_name = getattr(row, "_0")
         start = getattr(row, "_1")
         stop = getattr(row, "_2")
         strand = getattr(row, "_5")
 
+        attributes = getattr(row, "_3")
+        column_info = retrieve_column_information(attributes)
+
+        source = getattr(row, "_6")
+        feature = getattr(row, "_7")
 
         length = stop - start + 1
-        read_list = [getattr(row, "_%s" %x) for x in range(6,len(row))]
+        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns+1,len(row))]
 
         ###################################### RPKM ##########################################
         rpkm_list = []
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
-        result_rpkm = [reference_name, start, stop, strand, length] + rpkm_list
+        result_rpkm = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, column_info[2], column_info[3]] + rpkm_list
         rows_rpkm.append(nTuple(*result_rpkm))
 
         ###################################### TPM ##########################################
@@ -134,11 +146,11 @@ def generate_excel_files(args):
         for idx, val in enumerate(read_list):
             tpm_list.append(calculate_tpm(normalize_factor_dict[(wildcards[idx], reference_name)], val, length, average_length_dict[(wildcards[idx], reference_name)]))
 
-        result_tpm = [reference_name, start, stop, strand, length] + tpm_list
+        result_tpm = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, column_info[2], column_info[3]] + tpm_list
         rows_tpm.append(nTuple(*result_tpm))
 
-    excel_rpkm_df = pd.DataFrame.from_records(rows_rpkm, columns=[header_rpkm[x] for x in range(column_count)])
-    excel_tpm_df = pd.DataFrame.from_records(rows_tpm, columns=[header_tpm[x] for x in range(column_count)])
+    excel_rpkm_df = pd.DataFrame.from_records(rows_rpkm, columns=[header_rpkm[x] for x in range(len(header_rpkm))])
+    excel_tpm_df = pd.DataFrame.from_records(rows_tpm, columns=[header_tpm[x] for x in range(len(header_tpm))])
 
     excel_rpkm_df.to_excel(args.rpkm, sheet_name=args.sheet_name)
     excel_tpm_df.to_excel(args.tpm, sheet_name=args.sheet_name)
