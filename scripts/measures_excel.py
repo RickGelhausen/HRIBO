@@ -35,8 +35,6 @@ def retrieve_column_information(attributes):
     name = ""
     if "name" in attribute_list:
         name = attribute_list[attribute_list.index("name")+1]
-        if "cds" in name or "gene" in name:
-            name = ""
 
     product = ""
     if "product" in attribute_list:
