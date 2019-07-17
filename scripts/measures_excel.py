@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import re
-import os
+import os, sys
 import pandas as pd
 import collections
 
@@ -16,9 +16,17 @@ def retrieve_column_information(attributes):
     """
 
     if "ID=" in attributes:
-        attribute_list =  [x for x in re.split('[;=]', attributes.lower())]
+        attribute_list =  [x for x in re.split('[;=]', attributes)]
     else:
-        attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes.lower()) if x != ""]
+        attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes) if x != ""]
+ 
+    if len(attribute_list) % 2 == 0:
+        for i in range(len(attribute_list)):
+            if i % 2 == 0:
+                attribute_list[i] = attribute_list[i].lower()    
+    else:
+        print(attributes)
+        sys.exit("Attributes section of gtf/gff is wrongly formatted!")
 
     locus_tag = ""
     if "locus_tag" in attribute_list:
@@ -27,6 +35,8 @@ def retrieve_column_information(attributes):
     name = ""
     if "name" in attribute_list:
         name = attribute_list[attribute_list.index("name")+1]
+        if "cds" in name or "gene" in name:
+            name = ""
 
     product = ""
     if "product" in attribute_list:
@@ -67,7 +77,7 @@ def get_normalization_factor(read_df, wildcards, average_length_dict, prefix_col
 
         gene_length = stop - start + 1
 
-        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns+1,len(row))]
+        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
         for idx, val in enumerate(read_list):
             if (wildcards[idx], reference_name) in normalize_factor_dict:
                 normalize_factor_dict[(wildcards[idx], reference_name)] += (int(val) * average_length_dict[(wildcards[idx],reference_name)]) / gene_length
@@ -112,9 +122,8 @@ def generate_excel_files(args):
     rows_tpm = []
     header_rpkm = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Product", "Note"] + [card + "_rpkm" for card in wildcards]
     header_tpm = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Product", "Note"] + [card + "_tpm" for card in wildcards]
-
+    
     prefix_columns = len(read_df.columns) - len(wildcards)
-
     name_list = ["s%s" % str(x) for x in range(len(header_rpkm))]
     nTuple = collections.namedtuple('Pandas', name_list)
     normalize_factor_dict = get_normalization_factor(read_df, wildcards, average_length_dict, prefix_columns)
@@ -131,7 +140,7 @@ def generate_excel_files(args):
         feature = getattr(row, "_7")
 
         length = stop - start + 1
-        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns+1,len(row))]
+        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
 
         ###################################### RPKM ##########################################
         rpkm_list = []
