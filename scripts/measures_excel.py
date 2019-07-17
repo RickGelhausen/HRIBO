@@ -15,7 +15,7 @@ def retrieve_column_information(attributes):
     [locus_tag, name, product, note]
     """
 
-    if "ID=" in attributes:
+    if ";" in attributes and "=" in attributes:
         attribute_list =  [x for x in re.split('[;=]', attributes)]
     else:
         attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes) if x != ""]
