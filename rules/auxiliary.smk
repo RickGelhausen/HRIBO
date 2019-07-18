@@ -105,7 +105,7 @@ rule generateAnnotationReadCounts:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="auxiliary/annotation_uniq.gtf"
+        annotation="annotation/annotation.gtf"
     output:
         "auxiliary/annotation_read_counts.bed"
     conda:
