@@ -86,7 +86,7 @@ rule generateCombinedReadCounts:
     shell:
         """
         mkdir -p auxiliary
-        awk -F'\\t' '{{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 }}' {input.combined} > tmp_combined.bed
+        awk -F'\\t' '{{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 FS $2 FS $3}}' {input.combined} > tmp_combined.bed
         bedtools multicov -s -D -bams {input.bam} -bed tmp_combined.bed > {output}
         sed -i '1i \# {input.bam}\n' {output}
         rm tmp_combined.bed
@@ -147,32 +147,18 @@ rule totalMappedReads:
     shell:
         "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
 
-# rule calculateAverageLengths:
-#     input:
-#         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-#         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-#         annotation="auxiliary/annotation_uniq.bed"
-#     output:
-#         length="auxiliary/average_read_lengths.bed",
-#     conda:
-#         "../envs/plastid.yaml"
-#     threads: 1
-#     shell:
-#         "mkdir -p auxiliary; SPtools/scripts/average_read_lengths.py -b {input.bam} -a {input.annotation} -l {output.length}"
-
 rule createExcelAnnotation:
     input:
         total="auxiliary/total_mapped_reads.txt",
         reads="auxiliary/annotation_read_counts.bed",
-        length="auxiliary/average_read_lengths.txt"
+        genome="genomes/genome.fa"
     output:
-        rpkm= "auxiliary/annotation_rpkm.xlsx",
-        tpm= "auxiliary/annotation_tpm.xlsx"
+        rpkm= "auxiliary/annotation.xlsx",
     conda:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/measures_excel.py -t {input.total} -r {input.reads} -l {input.length} --out_tpm {output.tpm} --out_rpkm {output.rpkm}"
+        "mkdir -p auxiliary; SPtools/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule createExcelSummary:
     input:
@@ -185,4 +171,4 @@ rule createExcelSummary:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/summary_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; SPtools/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
