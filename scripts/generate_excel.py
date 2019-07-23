@@ -52,11 +52,11 @@ def retrieve_column_information(attributes):
 
     evidence = ""
     if "evidence" in attribute_list:
-        evidence = attribute_list[attribute_list.index("Evidence")+1]
+        evidence = attribute_list[attribute_list.index("evidence")+1]
 
     orftype = ""
     if "orf_type" in attribute_list:
-        orftype = attribute_list[attribute_list.index("ORF_type")+1]
+        orftype = attribute_list[attribute_list.index("orf_type")+1]
 
     return [locus_tag, name, product, note, evidence, orftype]
 
@@ -76,18 +76,23 @@ def get_genome_information(genome, start, stop, strand):
     aa_seq = str(coding_dna.translate(table=11,to_stop=True))
     return start_codon, stop_codon, nucleotide_seq, aa_seq
 
-def excel_writer(data_frames):
+def excel_writer(args, data_frames, wildcards):
     """
     create an excel sheet out of a dictionary of data_frames
     correct the width of each column
     """
+    header_only =  ["Note", "Aminoacid_seq", "Nucleotide_seq", "Start_codon", "Stop_codon", "Strand", "Codon_count"] + [card + "_rpkm" for card in wildcards]
     writer = pd.ExcelWriter(args.output, engine='xlsxwriter')
     for sheetname, df in data_frames.items():
-        df.to_excel(writer, sheet_name=sheetname)
+        df.to_excel(writer, sheet_name=sheetname, index=False)
         worksheet = writer.sheets[sheetname]
         for idx, col in enumerate(df):
             series = df[col]
-            max_len = max(( series.astype(str).map(len).max(), len(str(series.name)) )) + 1
+            if col in header_only:
+                max_len = len(str(series.name)) + 2
+            else:
+                max_len = max(( series.astype(str).str.len().max(), len(str(series.name)) )) + 1
+            print("Sheet: %s | col: %s | max_len: %s" % (sheetname, col, max_len))
             worksheet.set_column(idx, idx, max_len)
     writer.save()
 
@@ -154,7 +159,7 @@ def parse_orfs(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
-        result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + rpkm_list + [column_info[4], column_info[5], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_count[3]]
+        result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + rpkm_list + [column_info[4], column_info[5], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
         if feature.lower() != "region":
             main_sheet.append(nTuple(*result))
 
@@ -166,7 +171,7 @@ def parse_orfs(args):
             region_sheet.append(nTuple(*result))
         elif feature.lower() == "rrna":
             rRNA_sheet.append(nTuple(*result))
-        elif feature.lower() == "trna"
+        elif feature.lower() == "trna":
             tRNA_sheet.append(nTuple(*result))
         else:
             misc_sheet.append(nTuple(*result))
@@ -181,7 +186,7 @@ def parse_orfs(args):
 
     dataframe_dict = { "Main" : main_df, "CDS" : cds_df, "gene" : gene_df, "region" : region_df, "rRNA" : rRNA_df, "tRNA" : tRNA_df, "miscellaneous" : misc_df }
 
-    excel_writer(dataframe_dict)
+    excel_writer(args, dataframe_dict, wildcards)
 
 def main():
     # store commandline args

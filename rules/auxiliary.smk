@@ -153,9 +153,9 @@ rule createExcelAnnotation:
         reads="auxiliary/annotation_read_counts.bed",
         genome="genomes/genome.fa"
     output:
-        rpkm= "auxiliary/annotation.xlsx",
+        "auxiliary/annotation.xlsx",
     conda:
-        "../envs/plastid.yaml"
+        "../envs/excel.yaml"
     threads: 1
     shell:
         "mkdir -p auxiliary; SPtools/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
@@ -168,7 +168,7 @@ rule createExcelSummary:
     output:
         report("auxiliary/summary.xlsx", caption="../report/summary.rst", category="Summary table")
     conda:
-        "../envs/plastid.yaml"
+        "../envs/excel.yaml"
     threads: 1
     shell:
         "mkdir -p auxiliary; SPtools/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
