@@ -92,46 +92,42 @@ rule generateCombinedReadCounts:
         rm tmp_combined.bed
         """
 
-rule generateUniqAnnotation:
+rule generateAnnotationTotalReadCounts:
     input:
-        "annotation/annotation.gtf"
-    output:
-        "auxiliary/annotation_uniq.gtf"
-    threads: 1
-    shell:
-        "awk -F'\t' '!seen[$1 FS $4 FS $5 FS $7]++' {input} > {output}"
-
-rule generateAnnotationReadCounts:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bam=expand("bammulti/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bamindex=expand("bammulti/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         annotation="annotation/annotation.gtf"
     output:
-        "auxiliary/annotation_read_counts.bed"
+        "auxiliary/annotation_total_read_counts.bed"
     conda:
         "../envs/bedtools.yaml"
     threads: 1
     shell:
         """
         mkdir -p auxiliary
-        awk -F'\t' '{{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 FS $2 FS $3}}' {input.annotation} > tmp_annotation.bed
-        bedtools multicov -s -D -bams {input.bam} -bed tmp_annotation.bed > {output}
+        awk -F'\t' '{{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 FS $2 FS $3}}' {input.annotation} > tmp_annotation_total.bed
+        bedtools multicov -s -D -bams {input.bam} -bed tmp_annotation_total.bed > {output}
         sed -i '1i \# {input.bam}\n' {output}
-        rm tmp_annotation.bed
+        rm tmp_annotation_total.bed
         """
 
-rule annotationToBed:
+rule generateAnnotationUniqueReadCounts:
     input:
-        annotation="auxiliary/annotation_uniq.gtf"
+        bam=expand("rRNAbam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bamindex=expand("rRNAbam/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        annotation="annotation/annotation.gtf"
     output:
-        "auxiliary/annotation_uniq.bed"
+        "auxiliary/annotation_unique_read_counts.bed"
     conda:
         "../envs/bedtools.yaml"
     threads: 1
     shell:
         """
         mkdir -p auxiliary
-        cut -f1,4,5,7 {input.annotation} > {output}
+        awk -F'\t' '{{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 FS $2 FS $3}}' {input.annotation} > tmp_annotation_unique.bed
+        bedtools multicov -s -D -bams {input.bam} -bed tmp_annotation_unique.bed > {output}
+        sed -i '1i \# {input.bam}\n' {output}
+        rm tmp_annotation_unique.bed
         """
 
 rule totalMappedReads:
@@ -147,13 +143,26 @@ rule totalMappedReads:
     shell:
         "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
 
-rule createExcelAnnotation:
+rule createExcelTotalAnnotation:
     input:
         total="auxiliary/total_mapped_reads.txt",
-        reads="auxiliary/annotation_read_counts.bed",
+        reads="auxiliary/annotation_total_read_counts.bed",
         genome="genomes/genome.fa"
     output:
-        "auxiliary/annotation.xlsx",
+        "auxiliary/annotation_total.xlsx",
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        "mkdir -p auxiliary; SPtools/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+
+rule createExcelUniqueAnnotation:
+    input:
+        total="auxiliary/total_mapped_reads.txt",
+        reads="auxiliary/annotation_unique_read_counts.bed",
+        genome="genomes/genome.fa"
+    output:
+        "auxiliary/annotation_unique.xlsx",
     conda:
         "../envs/excel.yaml"
     threads: 1

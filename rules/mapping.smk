@@ -69,6 +69,16 @@ rule samstrandswap:
          method=lambda wildcards: wildcards.method
     shell: "if [ \"{params.method}\" == \"NOTSET\" ]; then SPtools/scripts/samstrandinverter.py --sam_in_filepath={input.sam} --sam_out_filepath={output.sam}; else cp {input.sam} {output.sam}; fi"
 
+rule sammultitobam:
+    input:
+        sam="sammulti/{method}-{condition}-{replicate}.sam"
+    output:
+        "bammulti/{method}-{condition}-{replicate}.bam"
+    conda:
+        "../envs/samtools.yaml"
+    threads: 20
+    shell:
+        "mkdir -p bammulti; samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output} -O bam"
 
 rule samtobam:
     input:
@@ -79,8 +89,7 @@ rule samtobam:
         "../envs/samtools.yaml"
     threads: 20
     shell:
-        "mkdir -p bam; samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output} -O bam"
-
+        "mkdir -p rRNAbam; samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output} -O bam"
 
 rule maplink:
     input:

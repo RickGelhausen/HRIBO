@@ -128,7 +128,21 @@ rule bamindex:
 #    shell:
 #        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --binSize=1 --smoothLength=0 --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
 
-rule rrnabamindex:
+rule totalmappedbamindex:
+    input:
+        rules.sammultitobam.output,
+        rules.genomeSize.output
+    output:
+        "bammulti/{method}-{condition}-{replicate}.bam.bai"
+    conda:
+        "../envs/samtools.yaml"
+    threads: 20
+    params:
+        prefix=lambda wildcards, output: (os.path.splitext(os.path.basename(output[0]))[0])
+    shell:
+        "samtools index -@ {threads} bammulti/{params.prefix}"
+
+rule uniquemappedbamindex:
     input:
         rules.samtobam.output,
         rules.genomeSize.output
@@ -142,18 +156,40 @@ rule rrnabamindex:
     shell:
         "samtools index -@ {threads} rRNAbam/{params.prefix}"
 
-rule rrnareadcountstats:
+rule totalmappedreadcountstats:
     input:
         bam=rules.samtobam.output,
         genomeSize=rules.genomeSize.output,
-        bamIndex=rules.rrnabamindex.output
+        bamIndex=rules.totalmappedbamindex.output
+    output:
+        stat="bammulti/{method}-{condition}-{replicate}.readstats"
+    threads: 1
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p rRNAbam; readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+
+rule uniquemappedreadcountstats:
+    input:
+        bam=rules.samtobam.output,
+        genomeSize=rules.genomeSize.output,
+        bamIndex=rules.uniquemappedbamindex.output
     output:
         stat="rRNAbam/{method}-{condition}-{replicate}.readstats"
     threads: 1
     shell:
         "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p rRNAbam; readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
 
-rule rrnaminreadcounts:
+rule totalmappedminreadcounts:
+    input:
+        stats=expand("bammulti/{method}-{condition}-{replicate}.readstats", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+    output:
+        minreads="bammulti/minreads.txt"
+    threads: 1
+    params:
+        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p rRNAbam; minreads.py {input.stats} > {output.minreads}; source deactivate;"
+
+rule uniquemappedminreadcounts:
     input:
         stats=expand("rRNAbam/{method}-{condition}-{replicate}.readstats", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
@@ -164,93 +200,186 @@ rule rrnaminreadcounts:
     shell:
         "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p rRNAbam; minreads.py {input.stats} > {output.minreads}; source deactivate;"
 
-rule rrnawig:
+rule totalmappedwig:
     input:
-        bam=rules.samtobam.output,
+        bam=rules.sammultitobam.output,
         genomeSize=rules.genomeSize.output,
-        bamIndex=rules.rrnabamindex.output,
-        stats="rRNAbam/{method}-{condition}-{replicate}.readstats",
-        min="rRNAbam/minreads.txt"
+        bamIndex=rules.totalmappedbamindex.output,
+        stats="bammulti/{method}-{condition}-{replicate}.readstats",
+        min="bammulti/minreads.txt"
     output:
-        fwd="unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
-        rev="unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.reverse.wig",
-        fmil="unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.forward.wig",
-        rmil="unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
-        fmin="unfilteredtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
-        rmin="unfilteredtracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
+        fwd="totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
+        rev="totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.wig",
+        fmil="totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.wig",
+        rmil="totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
+        fmin="totalmappedtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
+        rmin="totalmappedtracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p unfilteredtracks; mkdir -p unfilteredtracks/raw; mkdir -p unfilteredtracks/mil; mkdir -p unfilteredtracks/min; coverage.py --coverage_style global --bam_path {input.bam} --wiggle_file_path unfilteredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p totalmappedtracks; mkdir -p totalmappedtracks/raw; mkdir -p totalmappedtracks/mil; mkdir -p totalmappedtracks/min; coverage.py --coverage_style global --bam_path {input.bam} --wiggle_file_path totalmappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
 
-rule rrnawigtobigwigrawforward:
+rule uniquemappedwig:
     input:
-        fwd="unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
+        bam=rules.samtobam.output,
+        genomeSize=rules.genomeSize.output,
+        bamIndex=rules.uniquemappedbamindex.output,
+        stats="rRNAbam/{method}-{condition}-{replicate}.readstats",
+        min="rRNAbam/minreads.txt"
+    output:
+        fwd="uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
+        rev="uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.wig",
+        fmil="uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.wig",
+        rmil="uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
+        fmin="uniquemappedtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
+        rmin="uniquemappedtracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
+    threads: 1
+    params:
+        prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
+        prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
+    shell:
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p uniquemappedtracks; mkdir -p uniquemappedtracks/raw; mkdir -p uniquemappedtracks/mil; mkdir -p uniquemappedtracks/min; coverage.py --coverage_style global --bam_path {input.bam} --wiggle_file_path uniquemappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+
+rule totalmappedwigtobigwigrawforward:
+    input:
+        fwd="totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
-        fwd=report("unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.forward.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+        fwd=report("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.totalmapped.bw", caption="../report/totalmappedwig.rst", category="Total mapped tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
     shell:
         "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
 
-rule rrnawigtobigwigminrawreverse:
+rule totalmappedwigtobigwigminrawreverse:
     input:
-        rev="unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.reverse.wig",
+        rev="totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
-        rev=report("unfilteredtracks/raw/{method}-{condition}-{replicate}.raw.reverse.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+        rev=report("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.totalmapped.bw", caption="../report/totalmappedwig.rst", category="Total mapped tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
     shell:
         "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
 
-rule rrnawigtobigwigminforward:
+rule totalmappedwigtobigwigminforward:
     input:
-        fwd="unfilteredtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
+        fwd="totalmappedtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
-        fwd=report("unfilteredtracks/min/{method}-{condition}-{replicate}.min.forward.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+        fwd=report("totalmappedtracks/min/{method}-{condition}-{replicate}.min.forward.totalmapped.bw", caption="../report/totalmappedwig.rst", category="Total mapped tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
     shell:
         "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
 
-rule rrnawigtobigwigminreverse:
+rule totalmappedwigtobigwigminreverse:
     input:
-        rev="unfilteredtracks/min/{method}-{condition}-{replicate}.min.reverse.wig",
+        rev="totalmappedtracks/min/{method}-{condition}-{replicate}.min.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
-        rev=report("unfilteredtracks/min/{method}-{condition}-{replicate}.min.reverse.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+        rev=report("totalmappedtracks/min/{method}-{condition}-{replicate}.min.reverse.totalmapped.bw", caption="../report/totalmappedwig.rst", category="Total mapped tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
     shell:
         "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
 
-rule rrnawigtobigwigmilforward:
+rule totalmappedwigtobigwigmilforward:
     input:
-        fwd="unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.forward.wig",
+        fwd="totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.wig",
         genomeSize=rules.genomeSize.output
     output:
-        fwd=report("unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.forward.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+        fwd=report("totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.totalmapped.bw", caption="../report/totalmappedwig.rst", category="Total mapped tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1
     shell:
         "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
 
-rule rrnawigtobigwigmilreverse:
+rule totalmappedwigtobigwigmilreverse:
     input:
-        rev="unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
+        rev="totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
         genomeSize=rules.genomeSize.output
     output:
-        rev=report("unfilteredtracks/mil/{method}-{condition}-{replicate}.mil.reverse.unfiltered.bw", caption="../report/unfilteredwig.rst", category="Unfiltered tracks")
+        rev=report("totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.totalmapped.bw", caption="../report/totalmappedwig.rst", category="Total mapped tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+rule uniquemappedwigtobigwigrawforward:
+    input:
+        fwd="uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.uniquemapped.bw", caption="../report/uniquemappedwig.rst", category="Unique mapped tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule uniquemappedwigtobigwigminrawreverse:
+    input:
+        rev="uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.uniquemapped.bw", caption="../report/uniquemappedwig.rst", category="Unique mapped tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+rule uniquemappedwigtobigwigminforward:
+    input:
+        fwd="uniquemappedtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("uniquemappedtracks/min/{method}-{condition}-{replicate}.min.forward.uniquemapped.bw", caption="../report/uniquemappedwig.rst", category="Unique mapped tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule uniquemappedwigtobigwigminreverse:
+    input:
+        rev="uniquemappedtracks/min/{method}-{condition}-{replicate}.min.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("uniquemappedtracks/min/{method}-{condition}-{replicate}.min.reverse.uniquemapped.bw", caption="../report/uniquemappedwig.rst", category="Unique mapped tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
+
+rule uniquemappedwigtobigwigmilforward:
+    input:
+        fwd="uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        fwd=report("uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.uniquemapped.bw", caption="../report/uniquemappedwig.rst", category="Unique mapped tracks")
+    conda:
+        "../envs/wig.yaml"
+    threads: 1
+    shell:
+        "wigToBigWig {input.fwd} {input.genomeSize} {output.fwd}"
+
+rule uniquemappedwigtobigwigmilreverse:
+    input:
+        rev="uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
+        genomeSize=rules.genomeSize.output
+    output:
+        rev=report("uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.uniquemapped.bw", caption="../report/uniquemappedwig.rst", category="Unique mapped tracks")
     conda:
         "../envs/wig.yaml"
     threads: 1

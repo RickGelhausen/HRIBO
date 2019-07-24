@@ -19,14 +19,18 @@ generateMetageneRoiStop:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
 
-generateAnnotationReadCounts:
+generateAnnotationTotalReadCounts:
   parallelenvironment : 'smp 1'
-  memory: "h_vmem=10G"
+  memory: "h_vmem=20G"
+
+generateAnnotationUniqueReadCounts:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=20G"
 
 generateCombinedReadCounts:
   parallelenvironment : 'smp 1'
-  memory: "h_vmem=10G"
-    
+  memory: "h_vmem=20G"
+
 psiteOffsetsStart:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
@@ -34,6 +38,14 @@ psiteOffsetsStart:
 psiteOffsetsStop:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
+
+createExcelTotalAnnotation:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+createExcelUniqueAnnotation:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
 
 createExcelSummary:
   parallelenvironment : 'smp 1'
@@ -53,6 +65,10 @@ map:
   memory: "h_vmem=2G"
 
 samuniq:
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=2G"
+
+sammultitobam:
   parallelenvironment : 'smp 20'
   memory: "h_vmem=2G"
 
@@ -120,6 +136,26 @@ gff2gtf:
   memory: "h_vmem=4G"
 
 featurecounts:
+  parallelenvironment : 'smp 8'
+  memory: "h_vmem=3G"
+
+trnafeaturecounts:
+  parallelenvironment : 'smp 8'
+  memory: "h_vmem=3G"
+
+rrnatotalfeaturecounts:
+  parallelenvironment : 'smp 8'
+  memory: "h_vmem=3G"
+
+rrnauniquefeaturecounts:
+  parallelenvironment : 'smp 8'
+  memory: "h_vmem=3G"
+
+norrnafeaturecounts:
+  parallelenvironment : 'smp 8'
+  memory: "h_vmem=3G"
+
+ncrnafeaturecounts:
   parallelenvironment : 'smp 8'
   memory: "h_vmem=3G"
 
@@ -262,7 +298,11 @@ bamindex:
   parallelenvironment : 'smp 20'
   memory: "h_vmem=3G"
 
-rrnabamindex:
+totalmappedbamindex:
+  parallelenvironment : 'smp 20'
+  memory: "h_vmem=3G"
+
+uniquemappedbamindex:
   parallelenvironment : 'smp 20'
   memory: "h_vmem=3G"
 

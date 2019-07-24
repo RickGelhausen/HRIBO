@@ -95,17 +95,6 @@ rule featurecountAnnotation:
     shell:
         "mkdir -p qc/featurecount; SPtools/scripts/annotation_featurecount.py -a {input.annotation} -o {output};"
 
-# rule extractBiotype:
-#     input:
-#         annotation="qc/featurecount/annotationtmp.gtf"
-#     output:
-#         "qc/featurecount/annotationall.gtf"
-#     conda:
-#         "../envs/mergetools.yaml"
-#     threads: 1
-#     shell:
-#         "mkdir -p qc/featurecount; python3 biotype_to_feature.py -a {input.annotation} -o {output}"
-
 rule featurescounts:
     input:
         annotation={rules.featurecountAnnotation.output},
@@ -142,17 +131,29 @@ rule norrnafeaturescounts:
     shell:
         "mkdir -p qc/norrnafeaturecount; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
-rule rrnafeaturescounts:
+rule rrnatotalfeaturescounts:
     input:
         annotation={rules.featurecountAnnotation.output},
-        bam="rRNAbam/{method}-{condition}-{replicate}.bam"
+        bam="bammulti/{method}-{condition}-{replicate}.bam"
     output:
-        txt="qc/rrnafeaturecount/{method}-{condition}-{replicate}.txt",
+        txt="qc/rrnatotalfeaturecount/{method}-{condition}-{replicate}.txt",
     conda:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/rrnafeaturecount; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/rrnatotalfeaturecount; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+
+rule rrnauniquefeaturescounts:
+    input:
+        annotation={rules.featurecountAnnotation.output},
+        bam="rRNAbam/{method}-{condition}-{replicate}.bam"
+    output:
+        txt="qc/rrnauniquefeaturecount/{method}-{condition}-{replicate}.txt",
+    conda:
+        "../envs/subread.yaml"
+    threads: 8
+    shell:
+        "mkdir -p qc/rrnauniquefeaturecount; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
 
 #rule ncrnafeaturescounts:
@@ -189,7 +190,8 @@ rule multiqc:
         expand("qc/mapped/{method}-{condition}-{replicate}-map_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/featurecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/trnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("qc/rrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/rrnatotalfeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/rrnauniquefeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/norrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
  #       expand("qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
@@ -201,4 +203,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/mapped qc/raw qc/trimmed qc/norRNA qc/unique qc/featurecount qc/trnafeaturecount qc/rrnafeaturecount qc/norrnafeaturecount trimmed  2> {log}"
+        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/mapped qc/raw qc/trimmed qc/norRNA qc/unique qc/featurecount qc/trnafeaturecount qc/rrnatotalfeaturecount qc/rrnauniquefeaturecount qc/norrnafeaturecount trimmed  2> {log}"

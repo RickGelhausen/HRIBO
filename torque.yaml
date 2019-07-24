@@ -24,10 +24,13 @@ psiteOffsetsStop:
   resources : 'nodes=1:ppn=1,pmem=8'
 
 generateCombinedReadCounts:
-  resources : 'nodes=1:ppn=1,pmem=8'
+  resources : 'nodes=1:ppn=1,pmem=20'
 
-generateAnnotationReadCounts:
-  resources : 'nodes=1:ppn=1,pmem=8'
+generateAnnotationTotalReadCounts:
+  resources : 'nodes=1:ppn=1,pmem=20'
+
+generateAnnotationUniqueReadCounts:
+  resources : 'nodes=1:ppn=1,pmem=20'
 
 generateUniqAnnotation:
   resources : 'nodes=1:ppn=1,pmem=8'
@@ -41,7 +44,11 @@ annotationToBed:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-createExcelAnnotation:
+createExcelTotalAnnotation:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+createExcelUniqueAnnotation:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
@@ -65,6 +72,9 @@ samstrandswap:
   qname: "short"
 
 samtobam:
+  resources : 'nodes=1:ppn=20,pmem=2'
+
+sammultitobam:
   resources : 'nodes=1:ppn=20,pmem=2'
 
 maplink:
@@ -105,23 +115,23 @@ retrieveAnnotation:
 
 # qc
 fastqcmapped:
-  resources : 'nodes=1:ppn=8,pmem=2'
+  resources : 'nodes=1:ppn=8,pmem=8'
   qname: "short"
 
 fastqcmulti:
-  resources : 'nodes=1:ppn=8,pmem=2'
+  resources : 'nodes=1:ppn=8,pmem=8'
   qname: "short"
 
 fastqcraw:
-  resources : 'nodes=1:ppn=8,pmem=2'
+  resources : 'nodes=1:ppn=8,pmem=8'
   qname: "short"
 
 fastqctrimmed:
-  resources : 'nodes=1:ppn=8,pmem=2'
+  resources : 'nodes=1:ppn=8,pmem=8'
   qname: "short"
 
 fastqcrrnafilter:
-  resources : 'nodes=1:ppn=8,pmem=2'
+  resources : 'nodes=1:ppn=8,pmem=8'
   qname: "short"
 
 gff2gtf:
@@ -129,6 +139,26 @@ gff2gtf:
   qname: "short"
 
 featurescounts:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+trnafeaturescounts:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+rrnauniquefeaturescounts:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+rrnatotalfeaturescounts:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+ncrnafeaturescounts:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
+norrnafeaturescounts:
   resources : 'nodes=1:ppn=8,pmem=2'
   qname: "short"
 
@@ -278,40 +308,77 @@ rbsTrack:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-rrnabamindex:
+totalmappedbamindex:
   resources : 'nodes=1:ppn=20,pmem=2'
 
-rrnareadcountstats:
+totalmappedreadcountstats:
   resources : 'nodes=1:ppn=1,pmem=8'
 
-rrnaminreadcounts:
+totalmappedminreadcounts:
   resources : 'nodes=1:ppn=1,pmem=8'
 
-rrnawig:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-rrnawigtobigwigrawforward:
+totalmappedwig:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-rrnawigtobigwigminrawreverse:
+totalmappedwigtobigwigrawforward:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-rrnawigtobigwigminforward:
+totalmappedwigtobigwigminrawreverse:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-rrnawigtobigwigminreverse:
+totalmappedwigtobigwigminforward:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-rrnawigtobigwigmilforward:
+totalmappedwigtobigwigminreverse:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-rrnawigtobigwigmilreverse:
+totalmappedwigtobigwigmilforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+totalmappedwigtobigwigmilreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+uniquemappedbamindex:
+  resources : 'nodes=1:ppn=20,pmem=2'
+
+uniquemappedreadcountstats:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+uniquemappedminreadcounts:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+uniquemappedwig:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+uniquemappedwigtobigwigrawforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+uniquemappedwigtobigwigminrawreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+uniquemappedwigtobigwigminforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+uniquemappedwigtobigwigminreverse:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+uniquemappedwigtobigwigmilforward:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+uniquemappedwigtobigwigmilreverse:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
