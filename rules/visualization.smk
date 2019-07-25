@@ -158,7 +158,7 @@ rule uniquemappedbamindex:
 
 rule totalmappedreadcountstats:
     input:
-        bam=rules.samtobam.output,
+        bam=rules.totalmappedsamtobam.output,
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.totalmappedbamindex.output
     output:
