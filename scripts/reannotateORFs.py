@@ -60,19 +60,31 @@ def fill_annotation_dict(args):
                 start = str(getattr(row, "_3"))
                 stop = str(getattr(row, "_4"))
                 strand = str(getattr(row, "_6"))
-                description = getattr(row, "_8")
-                attributes = [x.lower() for x in re.split('[;=]', description)]
-                # locus_tag
-                if "locus_tag" in attributes:
-                    locus_tag = attributes[attributes.index("locus_tag") + 1]
+                attributes = getattr(row, "_8")
+
+                if ";" in attributes and "=" in attributes:
+                    attribute_list =  [x for x in re.split('[;=]', attributes)]
                 else:
-                    locus_tag = attributes[attributes.index("id") + 1]
+                    attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes) if x != ""]
+
+                if len(attribute_list) % 2 == 0:
+                    for i in range(len(attribute_list)):
+                        if i % 2 == 0:
+                            attribute_list[i] = attribute_list[i].lower()
+                else:
+                    print(attributes)
+                    sys.exit("Attributes section of gtf/gff is wrongly formatted!")
+
+                # locus_tag
+                if "locus_tag" in attribute_list:
+                    locus_tag = attribute_list[attribute_list.index("locus_tag") + 1]
+                else:
+                    locus_tag = attribute_list[attribute_list.index("id") + 1]
 
                 # gene name
-                if "name" in attributes:
-                    name = attributes[attributes.index("name") + 1]
-                else:
-                    name = "NA"
+                name = ""
+                if "name" in attribute_list:
+                    name = attribute_list[attribute_list.index("name") + 1]
 
                 # update the annotation dictionary
                 if start in annotation_dict:
@@ -111,7 +123,7 @@ def fill_annotation_dict(args):
                 elif "transcript_name" in attributes:
                     name = attributes[attributes.index("transcript_name")+1].replace("\"", "")
                 else:
-                    name = "NA"
+                    name = ""
 
                 # update the annotation dictionary
                 if start in annotation_dict:
@@ -144,7 +156,7 @@ def reannotate_ORFs(args):
         try:
             locus_tag = annotation_dict[start][stop][strand][0]
             name = annotation_dict[start][stop][strand][1]
-            if name == "NA":
+            if name == "":
                 rows.append(create_ntuple(row, s8="%s;locus_tag=%s" % (getattr(row, "_8"), locus_tag)))
             else:
                 attributes = re.split('[;=]', getattr(row, "_8"))

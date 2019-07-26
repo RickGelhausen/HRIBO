@@ -102,8 +102,6 @@ def parse_orfs(args):
     genome_dict = dict()
     for entry in genome_file:
         genome_dict[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
-        with open("test-rev.txt", "w") as f:
-            f.write(str(entry.seq.complement()))
 
     # get the total mapped reads for each bam file
     total_mapped_dict = {}

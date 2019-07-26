@@ -158,14 +158,14 @@ rule uniquemappedbamindex:
 
 rule totalmappedreadcountstats:
     input:
-        bam=rules.totalmappedsamtobam.output,
+        bam=rules.sammultitobam.output,
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.totalmappedbamindex.output
     output:
         stat="bammulti/{method}-{condition}-{replicate}.readstats"
     threads: 1
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p rRNAbam; readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p bammulti; readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
 
 rule uniquemappedreadcountstats:
     input:
@@ -187,7 +187,7 @@ rule totalmappedminreadcounts:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p rRNAbam; minreads.py {input.stats} > {output.minreads}; source deactivate;"
+        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p bammulti; minreads.py {input.stats} > {output.minreads}; source deactivate;"
 
 rule uniquemappedminreadcounts:
     input:
@@ -500,7 +500,6 @@ rule globalwigtobigwigmilreverse:
     threads: 1
     shell:
         "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
-
 
 rule centeredwig:
     input:
