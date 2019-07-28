@@ -44,6 +44,14 @@ annotationToBed:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
+createExcelTotalAnnotationReadCount:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+createExcelUniqueAnnotationReadCount:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
 createExcelTotalAnnotation:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"

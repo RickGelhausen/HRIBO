@@ -11,23 +11,80 @@
 \maketitle
 
 \section*{Provided files}
+
+\subsection*{excel files}
+At the moment, we provide two types of excel files. A summary of the results and information about the provided annotation (2 files). We generated the files in a general fashion, therefore some columns/sheets can be empty for the summary, as these information are not available for newly annotated ORFs.
+The provided excel files have a main sheet featuring all rows of the annotation (without regions) and multiple sheets for each feature.
 \subsection*{summary.xlsx}
-A summary excel sheet containing the detected open reading frames (ORFs) together with some additional information. This file contains: 
+A excel summary sheet containing the detected open reading frames (ORFs) together with some additional information. This file contains: 
 \begin{itemize}
-\item \textbf{ORF ID:} composed of the genome accession, the start, the stop and the strand of the ORF.
-\item \textbf{start:} the start position of the ORF
-\item \textbf{stop:} the stop position of the ORF
-\item \textbf{strand:} the strand of the ORF (+:forward, -:reverse)
-\item \textbf{length:} the length of the ORF
+\item \textbf{Genome:} the genome accession 
+\item \textbf{Source:} the source of the gene annotation (in this case merged from the results)
+\item \textbf{Feature:} the feature of the gene (in this case CDS)
+\item \textbf{Start:} the start position of the ORF
+\item \textbf{Stop:} the stop position of the ORF
+\item \textbf{Strand:} the strand of the ORF (+:forward, -:reverse)
+\item \textbf{Locus tag:} if the ORF is already annotated the locus tag is retrieved from the annotation (if available)
+\item \textbf{Name:} the name of the annotated gene (if available)
+\item \textbf{Length:} the length of the ORF
+\item \textbf{Codon count:} the number of codons
 \item \textbf{RPKM:} reads per kilobase million measures for each method-condition-replicate triplet
-\item \textbf{evidence:} list of 'prediction tool'-'sample' combinations describing the tool by which the ORF was detected and the sample in which the ORF was detected.
-\item \textbf{annotated:} if the ORF is already annotated in the provided annotation file, the respective locus tag is shown in this column
-\item \textbf{name:} if the ORF is already annotated in the provided annotation file, the respective name (if available) is shown in this column
+\item \textbf{Evidence:} list of 'prediction tool'-'sample' combinations describing the tool by which the ORF was detected and the sample in which the ORF was detected.
 \item \textbf{ORF type:} ORF type retrieved from reparation (if available)
-\item \textbf{start codon:} the start codon for the ORF
-\item \textbf{stop codon:} the stop codon for the ORF
-\item \textbf{nucleotide sequence:} nucleotide sequence for the ORF
-\item \textbf{amino acid sequence:} amino acid sequence for the ORF
+\item \textbf{Start codon:} the start codon for the ORF
+\item \textbf{Stop codon:} the stop codon for the ORF
+\item \textbf{Nucleotide sequence:} nucleotide sequence for the ORF
+\item \textbf{Amino acid sequence:} amino acid sequence for the ORF
+\item \textbf{Product:} empty
+\item \textbf{Note:} empty
+\end{itemize}
+
+\subsection*{annotation\_total.xlsx}
+An excel sheet containing information about the annotated features (taken from the provided annotation). The RPKM values are calculated directly after mapping the reads, before removal of multi-mapping reads. This file contains: 
+\begin{itemize}
+\item \textbf{Genome:} the genome accession 
+\item \textbf{Source:} the source of the annotated feature 
+\item \textbf{Feature:} the feature of the annotated feature (in this case CDS)
+\item \textbf{Start:} the start position of the annotated feature
+\item \textbf{Stop:} the stop position of the annotated feature
+\item \textbf{Strand:} the strand of the annotated feature (+:forward, -:reverse)
+\item \textbf{Locus tag:} the locus tag (if available)
+\item \textbf{Name:} the name of the annotated feature (if available)
+\item \textbf{Length:} the length of the annotated feature
+\item \textbf{Codon count:} the number of codons
+\item \textbf{RPKM:} reads per kilobase million measures for each method-condition-replicate triplet
+\item \textbf{Evidence:} empty
+\item \textbf{ORF type:} empty
+\item \textbf{Start codon:} the start codon for the annotated feature
+\item \textbf{Stop codon:} the stop codon for the annotated feature
+\item \textbf{Nucleotide sequence:} nucleotide sequence for the annotated feature
+\item \textbf{Amino acid sequence:} amino acid sequence for the annotated feature
+\item \textbf{Product:} the product annotated in the provided annotation
+\item \textbf{Note:} the notes from the provided annotation
+\end{itemize}
+
+\subsection*{annotation\_unique.xlsx}
+An excel sheet containing information about the annotated features (taken from the provided annotation). The RPKM values are calculated directly after removal of multi-mapping reads, before removal of reads mapping to rRNA. This file contains: 
+\begin{itemize}
+\item \textbf{Genome:} the genome accession 
+\item \textbf{Source:} the source of the annotated feature 
+\item \textbf{Feature:} the feature of the annotated feature (in this case CDS)
+\item \textbf{Start:} the start position of the annotated feature
+\item \textbf{Stop:} the stop position of the annotated feature
+\item \textbf{Strand:} the strand of the annotated feature (+:forward, -:reverse)
+\item \textbf{Locus tag:} the locus tag (if available)
+\item \textbf{Name:} the name of the annotated feature (if available)
+\item \textbf{Length:} the length of the annotated feature
+\item \textbf{Codon count:} the number of codons
+\item \textbf{RPKM:} reads per kilobase million measures for each method-condition-replicate triplet
+\item \textbf{Evidence:} empty
+\item \textbf{ORF type:} empty
+\item \textbf{Start codon:} the start codon for the annotated feature
+\item \textbf{Stop codon:} the stop codon for the annotated feature
+\item \textbf{Nucleotide sequence:} nucleotide sequence for the annotated feature
+\item \textbf{Amino acid sequence:} amino acid sequence for the annotated feature
+\item \textbf{Product:} the product annotated in the provided annotation
+\item \textbf{Note:} the notes from the provided annotation
 \end{itemize}
 
 \subsection*{multi\_qc.html}
@@ -47,10 +104,13 @@ These statistics are collected after each processing step of our pipeline.
 \item \textbf{unique:} the data after removing multi-mapping reads
 \item \textbf{norRNA:} the data after filtering the rRNA
 \end{itemize}
-Further, feature counts are provided for different features from the annotation file. (i.e. how many reads map to each feature)
-This includes, all(featurecount), rRNA, norRNA(after filtering), tRNA, ncRNA.
 
-Following is a fastQC report including sequence counts, sequence quality histograms, per sequence quality scores, per base sequence content, per sequence GC content, per base N content, sequence length distribution, sequence duplication levels, over-represented features and adapter content.
+\noindent Further, feature counts are provided for different features from the annotation file. (i.e. how many reads map to each feature)
+This includes, all(featurecount), rRNA, norRNA(after filtering), tRNA, ncRNA. \\
+
+\noindent (To remove the featurecounts from the general statistics, use the \textbf{Configure Columns} and un-tick featurecounts. This might give you a better experience when comparing the different files.)\\
+
+\noindent Following is a fastQC report including sequence counts, sequence quality histograms, per sequence quality scores, per base sequence content, per sequence GC content, per base N content, sequence length distribution, sequence duplication levels, over-represented features and adapter content.
 
 \subsection*{heatmap\_SpearmanCorr\_readCounts.pdf}
 Spearman correlation coefficients of read counts. The dendrogram indicates which samples read counts are most similar to each other.
@@ -58,22 +118,7 @@ Spearman correlation coefficients of read counts. The dendrogram indicates which
 The genome file used for conducting the analysis.
 \subsection*{annotation.gff}
 The annotation file used for conducting the analysis.
-\subsection*{annotation\_rpkm.xlsx}
-An excel sheet containing information about the annotated features (taken from the provided annotation). This file contains: 
-\begin{itemize}
-\item \textbf{Genome:} the genome accession 
-\item \textbf{Source:} the source of the gene annotation
-\item \textbf{Feature:} the feature of the gene
-\item \textbf{Start:} the start position of the annotated gene
-\item \textbf{Stop:} the stop position of the annotated gene
-\item \textbf{Strand:} the strand of the annotated gene (+:forward, -:reverse)
-\item \textbf{Locus tag:} the locus tag of the annotated gene (if available)
-\item \textbf{Name:} the name of the annotated gene (if available)
-\item \textbf{Length:} the length of the annotated gene
-\item \textbf{Product:} the product information for the annotated gene (if available)
-\item \textbf{Note:} the notes for the annotated gene (if available)
-\item \textbf{RPKM:} reads per kilobase million measures for each method-condition-replicate triplet
-\end{itemize}
+
 %TODO: Missing info about raw, min, mil
 \subsection*{unfilteredtracks}
 A folder containing single nucleotide mapping bigwig files for the data before removal of reads mapping to rRNA. Used for genome browser visualization.

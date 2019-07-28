@@ -88,6 +88,8 @@ if TISHMODE == "TISONLY":
           "tracks/color/potentialStartCodons.gff",
           "auxiliary/annotation_total.xlsx",
           "auxiliary/annotation_unique.xlsx",
+          "auxiliary/total_read_counts.xlsx",
+          "auxiliary/unique_read_counts.xlsx",
           "auxiliary/summary.xlsx"
 else:
    rule all:
@@ -151,6 +153,8 @@ else:
           "tracks/color/potentialStartCodons.gff",
           "auxiliary/annotation_total.xlsx",
           "auxiliary/annotation_unique.xlsx",
+          "auxiliary/total_read_counts.xlsx",
+          "auxiliary/unique_read_counts.xlsx",
           "auxiliary/summary.xlsx"
 
 onsuccess:

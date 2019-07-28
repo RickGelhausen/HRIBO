@@ -169,6 +169,28 @@ rule createExcelUniqueAnnotation:
     shell:
         "mkdir -p auxiliary; SPtools/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
+rule createExcelTotalAnnotationReadCount:
+    input:
+        reads="auxiliary/annotation_total_read_counts.bed"
+    output:
+        "auxiliary/total_read_counts.xlsx",
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        "mkdir -p auxiliary; SPtools/scripts/generate_read_table.py -r {input.reads} -o {output}"
+
+rule createExcelUniqueAnnotationReadCount:
+    input:
+        reads="auxiliary/annotation_unique_read_counts.bed"
+    output:
+        "auxiliary/unique_read_counts.xlsx",
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        "mkdir -p auxiliary; SPtools/scripts/generate_read_table.py -r {input.reads} -o {output}"
+
 rule createExcelSummary:
     input:
         total="auxiliary/total_mapped_reads.txt",

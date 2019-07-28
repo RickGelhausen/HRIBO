@@ -128,7 +128,9 @@ def parse_orfs(args):
     gene_sheet = []
     region_sheet = []
     rRNA_sheet = []
+    sRNA_sheet = []
     tRNA_sheet = []
+    five_utr_sheet = []
     misc_sheet = []
 
     header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count"] + [card + "_rpkm" for card in wildcards] + ["Evidence", "ORF_type", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
@@ -171,6 +173,10 @@ def parse_orfs(args):
             rRNA_sheet.append(nTuple(*result))
         elif feature.lower() == "trna":
             tRNA_sheet.append(nTuple(*result))
+        elif feature.lower() in ["srna", "transcript"]:
+            sRNA_sheet.append(nTuple(*result))
+        elif feature.lower() == "5'-utr":
+            five_utr_sheet.append(nTuple(*result))
         else:
             misc_sheet.append(nTuple(*result))
 
@@ -180,9 +186,11 @@ def parse_orfs(args):
     region_df = pd.DataFrame.from_records(region_sheet, columns=[header[x] for x in range(len(header))])
     rRNA_df = pd.DataFrame.from_records(rRNA_sheet, columns=[header[x] for x in range(len(header))])
     tRNA_df = pd.DataFrame.from_records(tRNA_sheet, columns=[header[x] for x in range(len(header))])
+    sRNA_df = pd.DataFrame.from_records(sRNA_sheet, columns=[header[x] for x in range(len(header))])
+    five_utr_df = pd.DataFrame.from_records(five_utr_sheet, columns=[header[x] for x in range(len(header))])
     misc_df = pd.DataFrame.from_records(misc_sheet, columns=[header[x] for x in range(len(header))])
 
-    dataframe_dict = { "Main" : main_df, "CDS" : cds_df, "gene" : gene_df, "region" : region_df, "rRNA" : rRNA_df, "tRNA" : tRNA_df, "miscellaneous" : misc_df }
+    dataframe_dict = { "Main" : main_df, "CDS" : cds_df, "gene" : gene_df, "region" : region_df, "rRNA" : rRNA_df, "sRNA + transcript" : sRNA_df, "5'-UTR" : five_utr_df, "tRNA" : tRNA_df, "miscellaneous" : misc_df }
 
     excel_writer(args, dataframe_dict, wildcards)
 

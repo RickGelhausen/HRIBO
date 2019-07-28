@@ -39,6 +39,14 @@ psiteOffsetsStop:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
 
+createExcelTotalAnnotationReadCount:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+createExcelUniqueAnnotationReadCount:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
 createExcelTotalAnnotation:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=8G"
