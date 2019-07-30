@@ -93,67 +93,67 @@ rule featurecountAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p qc/featurecount; SPtools/scripts/annotation_featurecount.py -a {input.annotation} -o {output};"
+        "mkdir -p qc/all; SPtools/scripts/annotation_featurecount.py -a {input.annotation} -o {output};"
 
 rule featurescounts:
     input:
         annotation={rules.featurecountAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
-        txt="qc/featurecount/{method}-{condition}-{replicate}.txt",
+        txt="qc/all/{method}-{condition}-{replicate}.txt",
     conda:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/featurecount; featureCounts -T {threads} -t gene -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/all; featureCounts -T {threads} -t gene -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule trnafeaturescounts:
     input:
         annotation={rules.featurecountAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
-        txt="qc/trnafeaturecount/{method}-{condition}-{replicate}.txt",
+        txt="qc/trnainall/{method}-{condition}-{replicate}.txt",
     conda:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/trnafeaturecount; featureCounts -T {threads} -t tRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/trnainall; featureCounts -T {threads} -t tRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule norrnafeaturescounts:
     input:
         annotation={rules.featurecountAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
-        txt="qc/norrnafeaturecount/{method}-{condition}-{replicate}.txt",
+        txt="qc/rrnainall/{method}-{condition}-{replicate}.txt",
     conda:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/norrnafeaturecount; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/rrnainall; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule rrnatotalfeaturescounts:
     input:
         annotation={rules.featurecountAnnotation.output},
         bam="bammulti/{method}-{condition}-{replicate}.bam"
     output:
-        txt="qc/rrnatotalfeaturecount/{method}-{condition}-{replicate}.txt",
+        txt="qc/rrnainallaligned/{method}-{condition}-{replicate}.txt",
     conda:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/rrnatotalfeaturecount; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/rrnainallaligned; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule rrnauniquefeaturescounts:
     input:
         annotation={rules.featurecountAnnotation.output},
         bam="rRNAbam/{method}-{condition}-{replicate}.bam"
     output:
-        txt="qc/rrnauniquefeaturecount/{method}-{condition}-{replicate}.txt",
+        txt="qc/rrnainuniquelyaligned/{method}-{condition}-{replicate}.txt",
     conda:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/rrnauniquefeaturecount; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/rrnainuniquelyaligned; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
 
 #rule ncrnafeaturescounts:
@@ -188,11 +188,11 @@ rule multiqc:
         expand("qc/norRNA/{method}-{condition}-{replicate}-norRNA_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/unique/{method}-{condition}-{replicate}-map_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/mapped/{method}-{condition}-{replicate}-map_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("qc/featurecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("qc/trnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("qc/rrnatotalfeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("qc/rrnauniquefeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("qc/norrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/all/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/trnainall/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/rrnainallaligned/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/rrnainuniquelyaligned/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/rrnainall/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
  #       expand("qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")
