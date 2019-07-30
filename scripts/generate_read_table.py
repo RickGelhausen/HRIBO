@@ -40,7 +40,7 @@ def parse_orfs(args):
     # read gff file
     main_sheet = []
 
-    header = ["Orientation", "Class", "Feature count"] + [card + "_rpkm" for card in wildcards]
+    header = [Class", "Feature count"] + [card + "_rpkm" for card in wildcards]
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -49,34 +49,30 @@ def parse_orfs(args):
     feature_list = ["srna", "5'-utr", "cds", "rrna", "trna", "transcript", "total"]
     read_dict = collections.OrderedDict()
     count_dict = collections.OrderedDict()
-    for orientation in ["+", "-"]:
-        for f in feature_list:
-            read_dict[(orientation, f)] = [0] * len(wildcards)
-            count_dict[(orientation, f)] = 0
+
+    for f in feature_list:
+        read_dict[f] = [0] * len(wildcards)
+        count_dict[f] = 0
 
     main_sheet = []
     for row in read_df.itertuples(index=False, name='Pandas'):
         reference_name = getattr(row, "_0")
         start = getattr(row, "_1")
         stop = getattr(row, "_2")
-        strand = getattr(row, "_5")
         feature = getattr(row, "_7")
 
         read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
-        if (strand, feature.lower()) in read_dict:
+        if feature.lower() in read_dict:
             for idx, value in enumerate(read_list):
-                read_dict[(strand, feature.lower())][idx] += value
-                read_dict[(strand, "total")][idx] += value
-                count_dict[(strand, feature.lower())] += 1
-                count_dict[(strand, "total")] += 1
+                read_dict[feature.lower()][idx] += value
+                read_dict["total"][idx] += value
+            count_dict[feature.lower()] += 1
+            count_dict["total"] += 1
         else:
             print("feature not usable: " + feature)
 
     for key, val in read_dict.items():
-        if key[0] == "+":
-            result = ["sense", decode[key[1]], count_dict[key]] + val
-        else:
-            result = ["antisense", decode[key[1]], count_dict[key]] + val
+        result = [decode[key[1]], count_dict[key]] + val
         main_sheet.append(nTuple(*result))
 
     main_df = pd.DataFrame.from_records(main_sheet, columns=[header[x] for x in range(len(header))])
