@@ -30,7 +30,7 @@ rule fastqcmulti:
 
 rule fastqcraw:
     input:
-        fastq=trimlink/{method}-{condition}-{replicate}.fastq,
+        fastq="trimlink/{method}-{condition}-{replicate}.fastq.gz",
     output:
         html="qc/1raw/{method}-{condition}-{replicate}-raw_fastqc.html",
         zip="qc/1raw/{method}-{condition}-{replicate}-raw_fastqc.zip"
@@ -38,7 +38,7 @@ rule fastqcraw:
     conda:
         "../envs/fastqc.yaml"
     params:
-        prefix=lambda wildcards, input: (os.path.splitext(os.path.splitext(os.path.basename(input.reads[0]))[0])[0])
+        prefix=lambda wildcards, input: (os.path.splitext(os.path.splitext(os.path.basename(input.fastq))[0])[0])
     threads: 8
     shell:
         "mkdir -p qc/1raw; fastqc -o qc/1raw -t {threads} {input.fastq}; mv qc/1raw/{params.prefix}_fastqc.html {output.html}; mv qc/1raw/{params.prefix}_fastqc.zip {output.zip}"
