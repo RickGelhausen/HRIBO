@@ -182,7 +182,6 @@ rule coveragedepth:
 
 rule multiqc:
     input:
-        expand("tracks/{condition}.ribotish.gff", condition=set(samples["condition"])),
         expand("qc/1raw/{method}-{condition}-{replicate}-raw_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/5removedrRNA/{method}-{condition}-{replicate}-norRNA_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -203,4 +202,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/3mapped qc/1raw qc/2trimmed qc/5norRNA qc/4unique qc/all qc/trnainall qc/rrnainallaligned qc/rrnainuniquelyaligned qc/rrnainall trimmed  2> {log}"
+        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/3mapped qc/1raw qc/2trimmed qc/5removedrRNA qc/4unique qc/all qc/trnainall qc/rrnainallaligned qc/rrnainuniquelyaligned qc/rrnainall trimmed  2> {log}"

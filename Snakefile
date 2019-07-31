@@ -66,8 +66,8 @@ if TISHMODE == "TISONLY":
 else:
    rule all:
       input:
-         expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
-         expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
+         #expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
+         #expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
          expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
          expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),

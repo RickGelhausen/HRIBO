@@ -40,7 +40,7 @@ def parse_orfs(args):
     # read gff file
     main_sheet = []
 
-    header = [Class", "Feature count"] + [card + "_rpkm" for card in wildcards]
+    header = ["Class", "Feature count"] + [card + "_rpkm" for card in wildcards]
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -64,6 +64,7 @@ def parse_orfs(args):
         read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
         if feature.lower() in read_dict:
             for idx, value in enumerate(read_list):
+                print(value)
                 read_dict[feature.lower()][idx] += value
                 read_dict["total"][idx] += value
             count_dict[feature.lower()] += 1
@@ -72,7 +73,8 @@ def parse_orfs(args):
             print("feature not usable: " + feature)
 
     for key, val in read_dict.items():
-        result = [decode[key[1]], count_dict[key]] + val
+        result = [decode[key], count_dict[key]] + val
+
         main_sheet.append(nTuple(*result))
 
     main_df = pd.DataFrame.from_records(main_sheet, columns=[header[x] for x in range(len(header))])
