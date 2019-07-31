@@ -30,7 +30,7 @@ rule fastqcmulti:
 
 rule fastqcraw:
     input:
-        reads=getfastq,
+        fastq="trimlink/{method}-{condition}-{replicate}.fastq"
     output:
         html="qc/raw/{method}-{condition}-{replicate}-raw_fastqc.html",
         zip="qc/raw/{method}-{condition}-{replicate}-raw_fastqc.zip"
@@ -41,7 +41,7 @@ rule fastqcraw:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.splitext(os.path.basename(input.reads[0]))[0])[0])
     threads: 8
     shell:
-        "mkdir -p qc/raw; fastqc -o qc/raw -t {threads} {input}; mv qc/raw/{params.prefix}_fastqc.html {output.html}; mv qc/raw/{params.prefix}_fastqc.zip {output.zip}"
+        "mkdir -p qc/raw; fastqc -o qc/raw -t {threads} {input.fastq}; mv qc/raw/{params.prefix}_fastqc.html {output.html}; mv qc/raw/{params.prefix}_fastqc.zip {output.zip}"
 
 rule fastqctrimmed:
     input:
