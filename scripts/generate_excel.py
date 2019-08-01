@@ -92,6 +92,25 @@ def excel_writer(args, data_frames, wildcards):
             worksheet.set_column(idx, idx, max_len)
     writer.save()
 
+def calculate_TE(read_list, wildcards):
+    """
+    calculate the translational efficiency
+    """
+    ribo_reads = []
+    rna_reads = []
+    for idx in range(len(wildcards)):
+        if "ribo" in wildcards[idx].lower():
+            ribo_reads.append(read_list[idx])
+        elif "rna" in wildcards[idx].lower():
+            rna_reads.append(read_list[idx])
+
+    if len(ribo_reads) == len(rna_reads):
+        translational_efficiency = sum([ribo_reads[i]/rna_reads[i] for i in range(len(ribo))]) / len(ribo_reads)
+    else:
+        translational_efficiency = 0
+
+    return translational_efficiency
+
 def parse_orfs(args):
     # read the genome file
     genome_file = SeqIO.parse(args.genome, "fasta")
@@ -131,8 +150,7 @@ def parse_orfs(args):
     five_utr_sheet = []
     misc_sheet = []
 
-# TODO pseudogene + tranlational effiency
-    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count"] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
+    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count", "Translational Efficiency"] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -158,7 +176,8 @@ def parse_orfs(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
-        result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
+        translational_efficiency = calculate_TE(read_list, wildcards)
+        result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count, translational_efficiency] + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
 
         all_sheet.append(nTuple(*result))
 
