@@ -54,11 +54,7 @@ def retrieve_column_information(attributes):
     if "evidence" in attribute_list:
         evidence = attribute_list[attribute_list.index("evidence")+1]
 
-    orftype = ""
-    if "orf_type" in attribute_list:
-        orftype = attribute_list[attribute_list.index("orf_type")+1]
-
-    return [locus_tag, name, product, note, evidence, orftype]
+    return [locus_tag, name, product, note, evidence]
 
 def get_genome_information(genome, start, stop, strand):
     # retrieve the nucleotide sequence with correct strand
@@ -162,7 +158,7 @@ def parse_orfs(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
-        result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + rpkm_list + [column_info[4], column_info[5], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
+        result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
 
         all_sheet.append(nTuple(*result))
 
