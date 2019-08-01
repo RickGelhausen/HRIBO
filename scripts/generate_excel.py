@@ -96,6 +96,8 @@ def calculate_TE(read_list, wildcards):
     """
     calculate the translational efficiency
     """
+    pseudo_count = 1.0
+    read_list = [x+pseudo_count for x in read_list]
     ribo_reads = []
     rna_reads = []
     for idx in range(len(wildcards)):
