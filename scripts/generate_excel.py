@@ -105,7 +105,7 @@ def calculate_TE(read_list, wildcards):
             rna_reads.append(read_list[idx])
 
     if len(ribo_reads) == len(rna_reads):
-        translational_efficiency = sum([ribo_reads[i]/rna_reads[i] for i in range(len(ribo))]) / len(ribo_reads)
+        translational_efficiency = sum([ribo_reads[i]/rna_reads[i] for i in range(len(ribo_reads))]) / len(ribo_reads)
     else:
         translational_efficiency = 0
 
