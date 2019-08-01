@@ -21,6 +21,17 @@ rule processAnnotation:
     shell:
         "mkdir -p offsets; SPtools/scripts/processAnnotation.py -a {input.annotation} -o {output}"
 
+rule enrichAnnotation:
+    input:
+        "annotation/annotation.gtf"
+    output:
+        "auxiliary/enriched_annotation.gtf"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p auxiliary; SPtools/scripts/enrich_annotation.py -a {input} -o {output}"
+
 rule generateMetageneRoiStart:
     input:
         rules.ribotishAnnotation.output
@@ -96,7 +107,7 @@ rule generateAnnotationTotalReadCounts:
     input:
         bam=expand("bammulti/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("bammulti/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="annotation/annotation.gtf"
+        annotation="auxiliary/enriched_annotation.gtf"
     output:
         "auxiliary/annotation_total_read_counts.bed"
     conda:
@@ -115,7 +126,7 @@ rule generateAnnotationUniqueReadCounts:
     input:
         bam=expand("rRNAbam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("rRNAbam/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="annotation/annotation.gtf"
+        annotation="auxiliary/enriched_annotation.gtf"
     output:
         "auxiliary/annotation_unique_read_counts.bed"
     conda:
@@ -142,6 +153,8 @@ rule totalMappedReads:
     threads: 1
     shell:
         "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+
+
 
 rule createExcelTotalAnnotation:
     input:

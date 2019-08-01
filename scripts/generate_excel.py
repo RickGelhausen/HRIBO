@@ -123,17 +123,20 @@ def parse_orfs(args):
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
     # read gff file
-    main_sheet = []
+    all_sheet = []
     cds_sheet = []
     gene_sheet = []
     region_sheet = []
     rRNA_sheet = []
     sRNA_sheet = []
+    transcript_sheet = []
+    pseudogene_sheet = []
     tRNA_sheet = []
     five_utr_sheet = []
     misc_sheet = []
 
-    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count"] + [card + "_rpkm" for card in wildcards] + ["Evidence", "ORF_type", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
+# TODO pseudogene + tranlational effiency
+    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count"] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -160,8 +163,8 @@ def parse_orfs(args):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
         result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + rpkm_list + [column_info[4], column_info[5], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
-        if feature.lower() != "region":
-            main_sheet.append(nTuple(*result))
+
+        all_sheet.append(nTuple(*result))
 
         if feature.lower() == "cds":
             cds_sheet.append(nTuple(*result))
@@ -173,24 +176,30 @@ def parse_orfs(args):
             rRNA_sheet.append(nTuple(*result))
         elif feature.lower() == "trna":
             tRNA_sheet.append(nTuple(*result))
-        elif feature.lower() in ["srna", "transcript"]:
+        elif feature.lower() == "srna":
             sRNA_sheet.append(nTuple(*result))
+        elif feature.lower() == "transcript":
+            transcript_sheet.append(nTuple(*result))
+        elif feature.lower() == "pseudogene":
+            pseudogene_sheet.append(nTuple(*result))
         elif feature.lower() == "5'-utr":
             five_utr_sheet.append(nTuple(*result))
         else:
             misc_sheet.append(nTuple(*result))
 
-    main_df = pd.DataFrame.from_records(main_sheet, columns=[header[x] for x in range(len(header))])
+    all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
     cds_df = pd.DataFrame.from_records(cds_sheet, columns=[header[x] for x in range(len(header))])
     gene_df = pd.DataFrame.from_records(gene_sheet, columns=[header[x] for x in range(len(header))])
     region_df = pd.DataFrame.from_records(region_sheet, columns=[header[x] for x in range(len(header))])
     rRNA_df = pd.DataFrame.from_records(rRNA_sheet, columns=[header[x] for x in range(len(header))])
     tRNA_df = pd.DataFrame.from_records(tRNA_sheet, columns=[header[x] for x in range(len(header))])
     sRNA_df = pd.DataFrame.from_records(sRNA_sheet, columns=[header[x] for x in range(len(header))])
+    transcript_df = pd.DataFrame.from_records(transcript_sheet, columns=[header[x] for x in range(len(header))])
+    pseudogene_df = pd.DataFrame.from_records(pseudogene_sheet, columns=[header[x] for x in range(len(header))])
     five_utr_df = pd.DataFrame.from_records(five_utr_sheet, columns=[header[x] for x in range(len(header))])
     misc_df = pd.DataFrame.from_records(misc_sheet, columns=[header[x] for x in range(len(header))])
 
-    dataframe_dict = { "Main" : main_df, "CDS" : cds_df, "gene" : gene_df, "region" : region_df, "rRNA" : rRNA_df, "sRNA + transcript" : sRNA_df, "5'-UTR" : five_utr_df, "tRNA" : tRNA_df, "miscellaneous" : misc_df }
+    dataframe_dict = {"CDS" : cds_df, "rRNA" : rRNA_df, "sRNA" : sRNA_df, "transcript" : transcript_df, "5'-UTR" : five_utr_df, "tRNA" : tRNA_df, "pseudogene" : pseudogene_df, "gene" : gene_df, "region" : region_df,  "miscellaneous" : misc_df,  "all" : all_df }
 
     excel_writer(args, dataframe_dict, wildcards)
 
