@@ -112,7 +112,7 @@ def calculate_TE(read_list, wildcards, conditions):
     read_list = [x+pseudo_count for x in read_list]
     read_dict = collections.OrderedDict()
     for idx in range(len(wildcards)):
-        method, condition, replicate = wildcards.split("-")
+        method, condition, replicate = wildcards[idx].split("-")
         key = (method, condition)
         if key in read_dict:
             read_dict[key].append(read_list[idx])
