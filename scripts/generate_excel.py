@@ -15,6 +15,11 @@ def calculate_rpkm(total_mapped, read_count, read_length):
     """
     return float("%.2f" % ((read_count * 1000000000) / (total_mapped * read_length)))
 
+def get_unique(in_list):
+    seen = set()
+    seen_add = seen.add
+    return [x for x in in_list if not (x in seen or seen_add(x))]
+
 def retrieve_column_information(attributes):
     """
     check for gff2/gff3 format and generate a list of information for the final tables
@@ -92,26 +97,38 @@ def excel_writer(args, data_frames, wildcards):
             worksheet.set_column(idx, idx, max_len)
     writer.save()
 
-def calculate_TE(read_list, wildcards):
+def TE(ribo_count, rna_count):
+    """
+    calculation translational_efficiency for one entry
+    """
+    return float("%.2f" % (ribo_count/rna_count))
+
+def calculate_TE(read_list, wildcards, conditions):
     """
     calculate the translational efficiency
     """
+
     pseudo_count = 1.0
     read_list = [x+pseudo_count for x in read_list]
-    ribo_reads = []
-    rna_reads = []
+    read_dict = collections.OrderedDict()
     for idx in range(len(wildcards)):
-        if "ribo" in wildcards[idx].lower():
-            ribo_reads.append(read_list[idx])
-        elif "rna" in wildcards[idx].lower():
-            rna_reads.append(read_list[idx])
+        method, condition, replicate = wildcards.split("-")
+        key = (method, condition)
+        if key in read_dict:
+            read_dict[key].append(read_list[idx])
+        else:
+            read_dict[key] = [read_list[idx]]
 
-    if len(ribo_reads) == len(rna_reads):
-        translational_efficiency = sum([ribo_reads[i]/rna_reads[i] for i in range(len(ribo_reads))]) / len(ribo_reads)
-    else:
-        translational_efficiency = 0
+    TE_list = []
+    for cond in conditions:
+        if read_dict[("RIBO", cond)] == read_dict[("RNA", cond)]:
+            ribo_list= read_dict[("RIBO", cond)]
+            rna_list = read_dict[("RNA", cond)]
+            TE_list.append(sum([TE(ribo_list[idx], rna_list[idx]) for idx in range(len(ribo_list))]) / len(ribo_list))
+        else:
+            TE_list.append(0)
 
-    return translational_efficiency
+    return TE_list
 
 def parse_orfs(args):
     # read the genome file
@@ -136,6 +153,12 @@ def parse_orfs(args):
     wildcards = wildcards.replace("# ", "").split()
     wildcards = [os.path.splitext(os.path.basename(card))[0] for card in wildcards]
 
+    conditions = []
+    for card in wildcards:
+        conditions.append(card.split("-")[1])
+
+    conditions = get_unique(conditions)
+
     #read bed file
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
@@ -152,7 +175,7 @@ def parse_orfs(args):
     five_utr_sheet = []
     misc_sheet = []
 
-    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count", "Translational Efficiency"] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
+    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in conditions] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -178,8 +201,8 @@ def parse_orfs(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
-        translational_efficiency = calculate_TE(read_list, wildcards)
-        result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count, translational_efficiency] + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
+        TE_list = calculate_TE(read_list, wildcards, conditions)
+        result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
 
         all_sheet.append(nTuple(*result))
 
