@@ -16,10 +16,7 @@ def excel_writer(args, data_frames):
         worksheet = writer.sheets[sheetname]
         for idx, col in enumerate(df):
             series = df[col]
-            if col in header_only:
-                max_len = len(str(series.name)) + 2
-            else:
-                max_len = max(( series.astype(str).str.len().max(), len(str(series.name)) )) + 1
+            max_len = max(( series.astype(str).str.len().max(), len(str(series.name)) )) + 1
             worksheet.set_column(idx, idx, max_len)
     writer.save()
 
@@ -28,7 +25,7 @@ def convert_to_xlsx(args):
     covert the .tsv file to xlsx
     """
 
-    nTuple = collections.namedtuple('Pandas', ["Method", "Condition", "Replicate", "Fastq file"])
+    nTuple = collections.namedtuple('Pandas', ["Method", "Condition", "Replicate", "FastqFile"])
 
     samples_df = pd.read_csv(args.samples, comment="#", sep="\t")
     samples_sheet = []
@@ -41,7 +38,7 @@ def convert_to_xlsx(args):
         fastq = fastq.split("/")[1]
         samples_sheet.append(nTuple(method, condition, replicate, fastq))
 
-    samples_df = pd.DataFrame.from_records(samples_sheet)
+    samples_df = pd.DataFrame.from_records(samples_sheet, columns=["Method", "Condition", "Replicate", "Fastq File"])
 
     sheets = {"samples" : samples_df}
 
