@@ -5,9 +5,16 @@ __default__:
   logoutputdir : "$PWD/logs"
   erroroutputdir : "$PWD/logs"
 
-
 # auxillary.smk
 processAnnotation:
+  resources : 'nodes=1:ppn=1,pmem=4'
+  qname: "short"
+
+samplesToExcel:
+  resources : 'nodes=1:ppn=1,pmem=1'
+  qname: "short"
+
+enrichAnnotation:
   resources : 'nodes=1:ppn=1,pmem=4'
   qname: "short"
 
@@ -63,7 +70,6 @@ createExcelUniqueAnnotation:
 createExcelSummary:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
-
 
 # mapping.smk
 genomeSegemehlIndex:

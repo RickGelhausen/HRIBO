@@ -9,7 +9,15 @@ __default__:
 # auxiliary.smk
 processAnnotation:
   parallelenvironment : 'smp 1'
-  memory: "h_vmem=2G"
+  memory: "h_vmem=4G"
+
+samplesToExcel:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=1G"
+
+enrichAnnotation:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=4G"
 
 generateMetageneRoiStart:
   parallelenvironment : 'smp 1'

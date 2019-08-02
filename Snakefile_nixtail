@@ -90,6 +90,7 @@ if TISHMODE == "TISONLY":
           "auxiliary/annotation_unique.xlsx",
           "auxiliary/total_read_counts.xlsx",
           "auxiliary/unique_read_counts.xlsx",
+          "auxiliary/samples.xlsx",
           "auxiliary/summary.xlsx"
 else:
    rule all:
@@ -155,6 +156,7 @@ else:
           "auxiliary/annotation_unique.xlsx",
           "auxiliary/total_read_counts.xlsx",
           "auxiliary/unique_read_counts.xlsx",
+          "auxiliary/samples.xlsx",
           "auxiliary/summary.xlsx"
 
 onsuccess:

@@ -32,6 +32,17 @@ rule enrichAnnotation:
     shell:
         "mkdir -p auxiliary; SPtools/scripts/enrich_annotation.py -a {input} -o {output}"
 
+rule samplesToExcel:
+    input:
+        "SPtools/samples.tsv"
+    output:
+        "auxiliary/samples.xlsx"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p auxiliary; SPtools/scripts/samples_to_xlsx.py -i {input} -o {output}"
+ 
 rule generateMetageneRoiStart:
     input:
         rules.ribotishAnnotation.output
@@ -153,8 +164,6 @@ rule totalMappedReads:
     threads: 1
     shell:
         "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
-
-
 
 rule createExcelTotalAnnotation:
     input:
