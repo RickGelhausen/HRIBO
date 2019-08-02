@@ -38,11 +38,11 @@ rule samplesToExcel:
     output:
         "auxiliary/samples.xlsx"
     conda:
-        "../envs/mergetools.yaml"
+        "../envs/excel.yaml"
     threads: 1
     shell:
         "mkdir -p auxiliary; SPtools/scripts/samples_to_xlsx.py -i {input} -o {output}"
- 
+
 rule generateMetageneRoiStart:
     input:
         rules.ribotishAnnotation.output
