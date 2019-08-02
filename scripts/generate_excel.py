@@ -74,7 +74,10 @@ def get_genome_information(genome, start, stop, strand):
 
     # translate nucleotide_seq to aminoacid sequence
     coding_dna = Seq(nucleotide_seq, generic_dna)
-    aa_seq = str(coding_dna.translate(table=11,to_stop=True))
+    if len(coding_dna) % 3 != 0:
+        aa_seq = ""
+    else:
+        aa_seq = str(coding_dna.translate(table=11,to_stop=True))
     return start_codon, stop_codon, nucleotide_seq, aa_seq
 
 def excel_writer(args, data_frames, wildcards):
@@ -99,17 +102,20 @@ def excel_writer(args, data_frames, wildcards):
 
 def TE(ribo_count, rna_count):
     """
-    calculation translational_efficiency for one entry
+    calculate the translational efficiency for one entry
     """
-    return float("%.2f" % (ribo_count/rna_count))
+
+    if ribo_count == 0 and rna_count == 0:
+        return 0
+    elif rna_count == 0:
+        return ribo_count
+    else:
+        return ribo_count / rna_count
 
 def calculate_TE(read_list, wildcards, conditions):
     """
     calculate the translational efficiency
     """
-
-    pseudo_count = 1.0
-    read_list = [x+pseudo_count for x in read_list]
     read_dict = collections.OrderedDict()
     for idx in range(len(wildcards)):
         method, condition, replicate = wildcards[idx].split("-")
@@ -121,10 +127,11 @@ def calculate_TE(read_list, wildcards, conditions):
 
     TE_list = []
     for cond in conditions:
-        if read_dict[("RIBO", cond)] == read_dict[("RNA", cond)]:
+        if len(read_dict[("RIBO", cond)]) == len(read_dict[("RNA", cond)]):
             ribo_list= read_dict[("RIBO", cond)]
             rna_list = read_dict[("RNA", cond)]
-            TE_list.append(sum([TE(ribo_list[idx], rna_list[idx]) for idx in range(len(ribo_list))]) / len(ribo_list))
+            t_eff = sum([TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]) / len(ribo_list)
+            TE_list.append(float("%.2f" % t_eff))
         else:
             TE_list.append(0)
 
