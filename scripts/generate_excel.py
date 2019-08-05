@@ -208,7 +208,7 @@ def parse_orfs(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
-        TE_list = calculate_TE(read_list, wildcards, conditions)
+        TE_list = calculate_TE(rpkm_list, wildcards, conditions)
         result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
 
         all_sheet.append(nTuple(*result))
