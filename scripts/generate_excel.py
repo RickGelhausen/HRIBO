@@ -4,10 +4,14 @@ import re
 import os, sys
 import pandas as pd
 import collections
+from collections import Counter, OrderedDict
 
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.Alphabet import generic_dna
+
+class OrderedCounter(Counter, OrderedDict):
+    pass
 
 def calculate_rpkm(total_mapped, read_count, read_length):
     """
@@ -62,17 +66,18 @@ def retrieve_column_information(attributes):
     return [locus_tag, name, product, note, evidence]
 
 def get_genome_information(genome, start, stop, strand):
-    # retrieve the nucleotide sequence with correct strand
+    """
+    retrieve the nucleotide sequence and amino acid sequence
+    and the start and stop codons
+    """
     if strand == "+":
         nucleotide_seq = genome[0][start:stop+1]
     else:
         nucleotide_seq = genome[1][start:stop+1][::-1]
 
-    # get start and stop codons
     start_codon = nucleotide_seq[0:3]
     stop_codon = nucleotide_seq[-3:]
 
-    # translate nucleotide_seq to aminoacid sequence
     coding_dna = Seq(nucleotide_seq, generic_dna)
     if len(coding_dna) % 3 != 0:
         aa_seq = ""
@@ -116,7 +121,7 @@ def calculate_TE(read_list, wildcards, conditions):
     """
     calculate the translational efficiency
     """
-    read_dict = collections.OrderedDict()
+    read_dict = OrderedDict()
     for idx in range(len(wildcards)):
         method, condition, replicate = wildcards[idx].split("-")
         key = (method, condition)
@@ -128,9 +133,13 @@ def calculate_TE(read_list, wildcards, conditions):
     TE_list = []
     for cond in conditions:
         if len(read_dict[("RIBO", cond)]) == len(read_dict[("RNA", cond)]):
-            ribo_list= read_dict[("RIBO", cond)]
+            ribo_list = read_dict[("RIBO", cond)]
             rna_list = read_dict[("RNA", cond)]
-            t_eff = sum([TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]) / len(ribo_list)
+            t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
+
+            if len(t_eff) > 1:
+                t_eff.extend(sum(t_eff) / len(ribo_list))
+
             TE_list.append(float("%.2f" % t_eff))
         else:
             TE_list.append(0)
@@ -160,6 +169,19 @@ def parse_orfs(args):
     wildcards = wildcards.replace("# ", "").split()
     wildcards = [os.path.splitext(os.path.basename(card))[0] for card in wildcards]
 
+    TE_header = []
+    for card in wildcards:
+        if "RIBO" in card:
+            TE_header.append(card.split("-")[1])
+
+    counter = OrderedCounter(TF_header)
+    TE_header = []
+    for key, value in counter.items():
+        for idx in range(value+1):
+            TE_header.append("%s-%s" % (key,(idx+1)))
+        if value > 1:
+            TE_header.append("%s-avg" % key)
+
     conditions = []
     for card in wildcards:
         conditions.append(card.split("-")[1])
@@ -182,7 +204,7 @@ def parse_orfs(args):
     five_utr_sheet = []
     misc_sheet = []
 
-    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in conditions] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
+    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
