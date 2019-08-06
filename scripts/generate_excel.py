@@ -138,11 +138,12 @@ def calculate_TE(read_list, wildcards, conditions):
             t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
             if len(t_eff) > 1:
-                t_eff.extend(sum(t_eff) / len(ribo_list))
+                t_eff.extend([sum(t_eff) / len(ribo_list)])
 
-            TE_list.append(float("%.2f" % t_eff))
+            t_eff = [float("%.2f" % x) for x in t_eff]
+            TE_list.extend(t_eff)
         else:
-            TE_list.append(0)
+            TE_list.extend([0])
 
     return TE_list
 
@@ -174,10 +175,10 @@ def parse_orfs(args):
         if "RIBO" in card:
             TE_header.append(card.split("-")[1])
 
-    counter = OrderedCounter(TF_header)
+    counter = OrderedCounter(TE_header)
     TE_header = []
     for key, value in counter.items():
-        for idx in range(value+1):
+        for idx in range(value):
             TE_header.append("%s-%s" % (key,(idx+1)))
         if value > 1:
             TE_header.append("%s-avg" % key)
@@ -188,6 +189,7 @@ def parse_orfs(args):
 
     conditions = get_unique(conditions)
 
+    print(TE_header)
     #read bed file
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
