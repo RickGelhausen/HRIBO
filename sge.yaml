@@ -36,8 +36,8 @@ generateAnnotationUniqueReadCounts:
   memory: "h_vmem=20G"
 
 generateCombinedReadCounts:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=20G"
+  parallelenvironment : 'smp 5'
+  memory: "h_vmem=5G"
 
 psiteOffsetsStart:
   parallelenvironment : 'smp 1'
@@ -48,10 +48,22 @@ psiteOffsetsStop:
   memory: "h_vmem=4G"
 
 createExcelTotalAnnotationReadCount:
+  parallelenvironment : 'smp 5'
+  memory: "h_vmem=5G"
+
+createExcelUniqueAnnotationReadCount:
+  parallelenvironment : 'smp 5'
+  memory: "h_vmem=5G"
+
+mapPredictionReads:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=8G"
 
-createExcelUniqueAnnotationReadCount:
+mapTotalReads:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+mapUniqueReads:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=8G"
 

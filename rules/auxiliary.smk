@@ -101,17 +101,16 @@ rule generateCombinedReadCounts:
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         combined="tracks/combined_annotated.gff"
     output:
-        "auxiliary/combined_read_counts.bed"
+        "auxiliary/combined_read_counts.raw"
     conda:
-        "../envs/bedtools.yaml"
-    threads: 1
+        "../envs/subread.yaml"
+    threads: 5
     shell:
         """
         mkdir -p auxiliary
-        awk -F'\\t' '{{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 FS $2 FS $3}}' {input.combined} > tmp_combined.bed
-        bedtools multicov -s -D -bams {input.bam} -bed tmp_combined.bed > {output}
-        sed -i '1i \# {input.bam}\n' {output}
-        rm tmp_combined.bed
+        featureCounts -F GTF -s 1 -g ID -O -t CDS -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/combined_read_counts.raw.tmp
+        cat auxiliary/combined_read_counts.raw.tmp | sed 1,2d | awk -FS'\\t' '{{print $0 FS "CDS"}} >> {output}
+        rm auxiliary/combined_read_counts.raw.tmp
         """
 
 rule generateAnnotationTotalReadCounts:
@@ -120,17 +119,23 @@ rule generateAnnotationTotalReadCounts:
         bamindex=expand("bammulti/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         annotation="auxiliary/enriched_annotation.gtf"
     output:
-        "auxiliary/annotation_total_read_counts.bed"
+        "auxiliary/annotation_total_reads.raw"
     conda:
-        "../envs/bedtools.yaml"
-    threads: 1
+        "../envs/subread.yaml"
+    threads: 5
     shell:
         """
         mkdir -p auxiliary
-        awk -F'\t' '{{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 FS $2 FS $3}}' {input.annotation} > tmp_annotation_total.bed
-        bedtools multicov -s -D -bams {input.bam} -bed tmp_annotation_total.bed > {output}
-        sed -i '1i \# {input.bam}\n' {output}
-        rm tmp_annotation_total.bed
+        UNIQUE="$(cut -f3 {input.annotation} | sed -n '1!p' | sort | uniq)"
+        IDENTIFIER="ID"
+        LINE="$(sed '3q;d' {input.annotation})"
+        if [[ $LINE == *"gene_id="*]]; then IDENTIFIER="gene_id"; fi;
+        for f in ${UNIQUE}
+        do
+            featureCounts -F GTF -s 1 -g $IDENTIFIER -O -t $f -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/annotation_total_reads.raw.tmp
+            cat auxiliary/annotation_total_reads.raw.tmp | sed 1,2d | awk -FS'\\t' '{{print $0 FS $f}} >> {output}
+        done
+        rm auxiliary/annotation_total_reads.raw.tmp
         """
 
 rule generateAnnotationUniqueReadCounts:
@@ -139,17 +144,65 @@ rule generateAnnotationUniqueReadCounts:
         bamindex=expand("rRNAbam/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         annotation="auxiliary/enriched_annotation.gtf"
     output:
-        "auxiliary/annotation_unique_read_counts.bed"
+        "auxiliary/annotation_unique_reads.raw"
     conda:
-        "../envs/bedtools.yaml"
-    threads: 1
+        "../envs/subread.yaml"
+    threads: 5
     shell:
         """
         mkdir -p auxiliary
-        awk -F'\t' '{{ print $1 FS $4 FS $5 FS $9 FS $6 FS $7 FS $2 FS $3}}' {input.annotation} > tmp_annotation_unique.bed
-        bedtools multicov -s -D -bams {input.bam} -bed tmp_annotation_unique.bed > {output}
-        sed -i '1i \# {input.bam}\n' {output}
-        rm tmp_annotation_unique.bed
+        UNIQUE="$(cut -f3 {input.annotation} | sed -n '1!p' | sort | uniq)"
+        IDENTIFIER="ID"
+        LINE="$(sed '3q;d' {input.annotation})"
+        if [[ $LINE == *"gene_id="*]]; then IDENTIFIER="gene_id"; fi;
+        for f in ${UNIQUE}
+        do
+            featureCounts -F GTF -s 1 -g $IDENTIFIER -O -t $f -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/annotation_unique_reads.raw.tmp
+            cat auxiliary/annotation_unique_reads.raw.tmp | sed 1,2d | awk -FS'\\t' '{{print $0 FS $f}} >> {output}
+        done
+        rm auxiliary/annotation_unique_reads.raw.tmp
+        """
+
+rule mapPredictionReads:
+    input:
+        reads="auxiliary/combined_read_counts.raw",
+        annotation="tracks/combined_annotated.gff"
+    output:
+        "auxiliary/prediction_annotation.gtf"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; SPtools/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        """
+
+rule mapTotalReads:
+    input:
+        reads="auxiliary/annotation_total_reads.raw",
+        annotation="auxiliary/enriched_annotation.gtf"
+    output:
+        "auxiliary/total_annotation.gtf"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; SPtools/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        """
+
+rule mapUniqueReads:
+    input:
+        reads="auxiliary/annotation_unique_reads.raw",
+        annotation="auxiliary/enriched_annotation.gtf"
+    output:
+        "auxiliary/unique_annotation.gtf"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; SPtools/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
         """
 
 rule totalMappedReads:

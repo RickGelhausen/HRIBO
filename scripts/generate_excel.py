@@ -213,13 +213,12 @@ def parse_orfs(args):
 
     for row in read_df.itertuples(index=False, name='Pandas'):
         reference_name = getattr(row, "_0")
-        start = getattr(row, "_1")
-        stop = getattr(row, "_2")
-        strand = getattr(row, "_5")
-
-        attributes = getattr(row, "_3")
-        source = getattr(row, "_6")
-        feature = getattr(row, "_7")
+        source = getattr(row, "_1")
+        feature = getattr(row, "_2")
+        start = getattr(row, "_3")
+        stop = getattr(row, "_4")
+        strand = getattr(row, "_6")
+        attributes = getattr(row, "_8")
 
         start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[reference_name], start-1, stop-1, strand)
         column_info = retrieve_column_information(attributes)
