@@ -5,6 +5,12 @@ import os
 import pandas as pd
 import collections
 
+def get_unique(in_list):
+    seen = set()
+    seen_add = seen.add
+    return [x for x in in_list if not (x in seen or seen_add(x))]
+
+
 
 def excel_writer(args, data_frames, wildcards):
     """
@@ -36,6 +42,7 @@ def parse_orfs(args):
         wildcard, reference_name, value = line.strip().split("\t")
         wildcards.append(wildcard)
 
+    wildcards = get_unique(wildcards)
     #read bed file
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 

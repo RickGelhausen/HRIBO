@@ -165,6 +165,8 @@ def parse_orfs(args):
         total_mapped_dict[(wildcard, reference_name)] = int(value)
         wildcards.append(wildcard)
 
+    wildcards = get_unique(wildcards)
+
     TE_header = []
     for card in wildcards:
         if "RIBO" in card:
