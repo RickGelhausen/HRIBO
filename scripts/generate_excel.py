@@ -31,9 +31,12 @@ def retrieve_column_information(attributes):
     """
 
     if ";" in attributes and "=" in attributes:
-        attribute_list =  [x for x in re.split('[;=]', attributes) if x != ""]
+        attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
     else:
         attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes) if x != ""]
+
+    if "ORF_type=;" in attributes:
+        attribute_list.remove("ORF_type")
 
     if len(attribute_list) % 2 == 0:
         for i in range(len(attribute_list)):
