@@ -27,12 +27,14 @@ def excel_writer(args, data_frames, wildcards):
     writer.save()
 
 def parse_orfs(args):
-    # read the comment containing the wildcards
-    with open(args.reads, "r") as f:
-        wildcards = f.readline()
 
-    wildcards = wildcards.replace("# ", "").split()
-    wildcards = [os.path.splitext(os.path.basename(card))[0] for card in wildcards]
+    with open(args.total_mapped, "r") as f:
+        total = f.readlines()
+
+    wildcards = []
+    for line in total:
+        wildcard, reference_name, value = line.strip().split("\t")
+        wildcards.append(wildcard)
 
     #read bed file
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
@@ -57,14 +59,13 @@ def parse_orfs(args):
     main_sheet = []
     for row in read_df.itertuples(index=False, name='Pandas'):
         reference_name = getattr(row, "_0")
-        start = getattr(row, "_1")
-        stop = getattr(row, "_2")
-        feature = getattr(row, "_7")
+        start = getattr(row, "_3")
+        stop = getattr(row, "_4")
+        feature = getattr(row, "_2")
 
         read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
         if feature.lower() in read_dict:
             for idx, value in enumerate(read_list):
-                print(value)
                 read_dict[feature.lower()][idx] += value
                 read_dict["total"][idx] += value
             count_dict[feature.lower()] += 1
@@ -87,6 +88,7 @@ def main():
     # store commandline args
     parser = argparse.ArgumentParser(description='create excel table with read information.')
     parser.add_argument("-r", "--mapped_reads", action="store", dest="reads", required=True, help= "file containing the individual read counts")
+    parser.add_argument("-t", "--total_mapped_reads", action="store", dest="total_mapped", required=True, help= "total mapped reads file")
     parser.add_argument("-o", "--xlsx", action="store", dest="output", required=True, help= "output xlsx file")
     args = parser.parse_args()
 

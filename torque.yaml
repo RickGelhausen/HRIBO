@@ -35,11 +35,11 @@ generateCombinedReadCounts:
   qname: "short"
 
 generateAnnotationTotalReadCounts:
-  resources : 'nodes=1:ppn=5,pmem=5'
+  resources : 'nodes=1:ppn=5,pmem=10'
   qname: "short"
 
 generateAnnotationUniqueReadCounts:
-  resources : 'nodes=1:ppn=5,pmem=5'
+  resources : 'nodes=1:ppn=5,pmem=10'
   qname: "short"
 
 mapPredictionReads:
@@ -59,6 +59,13 @@ generateUniqAnnotation:
   qname: "short"
 
 totalMappedReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+uniqueMappedReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+finalMappedReads:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 

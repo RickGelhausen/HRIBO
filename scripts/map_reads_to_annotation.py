@@ -4,7 +4,7 @@ import re
 import os, sys
 import pandas as pd
 import collections
-
+import csv
 
 
 def read_file_to_dictionary(args):
@@ -22,13 +22,28 @@ def read_file_to_dictionary(args):
         strand = getattr(row, "_4")
         feature = getattr(row, "_%s" % (len(read_df.columns)-1))
 
-        # _6 +
-        key = (feature, reference_name, start, stop, strand)
-        value = []
-        for idx in range(6, len(read_df.columns)-1):
-            value.append(getattr(row, "_%s" % idx))
+        if ";" in str(start):
+            reference_name = reference_name.split(";")
+            start = start.split(";")
+            stop = stop.split(";")
+            strand = strand.split(";")
 
-        read_dict[key] = value
+            for idx in range(len(start)):
+                key = (feature, reference_name[idx], start[idx], stop[idx], strand[idx])
+                value = []
+                for idx in range(6, len(read_df.columns)-1):
+                    value.append(getattr(row, "_%s" % idx))
+
+                read_dict[key] = value
+
+        # _6 +
+        else:
+            key = (feature, reference_name, start, stop, strand)
+            value = []
+            for idx in range(6, len(read_df.columns)-1):
+                value.append(getattr(row, "_%s" % idx))
+
+            read_dict[key] = value
 
     return read_dict, len(read_df.columns) - 7
 
@@ -41,6 +56,7 @@ def map_reads_to_annotation(args):
     annotation_df = pd.read_csv(args.annotation, sep="\t", comment="#", header=None)
     read_dict, size = read_file_to_dictionary(args)
 
+    size += len(annotation_df.columns)
     name_list = ["s%s" % str(x) for x in range(size)]
     nTuple = collections.namedtuple('Pandas', name_list)
 
@@ -60,7 +76,7 @@ def map_reads_to_annotation(args):
         result = [reference_name, info, feature, start, stop, score, strand, phase, attributes] + read_dict[key]
         rows.append(nTuple(*result))
 
-    return pd.DataFrame.from_records(rows, columns=[x for x in range(name_list)])
+    return pd.DataFrame.from_records(rows, columns=[x for x in range(len(name_list))])
 
 def main():
     # store commandline args

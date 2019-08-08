@@ -159,16 +159,11 @@ def parse_orfs(args):
     with open(args.total_mapped, "r") as f:
         total = f.readlines()
 
+    wildcards = []
     for line in total:
         wildcard, reference_name, value = line.strip().split("\t")
         total_mapped_dict[(wildcard, reference_name)] = int(value)
-
-    # read the comment containing the wildcards
-    with open(args.reads, "r") as f:
-        wildcards = f.readline()
-
-    wildcards = wildcards.replace("# ", "").split()
-    wildcards = [os.path.splitext(os.path.basename(card))[0] for card in wildcards]
+        wildcards.append(wildcard)
 
     TE_header = []
     for card in wildcards:
@@ -189,7 +184,6 @@ def parse_orfs(args):
 
     conditions = get_unique(conditions)
 
-    print(TE_header)
     #read bed file
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 

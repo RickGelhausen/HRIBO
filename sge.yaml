@@ -79,9 +79,17 @@ createExcelSummary:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=8G"
 
-#totalMappedReads:
-#  parallelenvironment : 'smp 1'
-#  memory: "h_vmem=8G"
+totalMappedReads:
+ parallelenvironment : 'smp 1'
+ memory: "h_vmem=8G"
+
+uniqueMappedReads:
+ parallelenvironment : 'smp 1'
+ memory: "h_vmem=8G"
+
+finalMappedReads:
+ parallelenvironment : 'smp 1'
+ memory: "h_vmem=8G"
 
 # mapping.smk
 genomeSegemehlIndex:
