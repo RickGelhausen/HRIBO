@@ -782,14 +782,16 @@ rule threeprimewigtobigwigmilreverse:
 
 rule bamcompare:
     input:
-        "qc/multi/multiqc_report.html"
+        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        genomeSize=rules.genomeSize.output,
+        bamIndex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
     output:
         "figures/results.npz"
     conda:
         "../envs/wig.yaml"
     threads: 5
     shell:
-        "mkdir -p tracks; multiBamSummary bins --smartLabels --bamfiles maplink/*.bam -o {output} -p {threads};"
+        "mkdir -p tracks; multiBamSummary bins --smartLabels --bamfiles {input.bam} -o {output} -p {threads};"
 
 rule plotCorrelation:
     input:
