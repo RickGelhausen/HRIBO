@@ -31,3 +31,4 @@ rule trim:
     threads: 20
     shell:
         "mkdir -p trimmed; cutadapt -j {threads} {params.adapter} {params.quality} {params.filtering} -o {output.fastq} {input.fastq}"
+

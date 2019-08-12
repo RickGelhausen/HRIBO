@@ -165,11 +165,11 @@ onsuccess:
 #Preprocessing
 include: "rules/preprocessing.smk"
 #Adaper removal and quality control
-include: "rules/trimming.smk"
+include: "rules/trimmingpaired.smk"
 #removal of reads mapping to ribosomal rna genes
 include: "rules/rrnafiltering.smk"
 #mapping
-include: "rules/mappingsingleend.smk"
+include: "rules/mappingpairedend.smk"
 include: "rules/mappingauxiliary.smk"
 #Visualization
 include: "rules/visualization.smk"
