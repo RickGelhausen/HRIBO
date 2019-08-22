@@ -5,6 +5,12 @@ import os
 import pandas as pd
 import pysam
 
+def is_mapped(x):
+    binStr = '{0:012b}'.format(x)
+    if binStr[-1] == "1":
+        return binStr[-2] == "1"
+    else:
+        return binStr[-5] == "0"
 
 def count_mapped_reads(args):
     """
@@ -24,7 +30,7 @@ def count_mapped_reads(args):
             flag = int(read.flag) # flag: 0-forward-strand 4-unmapped 16-reverse-strand
             reference_name = read.reference_name
 
-            if flag in [0,16]:
+            if is_mapped(flag):
                 if reference_name in total_mapped:
                     total_mapped[reference_name] += 1
                 else:

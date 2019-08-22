@@ -305,6 +305,9 @@ rrnafilter:
 
 
 # trimming.smk
+mergePairs:
+  resources : 'nodes=1:ppn=5,pmem=4'
+
 linktrim:
   resources : 'nodes=1:ppn=1,pmem=1'
   qname: "short"

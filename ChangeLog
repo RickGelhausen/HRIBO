@@ -1,0 +1,14 @@
+##### version 1.1.0
+
+190822 Rick Gelhausen & Florian Eggenhofer
+ + added paired-end support
+  + paired-end mapping (currently no tools allowing this exist)
+  + combined paired-end mapping
+  + improved samples.xlsx (for paired end)
+  + improved count_tables (rounding numbers to 2 floating points)
+  + fix for annotation generation
+
+##### version 1.0.0
+
+190808 Rick Gelhausen & Florian Eggenhofer
+ + initial commit

@@ -81,7 +81,7 @@ def parse_orfs(args):
             print("feature not usable: " + feature)
 
     for key, val in read_dict.items():
-        result = ["sense", decode[key], count_dict[key]] + val
+        result = ["sense", decode[key], count_dict[key]] + [float("%.2f" % v) for v in val]
 
         main_sheet.append(nTuple(*result))
 

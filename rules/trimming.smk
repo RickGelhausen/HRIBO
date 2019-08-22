@@ -2,8 +2,6 @@ def getfastq(wildcards):
     print(wildcards)
     return samples.loc[(wildcards.method, wildcards.condition, wildcards.replicate), ["fastqFile"]].dropna()
 
-#def adaptersstring(wildcards):  
-
 rule linktrim:
     input:
         fastq=getfastq
@@ -31,4 +29,3 @@ rule trim:
     threads: 20
     shell:
         "mkdir -p trimmed; cutadapt -j {threads} {params.adapter} {params.quality} {params.filtering} -o {output.fastq} {input.fastq}"
-

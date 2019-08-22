@@ -25,20 +25,28 @@ def convert_to_xlsx(args):
     covert the .tsv file to xlsx
     """
 
-    nTuple = collections.namedtuple('Pandas', ["Method", "Condition", "Replicate", "FastqFile"])
-
     samples_df = pd.read_csv(args.samples, comment="#", sep="\t")
+
+    column_names = [name.capitalize() for name in list(samples_df.columns)]
+    nTuple = collections.namedtuple('Pandas', column_names)
+
     samples_sheet = []
     for row in samples_df.itertuples(index=False, name='Pandas'):
         method = getattr(row, "method")
         condition = getattr(row, "condition")
         replicate = getattr(row, "replicate")
         fastq = getattr(row, "fastqFile")
-
         fastq = fastq.split("/")[1]
-        samples_sheet.append(nTuple(method, condition, replicate, fastq))
+        ntup = [method, condition, replicate, fastq]
 
-    samples_df = pd.DataFrame.from_records(samples_sheet, columns=["Method", "Condition", "Replicate", "Fastq File"])
+        if len(samples_df.columns) == 5:
+            fastq2 = getattr(row, "fastqFile2")
+            fastq2 = fastq2.split("/")[1]
+            ntup.append(fastq2)
+
+        samples_sheet.append(ntup)
+
+    samples_df = pd.DataFrame.from_records(samples_sheet, columns=column_names)
 
     sheets = {"samples" : samples_df}
 

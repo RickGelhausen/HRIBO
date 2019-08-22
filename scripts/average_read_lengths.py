@@ -9,6 +9,12 @@ import collections
 def amount_overlap(r1, r2):
     return max(0, min(r1[1], r2[1]) - max(r1[0], r2[0]))
 
+def is_reverse(x):
+    return '{0:012b}'.format(x)[-5] == "1"
+
+def is_mapped(x):
+    return '{0:012b}'.format(x)[-4] == "0"
+    
 def get_read_information(args):
     """
     count the total number of reads for each input file
@@ -27,12 +33,11 @@ def get_read_information(args):
             # get required attributes
             flag = int(read.flag)
             reference_name = read.reference_name
-            if flag == 0:
-                strand = "+"
-            elif flag == 16:
+            strand = "+"
+            if is_reverse(flag):
                 strand = "-"
 
-            if flag in [0,16]:
+            if is_mapped(flag):
                 start = read.pos + 1 # 0 based position
                 length = len(read.query_sequence)
                 stop = start + length

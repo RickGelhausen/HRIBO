@@ -13,34 +13,6 @@ rule genomeSegemehlIndex:
     shell:
         "if [ -d {params.indexpath} ]; then ln -T -s {params.indexpath} {output.index}; echo \"Index linked\"; else mkdir -p genomeSegemehlIndex; echo \"Computing Segemehl index\"; segemehl.x --threads {threads} -x {output.index} -d {input.genome} 2> {log}; fi"
 
-rule samuniq:
-    input:
-        sammulti="sammulti/{method}-{condition}-{replicate}.sam"
-    output:
-        sam="sam/{method}-{condition}-{replicate}.rawsam"
-    conda:
-        "../envs/samtools.yaml"
-    threads: 20
-    shell:
-        """
-        set +e
-        mkdir -p sam
-        awk '$2 == "4"' {input.sammulti} > {input.sammulti}.unmapped
-        gawk -i inplace '$2 != "4"' {input.sammulti}
-        samtools view -H <(cat {input.sammulti}) | grep '@HD' > {output.sam}
-        samtools view -H <(cat {input.sammulti}) | grep '@SQ' | sort -t$'\t' -k1,1 -k2,2V >> {output.sam}
-        samtools view -H <(cat {input.sammulti}) | grep '@RG' >> {output.sam}
-        samtools view -H <(cat {input.sammulti}) | grep '@PG' >> {output.sam}
-        cat {input.sammulti} |grep -v '^@' | grep -w 'NH:i:1' >> {output.sam}
-        exitcode=$?
-        if [ $exitcode -eq 1 ]
-        then
-            exit 1
-        else
-            exit 0
-        fi
-        """
-        #"mkdir -p sam; samtools view  -H <(cat {input.sammulti}) | grep '@HD' > {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@SQ' | sort -t$'\t' -k1,1 -k2,2V >> {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@RG' >> {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@PG' >> {output.sam}; cat {input.sammulti} |grep -v '^@' | grep -w 'NH:i:1' >> {output.sam}"
 
 rule samstrandswap:
     input:

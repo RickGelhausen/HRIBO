@@ -305,6 +305,10 @@ trim:
   parallelenvironment : 'smp 20'
   memory: "h_vmem=2G"
 
+mergeTrim:
+  parallelenvironment : 'smp 5'
+  memory: "h_vmem=4G"
+
 # visualization.smk
 genomeSamToolsIndex:
   parallelenvironment : 'smp 1'

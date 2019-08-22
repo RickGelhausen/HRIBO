@@ -196,6 +196,7 @@ include: "rules/xtail.smk"
 #metagene
 include: "rules/auxiliary.smk"
 #multiqc
-include: "rules/qc.smk"
+include: "rules/qcauxiliary.smk"
+include: "rules/qcpairedend.smk"
 #report
 #include: "rules/report.smk"

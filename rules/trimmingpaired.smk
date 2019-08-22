@@ -36,4 +36,4 @@ rule pairtrim:
         "../envs/cutadapt.yaml"
     threads: 20
     shell:
-        "mkdir -p trimmed; cutadapt -j {threads} {params.adapter} {params.quality} {params.filtering} -o {output.fastq1} {output.fastq2} {input.fastq1} {input.fastq2}"
+        "mkdir -p trimmed; cutadapt -j {threads} {params.adapter} {params.quality} {params.filtering} -o {output.fastq1} -p {output.fastq2} {input.fastq1} {input.fastq2}"
