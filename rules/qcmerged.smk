@@ -17,8 +17,8 @@ rule fastqcraw:
     threads: 8
     shell:
         """
-        mkdir -p 0raw_Q
-        mkdir -p 1raw_P
+        mkdir -p qc/0raw_Q
+        mkdir -p qc/1raw_P
         fastqc -o qc/0raw_Q -t {threads} {input.fastq1}; mv qc/0raw_Q/{params.prefix1}_fastqc.html {output.html1}; mv qc/0raw_Q/{params.prefix1}_fastqc.zip {output.zip1}
         fastqc -o qc/1raw_P -t {threads} {input.fastq2}; mv qc/1raw_P/{params.prefix2}_fastqc.html {output.html2}; mv qc/1raw_P/{params.prefix2}_fastqc.zip {output.zip2}
         """
