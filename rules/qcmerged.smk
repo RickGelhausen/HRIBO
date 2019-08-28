@@ -4,10 +4,10 @@ rule fastqcraw:
         fastq1="trimlink/{method}-{condition}-{replicate}_Q.fastq.gz",
         fastq2="trimlink/{method}-{condition}-{replicate}_P.fastq.gz"
     output:
-        html1="qc/1raw/{method}-{condition}-{replicate}-raw_fastqc_Q.html",
-        zip1="qc/1raw/{method}-{condition}-{replicate}-raw_fastqc_Q.zip",
-        html2="qc/1raw/{method}-{condition}-{replicate}-raw_fastqc_P.html",
-        zip2="qc/1raw/{method}-{condition}-{replicate}-raw_fastqc_P.zip"
+        html1="qc/0raw_Q/{method}-{condition}-{replicate}-raw-Q_fastqc.html",
+        zip1="qc/0raw_Q/{method}-{condition}-{replicate}-raw-Q_fastqc.zip",
+        html2="qc/1raw_P/{method}-{condition}-{replicate}-raw-P_fastqc.html",
+        zip2="qc/1raw_P/{method}-{condition}-{replicate}-raw-P_fastqc.zip"
         #report("qc/1raw/{method}-{condition}-{replicate}-raw.html", caption="../report/fastqcraw.rst", category="Input quality control")
     conda:
         "../envs/fastqc.yaml"
@@ -17,11 +17,11 @@ rule fastqcraw:
     threads: 8
     shell:
         """
-        mkdir -p qc/1raw;
-        fastqc -o qc/1raw -t {threads} {input.fastq1}; mv qc/1raw/{params.prefix1}_fastqc.html {output.html1}; mv qc/1raw/{params.prefix1}_fastqc.zip {output.zip1}
-        fastqc -o qc/1raw -t {threads} {input.fastq2}; mv qc/1raw/{params.prefix2}_fastqc.html {output.html2}; mv qc/1raw/{params.prefix2}_fastqc.zip {output.zip2}
+        mkdir -p 0raw_Q
+        mkdir -p 1raw_P
+        fastqc -o qc/0raw_Q -t {threads} {input.fastq1}; mv qc/0raw_Q/{params.prefix1}_fastqc.html {output.html1}; mv qc/0raw_Q/{params.prefix1}_fastqc.zip {output.zip1}
+        fastqc -o qc/1raw_P -t {threads} {input.fastq2}; mv qc/1raw_P/{params.prefix2}_fastqc.html {output.html2}; mv qc/1raw_P/{params.prefix2}_fastqc.zip {output.zip2}
         """
-
 
 rule fastqctrimmed:
     input:
@@ -41,8 +41,8 @@ rule fastqctrimmed:
 
 rule multiqc:
     input:
-        expand("qc/1raw/{method}-{condition}-{replicate}-raw_fastqc_Q.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        expand("qc/1raw/{method}-{condition}-{replicate}-raw_fastqc_P.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/0raw_Q/{method}-{condition}-{replicate}-raw-Q_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        expand("qc/1raw_P/{method}-{condition}-{replicate}-raw-P_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/5removedrRNA/{method}-{condition}-{replicate}-norRNA_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/4unique/{method}-{condition}-{replicate}-map_fastqc.html", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -62,4 +62,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/3mapped qc/1raw qc/2trimmed qc/5removedrRNA qc/4unique qc/all qc/trnainall qc/rrnainallaligned qc/rrnainuniquelyaligned qc/rrnainall trimmed  2> {log}"
+        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/0raw_Q qc/1raw_P qc/2trimmed qc/3mapped qc/4unique qc/5removedrRNA qc/all qc/trnainall qc/rrnainallaligned qc/rrnainuniquelyaligned qc/rrnainall trimmed  2> {log}"
