@@ -50,8 +50,8 @@ RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond
 
 countsheader <- colnames(counts)
 countsheader <- countsheader[grepl("RIBO", countsheader)]
-replicatescondition1 <- length(grep(cond1, countsheader))
-replicatescondition2 <- length(grep(cond2, countsheader))
+replicatescondition1 <- length(grep(paste("-",cond1,"-",sep=""), countsheader))
+replicatescondition2 <- length(grep(paste("-",cond2,"-",sep=""), countsheader))
 
 #numberofreplicates <- max(sampleSheet$replicate)
 #contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)

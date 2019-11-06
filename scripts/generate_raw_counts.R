@@ -33,43 +33,40 @@ gencode <- import.gff(options$annotation_file_path)
 # keep only cds
 sel <- gencode$type == "CDS"
 cds <- gencode[which(sel),]
-
+print(cds)
 # create empty data frame
-gene.counts <- data.frame(gene.id = cds$gene_id)
-
+gene.counts <- data.frame(gene.id = cds$ID)
+print(cds$ID)
 # get sample files
 sample.files <- paste(options$bam_directory_path, list.files(options$bam_directory_path, pattern = "\\.bam$"), sep = "")
-
 for (i in sample.files) {
-
+  print(i)
   # get sample name
   name.i <- as.character(i)
-
   # import reads
   reads <- readGAlignments(i)
-
   # convert to granges
   reads <- granges(reads)
-
   # keep only first nt
   reads <- flank(reads, -1)
-
   # count reads into genes
-  gene.counts[, name.i] <- countOverlaps(cds, reads)
 
+  print(cds)
+  print(reads)
+  print(countOverlaps(cds, reads))
+  print(gene.counts)
+  gene.counts[, name.i] <- countOverlaps(cds, reads)
 }
 
 # sum all reads across gene.ids
 gene.counts <- ddply(gene.counts,"gene.id",numcolwise(sum))
 # change row names and drop column gene.id
 rownames(gene.counts) <- gene.counts$gene.id
-
 gene.counts$gene.id <- NULL
 
 # get sample sheet
 sampleSheet <- read.csv(file=options$sample_file_path ,header=TRUE, sep="\t", stringsAsFactors=FALSE)
-
-#col names and row names 
+#col names and row names
 sampleName <- function(x) {
   method <- x[1]
   condition <- x[2]
@@ -83,7 +80,6 @@ sampleNames <- apply(sampleSheet,1,sampleName)
 sample.files <- paste(sampleNames, ".bam", sep="")
 conditions <- sampleSheet[,2]
 sampleTable <- data.frame(row.names = sampleNames, fileName = sample.files, condition = conditions)
-
 colnames(gene.counts) <- rownames(sampleTable)
 
 
@@ -95,4 +91,3 @@ dds <- DESeqDataSetFromMatrix(countData = gene.counts,
 raw.counts <-  counts(dds, normalized = FALSE)
 # save normalized counts
 write.csv(raw.counts, options$raw_count_out_path, quote = F)
-

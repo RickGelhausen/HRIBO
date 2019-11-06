@@ -397,7 +397,7 @@ contrastInput:
 
 xtail:
   parallelenvironment : 'smp 1'
-  memory: "h_vmem=8G"
+  memory: "h_vmem=20G"
 
 riborex:
   parallelenvironment : 'smp 1'
@@ -409,4 +409,4 @@ riborexresults:
 
 xtailclassicnormalize:
   parallelenvironment : 'smp 1'
-  memory: "h_vmem=8G"
+  memory: "h_vmem=20G"

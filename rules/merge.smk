@@ -1,6 +1,6 @@
 rule mergeConditions:
     input:
-        ribotish="tracks/{condition}.ribotish.gff",
+        #ribotish="tracks/{condition}.ribotish.gff",
         reparation="tracks/{condition}.reparation.gff"
     output:
         report("tracks/{condition, [a-zA-Z]+}.merged.gff", caption="../report/novelmerged.rst", category="Novel ORFs")
@@ -8,7 +8,7 @@ rule mergeConditions:
         "../envs/bedtools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; cat {input.ribotish} > {output}.unsorted; cat {input.reparation} >> {output}.unsorted; bedtools sort -i {output}.unsorted > {output};"
+        "mkdir -p tracks; cat {input.reparation} >> {output}.unsorted; bedtools sort -i {output}.unsorted > {output};"
 
 rule mergeAll:
     input:

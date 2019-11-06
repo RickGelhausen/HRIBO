@@ -8,4 +8,3 @@ rule xtailclassicnormalize:
         "../envs/xtailcounts.yaml"
     threads: 1
     shell: ("mkdir -p xtailclassic; python RPF_count_CDS.py {input.bam} {input.annotation} > {output}")
-    

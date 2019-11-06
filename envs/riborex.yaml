@@ -3,5 +3,5 @@ channels:
  - bioconda
 dependencies:
  - r-base =3.4.1
- - riborex =2.3.4
+ - riborex =2.4.0
  - r-optparse =1.6.0
