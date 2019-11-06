@@ -1,6 +1,5 @@
 rule mergeConditions:
     input:
-        #ribotish="tracks/{condition}.ribotish.gff",
         reparation="tracks/{condition}.reparation.gff"
     output:
         report("tracks/{condition, [a-zA-Z]+}.merged.gff", caption="../report/novelmerged.rst", category="Novel ORFs")
