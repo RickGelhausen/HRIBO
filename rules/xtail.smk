@@ -48,11 +48,18 @@ rule xtail:
     output:
         table=report("xtail/{contrast}.csv", caption="../report/xtail_table.rst", category="Regulation"),
         fcplot="xtail/fc_{contrast}.pdf",
-        rplot="xtail/r_{contrast}.pdf"
+        rplot="xtail/r_{contrast}.pdf",
+        tablesorted="xtail/{contrast}_sorted.csv",
+        tablesignificant="xtail/{contrast}_significant.csv"
     conda:
         "../envs/xtail.yaml"
     threads: 1
-    shell: ("mkdir -p xtail; SPtools/scripts/xtail_classic.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.table} -f {output.fcplot} -p {output.rplot};")
+    shell:
+        """
+        mkdir -p xtail;
+        SPtools/scripts/xtail_classic.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.table} -f {output.fcplot} -p {output.rplot};
+        head -n 2 {output.table} && tail -n +3 {output.table} | sort -r -n -t',' -k 10 > {output.tablesorted};  awk -F ',' 'NR==1; (NR>1) && ($10 < 0.05 )' {output.tablesorted} > {output.tablesignificant};
+        """
 
 rule riborex:
     input:
