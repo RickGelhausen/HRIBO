@@ -4,6 +4,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{graphicx}
+\usepackage{enumitem}
 \title{Manual}
 
 \begin{document}
@@ -145,5 +146,45 @@ A genome browser track with the results of the ORF detection tools.
 \subsubsection*{combined\_annotated.gff}
 A genome browser track with the results of the ORF detection tools. Annotated using the existing annotation. (recommended for use)
 %\section*{Available files}
+
+\subsection*{differential-expression}
+\subsection*{riborex}
+\subsubsection*{contrast\_sorted.csv} 
+Table with riborex results.
+\subsubsection*{contrast\_significant.csv}
+Table containing only the significant results with adjusted p-value $< 0.05$.
+\subsection*{xtail}
+\subsubsection*{contrast\_sorted.csv}
+Table with xtail results.
+\subsubsection*{contrast\_significant.csv}
+Table containing only the significant results with adjusted p-value $< 0.05$.
+\subsubsection*{fc\_contrast.pdf}
+This figure shows the result of the differential expression at the two expression
+levels, where each gene is a dot whose position is determined by its log2 fold change (log2FC) of
+transcriptional level (mRNA\_log2FC), represented on the x-axis, and the log2FC of translational level
+(RPF\_log2FC), represented on the y-axis.
+The points will be color-coded with the pvalue\_final obtained with xtail (more
+significant p values having darker color)
+\begin{itemize}[noitemsep]
+\item blue: for genes whos mRNA\_log2FC larger than 1 (transcriptional level).
+\item red: for genes whos RPF\_log2FC larger than 1 (translational level).
+\item green: for genes changing homodirectionally at both level.
+\item yellow: for genes changing antidirectionally at two levels.
+\end{itemize}
+\subsubsection*{r\_contrast.pdf}
+This figure shows the RPF-to-mRNA ratios in two conditions, where the
+position of each gene is determined by its RPF-to-mRNA ratio (log2R) in two conditions, represented
+on the x-axis and y-axis respectively.
+The points will be color-coded with the pvalue\_final obtained with xtail (more
+significant p values having darker color)
+\begin{itemize}[noitemsep]
+\item blue: for genes with log2R larger in first condition than second condition.
+\item red: for genes with log2R larger in second condition than the first condition.
+\item green: for genes with log2R changing homodirectionally in two condition.
+\item yellow: for genes with log2R changing antidirectionally in two condition.
+\end{itemize}
+
+
+
 
 \end{document}
