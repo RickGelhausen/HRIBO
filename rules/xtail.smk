@@ -58,7 +58,7 @@ rule xtail:
         """
         mkdir -p xtail;
         SPtools/scripts/xtail_classic.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.table} -f {output.fcplot} -p {output.rplot};
-        head -n 2 {output.table} && tail -n +3 {output.table} | sort -r -n -t',' -k 10 > {output.tablesorted};  awk -F ',' 'NR==1; (NR>1) && ($10 < 0.05 )' {output.tablesorted} > {output.tablesignificant};
+        (head -n 2 {output.table} && tail -n +3 {output.table} | sort -r -n -t',' -k 10) > {output.tablesorted};  awk -F ',' 'NR==1; (NR>1) && ($10 < 0.05 )' {output.tablesorted} > {output.tablesignificant};
         """
 
 rule riborex:
