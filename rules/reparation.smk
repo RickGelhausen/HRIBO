@@ -27,7 +27,7 @@ rule reparation:
         scurve="reparation/{condition}-{replicate}/S_Curve.pdf"
     conda:
         "../envs/reparation.yaml"
-    threads: 20
+    threads: 12
     params:
         prefix=lambda wildcards, output: (os.path.dirname(output.orfs))
     log:
