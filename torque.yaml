@@ -245,7 +245,7 @@ rnatisbamindexlink:
 
 # reparation
 reparation:
-  resources : 'nodes=1:ppn=20,pmem=2'
+  resources : 'nodes=1:ppn=12,pmem=3'
 
 uniprotDBRetrieve:
   resources : 'nodes=1:ppn=1,pmem=1'
