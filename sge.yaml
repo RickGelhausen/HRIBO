@@ -209,8 +209,8 @@ uniprotDBRetrieve:
   memory: "h_vmem=2G"
 
 reparation:
-  parallelenvironment : 'smp 20'
-  memory: "h_vmem=1.5G"
+  parallelenvironment : 'smp 12'
+  memory: "h_vmem=3G"
 
 reparationGFF:
   parallelenvironment : 'smp 1'
