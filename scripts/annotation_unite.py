@@ -33,7 +33,7 @@ def unite_annotation(args):
                 print("missing ID! Check your annotation.")
             attribute = "ID=%s;" % id
         else:
-            attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attribute) if x != ""]
+            attribute_list = [x.replace(";", "") for x in list(csv.reader([attribute], delimiter=' ', quotechar='"'))[0]]
             id = ""
             if "gene_id" in attribute_list:
                 id = attribute_list[attribute_list.index("gene_id")+1]

@@ -4,6 +4,7 @@ import re
 import os, sys
 import pandas as pd
 import collections
+import csv
 from collections import Counter, OrderedDict
 
 from Bio.Seq import Seq
@@ -33,7 +34,7 @@ def retrieve_column_information(attributes):
     if ";" in attributes and "=" in attributes:
         attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
     else:
-        attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes) if x != ""]
+        attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
 
     if "ORF_type=;" in attributes:
         attribute_list.remove("ORF_type")
