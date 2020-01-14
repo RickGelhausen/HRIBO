@@ -136,18 +136,33 @@ def calculate_TE(read_list, wildcards, conditions):
 
     TE_list = []
     for cond in conditions:
-        if len(read_dict[("RIBO", cond)]) == len(read_dict[("RNA", cond)]):
-            ribo_list = read_dict[("RIBO", cond)]
-            rna_list = read_dict[("RNA", cond)]
-            t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
+        if ("RIBO", cond) in read_dict:
+            if len(read_dict[("RIBO", cond)]) == len(read_dict[("RNA", cond)]):
+                ribo_list = read_dict[("RIBO", cond)]
+                rna_list = read_dict[("RNA", cond)]
+                t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
-            if len(t_eff) > 1:
-                t_eff.extend([sum(t_eff) / len(ribo_list)])
+                if len(t_eff) > 1:
+                    t_eff.extend([sum(t_eff) / len(ribo_list)])
 
-            t_eff = [float("%.2f" % x) for x in t_eff]
-            TE_list.extend(t_eff)
-        else:
-            TE_list.extend([0])
+                t_eff = [float("%.2f" % x) for x in t_eff]
+                TE_list.extend(t_eff)
+            else:
+                TE_list.extend([0])
+
+        if ("TIS", cond) in read_dict:
+            if len(read_dict[("TIS", cond)]) == len(read_dict[("RNATIS")]):
+                ribo_list = read_dict[("TIS", cond)]
+                rna_list = read_dict[("RNATIS", cond)]
+                t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
+
+                if len(t_eff) > 1:
+                    t_eff.extend([sum(t_eff) / len(ribo_list)])
+
+                t_eff = [float("%.2f" % x) for x in t_eff]
+                TE_list.extend(t_eff)
+            else:
+                TE_list.extend([0])
 
     return TE_list
 
@@ -173,7 +188,7 @@ def parse_orfs(args):
 
     TE_header = []
     for card in wildcards:
-        if "RIBO" in card:
+        if "RIBO" in card or "TIS" in card:
             TE_header.append(card.split("-")[1])
 
     counter = OrderedCounter(TE_header)
