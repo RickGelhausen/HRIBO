@@ -151,7 +151,7 @@ def calculate_TE(read_list, wildcards, conditions):
                 TE_list.extend([0])
 
         if ("TIS", cond) in read_dict:
-            if len(read_dict[("TIS", cond)]) == len(read_dict[("RNATIS")]):
+            if len(read_dict[("TIS", cond)]) == len(read_dict[("RNATIS", cond)]):
                 ribo_list = read_dict[("TIS", cond)]
                 rna_list = read_dict[("RNATIS", cond)]
                 t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
