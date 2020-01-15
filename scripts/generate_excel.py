@@ -154,6 +154,7 @@ def calculate_TE(read_list, wildcards, conditions):
             if len(read_dict[("TIS", cond)]) == len(read_dict[("RNATIS", cond)]):
                 ribo_list = read_dict[("TIS", cond)]
                 rna_list = read_dict[("RNATIS", cond)]
+
                 t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
                 if len(t_eff) > 1:
@@ -188,10 +189,13 @@ def parse_orfs(args):
 
     TE_header = []
     for card in wildcards:
-        if "RIBO" in card or "TIS" in card:
-            TE_header.append(card.split("-")[1])
+        if "RIBO" in card:
+            TE_header.append("RIBO-"+card.split("-")[1])
+        elif "TIS" in card and "RNATIS" not in card:
+            TE_header.append("TIS-"+card.split("-")[1])
 
     counter = OrderedCounter(TE_header)
+
     TE_header = []
     for key, value in counter.items():
         for idx in range(value):
