@@ -43,14 +43,26 @@ rule reannotatedORFs:
     shell:
         "mkdir -p tracks; SPtools/scripts/reannotateORFs.py -a {input.annotation} -c {input.combined} -o {output}"
 
+
 rule newAnnotation:
     input:
         newOrfs="tracks/combined_annotated.gff",
         currentAnnotation="annotation/annotation.gtf"
+    output:
+        "xtail/totalAnnotation.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; SPtools/scripts/concatGFF.py {input.newOrfs} {input.currentAnnotation} -o {output}"
+
+rule uniteAnnotation:
+    input:
+        "xtail/totalAnnotation.gff"
     output:
         "xtail/newAnnotation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/concatGFF.py {input.newOrfs} {input.currentAnnotation} -o {output}"
+        "mkdir -p tracks; SPtools/scripts/annotation_unite.py -a {input} -o {output}"

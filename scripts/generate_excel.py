@@ -4,6 +4,7 @@ import re
 import os, sys
 import pandas as pd
 import collections
+import csv
 from collections import Counter, OrderedDict
 
 from Bio.Seq import Seq
@@ -33,7 +34,7 @@ def retrieve_column_information(attributes):
     if ";" in attributes and "=" in attributes:
         attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
     else:
-        attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes) if x != ""]
+        attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
 
     if "ORF_type=;" in attributes:
         attribute_list.remove("ORF_type")
@@ -135,18 +136,34 @@ def calculate_TE(read_list, wildcards, conditions):
 
     TE_list = []
     for cond in conditions:
-        if len(read_dict[("RIBO", cond)]) == len(read_dict[("RNA", cond)]):
-            ribo_list = read_dict[("RIBO", cond)]
-            rna_list = read_dict[("RNA", cond)]
-            t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
+        if ("RIBO", cond) in read_dict:
+            if len(read_dict[("RIBO", cond)]) == len(read_dict[("RNA", cond)]):
+                ribo_list = read_dict[("RIBO", cond)]
+                rna_list = read_dict[("RNA", cond)]
+                t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
-            if len(t_eff) > 1:
-                t_eff.extend([sum(t_eff) / len(ribo_list)])
+                if len(t_eff) > 1:
+                    t_eff.extend([sum(t_eff) / len(ribo_list)])
 
-            t_eff = [float("%.2f" % x) for x in t_eff]
-            TE_list.extend(t_eff)
-        else:
-            TE_list.extend([0])
+                t_eff = [float("%.2f" % x) for x in t_eff]
+                TE_list.extend(t_eff)
+            else:
+                TE_list.extend([0])
+
+        if ("TIS", cond) in read_dict:
+            if len(read_dict[("TIS", cond)]) == len(read_dict[("RNATIS", cond)]):
+                ribo_list = read_dict[("TIS", cond)]
+                rna_list = read_dict[("RNATIS", cond)]
+
+                t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
+
+                if len(t_eff) > 1:
+                    t_eff.extend([sum(t_eff) / len(ribo_list)])
+
+                t_eff = [float("%.2f" % x) for x in t_eff]
+                TE_list.extend(t_eff)
+            else:
+                TE_list.extend([0])
 
     return TE_list
 
@@ -173,9 +190,12 @@ def parse_orfs(args):
     TE_header = []
     for card in wildcards:
         if "RIBO" in card:
-            TE_header.append(card.split("-")[1])
+            TE_header.append("RIBO-"+card.split("-")[1])
+        elif "TIS" in card and "RNATIS" not in card:
+            TE_header.append("TIS-"+card.split("-")[1])
 
     counter = OrderedCounter(TE_header)
+
     TE_header = []
     for key, value in counter.items():
         for idx in range(value):

@@ -65,7 +65,7 @@ def fill_annotation_dict(args):
                 if ";" in attributes and "=" in attributes:
                     attribute_list =  [x for x in re.split('[;=]', attributes)]
                 else:
-                    attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes) if x != ""]
+                    attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
 
                 if len(attribute_list) % 2 == 0:
                     for i in range(len(attribute_list)):
@@ -110,7 +110,7 @@ def fill_annotation_dict(args):
                 stop = str(getattr(row, "_4"))
                 strand = str(getattr(row, "_6"))
                 description = getattr(row, "_8")
-                attributes = [x.lower() for x in re.split('[; ]', description)]
+                attributes = [x.replace(";", "") for x in list(csv.reader([description], delimiter=' ', quotechar='"'))[0]]
                 # locus_tag
                 if "locus_tag" in attributes:
                     locus_tag = attributes[attributes.index("locus_tag")+1].replace("\"", "")

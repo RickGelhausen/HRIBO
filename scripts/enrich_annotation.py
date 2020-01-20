@@ -19,7 +19,12 @@ def create_parent_dictionary(annotation_df):
             continue
         else:
             attribute_list = [x for x in re.split('[;=]', attributes)]
-            idx = attribute_list[next(i for i,v in enumerate(attribute_list) if v.lower() == "id") + 1]
+            try:
+                idx = attribute_list[next(i for i,v in enumerate(attribute_list) if v.lower() == "id") + 1]
+            except:
+                print("Missing ID in row!")
+                print(row)
+                sys.exit()
 
             parent_dict[idx] = attribute_list
 
