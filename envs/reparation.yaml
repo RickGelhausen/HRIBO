@@ -3,5 +3,5 @@ channels:
  - bioconda
 dependencies:
  - r-base =3.5.1
- - reparation_blast =1.0.8
+ - reparation_blast =1.0.9
  - openssl =1.0.2
