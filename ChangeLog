@@ -1,3 +1,12 @@
+##### version 1.2.0
+
+200122 Rick Gelhausen & Florian Eggenhofer
+ + updated reparation to v1.0.9
+ + added differential expression analysis with Riborex and Xtail
+ + added TIS support to generate_excel.py
+ + standardized output annotation to GFF3 format
+ + updated HRIBO Manual 
+
 ##### version 1.1.0
 
 190822 Rick Gelhausen & Florian Eggenhofer
