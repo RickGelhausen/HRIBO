@@ -2,7 +2,7 @@
 taxonomy: "Bacteria"
 #Adapter sequence used
 adapter: ""
-samples: "SPtools/samples.tsv"
+samples: "HRIBO/samples.tsv"
 genomeindexpath: ""
 alternativestartcodons: "GTG,TTG"
 #TISHMODE: RIBOONLY for only riboseq (Chloramphenicol treatment), TISONLY for only tis(retapalmuline, tetracycline), ALL for both 
