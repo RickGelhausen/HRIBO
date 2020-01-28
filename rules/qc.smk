@@ -93,7 +93,7 @@ rule featurecountAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p qc/all; SPtools/scripts/annotation_featurecount.py -a {input.annotation} -o {output};"
+        "mkdir -p qc/all; HRIBO/scripts/annotation_featurecount.py -a {input.annotation} -o {output};"
 
 rule featurescounts:
     input:

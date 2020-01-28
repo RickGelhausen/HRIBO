@@ -7,7 +7,7 @@ rule ribotishGFF:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/ribotish.py {input} --condition {wildcards.condition} --output_gff3_filepath {output}"
+        "mkdir -p tracks; HRIBO/scripts/ribotish.py {input} --condition {wildcards.condition} --output_gff3_filepath {output}"
 
 rule ribotishAnnotation:
     input:
@@ -19,4 +19,4 @@ rule ribotishAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p ribotish; SPtools/scripts/createRiboTISHannotation.py -a {input.annotation} --genome_sizes {input.sizes} --annotation_output {output}"
+        "mkdir -p ribotish; HRIBO/scripts/createRiboTISHannotation.py -a {input.annotation} --genome_sizes {input.sizes} --annotation_output {output}"

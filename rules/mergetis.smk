@@ -18,7 +18,7 @@ rule mergeAll:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/concatGFF.py {input.mergedGff} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/concatGFF.py {input.mergedGff} -o {output}"
 
 rule filterAll:
     input:
@@ -29,7 +29,7 @@ rule filterAll:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/noverlapper.py -i {input} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/noverlapper.py -i {input} -o {output}"
 
 rule reannotatedORFs:
     input:
@@ -41,7 +41,7 @@ rule reannotatedORFs:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/reannotateORFs.py -a {input.annotation} -c {input.combined} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/reannotateORFs.py -a {input.annotation} -c {input.combined} -o {output}"
 
 
 rule newAnnotation:
@@ -54,7 +54,7 @@ rule newAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/concatGFF.py {input.newOrfs} {input.currentAnnotation} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/concatGFF.py {input.newOrfs} {input.currentAnnotation} -o {output}"
 
 rule uniteAnnotation:
     input:
@@ -65,4 +65,4 @@ rule uniteAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; SPtools/scripts/annotation_unite.py -a {input} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/annotation_unite.py -a {input} -o {output}"

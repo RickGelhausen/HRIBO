@@ -7,7 +7,7 @@ rule longestTranscript:
         "../envs/normalization.yaml"
     threads: 1
     shell:
-        "mkdir -p xtail; SPtools/scripts/longest_orf_transcript.py -a {input} -o {output}"
+        "mkdir -p xtail; HRIBO/scripts/longest_orf_transcript.py -a {input} -o {output}"
 
 rule sizeFactors:
     input:
@@ -18,7 +18,7 @@ rule sizeFactors:
     conda:
         "../envs/normalization.yaml"
     threads: 1
-    shell: ("mkdir -p normalization; SPtools/scripts/generate_size_factors.R -t SPtools/samples.tsv -b maplink/ -a {input[0]} -s {output};")
+    shell: ("mkdir -p normalization; HRIBO/scripts/generate_size_factors.R -t HRIBO/samples.tsv -b maplink/ -a {input[0]} -s {output};")
 
 rule cdsNormalizedCounts:
     input:
@@ -29,7 +29,7 @@ rule cdsNormalizedCounts:
     conda:
         "../envs/normalization.yaml"
     threads: 1
-    shell: ("mkdir -p normalization; SPtools/scripts/generate_raw_counts.R -b maplink/ -a {input.annotation} -t SPtools/samples.tsv -r {output.raw};")
+    shell: ("mkdir -p normalization; HRIBO/scripts/generate_raw_counts.R -b maplink/ -a {input.annotation} -t HRIBO/samples.tsv -r {output.raw};")
 
 rule contrastInput:
     output:
@@ -57,7 +57,7 @@ rule xtail:
     shell:
         """
         mkdir -p xtail;
-        SPtools/scripts/xtail_classic.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.table} -f {output.fcplot} -p {output.rplot};
+        HRIBO/scripts/xtail_classic.R -c {input.contrastfile} -t HRIBO/samples.tsv -r {input.rawreads} -x {output.table} -f {output.fcplot} -p {output.rplot};
         (head -n 2 {output.table} && tail -n +3 {output.table} | sort -r -n -t',' -k 10) > {output.tablesorted};  awk -F ',' 'NR==1; (NR>1) && ($10 < 0.05 )' {output.tablesorted} > {output.tablesignificant};
         """
 
@@ -70,7 +70,7 @@ rule riborex:
     conda:
         "../envs/riborex.yaml"
     threads: 1
-    shell: ("mkdir -p riborex; SPtools/scripts/riborex.R -c {input.contrastfile} -t SPtools/samples.tsv -r {input.rawreads} -x {output.tabledeseq2};")
+    shell: ("mkdir -p riborex; HRIBO/scripts/riborex.R -c {input.contrastfile} -t HRIBO/samples.tsv -r {input.rawreads} -x {output.tabledeseq2};")
 
 rule riborexresults:
     input:

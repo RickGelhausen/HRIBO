@@ -19,7 +19,7 @@ rule processAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p offsets; SPtools/scripts/processAnnotation.py -a {input.annotation} -o {output}"
+        "mkdir -p offsets; HRIBO/scripts/processAnnotation.py -a {input.annotation} -o {output}"
 
 rule enrichAnnotation:
     input:
@@ -30,7 +30,7 @@ rule enrichAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/enrich_annotation.py -a {input} -o {output}"
+        "mkdir -p auxiliary; HRIBO/scripts/enrich_annotation.py -a {input} -o {output}"
 
 rule unambigousAnnotation:
     input:
@@ -48,14 +48,14 @@ rule unambigousAnnotation:
 
 rule samplesToExcel:
     input:
-        "SPtools/samples.tsv"
+        "HRIBO/samples.tsv"
     output:
         "auxiliary/samples.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/samples_to_xlsx.py -i {input} -o {output}"
+        "mkdir -p auxiliary; HRIBO/scripts/samples_to_xlsx.py -i {input} -o {output}"
 
 rule generateMetageneRoiStart:
     input:
@@ -188,7 +188,7 @@ rule mapPredictionReads:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; SPtools/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
         """
 
 rule mapTotalReads:
@@ -202,7 +202,7 @@ rule mapTotalReads:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; SPtools/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
         """
 
 rule mapUniqueReads:
@@ -216,7 +216,7 @@ rule mapUniqueReads:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; SPtools/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
         """
 
 rule totalMappedReads:
@@ -230,7 +230,7 @@ rule totalMappedReads:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+        "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
 
 rule uniqueMappedReads:
     input:
@@ -243,7 +243,7 @@ rule uniqueMappedReads:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+        "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
 
 rule finalMappedReads:
     input:
@@ -256,7 +256,7 @@ rule finalMappedReads:
         "../envs/plastid.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+        "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
 
 rule createExcelTotalAnnotation:
     input:
@@ -269,7 +269,7 @@ rule createExcelTotalAnnotation:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; HRIBO/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule createExcelUniqueAnnotation:
     input:
@@ -282,7 +282,7 @@ rule createExcelUniqueAnnotation:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; HRIBO/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule createExcelSummary:
     input:
@@ -295,7 +295,7 @@ rule createExcelSummary:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; HRIBO/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule createExcelTotalAnnotationReadCount:
     input:
@@ -307,7 +307,7 @@ rule createExcelTotalAnnotationReadCount:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"
+        "mkdir -p auxiliary; HRIBO/scripts/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"
 
 rule createExcelUniqueAnnotationReadCount:
     input:
@@ -319,4 +319,4 @@ rule createExcelUniqueAnnotationReadCount:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; SPtools/scripts/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"
+        "mkdir -p auxiliary; HRIBO/scripts/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"

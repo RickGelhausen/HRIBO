@@ -22,7 +22,7 @@ rule samstrandswap:
     threads: 1
     params:
          method=lambda wildcards: wildcards.method
-    shell: "if [ \"{params.method}\" == \"NOTSET\" ]; then SPtools/scripts/samstrandinverter.py --sam_in_filepath={input.sam} --sam_out_filepath={output.sam}; else cp {input.sam} {output.sam}; fi"
+    shell: "if [ \"{params.method}\" == \"NOTSET\" ]; then HRIBO/scripts/samstrandinverter.py --sam_in_filepath={input.sam} --sam_out_filepath={output.sam}; else cp {input.sam} {output.sam}; fi"
 
 rule sammultitobam:
     input:
