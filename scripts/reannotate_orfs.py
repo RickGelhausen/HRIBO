@@ -6,37 +6,6 @@ import pandas as pd
 import csv
 import collections
 
-# little helper function to create named tuple without having to always state every argument
-def create_ntuple(row, s0=None, s1=None, s2=None, s3=None, s4=None, s5=None, s6=None, s7=None, s8=None):
-    nTuple = collections.namedtuple('Pandas', ["s0","s1","s2","s3","s4","s5","s6","s7","s8"])
-    try:
-        c0, c1, c2 = getattr(row, "_0"), getattr(row, "_1"), getattr(row, "_2")
-        c3, c4, c5 = getattr(row, "_3"), getattr(row, "_4"), getattr(row, "_5")
-        c6, c7, c8 = getattr(row, "_6"), getattr(row, "_7"), getattr(row, "_8")
-    except AttributeError:
-        c0, c1, c2 = getattr(row, "s0"), getattr(row, "s1"), getattr(row, "s2")
-        c3, c4, c5 = getattr(row, "s3"), getattr(row, "s4"), getattr(row, "s5")
-        c6, c7, c8 = getattr(row, "s6"), getattr(row, "s7"), getattr(row, "s8")
-    if s0 != None:
-        c0 = s0
-    if s1 != None:
-        c1 = s1
-    if s2 != None:
-        c2 = s2
-    if s3 != None:
-        c3 = s3
-    if s4 != None:
-        c4 = s4
-    if s5 != None:
-        c5 = s5
-    if s6 != None:
-        c6 = s6
-    if s7 != None:
-        c7 = s7
-    if s8 != None:
-        c8 = s8
-    return nTuple(c0, c1, c2, c3, c4, c5, c6, c7, c8)
-
 
 """
 create a dictionary containing an id for each start,stop,strand combination
@@ -145,6 +114,7 @@ def fill_annotation_dict(args):
 Compare the combined gff content to the annotation_dict
 """
 def reannotate_ORFs(args):
+    nTuple = collections.namedtuple('Pandas', ["seq_name","source","feature","start","stop","score","strand","phase","attribute"])
     annotation_dict = fill_annotation_dict(args)
     # read combined gff
     rows = []
@@ -157,12 +127,16 @@ def reannotate_ORFs(args):
             locus_tag = annotation_dict[start][stop][strand][0]
             name = annotation_dict[start][stop][strand][1]
             if name == "":
-                rows.append(create_ntuple(row, s8="%s;locus_tag=%s" % (getattr(row, "_8"), locus_tag)))
+                rows.append(nTuple(getattr(row, "_0"), getattr(row, "_1"), getattr(row, "_2"), start, stop, \
+                                   getattr(row, "_5"), strand, getattr(row, "_7"), \
+                                   "%s;locus_tag=%s" % (getattr(row, "_8"), locus_tag)))
             else:
                 attributes = re.split('[;=]', getattr(row, "_8"))
                 attributes[attributes.index("Name")+1] = name
                 attributes = ";".join(["%s=%s" % (attributes[i], attributes[i+1]) for i in range(0,len(attributes),2)])
-                rows.append(create_ntuple(row, s8="%s;locus_tag=%s" % (attributes, locus_tag)))
+                rows.append(nTuple(getattr(row, "_0"), getattr(row, "_1"), getattr(row, "_2"), start, stop, \
+                                   getattr(row, "_5"), strand, getattr(row, "_7"), \
+                                   "%s;locus_tag=%s" % (attributes, locus_tag)))
         except KeyError:
             rows.append(row)
 

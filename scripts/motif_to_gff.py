@@ -5,7 +5,7 @@ import os
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
-#HRIBO/scripts/motif2GFF3.py --input_genome_fasta_filepath genomes/genome.fa --input_reverse_genome_fasta_filepath genomes/genome.revfa --motif_string ATG --output_gff3_filepath test.gff3
+#HRIBO/scripts/motif_to_gff.py --input_genome_fasta_filepath genomes/genome.fa --input_reverse_genome_fasta_filepath genomes/genome.revfa --motif_string ATG --output_gff3_filepath test.gff3
 def motif_gff3_forward_strand(args):
   seqioparse=SeqIO.parse(args.input_genome_fasta_filepath, "fasta")
   outentries=""
@@ -45,7 +45,6 @@ def main():
     minusgff3 = motif_gff3_reverse_strand(args)
     gff3=str(plusgff3+minusgff3)
     f = open(args.output_gff3_filepath, 'wt', encoding='utf-8')
-    f.write(gff3) 
+    f.write(gff3)
 if __name__ == '__main__':
     main()
-

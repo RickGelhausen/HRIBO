@@ -19,7 +19,7 @@ rule processAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p offsets; HRIBO/scripts/processAnnotation.py -a {input.annotation} -o {output}"
+        "mkdir -p offsets; HRIBO/scripts/process_annotation.py -a {input.annotation} -o {output}"
 
 rule enrichAnnotation:
     input:

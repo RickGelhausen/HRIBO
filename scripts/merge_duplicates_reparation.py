@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 '''This script takes input gff3 files and handles
-overlapping intervals, by removing duplicates and
-finding the longest non-overlapping interval.
+overlapping intervals, by merging duplicates.
 '''
 from operator import itemgetter
 import pandas as pd
@@ -12,56 +11,32 @@ import os
 import csv
 import collections
 
-# little helper function to create named tuple without having to always state every argument
-def createNTuple(row, s0=None, s1=None, s2=None, s3=None, s4=None, s5=None, s6=None, s7=None, s8=None):
-    nTuple = collections.namedtuple('Pandas', ["s0","s1","s2","s3","s4","s5","s6","s7","s8"])
-    try:
-        c0, c1, c2 = getattr(row, "_0"), getattr(row, "_1"), getattr(row, "_2")
-        c3, c4, c5 = getattr(row, "_3"), getattr(row, "_4"), getattr(row, "_5")
-        c6, c7, c8 = getattr(row, "_6"), getattr(row, "_7"), getattr(row, "_8")
-    except AttributeError:
-        c0, c1, c2 = getattr(row, "s0"), getattr(row, "s1"), getattr(row, "s2")
-        c3, c4, c5 = getattr(row, "s3"), getattr(row, "s4"), getattr(row, "s5")
-        c6, c7, c8 = getattr(row, "s6"), getattr(row, "s7"), getattr(row, "s8")
 
-    if s0 != None:
-        c0 = s0
-    if s1 != None:
-        c1 = s1
-    if s2 != None:
-        c2 = s2
-    if s3 != None:
-        c3 = s3
-    if s4 != None:
-        c4 = s4
-    if s5 != None:
-        c5 = s5
-    if s6 != None:
-        c6 = s6
-    if s7 != None:
-        c7 = s7
-    if s8 != None:
-        c8 = s8
-    return nTuple(c0, c1, c2, c3, c4, c5, c6, c7, c8)
-
-
-# helper function to create a dictionary {geneID : namedtuple}
 def create_dictionary(inputDF):
+    """
+    function to create a dictionary {geneID : namedtuple}
+    """
+    nTuple = collections.namedtuple('Pandas', ["s0","s1","s2","s3","s4","s5","s6","s7","s8"])
+
     geneDict = dict()
     for row in inputDF.itertuples(index=False, name='Pandas'):
         attributes = re.split('[;=]', getattr(row, "_8"))
         if "ID" in attributes:
             geneID = attributes[attributes.index("ID")+1]
-
-            # save the row into the dictionary and ensure gene_id is written in lowercase
+                # save the row into the dictionary and ensure gene_id is written in lowercase
             if geneID in geneDict:
-                geneDict[geneID].append(createNTuple(row))
+                geneDict[geneID].append(nTuple(*row))
             else:
-                geneDict[geneID] = [createNTuple(row)]
+                geneDict[geneID] = [nTuple(*row)]
+
     return geneDict
 
 def handle_overlap(args):
+    """
+    read the input gff and merge all duplicate intervals
+    """
     inputDF = pd.read_csv(args.inputGFF, sep='\t', header=None)
+    nTuple = collections.namedtuple('Pandas', ["seq_name","source","feature","start","stop","score","strand","phase","attribute"])
 
     # create a dictionary for common ids
     geneDict = create_dictionary(inputDF)
@@ -89,7 +64,10 @@ def handle_overlap(args):
 
 
         attribute = "ID="+key+";Name="+key+";ORF_type="+",".join(orftype)+";Evidence="+" ".join(evidence)
-        rows.append(createNTuple(sampleRow,s1="merged",s8=attribute))
+
+        rows.append(nTuple(getattr(sampleRow, "s0"),"merged", getattr(sampleRow, "s2"), getattr(sampleRow, "s3"), \
+                           getattr(sampleRow, "s4"), getattr(sampleRow, "s5"),getattr(sampleRow, "s6"), \
+                           getattr(sampleRow, "s7"), attribute))
 
     return pd.DataFrame.from_records(rows, columns=[0,1,2,3,4,5,6,7,8])
 

@@ -13,7 +13,7 @@ import csv
 import collections
 
 
-# little helper function to create named tuple without having to always state every argument
+
 def createNTuple(args, row):
     nTuple = collections.namedtuple('Pandas', ["seqName","source","type","start","stop","score","strand","phase","attribute"])
     # txt file content
