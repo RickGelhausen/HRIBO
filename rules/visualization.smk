@@ -163,9 +163,11 @@ rule totalmappedreadcountstats:
         bamIndex=rules.totalmappedbamindex.output
     output:
         stat="bammulti/{method}-{condition}-{replicate}.readstats"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p bammulti; readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+        "mkdir -p bammulti; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
 
 rule uniquemappedreadcountstats:
     input:
@@ -174,31 +176,37 @@ rule uniquemappedreadcountstats:
         bamIndex=rules.uniquemappedbamindex.output
     output:
         stat="rRNAbam/{method}-{condition}-{replicate}.readstats"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p rRNAbam; readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+        "mkdir -p rRNAbam; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
 
 rule totalmappedminreadcounts:
     input:
         stats=expand("bammulti/{method}-{condition}-{replicate}.readstats", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         minreads="bammulti/minreads.txt"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p bammulti; minreads.py {input.stats} > {output.minreads}; source deactivate;"
+        "mkdir -p bammulti; HRIBO/scripts/minreads.py {input.stats} > {output.minreads}; source deactivate;"
 
 rule uniquemappedminreadcounts:
     input:
         stats=expand("rRNAbam/{method}-{condition}-{replicate}.readstats", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         minreads="rRNAbam/minreads.txt"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p rRNAbam; minreads.py {input.stats} > {output.minreads}; source deactivate;"
+        "mkdir -p rRNAbam; HRIBO/scripts/minreads.py {input.stats} > {output.minreads}; source deactivate;"
 
 rule totalmappedwig:
     input:
@@ -214,12 +222,14 @@ rule totalmappedwig:
         rmil="totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
         fmin="totalmappedtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="totalmappedtracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p totalmappedtracks; mkdir -p totalmappedtracks/raw; mkdir -p totalmappedtracks/mil; mkdir -p totalmappedtracks/min; coverage.py --coverage_style global --bam_path {input.bam} --wiggle_file_path totalmappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p totalmappedtracks; mkdir -p totalmappedtracks/raw; mkdir -p totalmappedtracks/mil; mkdir -p totalmappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path totalmappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
 
 rule uniquemappedwig:
     input:
@@ -235,12 +245,14 @@ rule uniquemappedwig:
         rmil="uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
         fmin="uniquemappedtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="uniquemappedtracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p uniquemappedtracks; mkdir -p uniquemappedtracks/raw; mkdir -p uniquemappedtracks/mil; mkdir -p uniquemappedtracks/min; coverage.py --coverage_style global --bam_path {input.bam} --wiggle_file_path uniquemappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p uniquemappedtracks; mkdir -p uniquemappedtracks/raw; mkdir -p uniquemappedtracks/mil; mkdir -p uniquemappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path uniquemappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
 
 rule totalmappedwigtobigwigrawforward:
     input:
@@ -393,20 +405,24 @@ rule readcountstats:
         bamIndex=rules.bamindex.output
     output:
         stat="maplink/{method}-{condition}-{replicate}.readstats"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p tracks; readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+        "mkdir -p tracks; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
 
 rule minreadcounts:
     input:
         stats=expand("maplink/{method}-{condition}-{replicate}.readstats", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         minreads="maplink/minreads.txt"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p tracks; minreads.py {input.stats} > {output.minreads}; source deactivate;"
+        "mkdir -p tracks; HRIBO/scripts/minreads.py {input.stats} > {output.minreads}; source deactivate;"
 
 rule globalwig:
     input:
@@ -422,12 +438,14 @@ rule globalwig:
         rmil="globaltracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
         fmin="globaltracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="globaltracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p globaltracks; mkdir -p globaltracks/raw; mkdir -p globaltracks/mil; mkdir -p globaltracks/min; coverage.py --coverage_style global --bam_path {input.bam} --wiggle_file_path globaltracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p globaltracks; mkdir -p globaltracks/raw; mkdir -p globaltracks/mil; mkdir -p globaltracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path globaltracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
 
 rule globalwigtobigwigrawforward:
     input:
@@ -515,12 +533,14 @@ rule centeredwig:
         rmil="centeredtracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
         fmin="centeredtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="centeredtracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p centeredtracks; mkdir -p centeredtracks/raw; mkdir -p centeredtracks/mil; mkdir -p centeredtracks/min; coverage.py --coverage_style centered --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p centeredtracks; mkdir -p centeredtracks/raw; mkdir -p centeredtracks/mil; mkdir -p centeredtracks/min; HRIBO/scripts/mapping.py --mapping_style centered --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
 
 rule centeredwigtobigwigrawforward:
     input:
@@ -608,12 +628,14 @@ rule fiveprimewig:
         rmil="fiveprimetracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
         fmin="fiveprimetracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="fiveprimetracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p fiveprimetracks; mkdir -p fiveprimetracks/raw; mkdir -p fiveprimetracks/mil; mkdir -p fiveprimetracks/min; coverage.py --coverage_style first_base_only --bam_path {input.bam} --wiggle_file_path fiveprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p fiveprimetracks; mkdir -p fiveprimetracks/raw; mkdir -p fiveprimetracks/mil; mkdir -p fiveprimetracks/min; HRIBO/scripts/mapping.py --mapping_style first_base_only --bam_path {input.bam} --wiggle_file_path fiveprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
 
 rule fiveprimewigtobigwigrawforward:
     input:
@@ -701,12 +723,14 @@ rule threeprimewig:
         rmil="threeprimetracks/mil/{method}-{condition}-{replicate}.mil.reverse.wig",
         fmin="threeprimetracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="threeprimetracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
+    conda:
+        "../envs/coverage.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "source activate /scratch/bi03/egg/miniconda3/envs/coverage; mkdir -p threeprimetracks; mkdir -p threeprimetracks/raw; mkdir -p threeprimetracks/mil; mkdir -p threeprimetracks/min; coverage.py --coverage_style last_base_only --bam_path {input.bam} --wiggle_file_path threeprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p threeprimetracks; mkdir -p threeprimetracks/raw; mkdir -p threeprimetracks/mil; mkdir -p threeprimetracks/min; HRIBO/scripts/mapping.py --mapping_style last_base_only --bam_path {input.bam} --wiggle_file_path threeprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
 
 rule threeprimewigtobigwigrawforward:
     input:
