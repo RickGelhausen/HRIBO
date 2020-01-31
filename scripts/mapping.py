@@ -11,10 +11,11 @@ from collections import defaultdict
 from pprint import pprint
 import os
 
-def write_wig(normtype,library_name, strand, wig_file_path,replicon_str, mappings, discard_zeros=True, factor=1.0):
+def write_wig(normtype,library_name, strand, wig_file_path, seq_id, mappings, discard_zeros=True, factor=1.0):
     tid = "%s_%s" % (library_name, strand)
     file_handle=open(wig_file_path_setter(wig_file_path,library_name,normtype,strand), "w")
     file_handle.write(("track type=wiggle_0 name=\"%s\"\n" % (tid)))
+    file_handle.write("variableStep chrom=%s span=1\n" % (seq_id))
     file_handle.write("\n".join(["%s %s" % (pos + 1, mapping * factor) for pos, mapping in filter(lambda pos_and_cov: pos_and_cov[1] != 0.0, enumerate(mappings))]) + "\n")
     file_handle.close()
 
