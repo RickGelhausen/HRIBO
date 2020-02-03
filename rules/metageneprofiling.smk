@@ -14,7 +14,7 @@ rule metageneprofiling:
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem)
     shell:
-        "MetageneProfiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metagene/norm/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --normalization"
+        "HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metagene/norm/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --normalization"
 
 
 rule normalizedmetageneprofiling:
@@ -31,5 +31,5 @@ rule normalizedmetageneprofiling:
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig')
     shell:
-        "MetageneProfiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metagene/norm/raw/{params.prefix} --in_fai_filepath genomes/genome.fa.fai"
+        "HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metagene/norm/raw/{params.prefix} --in_fai_filepath genomes/genome.fa.fai"
 

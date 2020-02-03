@@ -4,7 +4,6 @@ channels:
 dependencies:
  - numpy
  - pysam
- - csv
  - regex
  - matplotlib
  - pandas
