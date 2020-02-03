@@ -50,6 +50,8 @@ if TISHMODE == "TISONLY":
           #expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
           #expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           #expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -117,6 +119,8 @@ else:
           #expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
           #expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           #expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -215,6 +219,7 @@ include: "rules/reparation.smk"
 #xtail
 include: "rules/xtail.smk"
 #metagene
+include: "rules/metageneprofiling.smk"
 include: "rules/auxiliary.smk"
 #multiqc
 include: "rules/qcauxiliary.smk"
