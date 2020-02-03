@@ -1,0 +1,11 @@
+channels:
+ - conda-forge
+ - bioconda
+dependencies:
+ - numpy
+ - pysam
+ - csv
+ - regex
+ - matplotlib
+ - pandas
+ - interlap
