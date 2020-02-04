@@ -52,22 +52,7 @@ include: "rules/rrnafiltering.smk"
 include: "rules/mapping.smk"
 #Visualization
 include: "rules/visualization.smk"
-#ribotish
-include: "rules/ribotishauxiliary.smk"
-if TISHMODE == "TISONLY":
-   # merge
-   include: "rules/mergetis.smk"
-   include: "rules/ribotishtis.smk"
-elif TISHMODE == "RIBOONLY":
-   #merging
-   include: "rules/merge.smk"
-   #ribotish
-   include: "rules/ribotish.smk"
-else:
-   #merging
-   include: "rules/merge.smk"
-   #ribotish
-   include: "rules/ribotishall.smk"
+include: "rules/merge.smk"
 #reparation
 include: "rules/reparation.smk"
 #xtail

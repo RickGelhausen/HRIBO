@@ -167,7 +167,7 @@ rule totalmappedreadcountstats:
         "../envs/coverage.yaml"
     threads: 1
     shell:
-        "mkdir -p bammulti; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+        "mkdir -p bammulti; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat};"
 
 rule uniquemappedreadcountstats:
     input:
@@ -180,7 +180,7 @@ rule uniquemappedreadcountstats:
         "../envs/coverage.yaml"
     threads: 1
     shell:
-        "mkdir -p rRNAbam; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+        "mkdir -p rRNAbam; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat};"
 
 rule totalmappedminreadcounts:
     input:
@@ -193,7 +193,7 @@ rule totalmappedminreadcounts:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p bammulti; HRIBO/scripts/minreads.py {input.stats} > {output.minreads}; source deactivate;"
+        "mkdir -p bammulti; HRIBO/scripts/minreads.py {input.stats} > {output.minreads};"
 
 rule uniquemappedminreadcounts:
     input:
@@ -206,7 +206,7 @@ rule uniquemappedminreadcounts:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p rRNAbam; HRIBO/scripts/minreads.py {input.stats} > {output.minreads}; source deactivate;"
+        "mkdir -p rRNAbam; HRIBO/scripts/minreads.py {input.stats} > {output.minreads};"
 
 rule totalmappedwig:
     input:
@@ -229,7 +229,7 @@ rule totalmappedwig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p totalmappedtracks; mkdir -p totalmappedtracks/raw; mkdir -p totalmappedtracks/mil; mkdir -p totalmappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path totalmappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p totalmappedtracks; mkdir -p totalmappedtracks/raw; mkdir -p totalmappedtracks/mil; mkdir -p totalmappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path totalmappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min};"
 
 rule uniquemappedwig:
     input:
@@ -252,7 +252,7 @@ rule uniquemappedwig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p uniquemappedtracks; mkdir -p uniquemappedtracks/raw; mkdir -p uniquemappedtracks/mil; mkdir -p uniquemappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path uniquemappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p uniquemappedtracks; mkdir -p uniquemappedtracks/raw; mkdir -p uniquemappedtracks/mil; mkdir -p uniquemappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path uniquemappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min};"
 
 rule totalmappedwigtobigwigrawforward:
     input:
@@ -409,7 +409,7 @@ rule readcountstats:
         "../envs/coverage.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat}; source deactivate;"
+        "mkdir -p tracks; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat};"
 
 rule minreadcounts:
     input:
@@ -422,7 +422,7 @@ rule minreadcounts:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
     shell:
-        "mkdir -p tracks; HRIBO/scripts/minreads.py {input.stats} > {output.minreads}; source deactivate;"
+        "mkdir -p tracks; HRIBO/scripts/minreads.py {input.stats} > {output.minreads};"
 
 rule globalwig:
     input:
@@ -445,7 +445,7 @@ rule globalwig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p globaltracks; mkdir -p globaltracks/raw; mkdir -p globaltracks/mil; mkdir -p globaltracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path globaltracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p globaltracks; mkdir -p globaltracks/raw; mkdir -p globaltracks/mil; mkdir -p globaltracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path globaltracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min};"
 
 rule globalwigtobigwigrawforward:
     input:
@@ -540,7 +540,7 @@ rule centeredwig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p centeredtracks; mkdir -p centeredtracks/raw; mkdir -p centeredtracks/mil; mkdir -p centeredtracks/min; HRIBO/scripts/mapping.py --mapping_style centered --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p centeredtracks; mkdir -p centeredtracks/raw; mkdir -p centeredtracks/mil; mkdir -p centeredtracks/min; HRIBO/scripts/mapping.py --mapping_style centered --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min};"
 
 rule centeredwigtobigwigrawforward:
     input:
@@ -635,7 +635,7 @@ rule fiveprimewig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p fiveprimetracks; mkdir -p fiveprimetracks/raw; mkdir -p fiveprimetracks/mil; mkdir -p fiveprimetracks/min; HRIBO/scripts/mapping.py --mapping_style first_base_only --bam_path {input.bam} --wiggle_file_path fiveprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p fiveprimetracks; mkdir -p fiveprimetracks/raw; mkdir -p fiveprimetracks/mil; mkdir -p fiveprimetracks/min; HRIBO/scripts/mapping.py --mapping_style first_base_only --bam_path {input.bam} --wiggle_file_path fiveprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min};"
 
 rule fiveprimewigtobigwigrawforward:
     input:
@@ -730,7 +730,7 @@ rule threeprimewig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p threeprimetracks; mkdir -p threeprimetracks/raw; mkdir -p threeprimetracks/mil; mkdir -p threeprimetracks/min; HRIBO/scripts/mapping.py --mapping_style last_base_only --bam_path {input.bam} --wiggle_file_path threeprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min}; source deactivate;"
+        "mkdir -p threeprimetracks; mkdir -p threeprimetracks/raw; mkdir -p threeprimetracks/mil; mkdir -p threeprimetracks/min; HRIBO/scripts/mapping.py --mapping_style last_base_only --bam_path {input.bam} --wiggle_file_path threeprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min};"
 
 rule threeprimewigtobigwigrawforward:
     input:
