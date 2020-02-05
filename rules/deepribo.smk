@@ -1,3 +1,6 @@
+from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
+HTTP = HTTPRemoteProvider()
+
 def read_parameters(filename, idx):
     try:
         line = ""
@@ -6,6 +9,15 @@ def read_parameters(filename, idx):
         return line[idx]
     except FileNotFoundError:
         return "failed"
+
+rule deepriboGetModel:
+    input:
+        HTTP.remote("github.com/Biobix/DeepRibo/blob/master/models/DeepRibo_model_v1.pt?raw=true", keep_local=True)
+    output:
+        "deepribo/DeepRibo_model_v1.pt"
+    run:
+        shell("mkdir -p deepribo; mv {input} deepribo/DeepRibo_model_v1.pt")
+
 
 rule asiteOccupancy:
     input:
@@ -48,45 +60,45 @@ rule parseDeepRibo:
     output:
         "deepribo/{condition}-{replicate}/data_list.csv"
     singularity:
-        "docker://gelhausr/deepribo:testing"
+        "docker://gelhausr/deepribo:minimal"
     threads: 1
     shell:
         """
         mkdir -p deepribo/{wildcards.condition}-{wildcards.replicate}/0/;
         mkdir -p deepribo/{wildcards.condition}-{wildcards.replicate}/1/;
-        python3 DataParser.py {input.covS} {input.covAS} {input.asiteS} {input.asiteAS} {input.genome} deepribo/{wildcards.condition}-{wildcards.replicate} -g {input.annotation}
+        DataParser.py {input.covS} {input.covAS} {input.asiteS} {input.asiteAS} {input.genome} deepribo/{wildcards.condition}-{wildcards.replicate} -g {input.annotation}
         """
-#
-# rule parameterEstimation:
-#     input:
-#         "deepribo/{condition}-{replicate}/data_list.csv"
-#     output:
-#         "deepribo/{condition}-{replicate}/parameters.txt"
-#     conda:
-#         "../envs/estimation.yaml"
-#     threads: 1
-#     shell:
-#         "mkdir -p deepribo; Rscript HRIBO/scripts/parameter_estimation.R -f {input} -o {output}"
-#
-# rule predictDeepRibo:
-#     input:
-#         model= "tools/DeepRibo/models/DeepRibo_model_v1.pt",
-#         data= "deepribo/{condition}-{replicate}/data_list.csv",
-#         parameter= "deepribo/{condition}-{replicate}/parameters.txt"
-#     output:
-#         "deepribo/{condition}-{replicate}/predictions.csv"
-#     conda:
-#         "../envs/deepribo.yaml"
-#     threads: 10
-#     params:
-#         rpkm= lambda wildcards, input: read_parameters(input[2], 0),
-#         cov= lambda wildcards, input: read_parameters(input[2], 1)
-#     shell:
-#         """
-#         mkdir -p deepribo;
-#         python3 tools/DeepRibo/src/DeepRibo.py predict deepribo/ --pred_data {wildcards.condition}-{wildcards.replicate}/ -r {params.rpkm} -c {params.cov} --model {input.model} --dest {output} --num_workers {threads}
-#         """
-#
+
+rule parameterEstimation:
+    input:
+        "deepribo/{condition}-{replicate}/data_list.csv"
+    output:
+        "deepribo/{condition}-{replicate}/parameters.txt"
+    singularity:
+        "docker://gelhausr/deepribo:minimal"
+    threads: 1
+    shell:
+        "mkdir -p deepribo; Rscript HRIBO/scripts/parameter_estimation.R -f {input} -o {output}"
+
+rule predictDeepRibo:
+    input:
+        model= "deepribo/DeepRibo_model_v1.pt",
+        data= "deepribo/{condition}-{replicate}/data_list.csv",
+        parameter= "deepribo/{condition}-{replicate}/parameters.txt"
+    output:
+        "deepribo/{condition}-{replicate}/predictions.csv"
+    singularity:
+        "docker://gelhausr/deepribo:minimal"
+    threads: 10
+    params:
+        rpkm= lambda wildcards, input: read_parameters(input[2], 0),
+        cov= lambda wildcards, input: read_parameters(input[2], 1)
+    shell:
+        """
+        mkdir -p deepribo;
+        DeepRibo.py predict deepribo/ --pred_data {wildcards.condition}-{wildcards.replicate}/ -r {params.rpkm} -c {params.cov} --model {input.model} --dest {output} --num_workers {threads}
+        """
+
 # rule deepriboGFF:
 #     input:
 #         "deepribo/{condition}-{replicate}/predictions.csv"
