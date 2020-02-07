@@ -17,6 +17,11 @@ onstart:
 samples = pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["method", "condition", "replicate"], drop=False)
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
+
+if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
+    sys.exit("Differential Expression requested, but only one condition given.\n\
+            Please ensure, that you either provide multiple condtions or turn off differential expression in the config.yaml.")
+
 report: "report/workflow.rst"
 def getContrast(wildcards):
   conditions=samples["condition"].unique()
@@ -41,6 +46,7 @@ def getContrastRiborex(wildcards):
   flat_contrasts= [item for sublist in contrasts for item in sublist]
   elements = [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.csv") for element in flat_contrasts]
   return elements
+
 
 def get_wigfiles(wildcards):
   method=samples["method"]
