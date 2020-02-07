@@ -11,13 +11,14 @@ from collections import defaultdict
 from pprint import pprint
 import os
 
-def write_wig(normtype,library_name, strand, wig_file_path, seq_id, mappings, discard_zeros=True, factor=1.0):
+def init_write_wig(file_handle,library_name, strand):
     tid = "%s_%s" % (library_name, strand)
-    file_handle=open(wig_file_path_setter(wig_file_path,library_name,normtype,strand), "w")
     file_handle.write(("track type=wiggle_0 name=\"%s\"\n" % (tid)))
+
+
+def write_wig(file_handle, seq_id, mappings, discard_zeros=True, factor=1.0):
     file_handle.write("variableStep chrom=%s span=1\n" % (seq_id))
     file_handle.write("\n".join(["%s %s" % (pos + 1, mapping * factor) for pos, mapping in filter(lambda pos_and_cov: pos_and_cov[1] != 0.0, enumerate(mappings))]) + "\n")
-    file_handle.close()
 
 def add_aln_mapping(mappings, strand_swap, entry, increment, start, end, clip_length):
     if ((entry.is_reverse is False and entry.is_read2 is False) or
@@ -91,9 +92,11 @@ def select_mapping_add_function(mapping_style):
     else:
         return add_aln_mapping
 
-def compute_seqid_mapping(mappings,bam_path,read_count_splitting,mapping_add_function,strand_swap,clip_length):
+def compute_seqid_mapping(bam_path,read_count_splitting,mapping_add_function,strand_swap,clip_length):
     bam = pysam.Samfile(bam_path)
+    results = []
     for ref_seq, length in zip(bam.references, bam.lengths):
+        mappings = {}        
         for strand in ["forward", "reverse"]:
             mappings[strand] = np.array([0.0] * length)
         for entry in bam.fetch(ref_seq):
@@ -105,17 +108,38 @@ def compute_seqid_mapping(mappings,bam_path,read_count_splitting,mapping_add_fun
             else:
                 increment = 1.0
             mapping_add_function(mappings, strand_swap,entry, increment, start, end, clip_length)
-        yield(ref_seq, mappings)
+        results.append((ref_seq, mappings))
+    return results
 
-def compute_wig(mappings,bam_path,wig_file_path,library_name,min_no_of_aligned_reads,no_of_aligned_reads,read_count_splitting=True, mapping_style="centered", clip_length=11, non_strand_specific=False, strand_swap=False):
+def compute_wig(bam_path,wig_file_path,library_name,min_no_of_aligned_reads,no_of_aligned_reads,read_count_splitting=True, mapping_style="centered", clip_length=11, non_strand_specific=False, strand_swap=False):
     mapping_add_function = select_mapping_add_function(mapping_style)
-    seqid_mapping = compute_seqid_mapping(mappings,bam_path,read_count_splitting,mapping_add_function,strand_swap,clip_length)
-    strands = ["forward", "reverse"]
-    for seqid, mappings in seqid_mapping:
-        for strand in strands:
-            write_wig("raw",library_name, strand, wig_file_path, seqid, mappings[strand])
-            write_wig("min",library_name, strand, wig_file_path, seqid, mappings[strand],factor=min_no_of_aligned_reads/no_of_aligned_reads)
-            write_wig("mil",library_name, strand, wig_file_path, seqid, mappings[strand],factor=1000000/no_of_aligned_reads)
+    seqid_mapping = compute_seqid_mapping(bam_path,read_count_splitting,mapping_add_function,strand_swap,clip_length)
+    raw_fw_handle=open(wig_file_path_setter(wig_file_path,library_name,"raw","forward"), "w")
+    init_write_wig(raw_fw_handle,library_name,"forward")
+    raw_rw_handle=open(wig_file_path_setter(wig_file_path,library_name,"raw","reverse"), "w")
+    init_write_wig(raw_rw_handle,library_name,"reverse")
+    min_fw_handle=open(wig_file_path_setter(wig_file_path,library_name,"min","forward"), "w")
+    init_write_wig(min_fw_handle,library_name,"forward")
+    min_rw_handle=open(wig_file_path_setter(wig_file_path,library_name,"min","reverse"), "w")
+    init_write_wig(min_rw_handle,library_name,"reverse")
+    mil_fw_handle=open(wig_file_path_setter(wig_file_path,library_name,"mil","forward"), "w")
+    init_write_wig(mil_fw_handle,library_name,"forward")
+    mil_rw_handle=open(wig_file_path_setter(wig_file_path,library_name,"mil","reverse"), "w")
+    init_write_wig(mil_fw_handle,library_name,"reverse")
+    for (seqid, mappings) in seqid_mapping:
+            write_wig(raw_fw_handle, seqid, mappings["forward"])
+            write_wig(raw_rw_handle, seqid, mappings["reverse"])
+            write_wig(min_fw_handle, seqid, mappings["forward"],factor=min_no_of_aligned_reads/no_of_aligned_reads)
+            write_wig(min_rw_handle, seqid, mappings["reverse"],factor=min_no_of_aligned_reads/no_of_aligned_reads)
+            write_wig(mil_fw_handle, seqid, mappings["forward"],factor=1000000/no_of_aligned_reads)
+            write_wig(mil_rw_handle, seqid, mappings["reverse"],factor=1000000/no_of_aligned_reads)
+    raw_fw_handle.close()
+    raw_rw_handle.close()
+    min_fw_handle.close()
+    min_rw_handle.close()
+    mil_fw_handle.close()
+    mil_rw_handle.close()
+
 
 def main():
     parser = argparse.ArgumentParser(description='Create single nucleotide mapping file')
@@ -131,7 +155,7 @@ def main():
     no_of_aligned_reads = int(no_of_aligned_reads_file.read())
     min_no_of_aligned_reads_file = open(args.min_no_of_aligned_reads_file_path,"r")
     min_no_of_aligned_reads = int(min_no_of_aligned_reads_file.read())
-    mappings = {}
-    compute_wig(mappings,args.bam_path,args.wiggle_file_path,args.library_name,min_no_of_aligned_reads,no_of_aligned_reads,True,args.mapping_style,11,False,False)
+    #mappings = {}
+    compute_wig(args.bam_path,args.wiggle_file_path,args.library_name,min_no_of_aligned_reads,no_of_aligned_reads,True,args.mapping_style,11,False,False)
 if __name__ == '__main__':
     main()
