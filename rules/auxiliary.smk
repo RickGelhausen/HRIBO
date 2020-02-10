@@ -10,27 +10,16 @@ def getGFFtype(filename):
     except FileNotFoundError:
         return "failed"
 
-rule processAnnotation:
-    input:
-        annotation=rules.retrieveAnnotation.output
-    output:
-        "offsets/processed-annotation.gtf"
-    conda:
-        "../envs/mergetools.yaml"
-    threads: 1
-    shell:
-        "mkdir -p offsets; HRIBO/scripts/process_annotation.py -a {input.annotation} -o {output}"
-
 rule enrichAnnotation:
     input:
-        "annotation/annotation.gtf"
+        annotation=rules.retrieveAnnotation.output
     output:
         "auxiliary/enriched_annotation.gtf"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; HRIBO/scripts/enrich_annotation.py -a {input} -o {output}"
+        "mkdir -p auxiliary; HRIBO/scripts/enrich_annotation.py -a {input.annotation} -o {output}"
 
 rule unambigousAnnotation:
     input:
@@ -175,7 +164,7 @@ rule totalMappedReads:
         mapped="auxiliary/total_sum_mapped_reads.txt",
         length="auxiliary/total_average_read_lengths.txt"
     conda:
-        "../envs/plastid.yaml"
+        "../envs/pytools.yaml"
     threads: 1
     shell:
         "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
@@ -188,7 +177,7 @@ rule uniqueMappedReads:
         mapped="auxiliary/unique_sum_mapped_reads.txt",
         length="auxiliary/unique_average_read_lengths.txt"
     conda:
-        "../envs/plastid.yaml"
+        "../envs/pytools.yaml"
     threads: 1
     shell:
         "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
@@ -201,7 +190,7 @@ rule finalMappedReads:
         mapped="auxiliary/final_sum_mapped_reads.txt",
         length="auxiliary/final_average_read_lengths.txt"
     conda:
-        "../envs/plastid.yaml"
+        "../envs/pytools.yaml"
     threads: 1
     shell:
         "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"

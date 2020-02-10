@@ -1,5 +1,0 @@
-channels:
- - conda-forge
- - bioconda
-dependencies:
- - sortmerna =2.1b

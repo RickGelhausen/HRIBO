@@ -99,112 +99,106 @@ rule predictDeepRibo:
         DeepRibo.py predict deepribo/ --pred_data {wildcards.condition}-{wildcards.replicate}/ -r {params.rpkm} -c {params.cov} --model {input.model} --dest {output} --num_workers {threads}
         """
 
-# rule deepriboGFF:
-#     input:
-#         "deepribo/{condition}-{replicate}/predictions.csv"
-#     output:
-#         "deepribo/{condition, [a-zA-Z]+}-{replicate,\d+}.deepribo.gff"
-#     conda:
-#         "../envs/mergetools.yaml"
-#     threads: 1
-#     shell:
-#         "mkdir -p tracks; HRIBO/scripts/create_deepribo_gff.py -c {wildcards.condition}  -i {input} -o {output}"
-#
-# rule concatDeepRibo:
-#     input:
-#         lambda wildcards: expand("deepribo/{{condition}}-{replicate}.deepribo.gff", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"])
-#     output:
-#         "tracks/{condition, [a-zA-Z]+}.deepribo.gff"
-#     conda:
-#         "../envs/mergetools.yaml"
-#     threads: 1
-#     shell:
-#         "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input} -o {output}"
-#
-# rule allDeepRibo:
-#     input:
-#         merged_gff=expand("tracks/{condition}.deepribo.gff", zip, condition=set(samples["condition"]))
-#     output:
-#         "tracks/deepribo_all.gff"
-#     conda:
-#         "../envs/mergetools.yaml"
-#     threads: 1
-#     shell:
-#         "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input.merged_gff} -o {output}"
-#
-# rule filterDeepRibo:
-#     input:
-#         annotation="tracks/deepribo_all.gff",
-#     output:
-#         "tracks/deepribo_merged.gtf"
-#     conda:
-#         "../envs/mergetools.yaml"
-#     threads: 1
-#     shell:
-#         "mkdir -p tracks; HRIBO/scripts/merge_duplicates_deepribo.py -i {input.annotation} -o {output}"
-#
-# rule generateAnnotationUniqueReadCounts:
-#     input:
-#         bam=expand("bam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-#         bamindex=expand("bam/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-#         annotation="tracks/deepribo_merged.gtf"
-#     output:
-#         "auxiliary/annotation_deepribo_reads.raw"
-#     conda:
-#         "../envs/subread.yaml"
-#     threads: 5
-#     shell:
-#         """
-#         mkdir -p auxiliary
-#         UNIQUE="$(cut -f3 {input.annotation} | sort | uniq)"
-#         IDENTIFIER="ID"
-#         LINE="$(sed '3q;d' {input.annotation})"
-#         if [[ $LINE == *"gene_id="* ]]; then IDENTIFIER="gene_id"; fi;
-#         for f in ${{UNIQUE}}
-#         do
-#             featureCounts -F GTF -s 1 -g $IDENTIFIER -O -t $f -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/annotation_deepribo_reads.raw.tmp
-#             cat auxiliary/annotation_deepribo_reads.raw.tmp | sed 1,2d | awk -v var=$f -FS'\\t' '{{print $0"\\t"var}}' >> {output}
-#             rm auxiliary/annotation_deepribo_reads.raw.tmp
-#         done
-#         """
-#
-# rule mapDeepRiboReads:
-#     input:
-#         reads="auxiliary/annotation_deepribo_reads.raw",
-#         annotation="tracks/deepribo_merged.gtf"
-#     output:
-#         "auxiliary/deepribo_annotation.gtf"
-#     conda:
-#         "../envs/mergetools.yaml"
-#     threads: 1
-#     shell:
-#         """
-#         mkdir -p auxiliary; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
-#         """
-#
-# rule totalMappedReadsDeepRibo:
-#     input:
-#         bam=expand("bam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-#         bamindex=expand("bam/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-#     output:
-#         mapped="auxiliary/deepribo_sum_mapped_reads.txt",
-#         length="auxiliary/deepribo_average_read_lengths.txt"
-#     conda:
-#         "../envs/plastid.yaml"
-#     threads: 1
-#     shell:
-#         "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
-#
-#
-# rule createExcelSummaryDeepRibo:
-#     input:
-#         total="auxiliary/deepribo_sum_mapped_reads.txt",
-#         reads="auxiliary/deepribo_annotation.gtf",
-#         genome="genomes/genome.fa"
-#     output:
-#         "auxiliary/deepribo_predictions.xlsx"
-#     conda:
-#         "../envs/excel.yaml"
-#     threads: 1
-#     shell:
-#         "mkdir -p auxiliary; HRIBO/scripts/generate_excel_deepribo.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+rule deepriboGFF:
+    input:
+        "deepribo/{condition}-{replicate}/predictions.csv"
+    output:
+        "deepribo/{condition, [a-zA-Z]+}-{replicate,\d+}.deepribo.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; HRIBO/scripts/create_deepribo_gff.py -c {wildcards.condition} -r {wildcards.replicate} -i {input} -o {output}"
+
+rule concatDeepRibo:
+    input:
+        lambda wildcards: expand("deepribo/{{condition}}-{replicate}.deepribo.gff", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"])
+    output:
+        "tracks/{condition, [a-zA-Z]+}.deepribo.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input} -o {output}"
+
+rule allDeepRibo:
+    input:
+        merged_gff=expand("tracks/{condition}.deepribo.gff", zip, condition=set(samples["condition"]))
+    output:
+        "tracks/deepribo_all.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input.merged_gff} -o {output}"
+
+rule filterDeepRibo:
+    input:
+        ingff="tracks/deepribo_all.gff",
+        annotation=rules.retrieveAnnotation.output
+    output:
+        "tracks/deepribo_merged.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p tracks; HRIBO/scripts/merge_duplicates_deepribo.py -i {input.ingff} -o {output} -a {input.annotation}"
+
+rule generateAnnotationDeepRiboReadCounts:
+    input:
+        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        annotation="tracks/deepribo_merged.gff"
+    output:
+        "auxiliary/annotation_deepribo_reads.raw"
+    conda:
+        "../envs/subread.yaml"
+    threads: 5
+    shell:
+        """
+        mkdir -p auxiliary
+        featureCounts -F GTF -s 1 -g ID -O -t CDS -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/annotation_deepribo_reads.raw.tmp
+        cat auxiliary/annotation_deepribo_reads.raw.tmp | sed 1,2d | awk -v var=CDS -FS'\\t' '{{print $0"\\t"var}}' >> {output}
+        rm auxiliary/annotation_deepribo_reads.raw.tmp
+        """
+
+rule mapDeepRiboReads:
+    input:
+        reads="auxiliary/annotation_deepribo_reads.raw",
+        annotation="tracks/deepribo_merged.gff"
+    output:
+        "auxiliary/deepribo_annotation.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        """
+
+rule mappedReadsDeepRibo:
+    input:
+        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+    output:
+        mapped="auxiliary/deepribo_sum_mapped_reads.txt",
+        length="auxiliary/deepribo_average_read_lengths.txt"
+    conda:
+        "../envs/pytools.yaml"
+    threads: 1
+    shell:
+        "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+
+
+rule createExcelSummaryDeepRibo:
+    input:
+        total="auxiliary/deepribo_sum_mapped_reads.txt",
+        reads="auxiliary/deepribo_annotation.gff",
+        genome="genomes/genome.fa"
+    output:
+        "auxiliary/predictions_deepribo.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        "mkdir -p auxiliary; HRIBO/scripts/generate_excel_deepribo.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
