@@ -157,16 +157,9 @@ rule generateAnnotationDeepRiboReadCounts:
     shell:
         """
         mkdir -p auxiliary
-        UNIQUE="$(cut -f3 {input.annotation} | sort | uniq)"
-        IDENTIFIER="ID"
-        LINE="$(sed '3q;d' {input.annotation})"
-        if [[ $LINE == *"gene_id="* ]]; then IDENTIFIER="gene_id"; fi;
-        for f in ${{UNIQUE}}
-        do
-            featureCounts -F GTF -s 1 -g $IDENTIFIER -O -t $f -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/annotation_deepribo_reads.raw.tmp
-            cat auxiliary/annotation_deepribo_reads.raw.tmp | sed 1,2d | awk -v var=$f -FS'\\t' '{{print $0"\\t"var}}' >> {output}
-            rm auxiliary/annotation_deepribo_reads.raw.tmp
-        done
+        featureCounts -F GTF -s 1 -g ID -O -t CDS -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/annotation_deepribo_reads.raw.tmp
+        cat auxiliary/annotation_deepribo_reads.raw.tmp | sed 1,2d | awk -v var=CDS -FS'\\t' '{{print $0"\\t"var}}' >> {output}
+        rm auxiliary/annotation_deepribo_reads.raw.tmp
         """
 
 rule mapDeepRiboReads:
@@ -200,7 +193,7 @@ rule mappedReadsDeepRibo:
 rule createExcelSummaryDeepRibo:
     input:
         total="auxiliary/deepribo_sum_mapped_reads.txt",
-        reads="auxiliary/deepribo_annotation.gtf",
+        reads="auxiliary/deepribo_annotation.gff",
         genome="genomes/genome.fa"
     output:
         "auxiliary/predictions_deepribo.xlsx"
