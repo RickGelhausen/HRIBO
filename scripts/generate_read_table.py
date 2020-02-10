@@ -54,8 +54,8 @@ def parse_orfs(args):
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
 
-    decode = {"srna" : "sRNA", "5'-utr" : "5'-UTR", "cds" : "CDS", "rrna" : "rRNA", "trna" : "tRNA", "transcript" : "transcript", "total" : "total"}
-    feature_list = ["srna", "5'-utr", "cds", "rrna", "trna", "transcript", "total"]
+    decode = {"srna" : "sRNA", "5'-utr" : "5'-UTR", "cds" : "CDS", "rrna" : "rRNA", "trna" : "tRNA", "transcript" : "transcript", "pseudogene" : "pseudogene", "total" : "total"}
+    feature_list = ["srna", "5'-utr", "cds", "rrna", "trna", "transcript", "pseudogene", "total"]
     read_dict = collections.OrderedDict()
     count_dict = collections.OrderedDict()
 

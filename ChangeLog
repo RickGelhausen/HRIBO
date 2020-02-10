@@ -1,3 +1,10 @@
+##### version 1.3.0
+
+200130 Rick Gelhausen & Florian Eggenhofer
+ + integration of deepribo
+ + refactoring of scripts folder
+ + added pseudogene read counting
+
 ##### version 1.2.0
 
 200122 Rick Gelhausen & Florian Eggenhofer
@@ -5,7 +12,7 @@
  + added differential expression analysis with Riborex and Xtail
  + added TIS support to generate_excel.py
  + standardized output annotation to GFF3 format
- + updated HRIBO Manual 
+ + updated HRIBO Manual
 
 ##### version 1.1.0
 

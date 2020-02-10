@@ -586,3 +586,13 @@ riborexresults:
 
 xtailclassicnormalize:
   resources : 'nodes=1:ppn=1,pmem=8'
+
+# deepribo
+predictDeepRibo:
+  resources : 'nodes=1:ppn=10,pmem=3'
+
+parseDeepRibo:
+  resources : 'nodes=1:ppn=1,pmem=20'
+
+parameterEstimation:
+  resources : 'nodes=1:ppn=1,pmem=12'

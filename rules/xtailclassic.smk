@@ -1,7 +1,7 @@
 rule xtailclassicnormalize:
     input:
         bam="maplink/{method}-{condition}-{replicate}.bam",
-        annotation="annotation/annotation.gtf"
+        annotation=rules.retrieveAnnotation.output
     output:
         xtailclassic="xtailclassic/{method}-{condition}-{replicate}.csv"
     conda:

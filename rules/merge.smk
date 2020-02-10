@@ -29,11 +29,11 @@ rule filterAll:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/noverlapper.py -i {input} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/merge_duplicates_reparation.py -i {input} -o {output}"
 
 rule reannotatedORFs:
     input:
-        annotation="annotation/annotation.gtf",
+        annotation=rules.retrieveAnnotation.output,
         combined="tracks/combined.gff"
     output:
         report("tracks/combined_annotated.gff", caption="../report/combined_annotation.rst", category="Novel ORFs")
@@ -41,12 +41,12 @@ rule reannotatedORFs:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/reannotateORFs.py -a {input.annotation} -c {input.combined} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/reannotate_orfs.py -a {input.annotation} -c {input.combined} -o {output}"
 
 rule newAnnotation:
     input:
         newOrfs="tracks/combined_annotated.gff",
-        currentAnnotation="annotation/annotation.gtf"
+        currentAnnotation=rules.retrieveAnnotation.output
     output:
         "xtail/totalAnnotation.gff"
     conda:
@@ -65,4 +65,3 @@ rule uniteAnnotation:
     threads: 1
     shell:
         "mkdir -p tracks; HRIBO/scripts/annotation_unite.py -a {input} -o {output}"
-
