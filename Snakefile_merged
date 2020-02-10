@@ -46,10 +46,8 @@ def getContrastRiborex(wildcards):
 if TISHMODE == "TISONLY":
    rule all:
       input:
-          #expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
-          #expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
-          #expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          #expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -95,11 +93,6 @@ if TISHMODE == "TISONLY":
           "tracks/potentialStartCodons.gff",
           "tracks/potentialAlternativeStartCodons.gff",
           "tracks/potentialRibosomeBindingSite.gff",
-          "offsets/metagene_start_rois.txt",
-          "offsets/metagene_stop_rois.txt",
-          #expand("offsets/start/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          #expand("offsets/stop/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          #expand("tracks/color/{method}-{condition}-{replicate}.fwd.bedgraph.gz", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           "tracks/color/potentialStartCodons.gff",
           "auxiliary/annotation_total.xlsx",
           "auxiliary/annotation_unique.xlsx",
@@ -113,10 +106,8 @@ if TISHMODE == "TISONLY":
 else:
    rule all:
       input:
-          #expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
-          #expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
-          #expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          #expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -158,17 +149,11 @@ else:
           expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           "qc/multi/multiqc_report.html",
           "xtail/newAnnotation.gff",
-          #expand("figures/{condition}-{replicate}_metagene.jpg", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples["replicate"]),
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "tracks/potentialStopCodons.gff",
           "tracks/potentialStartCodons.gff",
           "tracks/potentialAlternativeStartCodons.gff",
           "tracks/potentialRibosomeBindingSite.gff",
-          "offsets/metagene_start_rois.txt",
-          "offsets/metagene_stop_rois.txt",
-          #expand("offsets/start/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          #expand("offsets/stop/{method}-{condition}-{replicate}_p_offsets.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          #expand("tracks/color/{method}-{condition}-{replicate}.fwd.bedgraph.gz", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           "tracks/color/potentialStartCodons.gff",
           "auxiliary/annotation_total.xlsx",
           "auxiliary/annotation_unique.xlsx",
@@ -194,27 +179,13 @@ include: "rules/mappingsingleend.smk"
 include: "rules/mappingauxiliary.smk"
 #Visualization
 include: "rules/visualization.smk"
-#ribotish
-include: "rules/ribotishauxiliary.smk"
-if TISHMODE == "TISONLY":
-   # merge
-   include: "rules/mergetis.smk"
-   include: "rules/ribotishtis.smk"
-elif TISHMODE == "RIBOONLY":
-   #merging
-   include: "rules/merge.smk"
-   #ribotish
-   include: "rules/ribotish.smk"
-else:
-   #merging
-   include: "rules/merge.smk"
-   #ribotish
-   include: "rules/ribotishall.smk"
+include: "rules/merge.smk"
 #reparation
 include: "rules/reparation.smk"
 #xtail
 include: "rules/xtail.smk"
 #metagene
+include: "rules/metageneprofiling.smk"
 include: "rules/auxiliary.smk"
 #multiqc
 include: "rules/qcauxiliary.smk"
