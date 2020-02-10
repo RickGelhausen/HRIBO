@@ -38,7 +38,7 @@ rule reparationGFF:
     input:
         "reparation/{condition}-{replicate}/Predicted_ORFs.txt"
     output:
-        "reparation/{condition, [a-zA-Z]+}-{replicate,\d+}.reparation.gff"
+        "reparation/{condition, [a-zA-Z0-9]+}-{replicate,\d+}.reparation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -49,7 +49,7 @@ rule concatReparation:
     input:
         lambda wildcards: expand("reparation/{{condition}}-{replicate}.reparation.gff", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"])
     output:
-        "tracks/{condition, [a-zA-Z]+}.reparation.gff"
+        "tracks/{condition, [a-zA-Z0-9]+}.reparation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1

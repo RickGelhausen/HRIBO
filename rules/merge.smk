@@ -2,7 +2,7 @@ rule mergeConditions:
     input:
         reparation="tracks/{condition}.reparation.gff"
     output:
-        report("tracks/{condition, [a-zA-Z]+}.merged.gff", caption="../report/novelmerged.rst", category="Novel ORFs")
+        report("tracks/{condition}.merged.gff", caption="../report/novelmerged.rst", category="Novel ORFs")
     conda:
         "../envs/bedtools.yaml"
     threads: 1

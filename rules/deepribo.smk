@@ -103,7 +103,7 @@ rule deepriboGFF:
     input:
         "deepribo/{condition}-{replicate}/predictions.csv"
     output:
-        "deepribo/{condition, [a-zA-Z]+}-{replicate,\d+}.deepribo.gff"
+        "deepribo/{condition}-{replicate,\d+}.deepribo.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -114,7 +114,7 @@ rule concatDeepRibo:
     input:
         lambda wildcards: expand("deepribo/{{condition}}-{replicate}.deepribo.gff", zip, replicate=samples.loc[(samples["method"] == "RIBO") & (samples["condition"] == wildcards.condition), "replicate"])
     output:
-        "tracks/{condition, [a-zA-Z]+}.deepribo.gff"
+        "tracks/{condition}.deepribo.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1

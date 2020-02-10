@@ -81,7 +81,7 @@ if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
           "auxiliary/samples.xlsx",
           "auxiliary/summary.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
-          "auxiliary/predictions_deepribo.xlsx"
+          "auxiliary/predictions_deepribo.xlsx",
           unpack(getContrast),
           unpack(getContrastXtail),
           unpack(getContrastRiborex)
