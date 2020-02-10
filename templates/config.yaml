@@ -1,9 +1,8 @@
-#Taxonomy of the samples to be processed, in this case Bacteria
-taxonomy: "Bacteria"
-#Adapter sequence used
+# Adapter sequence used
 adapter: ""
 samples: "HRIBO/samples.tsv"
-genomeindexpath: ""
 alternativestartcodons: "GTG,TTG"
-#TISHMODE: RIBOONLY for only riboseq (Chloramphenicol treatment), TISONLY for only tis(retapalmuline, tetracycline), ALL for both 
-tishmode: "RIBOONLY"
+# Differential expression: on / off
+differentialexpression: "on"
+# Deepribo predictions: on / off
+deepribo: "off"

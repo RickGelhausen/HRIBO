@@ -6,9 +6,9 @@ from snakemake.utils import validate, min_version
 min_version("5.5.1")
 
 ADAPTERS=config["adapter"]
-INDEXPATH=config["genomeindexpath"]
 CODONS=config["alternativestartcodons"]
-TISHMODE=config["tishmode"]
+DIFFEXPRESS=config["differentialexpression"]
+DEEPRIBO=config["deepribo"]
 
 onstart:
    if not os.path.exists("logs"):
@@ -17,10 +17,14 @@ onstart:
 samples = pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["method", "condition", "replicate"], drop=False)
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
+
+if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
+    sys.exit("Differential Expression requested, but only one condition given.\n\
+            Please ensure, that you either provide multiple condtions or turn off differential expression in the config.yaml.")
+
 report: "report/workflow.rst"
 def getContrast(wildcards):
   conditions=samples["condition"].unique()
-  print(conditions)
   contrastsTupleList=list((iter.combinations(conditions,2)))
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
   flat_contrasts= [item for sublist in contrasts for item in sublist]
@@ -43,156 +47,134 @@ def getContrastRiborex(wildcards):
   elements = [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.csv") for element in flat_contrasts]
   return elements
 
-if TISHMODE == "TISONLY":
+
+def get_wigfiles(wildcards):
+  method=samples["method"]
+  condition=samples["condition"]
+  replicate=samples["replicate"]
+  wilds = zip(method, condition, replicate)
+
+  bigwigs = [["totalmapped", "uniquemapped", "global", "centered", "fiveprime", "threeprime"], ["raw", "mil", "min"], ["forward", "reverse"], list(wilds)]
+  bigwigs = list(iter.product(*bigwigs))
+
+  wigfiles = []
+  for bw in bigwigs:
+      wigfiles.append("%stracks/%s/%s-%s-%s.%s.%s.%s.bw" %(bw[0], bw[1], bw[3][0], bw[3][1], bw[3][2], bw[1], bw[2], bw[0]))
+
+  return wigfiles
+
+if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
    rule all:
       input:
           expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/min/{method}-{condition}-{replicate}.min.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/min/{method}-{condition}-{replicate}.min.reverse.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/min/{method}-{condition}-{replicate}.min.forward.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/min/{method}-{condition}-{replicate}.min.reverse.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/raw/{method}-{condition}-{replicate}.raw.forward.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/raw/{method}-{condition}-{replicate}.raw.reverse.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/mil/{method}-{condition}-{replicate}.mil.forward.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/mil/{method}-{condition}-{replicate}.mil.reverse.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/min/{method}-{condition}-{replicate}.min.forward.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/min/{method}-{condition}-{replicate}.min.reverse.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/raw/{method}-{condition}-{replicate}.raw.forward.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/raw/{method}-{condition}-{replicate}.raw.reverse.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/mil/{method}-{condition}-{replicate}.mil.forward.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/mil/{method}-{condition}-{replicate}.mil.reverse.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/min/{method}-{condition}-{replicate}.min.forward.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/min/{method}-{condition}-{replicate}.min.reverse.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/raw/{method}-{condition}-{replicate}.raw.forward.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/raw/{method}-{condition}-{replicate}.raw.reverse.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/mil/{method}-{condition}-{replicate}.mil.forward.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/mil/{method}-{condition}-{replicate}.mil.reverse.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/min/{method}-{condition}-{replicate}.min.forward.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/min/{method}-{condition}-{replicate}.min.reverse.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/raw/{method}-{condition}-{replicate}.raw.forward.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/raw/{method}-{condition}-{replicate}.raw.reverse.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/mil/{method}-{condition}-{replicate}.mil.forward.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/mil/{method}-{condition}-{replicate}.mil.reverse.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/min/{method}-{condition}-{replicate}.min.forward.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/min/{method}-{condition}-{replicate}.min.reverse.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          get_wigfiles,
           "qc/multi/multiqc_report.html",
-          "xtail/newAnnotation.gff",
-          "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "tracks/potentialStopCodons.gff",
           "tracks/potentialStartCodons.gff",
           "tracks/potentialAlternativeStartCodons.gff",
           "tracks/potentialRibosomeBindingSite.gff",
-          "tracks/color/potentialStartCodons.gff",
           "auxiliary/annotation_total.xlsx",
           "auxiliary/annotation_unique.xlsx",
           "auxiliary/total_read_counts.xlsx",
           "auxiliary/unique_read_counts.xlsx",
           "auxiliary/samples.xlsx",
           "auxiliary/summary.xlsx",
+          "figures/heatmap_SpearmanCorr_readCounts.pdf",
+          "auxiliary/predictions_deepribo.xlsx"
           unpack(getContrast),
           unpack(getContrastXtail),
           unpack(getContrastRiborex)
+
+elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
+   rule all:
+      input:
+          expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          get_wigfiles,
+          "qc/multi/multiqc_report.html",
+          "tracks/potentialStopCodons.gff",
+          "tracks/potentialStartCodons.gff",
+          "tracks/potentialAlternativeStartCodons.gff",
+          "tracks/potentialRibosomeBindingSite.gff",
+          "auxiliary/annotation_total.xlsx",
+          "auxiliary/annotation_unique.xlsx",
+          "auxiliary/total_read_counts.xlsx",
+          "auxiliary/unique_read_counts.xlsx",
+          "auxiliary/samples.xlsx",
+          "auxiliary/summary.xlsx",
+          "figures/heatmap_SpearmanCorr_readCounts.pdf",
+          "auxiliary/predictions_deepribo.xlsx"
+
+elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
+   rule all:
+      input:
+          expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          get_wigfiles,
+          "qc/multi/multiqc_report.html",
+          "tracks/potentialStopCodons.gff",
+          "tracks/potentialStartCodons.gff",
+          "tracks/potentialAlternativeStartCodons.gff",
+          "tracks/potentialRibosomeBindingSite.gff",
+          "auxiliary/annotation_total.xlsx",
+          "auxiliary/annotation_unique.xlsx",
+          "auxiliary/total_read_counts.xlsx",
+          "auxiliary/unique_read_counts.xlsx",
+          "auxiliary/samples.xlsx",
+          "auxiliary/summary.xlsx",
+          "figures/heatmap_SpearmanCorr_readCounts.pdf",
+          unpack(getContrast),
+          unpack(getContrastXtail),
+          unpack(getContrastRiborex)
+
 else:
    rule all:
       input:
-          #expand("ribotish/{condition}-newORFs.tsv_all.txt", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"]),
-          #expand("tracks/{condition}.ribotish.gff", zip, condition=samples["condition"]),
-          #expand("tracks/{method}-{condition}-{replicate}.fwd.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          #expand("tracks/{method}-{condition}-{replicate}.rev.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
           expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/min/{method}-{condition}-{replicate}.min.forward.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("totalmappedtracks/min/{method}-{condition}-{replicate}.min.reverse.totalmapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.forward.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/mil/{method}-{condition}-{replicate}.mil.reverse.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/min/{method}-{condition}-{replicate}.min.forward.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("uniquemappedtracks/min/{method}-{condition}-{replicate}.min.reverse.uniquemapped.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/raw/{method}-{condition}-{replicate}.raw.forward.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/raw/{method}-{condition}-{replicate}.raw.reverse.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/mil/{method}-{condition}-{replicate}.mil.forward.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/mil/{method}-{condition}-{replicate}.mil.reverse.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/min/{method}-{condition}-{replicate}.min.forward.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("globaltracks/min/{method}-{condition}-{replicate}.min.reverse.global.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/raw/{method}-{condition}-{replicate}.raw.forward.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/raw/{method}-{condition}-{replicate}.raw.reverse.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/mil/{method}-{condition}-{replicate}.mil.forward.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/mil/{method}-{condition}-{replicate}.mil.reverse.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/min/{method}-{condition}-{replicate}.min.forward.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("centeredtracks/min/{method}-{condition}-{replicate}.min.reverse.centered.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/raw/{method}-{condition}-{replicate}.raw.forward.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/raw/{method}-{condition}-{replicate}.raw.reverse.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/mil/{method}-{condition}-{replicate}.mil.forward.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/mil/{method}-{condition}-{replicate}.mil.reverse.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/min/{method}-{condition}-{replicate}.min.forward.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("fiveprimetracks/min/{method}-{condition}-{replicate}.min.reverse.fiveprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/raw/{method}-{condition}-{replicate}.raw.forward.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/raw/{method}-{condition}-{replicate}.raw.reverse.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/mil/{method}-{condition}-{replicate}.mil.forward.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/mil/{method}-{condition}-{replicate}.mil.reverse.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/min/{method}-{condition}-{replicate}.min.forward.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("threeprimetracks/min/{method}-{condition}-{replicate}.min.reverse.threeprime.bw", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("coverage/{method}-{condition}-{replicate}.bed", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("tracks/{condition}.reparation.gff", zip, condition=samples["condition"]),
-          expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+          get_wigfiles,
           "qc/multi/multiqc_report.html",
-          "xtail/newAnnotation.gff",
-          "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "tracks/potentialStopCodons.gff",
           "tracks/potentialStartCodons.gff",
           "tracks/potentialAlternativeStartCodons.gff",
           "tracks/potentialRibosomeBindingSite.gff",
-          "tracks/color/potentialStartCodons.gff",
           "auxiliary/annotation_total.xlsx",
           "auxiliary/annotation_unique.xlsx",
           "auxiliary/total_read_counts.xlsx",
           "auxiliary/unique_read_counts.xlsx",
           "auxiliary/samples.xlsx",
           "auxiliary/summary.xlsx",
-          unpack(getContrast),
-          unpack(getContrastXtail),
-          unpack(getContrastRiborex)
+          "figures/heatmap_SpearmanCorr_readCounts.pdf",
 
 onsuccess:
     print("Done, no error")
 
-#Preprocessing
+# Preprocessing
 include: "rules/preprocessing.smk"
-#Adaper removal and quality control
+# Adaper removal and quality control
 include: "rules/trimming.smk"
-#removal of reads mapping to ribosomal rna genes
+# removal of reads mapping to ribosomal rna genes
 include: "rules/rrnafiltering.smk"
-#mapping
+# mapping
 include: "rules/mappingsingleend.smk"
 include: "rules/mappingauxiliary.smk"
-#Visualization
+# Visualization
 include: "rules/visualization.smk"
 include: "rules/merge.smk"
-#reparation
+# reparation
 include: "rules/reparation.smk"
-#xtail
-include: "rules/xtail.smk"
-#metagene
+# metagene
 include: "rules/metageneprofiling.smk"
 include: "rules/auxiliary.smk"
-#multiqc
+# multiqc
 include: "rules/qcauxiliary.smk"
 include: "rules/qcsingleend.smk"
-#report
-#include: "rules/report.smk"
+
+if DIFFEXPRESS.lower() == "on":
+    # xtail
+    include: "rules/xtail.smk"
+
+if DEEPRIBO.lower() == "on":
+    #deepribo
+    include: "rules/deepribo.smk"
