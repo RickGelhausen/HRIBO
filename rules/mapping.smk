@@ -6,12 +6,10 @@ rule genomeSegemehlIndex:
     conda:
         "../envs/segemehl.yaml"
     threads: 20
-    params:
-        indexpath=lambda wildcards: ("NOTSET" if not INDEXPATH else (INDEXPATH))
     log:
         "logs/genomeIndex.log"
     shell:
-        "if [ -d {params.indexpath} ]; then ln -T -s {params.indexpath} {output.index}; echo \"Index linked\"; else mkdir -p genomeSegemehlIndex; echo \"Computing Segemehl index\"; segemehl.x --threads {threads} -x {output.index} -d {input.genome} 2> {log}; fi"
+        "mkdir -p genomeSegemehlIndex; echo \"Computing Segemehl index\"; segemehl.x --threads {threads} -x {output.index} -d {input.genome} 2> {log}"
 
 rule map:
     input:
