@@ -33,7 +33,7 @@ rule filterAll:
 
 rule reannotatedORFs:
     input:
-        annotation="annotation/annotation.gtf",
+        annotation=rules.retrieveAnnotation.output,
         combined="tracks/combined.gff"
     output:
         report("tracks/combined_annotated.gff", caption="../report/combined_annotation.rst", category="Novel ORFs")
@@ -46,7 +46,7 @@ rule reannotatedORFs:
 rule newAnnotation:
     input:
         newOrfs="tracks/combined_annotated.gff",
-        currentAnnotation="annotation/annotation.gtf"
+        currentAnnotation=rules.retrieveAnnotation.output
     output:
         "xtail/totalAnnotation.gff"
     conda:

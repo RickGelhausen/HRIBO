@@ -5,6 +5,7 @@ import itertools as iter
 from snakemake.utils import validate, min_version
 min_version("5.5.1")
 
+
 ADAPTERS=config["adapter"]
 INDEXPATH=config["genomeindexpath"]
 CODONS=config["alternativestartcodons"]
@@ -45,8 +46,8 @@ def getContrastRiborex(wildcards):
 
 rule all:
     input:
-        expand("deepribo/{condition}-{replicate}/predictions.csv", zip, condition=samples.loc[samples["method"] == "RIBO", "condition"], replicate=samples.loc[samples["method"] == "RIBO", "replicate"])
-
+        "auxiliary/predictions_deepribo.xlsx"
+        
 onsuccess:
     print("Done, no error")
 
