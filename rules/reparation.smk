@@ -54,4 +54,4 @@ rule concatReparation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/concatGFF.py {input} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input} -o {output}"

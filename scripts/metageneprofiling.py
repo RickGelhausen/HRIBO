@@ -23,7 +23,7 @@ def get_start_codons(input_gff_filepath):
         gffreader = csv.reader(csvfile, delimiter='\t')
         for entry in gffreader:
             #filter empty and comment lines 
-            if (not (entry) or not entry[0].startswith('#')):
+            if (not len(entry) == 0 and not entry[0].startswith('#')):
                 gfftype = entry[2]
                 if gfftype == "CDS":
                     seqid = entry[0]

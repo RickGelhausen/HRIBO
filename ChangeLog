@@ -2,8 +2,11 @@
 
 200130 Rick Gelhausen & Florian Eggenhofer
  + integration of deepribo
- + refactoring of scripts folder
+ + added metagene profiling
  + added pseudogene read counting
+ + refactoring of scripts folder
+ + renamed summary.xlsx -> predictions_reparation.xlsx
+ + removal of unneeded dependencies
 
 ##### version 1.2.0
 

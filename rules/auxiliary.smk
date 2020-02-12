@@ -227,7 +227,7 @@ rule createExcelSummary:
         reads="auxiliary/prediction_annotation.gtf",
         genome="genomes/genome.fa"
     output:
-        report("auxiliary/summary.xlsx", caption="../report/summary.rst", category="Summary table")
+        report("auxiliary/predictions_reparation.xlsx", caption="../report/summary.rst", category="Summary table")
     conda:
         "../envs/excel.yaml"
     threads: 1

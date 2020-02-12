@@ -35,53 +35,31 @@ sampleSheet <- read.csv(file=options$sample_file_path ,header=TRUE, sep="\t", st
 
 #create condition vector
 constraststring <- gsub("contrasts/", "", options$contrast)
-#print(constraststring)
 contrastconditions <- unlist(strsplit(constraststring,"-"))
 cond1 <- contrastconditions[1]
 cond2 <- contrastconditions[2]
 
-print("Conditions:")
-print(cond1)
-print(cond2)
 
 # split data frame into RIBO and RNA
 RIBO <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 
-print("countsheader:")
 countsheader <- colnames(counts)
-print(countsheader)
 countsheader <- countsheader[grepl("RIBO", countsheader)]
-print(countsheader)
 replicatescondition1 <- length(grep(paste("-",cond1,"-",sep=""), countsheader))
 replicatescondition2 <- length(grep(paste("-",cond2,"-",sep=""), countsheader))
-print("replicatesconditions:")
-print(replicatescondition1)
-print(replicatescondition2)
 
 #numberofreplicates <- max(sampleSheet$replicate)
 #contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)
 conditionsvector1 <- rep(cond1,each=replicatescondition1)
 conditionsvector2 <- rep(cond2,each=replicatescondition2)
-print("conditionvectors:")
-print(conditionsvector1)
-print(conditionsvector2)
 contrastconditionsvector <- c(conditionsvector1, conditionsvector2)
-print(contrastconditionsvector)
 
-print("XTAIL START")
 # run xtail analysis
-print(RNA)
-print(RIBO)
-print(contrastconditionsvector)
-print(xtail(RNA, RIBO, contrastconditionsvector))
 test.results <- xtail(RNA, RIBO, contrastconditionsvector)
-print("XTAIL STOP")
-print(test.results)
 
 # turn results into table
 test.tab <- resultsTable(test.results, log2FCs = TRUE)
-print(test.tab)
 # write results into file
 write.csv(test.tab, options$xtail_result_path, quote = F)
 

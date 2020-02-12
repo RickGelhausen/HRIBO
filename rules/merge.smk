@@ -18,7 +18,7 @@ rule mergeAll:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/concatGFF.py {input.mergedGff} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input.mergedGff} -o {output}"
 
 rule filterAll:
     input:
@@ -53,7 +53,7 @@ rule newAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/concatGFF.py {input.newOrfs} {input.currentAnnotation} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input.newOrfs} {input.currentAnnotation} -o {output}"
 
 rule uniteAnnotation:
     input:
