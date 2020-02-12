@@ -1,0 +1,9 @@
+method	condition	replicate	fastqFile1	fastqFile2
+RIBO	A	1	fastq/RIBO-A-1_R1.fastq.gz	fastq/RIBO-A-1_R2.fastq.gz
+RIBO	A	2	fastq/RIBO-A-2_R1.fastq.gz	fastq/RIBO-A-2_R2.fastq.gz
+RIBO	B	1	fastq/RIBO-B-1_R1.fastq.gz	fastq/RIBO-B-1_R2.fastq.gz
+RIBO	B	2	fastq/RIBO-B-2_R1.fastq.gz	fastq/RIBO-B-2_R2.fastq.gz
+RNA	A	1	fastq/RNA-A-1_R1.fastq.gz	fastq/RNA-A-1_R2.fastq.gz
+RNA	A	2	fastq/RNA-A-2_R1.fastq.gz	fastq/RNA-A-2_R2.fastq.gz
+RNA	B	1	fastq/RNA-B-1_R1.fastq.gz	fastq/RNA-B-1_R2.fastq.gz
+RNA	B	2	fastq/RNA-B-2_R1.fastq.gz	fastq/RNA-B-2_R2.fastq.gz
