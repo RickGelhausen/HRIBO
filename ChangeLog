@@ -7,6 +7,7 @@
  + refactoring of scripts folder
  + renamed summary.xlsx -> predictions_reparation.xlsx
  + removal of unneeded dependencies
+ + Refactored Snakefiles
 
 ##### version 1.2.0
 
