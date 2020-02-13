@@ -79,7 +79,7 @@ if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
           "auxiliary/total_read_counts.xlsx",
           "auxiliary/unique_read_counts.xlsx",
           "auxiliary/samples.xlsx",
-          "auxiliary/summary.xlsx",
+          "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "auxiliary/predictions_deepribo.xlsx",
           unpack(getContrast),
@@ -102,7 +102,7 @@ elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
           "auxiliary/total_read_counts.xlsx",
           "auxiliary/unique_read_counts.xlsx",
           "auxiliary/samples.xlsx",
-          "auxiliary/summary.xlsx",
+          "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "auxiliary/predictions_deepribo.xlsx"
 
@@ -122,7 +122,7 @@ elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
           "auxiliary/total_read_counts.xlsx",
           "auxiliary/unique_read_counts.xlsx",
           "auxiliary/samples.xlsx",
-          "auxiliary/summary.xlsx",
+          "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           unpack(getContrast),
           unpack(getContrastXtail),
@@ -144,7 +144,7 @@ else:
           "auxiliary/total_read_counts.xlsx",
           "auxiliary/unique_read_counts.xlsx",
           "auxiliary/samples.xlsx",
-          "auxiliary/summary.xlsx",
+          "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
 
 onsuccess:

@@ -80,7 +80,7 @@ def getContrastRiborex(wildcards):
             "auxiliary/total_read_counts.xlsx",
             "auxiliary/unique_read_counts.xlsx",
             "auxiliary/samples.xlsx",
-            "auxiliary/summary.xlsx",
+            "auxiliary/predictions_reparation.xlsx",
             "figures/heatmap_SpearmanCorr_readCounts.pdf",
             "auxiliary/predictions_deepribo.xlsx",
             unpack(getContrast),
@@ -103,7 +103,7 @@ def getContrastRiborex(wildcards):
             "auxiliary/total_read_counts.xlsx",
             "auxiliary/unique_read_counts.xlsx",
             "auxiliary/samples.xlsx",
-            "auxiliary/summary.xlsx",
+            "auxiliary/predictions_reparation.xlsx",
             "figures/heatmap_SpearmanCorr_readCounts.pdf",
             "auxiliary/predictions_deepribo.xlsx"
 
@@ -123,7 +123,7 @@ def getContrastRiborex(wildcards):
             "auxiliary/total_read_counts.xlsx",
             "auxiliary/unique_read_counts.xlsx",
             "auxiliary/samples.xlsx",
-            "auxiliary/summary.xlsx",
+            "auxiliary/predictions_reparation.xlsx",
             "figures/heatmap_SpearmanCorr_readCounts.pdf",
             unpack(getContrast),
             unpack(getContrastXtail),
@@ -145,7 +145,7 @@ def getContrastRiborex(wildcards):
             "auxiliary/total_read_counts.xlsx",
             "auxiliary/unique_read_counts.xlsx",
             "auxiliary/samples.xlsx",
-            "auxiliary/summary.xlsx",
+            "auxiliary/predictions_reparation.xlsx",
             "figures/heatmap_SpearmanCorr_readCounts.pdf",
 
   onsuccess:
