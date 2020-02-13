@@ -1,6 +1,6 @@
 ![HRIBO](HRIBO.png)
 
-High-throughput annotation by Ribo-seq
+# High-throughput annotation by Ribo-seq
 
 
 HRIBO can be installed with all dependencies via [conda](https://conda.io/docs/install/quick.html). Once you have conda installed simply type:
