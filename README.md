@@ -1,4 +1,4 @@
-![HRIBO](HRIBO.png)
+<img src="HRIBO.png" width="620">
 
 # High-throughput annotation by Ribo-seq
 
