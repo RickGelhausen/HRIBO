@@ -1,0 +1,8 @@
+# Adapter sequence used
+adapter: ""
+samples: "HRIBO/samples.tsv"
+alternativestartcodons: "GTG,TTG"
+# Differential expression: on / off
+differentialexpression: "off"
+# Deepribo predictions: on / off
+deepribo: "off"

@@ -5,9 +5,10 @@ idx=$1
 timestamp=$(date +"%d-%m-%y")
 echo "${timestamp}"
 
-report="${idx}report_${timestamp}"
-rm -rf $report
+report="${idx}report_HRIBO1.3.2_${timestamp}"
+
 mkdir -p $report
+mkdir -p "${report}/genome-browser/features/"
 mkdir -p "${report}/supplementary/metagene/centered/min"
 mkdir -p "${report}/supplementary/metagene/centered/mil"
 mkdir -p "${report}/supplementary/metagene/fiveprime/min"
@@ -30,7 +31,7 @@ cp -r auxiliary/predictions_deepribo.xlsx "${report}/ORF-predictions/predictions
 cp -r auxiliary/predictions_reparation.xlsx "${report}/ORF-predictions/predictions_reparation.xlsx"
 
 cp -r tracks/potential*.gff "${report}/genome-browser/features/"
-cp -r annotation/annotation.gtf "${report}/genome-browser/annotation.gff"
+cp -r annotation/annotation.gff "${report}/genome-browser/annotation.gff"
 cp -r genomes/genome.fa "${report}/genome-browser/genome.fa"
 
 cp -r figures/heatmap_SpearmanCorr_readCounts.pdf "${report}/quality-control"
@@ -55,5 +56,4 @@ cp -r xtail/*.pdf "${report}/differential-expression/xtail/"
 cp -r riborex/*_sorted.csv "${report}/differential-expression/riborex/"
 cp -r riborex/*_significant.csv "${report}/differential-expression/riborex/"
 
-rm -f "${report}.zip"
 zip -r "${report}.zip" $report

@@ -1,0 +1,3 @@
+method	condition	replicate	fastqFile
+RIBO	GLY	1	"fastq/RIBO-PAO1-gly-1.fastq.gz"
+RNA	GLY	1	"fastq/RNA-PAO1-gly-1.fastq.gz"
