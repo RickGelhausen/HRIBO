@@ -8,7 +8,7 @@ rule rrnaannotation:
     threads: 1
     shell:
         """
-        mkdir -p annotation; awk -F'\\t' '$3 == "rRNA"' annotation/annotation.gtf | awk -F'\\t' '{{print $1 FS $4 FS $5 FS "." FS "." FS $7}}' > {output.annotation}
+        mkdir -p annotation; awk -F'\\t' '$3 == "rRNA"' {input.annotation} | awk -F'\\t' '{{print $1 FS $4 FS $5 FS "." FS "." FS $7}}' > {output.annotation}
         """
 
 rule rrnafilter2:
