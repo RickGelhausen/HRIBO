@@ -56,4 +56,6 @@ cp -r xtail/*.pdf "${report}/differential-expression/xtail/"
 cp -r riborex/*_sorted.csv "${report}/differential-expression/riborex/"
 cp -r riborex/*_significant.csv "${report}/differential-expression/riborex/"
 
+cp -r metageneprofiling "${report}"
+
 zip -r "${report}.zip" $report
