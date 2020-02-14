@@ -157,8 +157,7 @@ include: "rules/trimming.smk"
 # removal of reads mapping to ribosomal rna genes
 include: "rules/rrnafiltering.smk"
 # mapping
-include: "rules/mappingsingleend.smk"
-include: "rules/mappingauxiliary.smk"
+include: "rules/mapping.smk"
 # Visualization
 include: "rules/visualization.smk"
 include: "rules/merge.smk"

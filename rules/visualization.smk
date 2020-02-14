@@ -98,36 +98,6 @@ rule bamindex:
     shell:
         "samtools index -@ {threads} maplink/{params.prefix}"
 
-#rule wigrev:
-#    input:
-#        bam=rules.maplink.output,
-#        genomeSize=rules.genomeSize.output,
-#        bamIndex=rules.bamindex.output
-#    output:
-#        rev=report("tracks/{method}-{condition}-{replicate}.rev.bw", caption="../report/wig.rst", category="Mapped tracks")
-#    conda:
-#        "../envs/wig.yaml"
-#    threads: 5
-#    params:
-#        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
-#    shell:
-#        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --scaleFactor=-1 --binSize=1 --smoothLength=0 --filterRNAstrand forward -b {input.bam} -o {output.rev};"
-
-#rule wigfwd:
-#    input:
-#        bam=rules.maplink.output,
-#        genomeSize=rules.genomeSize.output,
-#        bamIndex=rules.bamindex.output
-#    output:
-#        fwd=report("tracks/{method}-{condition}-{replicate}.fwd.bw", caption="../report/wig.rst", category="Mapped tracks")
-#    conda:
-#        "../envs/wig.yaml"
-#    threads: 5
-#    params:
-#        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
-#    shell:
-#        "mkdir -p tracks; bamCoverage --normalizeUsing BPM -p {threads} --binSize=1 --smoothLength=0 --filterRNAstrand reverse -b {input.bam} -o {output.fwd};"
-
 rule totalmappedbamindex:
     input:
         rules.sammultitobam.output,

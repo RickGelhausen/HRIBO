@@ -5,7 +5,6 @@ rule fastqcraw:
     output:
         html="qc/1raw/{method}-{condition}-{replicate}-raw_fastqc.html",
         zip="qc/1raw/{method}-{condition}-{replicate}-raw_fastqc.zip"
-        #report("qc/1raw/{method}-{condition}-{replicate}-raw.html", caption="../report/fastqcraw.rst", category="Input quality control")
     conda:
         "../envs/fastqc.yaml"
     params:
@@ -20,7 +19,6 @@ rule fastqctrimmed:
     output:
         html="qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html",
         zip="qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.zip"
-        #report("qc/2trimmed/{method}-{condition}-{replicate}-trimmed.html", caption="../report/fastqctrimmed.rst", category="Trimming")
     conda:
         "../envs/fastqc.yaml"
     threads: 8
@@ -42,7 +40,6 @@ rule multiqc:
         expand("qc/rrnainallaligned/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/rrnainuniquelyaligned/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/rrnainall/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
- #       expand("qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")
     params:

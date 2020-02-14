@@ -8,7 +8,6 @@ rule fastqcraw:
         zip1="qc/0raw_Q/{method}-{condition}-{replicate}-raw-Q_fastqc.zip",
         html2="qc/1raw_P/{method}-{condition}-{replicate}-raw-P_fastqc.html",
         zip2="qc/1raw_P/{method}-{condition}-{replicate}-raw-P_fastqc.zip"
-        #report("qc/1raw/{method}-{condition}-{replicate}-raw.html", caption="../report/fastqcraw.rst", category="Input quality control")
     conda:
         "../envs/fastqc.yaml"
     params:
@@ -29,7 +28,6 @@ rule fastqctrimmed:
     output:
         html="qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html",
         zip="qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.zip"
-        #report("qc/2trimmed/{method}-{condition}-{replicate}-trimmed.html", caption="../report/fastqctrimmed.rst", category="Trimming")
     conda:
         "../envs/fastqc.yaml"
     threads: 8
@@ -52,7 +50,6 @@ rule multiqc:
         expand("qc/rrnainallaligned/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/rrnainuniquelyaligned/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         expand("qc/rrnainall/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
- #       expand("qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         "qc/multi/multiqc_report.html"
     params:

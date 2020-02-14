@@ -125,20 +125,6 @@ rule rrnauniquefeaturescounts:
     shell:
         "mkdir -p qc/rrnainuniquelyaligned; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
 
-
-#rule ncrnafeaturescounts:
-#   input:
-#       annotation={rules.featurecountAnnotation.output},
-#       bam="bam/{method}-{condition}-{replicate}.bam"
-#   output:
-#       txt="qc/ncrnafeaturecount/{method}-{condition}-{replicate}.txt",
-#   conda:
-#       "../envs/subread.yaml"
-#   threads: 8
-#   shell:
-#       "mkdir -p qc/ncrnarnafeaturecount; featureCounts -T {threads} -t ncRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
-
-
 rule coveragedepth:
     input:
         "bam/{method}-{condition}-{replicate}.bam"

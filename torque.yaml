@@ -6,29 +6,17 @@ __default__:
   erroroutputdir : "$PWD/logs"
 
 # auxillary.smk
-processAnnotation:
+enrichAnnotation:
+  resources : 'nodes=1:ppn=1,pmem=4'
+  qname: "short"
+
+unambigousAnnotation:
   resources : 'nodes=1:ppn=1,pmem=4'
   qname: "short"
 
 samplesToExcel:
   resources : 'nodes=1:ppn=1,pmem=1'
   qname: "short"
-
-enrichAnnotation:
-  resources : 'nodes=1:ppn=1,pmem=4'
-  qname: "short"
-
-generateMetageneRoiStart:
-  resources : 'nodes=1:ppn=1,pmem=8'
-
-generateMetageneRoiStop:
-  resources : 'nodes=1:ppn=1,pmem=8'
-
-psiteOffsetsStart:
-  resources : 'nodes=1:ppn=1,pmem=8'
-
-psiteOffsetsStop:
-  resources : 'nodes=1:ppn=1,pmem=8'
 
 generateCombinedReadCounts:
   resources : 'nodes=1:ppn=5,pmem=5'
@@ -39,7 +27,7 @@ generateAnnotationTotalReadCounts:
   qname: "short"
 
 generateAnnotationUniqueReadCounts:
-  resources : 'nodes=1:ppn=5,pmem=10'
+  resources : 'nodes=1:ppn=5,pmem=5'
   qname: "short"
 
 mapPredictionReads:
@@ -54,10 +42,6 @@ mapUniqueReads:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-generateUniqAnnotation:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
 totalMappedReads:
   resources : 'nodes=1:ppn=1,pmem=8'
 
@@ -66,18 +50,6 @@ uniqueMappedReads:
   qname: "short"
 
 finalMappedReads:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-annotationToBed:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-createExcelTotalAnnotationReadCount:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-createExcelUniqueAnnotationReadCount:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
@@ -90,6 +62,70 @@ createExcelUniqueAnnotation:
   qname: "short"
 
 createExcelSummary:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+createExcelTotalAnnotationReadCount:
+  resources : 'nodes=1:ppn=5,pmem=5'
+  qname: "short"
+
+createExcelUniqueAnnotationReadCount:
+  resources : 'nodes=1:ppn=5,pmem=5'
+  qname: "short"
+
+# deepribo.smk
+deepriboGetModel:
+  resources : 'nodes=1:ppn=1,pmem=4'
+  qname: "short"
+
+asiteOccupancy:
+  resources : 'nodes=1:ppn=1,pmem=10'
+  qname: "short"
+
+coverage:
+  resources : 'nodes=1:ppn=1,pmem=10'
+  qname: "short"
+
+parseDeepRibo:
+  resources : 'nodes=1:ppn=1,pmem=10'
+  qname: "short"
+
+parameterEstimation:
+  resources : 'nodes=1:ppn=1,pmem=10'
+  qname: "short"
+
+predictDeepRibo:
+  resources : 'nodes=1:ppn=10,pmem=4'
+  qname: "long"
+
+deepriboGFF:
+  resources : 'nodes=1:ppn=1,pmem=4'
+  qname: "short"
+
+concatDeepRibo:
+  resources : 'nodes=1:ppn=1,pmem=4'
+  qname: "short"
+
+allDeepRibo:
+  resources : 'nodes=1:ppn=1,pmem=4'
+  qname: "short"
+
+filterDeepRibo:
+  resources : 'nodes=1:ppn=1,pmem=4'
+  qname: "short"
+
+generateAnnotationDeepRiboReadCounts:
+  resources : 'nodes=1:ppn=5,pmem=5'
+
+mapDeepRiboReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+mappedReadsDeepRibo:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+createExcelSummaryDeepRibo:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
@@ -107,10 +143,10 @@ samstrandswap:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-samtobam:
+sammultitobam:
   resources : 'nodes=1:ppn=20,pmem=2'
 
-sammultitobam:
+samtobam:
   resources : 'nodes=1:ppn=20,pmem=2'
 
 maplink:
@@ -118,7 +154,7 @@ maplink:
   qname: "short"
 
 
-# merge + tis
+# merge.smk
 mergeConditions:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
@@ -139,6 +175,16 @@ newAnnotation:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
+uniteAnnotation:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+# metageneprofiling.smk
+normalizedmetageneprofiling:
+  resources : 'nodes=1:ppn=1,pmem=20'
+
+metageneprofiling:
+  resources : 'nodes=1:ppn=1,pmem=20'
 
 # preprocessing.smk
 retrieveGenome:
@@ -150,7 +196,7 @@ retrieveAnnotation:
   qname: "short"
 
 # qc
-fastqcmapped:
+fastqcunique:
   resources : 'nodes=1:ppn=8,pmem=8'
   qname: "short"
 
@@ -174,6 +220,10 @@ gff2gtf:
   resources : 'nodes=1:ppn=1,pmem=4'
   qname: "short"
 
+featurecountAnnotation:
+  resources : 'nodes=1:ppn=8,pmem=2'
+  qname: "short"
+
 featurescounts:
   resources : 'nodes=1:ppn=8,pmem=2'
   qname: "short"
@@ -182,7 +232,7 @@ trnafeaturescounts:
   resources : 'nodes=1:ppn=8,pmem=2'
   qname: "short"
 
-rrnauniquefeaturescounts:
+norrnafeaturescounts:
   resources : 'nodes=1:ppn=8,pmem=2'
   qname: "short"
 
@@ -190,11 +240,7 @@ rrnatotalfeaturescounts:
   resources : 'nodes=1:ppn=8,pmem=2'
   qname: "short"
 
-ncrnafeaturescounts:
-  resources : 'nodes=1:ppn=8,pmem=2'
-  qname: "short"
-
-norrnafeaturescounts:
+rrnauniquefeaturescounts:
   resources : 'nodes=1:ppn=8,pmem=2'
   qname: "short"
 
@@ -206,50 +252,13 @@ multiqc:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-# maplink.smk + tis
-maplink:
-  resources : 'nodes=1:ppn=1,pmem=1'
-  qname: "short"
-
-ribomaplink:
-  resources : 'nodes=1:ppn=1,pmem=1'
-  qname: "short"
-
-ribobamindexlink:
-  resources : 'nodes=1:ppn=1,pmem=1'
-  qname: "short"
-
-rnamaplink:
-  resources : 'nodes=1:ppn=1,pmem=1'
-  qname: "short"
-
-rnabamindexlink:
-  resources : 'nodes=1:ppn=1,pmem=1'
-  qname: "short"
-
-tismaplink:
-  resources : 'nodes=1:ppn=1,pmem=1'
-  qname: "short"
-
-tisbamindexlink:
-  resources : 'nodes=1:ppn=1,pmem=1'
-  qname: "short"
-
-rnatismaplink:
-  resources : 'nodes=1:ppn=1,pmem=1'
-  qname: "short"
-
-rnatisbamindexlink:
-  resources : 'nodes=1:ppn=1,pmem=1'
-  qname: "short"
-
-# reparation
-reparation:
-  resources : 'nodes=1:ppn=12,pmem=3'
-
+# reparation.smk
 uniprotDBRetrieve:
   resources : 'nodes=1:ppn=1,pmem=1'
   qname: "short"
+
+reparation:
+  resources : 'nodes=1:ppn=12,pmem=3'
 
 reparationGFF:
   resources : 'nodes=1:ppn=1,pmem=8'
@@ -258,25 +267,6 @@ reparationGFF:
 concatReparation:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
-
-# ribotish
-ribotish:
-  resources : 'nodes=1:ppn=10,pmem=2'
-
-ribotishQualityTIS:
-  resources : 'nodes=1:ppn=10,pmem=2'
-
-ribotishQualityRIBO:
-  resources : 'nodes=1:ppn=10,pmem=2'
-
-ribotishAnnotation:
-  resources : 'nodes=1:ppn=1,pmem=4'
-  qname: "short"
-
-ribotishGFF:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
 
 # report
 xtailreport:
@@ -293,21 +283,14 @@ reparationreport:
 
 
 # rrnafiltering.smk
-rrnaretrieve:
-  resources : 'nodes=1:ppn=1,pmem=1'
-  qname: "short"
+rrnaannotation:
+  resources : 'nodes=1:ppn=8,pmem=2'
 
-rrnaindex:
-  resources : 'nodes=1:ppn=1,pmem=20'
-
-rrnafilter:
+rrnafilter2:
   resources : 'nodes=1:ppn=20,pmem=2'
 
 
 # trimming.smk
-mergePairs:
-  resources : 'nodes=1:ppn=5,pmem=4'
-
 linktrim:
   resources : 'nodes=1:ppn=1,pmem=1'
   qname: "short"
@@ -315,6 +298,9 @@ linktrim:
 trim:
   resources : 'nodes=1:ppn=20,pmem=2'
 
+mergeTrim:
+  parallelenvironment : 'smp 5'
+  memory: "h_vmem=5G"
 
 # visualization
 genomeSamToolsIndex:
@@ -323,9 +309,6 @@ genomeSamToolsIndex:
 genomeSize:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
-
-bamindex:
-  resources : 'nodes=1:ppn=20,pmem=2'
 
 reversecomplementGenome:
   resources : 'nodes=1:ppn=1,pmem=8'
@@ -347,16 +330,32 @@ rbsTrack:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
+bamindex:
+  resources : 'nodes=1:ppn=20,pmem=2'
+
 totalmappedbamindex:
+  resources : 'nodes=1:ppn=20,pmem=2'
+
+uniquemappedbamindex:
   resources : 'nodes=1:ppn=20,pmem=2'
 
 totalmappedreadcountstats:
   resources : 'nodes=1:ppn=1,pmem=8'
 
+uniquemappedreadcountstats:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
 totalmappedminreadcounts:
   resources : 'nodes=1:ppn=1,pmem=8'
 
+uniquemappedminreadcounts:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
 totalmappedwig:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+uniquemappedwig:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
@@ -381,19 +380,6 @@ totalmappedwigtobigwigmilforward:
   qname: "short"
 
 totalmappedwigtobigwigmilreverse:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-uniquemappedbamindex:
-  resources : 'nodes=1:ppn=20,pmem=2'
-
-uniquemappedreadcountstats:
-  resources : 'nodes=1:ppn=1,pmem=8'
-
-uniquemappedminreadcounts:
-  resources : 'nodes=1:ppn=1,pmem=8'
-
-uniquemappedwig:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
@@ -554,15 +540,7 @@ annotationBigBed:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
-colorBigWig:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-colorGFF:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-# xtail
+# xtail.smk
 longestTranscript:
   resources : 'nodes=1:ppn=1,pmem=8'
 
@@ -586,13 +564,3 @@ riborexresults:
 
 xtailclassicnormalize:
   resources : 'nodes=1:ppn=1,pmem=8'
-
-# deepribo
-predictDeepRibo:
-  resources : 'nodes=1:ppn=10,pmem=3'
-
-parseDeepRibo:
-  resources : 'nodes=1:ppn=1,pmem=20'
-
-parameterEstimation:
-  resources : 'nodes=1:ppn=1,pmem=12'
