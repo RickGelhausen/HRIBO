@@ -6,11 +6,15 @@
 [![Snakemake](https://img.shields.io/badge/snakemake-≥5.10.0-brightgreen.svg)](https://snakemake.bitbucket.io) 
 [![Documentation Status](https://readthedocs.org/projects/hribo/badge/?version=latest)](http://hribo.readthedocs.io/?badge=latest)
 
+We present HRIBO (High-throughput annotation by Ribo-seq), a workflow to enable reproducible and high-throughput analysis of bacterial and archeal Ribo-seq data. The workflow performs all required pre-processing steps and quality control.  Importantly, HRIBO outputs annotation-independent ORFpredictions based on two complementary prokaryotic-focused tools, and integrates them with additional computed features. This facilitates both the rapid discovery of ORFs and their prioritization for functional characterization.
+
+For a detailed description of this workflow, the installation, usage and exampkes, please refer to the [ReadTheDocs documentation](http://hribo.readthedocs.io/?badge=latest).
+
 HRIBO can be installed with all dependencies via [conda](https://conda.io/docs/install/quick.html). Once you have conda installed simply type:
 
-         conda create -c bioconda -c conda-forge -n HRIBO snakemake 
+         conda create -c bioconda -c conda-forge -n snakemake snakemake 
          
-         source activate HRIBO
+         source activate snakemake
 
 ### <u>Basic usage</u>
 
@@ -63,5 +67,5 @@ Edit cluster.yaml according to your queuing system and cluster hardware. The fol
 
 Once the workflow has finished you can request a automatically generated report.html file with the following command:
          
-         snakemake --report report.html
+       snakemake --report report.html
 
