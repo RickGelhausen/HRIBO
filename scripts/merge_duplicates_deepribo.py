@@ -107,7 +107,7 @@ def generate_annotation_dict(args):
         key = "%s:%s-%s:%s" % (reference_name, start, stop, strand)
 
         parent = ""
-        if "parent" in attribute_list: 
+        if "parent" in attribute_list:
             parent = attribute_list[attribute_list.index("parent")+1]
 
         if parent in parent_dict:
@@ -125,7 +125,7 @@ def generate_annotation_dict(args):
                 if "locus_tag" in attribute_list:
                     locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
 
-        else: 
+        else:
             name = "%s:%s-%s:%s" % (reference_name, start, stop, strand)
             if "name" in attribute_list:
                 name = attribute_list[attribute_list.index("name")+1]
@@ -137,7 +137,7 @@ def generate_annotation_dict(args):
                 locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
 
         annotation_dict[key] = (name, locus_tag)
-        
+
     return annotation_dict
 
 def generate_output_gff(args, overlap_dict):
@@ -220,7 +220,7 @@ def main():
                 dist_list[i] = counter
                 counter += 1
             else:
-                dist_list[i] = 0
+                dist_list[i] = 999999
 
         newDF["phase"] = dist_list
 
