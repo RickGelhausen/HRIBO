@@ -29,17 +29,17 @@ def unite_annotation(args):
             id = ""
             if "ID" in attribute_list:
                 id = attribute_list[attribute_list.index("ID")+1]
-            if id == "":
+            else:
                 print("missing ID! Check your annotation.")
-            attribute = "ID=%s;" % id
+            attribute = "".join(["%s=%s;" % (attribute_list[i], attribute_list[i+1]) for i in range(0, len(attribute_list), 2)])
         else:
             attribute_list = [x.replace(";", "") for x in list(csv.reader([attribute], delimiter=' ', quotechar='"'))[0]]
             id = ""
             if "gene_id" in attribute_list:
                 id = attribute_list[attribute_list.index("gene_id")+1]
-            if id == "":
+            else:
                 print("missing ID! Check your annotation.")
-            attribute = "ID=%s;" % id
+            attribute = "".join(["%s=%s;" % (attribute_list[i], attribute_list[i+1]) for i in range(0, len(attribute_list), 2)])
 
         rows_unite.append(nTuple(reference_name, source, feature, start, stop, score, strand, phase, attribute))
 

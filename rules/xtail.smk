@@ -23,7 +23,7 @@ rule sizeFactors:
 rule cdsNormalizedCounts:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="xtail/newAnnotation.gff",
+        annotation="tracks/updated_annotation.gff",
     output:
         raw="normalization/raw_reads.csv"
     conda:
@@ -61,6 +61,24 @@ rule xtail:
         (head -n 2 {output.table} && tail -n +3 {output.table} | sort -r -n -t',' -k 10) > {output.tablesorted};  awk -F ',' 'NR==1; (NR>1) && ($10 < 0.05 )' {output.tablesorted} > {output.tablesignificant};
         """
 
+rule xtailxlsx:
+    input:
+        annotation=rules.retrieveAnnotation.output,
+        genome=rules.retrieveGenome.output,
+        xtail_sorted="xtail/{contrast}_sorted.csv",
+        xtail_signif="xtail/{contrast}_significant.csv"
+    output:
+        xlsx_sorted="xtail/{contrast}_sorted.xlsx",
+        xlsx_signif="xtail/{contrast}_significant.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        python3 HRIBO/scripts/differential_expression_xlsx.py -a {input.annotation} -g {input.genome} --tool xtail -i {input.xtail_sorted} -o {output.xlsx_sorted}
+        python3 HRIBO/scripts/differential_expression_xlsx.py -a {input.annotation} -g {input.genome} --tool xtail -i {input.xtail_signif} -o {output.xlsx_signif}
+        """
+
 rule riborex:
     input:
         rawreads="normalization/raw_reads.csv",
@@ -80,3 +98,22 @@ rule riborexresults:
         tablesignificant=report("riborex/{contrast}_significant.csv", caption="../report/riborex.rst", category="Regulation")
     threads: 1
     shell: ("mkdir -p riborex; (head -n 2 {input.tabledeseq2} && tail -n +3 {input.tabledeseq2} | sort -r -n -t',' -k 7) > {output.tablesorted};  awk -F ',' 'NR==1; (NR>1) && ($7 < 0.05 )' {output.tablesorted} > {output.tablesignificant};")
+
+rule riborexxlsx:
+    input:
+        annotation=rules.retrieveAnnotation.output,
+        genome=rules.retrieveGenome.output,
+        riborex_sorted="riborex/{contrast}_sorted.csv",
+        riborex_signif="riborex/{contrast}_significant.csv"
+    output:
+        xlsx_sorted="riborex/{contrast}_sorted.xlsx",
+        xlsx_signif="riborex/{contrast}_significant.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        python3 HRIBO/scripts/differential_expression_xlsx.py -a {input.annotation} -g {input.genome} --tool riborex -i {input.riborex_sorted} -o {output.xlsx_sorted}
+        python3 HRIBO/scripts/differential_expression_xlsx.py -a {input.annotation} -g {input.genome} --tool riborex -i {input.riborex_signif} -o {output.xlsx_signif}
+        """
+

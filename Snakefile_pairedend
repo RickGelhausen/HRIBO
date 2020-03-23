@@ -37,7 +37,7 @@ def getContrastXtail(wildcards):
   contrastsTupleList=list((iter.combinations(conditions,2)))
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
   flat_contrasts= [item for sublist in contrasts for item in sublist]
-  elements = [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.csv") for element in flat_contrasts]
+  elements = [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
   return elements
 
 def getContrastRiborex(wildcards):
@@ -45,7 +45,7 @@ def getContrastRiborex(wildcards):
   contrastsTupleList=list((iter.combinations(conditions,2)))
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
   flat_contrasts= [item for sublist in contrasts for item in sublist]
-  elements = [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.csv") for element in flat_contrasts]
+  elements = [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
   return elements
 
 

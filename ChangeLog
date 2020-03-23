@@ -4,6 +4,8 @@
  + updated sge.yaml
  + updated torque.yaml
  + bugfixed retrieveAnnotation
+ + added xlsx output for xtail and riborex
+ + added updated annotation containing reparation predictions and the orginal annotation
  + updated manual
 
 ##### version 1.3.1

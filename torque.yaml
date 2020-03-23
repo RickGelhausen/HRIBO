@@ -564,3 +564,12 @@ riborexresults:
 
 xtailclassicnormalize:
   resources : 'nodes=1:ppn=1,pmem=8'
+
+xtailxlsx:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+riborexxlsx:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+

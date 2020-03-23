@@ -48,7 +48,7 @@ rule newAnnotation:
         newOrfs="tracks/combined_annotated.gff",
         currentAnnotation=rules.retrieveAnnotation.output
     output:
-        "xtail/totalAnnotation.gff"
+        "tracks/totalAnnotation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -57,9 +57,9 @@ rule newAnnotation:
 
 rule uniteAnnotation:
     input:
-        "xtail/totalAnnotation.gff"
+        "tracks/totalAnnotation.gff"
     output:
-        "xtail/newAnnotation.gff"
+        "tracks/updated_annotation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1

@@ -50,12 +50,13 @@ cp -r fiveprimetracks/mil/*.bw "${report}/supplementary/metagene/fiveprime/mil"
 cp -r threeprimetracks/min/*.bw "${report}/supplementary/metagene/threeprime/min"
 cp -r threeprimetracks/mil/*.bw "${report}/supplementary/metagene/threeprime/mil"
 
-cp -r xtail/*_sorted.csv "${report}/differential-expression/xtail/"
-cp -r xtail/*_significant.csv "${report}/differential-expression/xtail/"
+cp -r xtail/*_sorted.xlsx "${report}/differential-expression/xtail/"
+cp -r xtail/*_significant.xlsx "${report}/differential-expression/xtail/"
 cp -r xtail/*.pdf "${report}/differential-expression/xtail/"
-cp -r riborex/*_sorted.csv "${report}/differential-expression/riborex/"
-cp -r riborex/*_significant.csv "${report}/differential-expression/riborex/"
+cp -r riborex/*_sorted.xlsx "${report}/differential-expression/riborex/"
+cp -r riborex/*_significant.xlsx "${report}/differential-expression/riborex/"
 
+cp -r tracks/updated_annotation.gff "${report}/genome-browser/"
 cp -r metageneprofiling "${report}"
 
 zip -r "${report}.zip" $report

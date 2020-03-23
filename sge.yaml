@@ -591,3 +591,12 @@ riborexresults:
 xtailclassicnormalize:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=20G"
+
+xtailxlsx:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+riborexxlsx:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
