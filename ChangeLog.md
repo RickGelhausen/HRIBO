@@ -1,4 +1,4 @@
-### version 1.3.2 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 23.03.2020
+### version 1.3.2 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 24.03.2020
  * updated sge.yaml
  * updated torque.yaml
  * bugfixed retrieveAnnotation
