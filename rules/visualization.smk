@@ -126,65 +126,12 @@ rule uniquemappedbamindex:
     shell:
         "samtools index -@ {threads} rRNAbam/{params.prefix}"
 
-rule totalmappedreadcountstats:
-    input:
-        bam=rules.sammultitobam.output,
-        genomeSize=rules.genomeSize.output,
-        bamIndex=rules.totalmappedbamindex.output
-    output:
-        stat="bammulti/{method}-{condition}-{replicate}.readstats"
-    conda:
-        "../envs/coverage.yaml"
-    threads: 1
-    shell:
-        "mkdir -p bammulti; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat};"
-
-rule uniquemappedreadcountstats:
-    input:
-        bam=rules.samtobam.output,
-        genomeSize=rules.genomeSize.output,
-        bamIndex=rules.uniquemappedbamindex.output
-    output:
-        stat="rRNAbam/{method}-{condition}-{replicate}.readstats"
-    conda:
-        "../envs/coverage.yaml"
-    threads: 1
-    shell:
-        "mkdir -p rRNAbam; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat};"
-
-rule totalmappedminreadcounts:
-    input:
-        stats=expand("bammulti/{method}-{condition}-{replicate}.readstats", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        minreads="bammulti/minreads.txt"
-    conda:
-        "../envs/coverage.yaml"
-    threads: 1
-    params:
-        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
-    shell:
-        "mkdir -p bammulti; HRIBO/scripts/minreads.py {input.stats} > {output.minreads};"
-
-rule uniquemappedminreadcounts:
-    input:
-        stats=expand("rRNAbam/{method}-{condition}-{replicate}.readstats", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        minreads="rRNAbam/minreads.txt"
-    conda:
-        "../envs/coverage.yaml"
-    threads: 1
-    params:
-        prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
-    shell:
-        "mkdir -p rRNAbam; HRIBO/scripts/minreads.py {input.stats} > {output.minreads};"
-
 rule totalmappedwig:
     input:
         bam=rules.sammultitobam.output,
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.totalmappedbamindex.output,
-        stats="bammulti/{method}-{condition}-{replicate}.readstats",
-        min="bammulti/minreads.txt"
+        stats="readcounts/total_mapped_reads.txt"
     output:
         fwd="totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
         rev="totalmappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.wig",
@@ -199,15 +146,14 @@ rule totalmappedwig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p totalmappedtracks; mkdir -p totalmappedtracks/raw; mkdir -p totalmappedtracks/mil; mkdir -p totalmappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path totalmappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min};"
+        "mkdir -p totalmappedtracks; mkdir -p totalmappedtracks/raw; mkdir -p totalmappedtracks/mil; mkdir -p totalmappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path totalmappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
 
 rule uniquemappedwig:
     input:
         bam=rules.samtobam.output,
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.uniquemappedbamindex.output,
-        stats="rRNAbam/{method}-{condition}-{replicate}.readstats",
-        min="rRNAbam/minreads.txt"
+        stats="readcounts/unique_mapped_reads.txt"
     output:
         fwd="uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
         rev="uniquemappedtracks/raw/{method}-{condition}-{replicate}.raw.reverse.wig",
@@ -222,7 +168,7 @@ rule uniquemappedwig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p uniquemappedtracks; mkdir -p uniquemappedtracks/raw; mkdir -p uniquemappedtracks/mil; mkdir -p uniquemappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path uniquemappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix} --min_no_of_aligned_reads_file_path {input.min};"
+        "mkdir -p uniquemappedtracks; mkdir -p uniquemappedtracks/raw; mkdir -p uniquemappedtracks/mil; mkdir -p uniquemappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path uniquemappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
 
 rule totalmappedwigtobigwigrawforward:
     input:
