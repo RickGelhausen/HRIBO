@@ -18,41 +18,6 @@ samplesToExcel:
   resources : 'nodes=1:ppn=1,pmem=1'
   qname: "short"
 
-generateCombinedReadCounts:
-  resources : 'nodes=1:ppn=5,pmem=5'
-  qname: "short"
-
-generateAnnotationTotalReadCounts:
-  resources : 'nodes=1:ppn=5,pmem=10'
-  qname: "short"
-
-generateAnnotationUniqueReadCounts:
-  resources : 'nodes=1:ppn=5,pmem=5'
-  qname: "short"
-
-mapPredictionReads:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-mapTotalReads:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-mapUniqueReads:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-totalMappedReads:
-  resources : 'nodes=1:ppn=1,pmem=8'
-
-uniqueMappedReads:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-finalMappedReads:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
 createExcelTotalAnnotation:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
@@ -112,17 +77,6 @@ allDeepRibo:
 
 filterDeepRibo:
   resources : 'nodes=1:ppn=1,pmem=4'
-  qname: "short"
-
-generateAnnotationDeepRiboReadCounts:
-  resources : 'nodes=1:ppn=5,pmem=5'
-
-mapDeepRiboReads:
-  resources : 'nodes=1:ppn=1,pmem=8'
-  qname: "short"
-
-mappedReadsDeepRibo:
-  resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
 createExcelSummaryDeepRibo:
@@ -249,6 +203,50 @@ coveragedepth:
   qname: "short"
 
 multiqc:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+# readcounting.smk
+generateReparationReadCounts:
+  resources : 'nodes=1:ppn=5,pmem=5'
+  qname: "short"
+
+generateDeepRiboReadCounts:
+  resources : 'nodes=1:ppn=5,pmem=5'
+  qname: "short"
+
+generateAnnotationTotalReadCounts:
+  resources : 'nodes=1:ppn=5,pmem=10'
+  qname: "short"
+
+generateAnnotationUniqueReadCounts:
+  resources : 'nodes=1:ppn=5,pmem=5'
+  qname: "short"
+
+mapPredictionReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+mapTotalReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+mapUniqueReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+totalMappedReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
+
+uniqueMappedReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+mapDeepRiboReads:
+  resources : 'nodes=1:ppn=1,pmem=8'
+  qname: "short"
+
+maplinkReadsDeepRibo:
   resources : 'nodes=1:ppn=1,pmem=8'
   qname: "short"
 
