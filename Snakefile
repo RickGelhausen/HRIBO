@@ -169,7 +169,8 @@ include: "rules/auxiliary.smk"
 # multiqc
 include: "rules/qcauxiliary.smk"
 include: "rules/qcsingleend.smk"
-
+#readcounts
+include: "rules/readcounting.smk"
 if DIFFEXPRESS.lower() == "on":
     # xtail
     include: "rules/xtail.smk"

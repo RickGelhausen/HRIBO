@@ -173,6 +173,8 @@ include: "rules/qcauxiliary.smk"
 include: "rules/qcmerged.smk"
 #report
 #include: "rules/report.smk"
+#readcounts
+include: "rules/readcounting.smk"
 
 if DIFFEXPRESS.lower() == "on":
     # xtail

@@ -48,8 +48,8 @@ rule samplesToExcel:
 
 rule createExcelTotalAnnotation:
     input:
-        total="readcounts/total_sum_mapped_reads.txt",
-        reads="auxiliary/total_annotation.gtf",
+        total="readcounts/total_mapped_reads.txt",
+        reads="readcounts/total_annotation.gtf",
         genome="genomes/genome.fa"
     output:
         "auxiliary/annotation_total.xlsx"
@@ -61,8 +61,8 @@ rule createExcelTotalAnnotation:
 
 rule createExcelUniqueAnnotation:
     input:
-        total="readcounts/unique_sum_mapped_reads.txt",
-        reads="auxiliary/unique_annotation.gtf",
+        total="readcounts/unique_mapped_reads.txt",
+        reads="readcounts/unique_annotation.gtf",
         genome="genomes/genome.fa"
     output:
         "auxiliary/annotation_unique.xlsx"
@@ -74,8 +74,8 @@ rule createExcelUniqueAnnotation:
 
 rule createExcelSummary:
     input:
-        total="readcounts/final_sum_mapped_reads.txt",
-        reads="auxiliary/reparation_annotation.gff",
+        total="readcounts/bam_mapped_reads.txt",
+        reads="readcounts/reparation_annotation.gff",
         genome="genomes/genome.fa"
     output:
         "auxiliary/predictions_reparation.xlsx"
@@ -87,8 +87,8 @@ rule createExcelSummary:
 
 rule createExcelTotalAnnotationReadCount:
     input:
-        reads="auxiliary/total_annotation.gtf",
-        total="readcounts/total_sum_mapped_reads.txt"
+        reads="readcounts/total_annotation.gtf",
+        total="readcounts/total_mapped_reads.txt"
     output:
         "auxiliary/total_read_counts.xlsx",
     conda:
@@ -99,8 +99,8 @@ rule createExcelTotalAnnotationReadCount:
 
 rule createExcelUniqueAnnotationReadCount:
     input:
-        reads="auxiliary/unique_annotation.gtf",
-        total="readcounts/unique_sum_mapped_reads.txt"
+        reads="readcounts/unique_annotation.gtf",
+        total="readcounts/unique_mapped_reads.txt"
     output:
         "auxiliary/unique_read_counts.xlsx"
     conda:

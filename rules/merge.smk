@@ -36,7 +36,7 @@ rule reannotatedORFs:
         annotation=rules.retrieveAnnotation.output,
         reparation="tracks/reparation.gff"
     output:
-        tracks/reparation_annotated.gff"
+        "tracks/reparation_annotated.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1

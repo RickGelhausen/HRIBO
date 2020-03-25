@@ -100,7 +100,7 @@ rule mapReparationReads:
 
 rule mapDeepRiboReads:
     input:
-        reads="readcounts/annotation_deepribo_reads.raw",
+        reads="readcounts/deepribo_read_counts.raw",
         annotation="tracks/deepribo_merged.gff"
     output:
         "readcounts/deepribo_annotation.gff"

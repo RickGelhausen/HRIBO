@@ -147,8 +147,8 @@ rule filterDeepRibo:
 
 rule createExcelSummaryDeepRibo:
     input:
-        total="readcounts/deepribo_sum_mapped_reads.txt",
-        reads="auxiliary/deepribo_annotation.gff",
+        total="readcounts/bam_mapped_reads.txt",
+        reads="readcounts/deepribo_annotation.gff",
         genome="genomes/genome.fa"
     output:
         "auxiliary/predictions_deepribo.xlsx"
