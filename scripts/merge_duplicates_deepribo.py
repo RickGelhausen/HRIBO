@@ -153,7 +153,8 @@ def generate_output_gff(args, overlap_dict):
         start, stop = mid.split("-")
         evidence = set()
         cur_rank = 999999
-        cur_pred_value = -10000.0
+        #cur_pred_value = -10000.0
+        pred_values = []
         for pred, dist, attribute in value:
             if ";" in attribute and "=" in attribute:
                 attribute_list = [x for x in re.split('[;=]', attribute) if x != ""]
@@ -168,13 +169,10 @@ def generate_output_gff(args, overlap_dict):
                 print(attribute)
                 sys.exit("Attributes section of gtf/gff is wrongly formatted!")
 
-            # if rank < cur_rank:
-            #     cur_rank = rank
-            #     cur_pred_value = attribute_list[attribute_list.index("pred_value")+1]
-            pred_value = pred
-            if pred_value >= cur_pred_value:
-                cur_pred_value = pred_value
-
+            #pred_value = pred
+            #if pred_value >= cur_pred_value:
+            #    cur_pred_value = pred_value
+            pred_values.append(float(pred))
             if "condition" in attribute_list and "method" in attribute_list and "replicate" in attribute_list:
                 condition = attribute_list[attribute_list.index("condition")+1]
                 #method = attribute_list[attribute_list.index("method")+1]
@@ -191,6 +189,8 @@ def generate_output_gff(args, overlap_dict):
                 name, locus_tag = key, "na"
 
             new_attributes = "ID=%s;Name=%s;Locus_tag=%s;Pred_value=%s;Evidence=%s;" % (key, name,locus_tag,cur_pred_value, " ".join(evidence))
+ 
+        cur_pred_value = sum(pred_values) / len(pred_values)
         rows.append(nTuple(reference_name, "merged", "CDS", start, stop, cur_pred_value, strand, dist, new_attributes))
     return  pd.DataFrame.from_records(rows, columns=["seqName","source","type","start","stop","score","strand","phase","attribute"])
 
@@ -216,7 +216,7 @@ def main():
 
         counter = 1
         for i in range(len(dist_list)):
-            if dist_list[i] == -1:
+            if dist_list[i] == -1:  ## SOME ENTRIES ARE NEITHER 0 nor -1, they are not considered novel due to a lack of definition
                 dist_list[i] = counter
                 counter += 1
             else:

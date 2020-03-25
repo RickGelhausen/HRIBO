@@ -10,6 +10,7 @@ import argparse
 from collections import defaultdict
 from pprint import pprint
 import os
+import csv
 
 def init_write_wig(file_handle,library_name, strand):
     tid = "%s_%s" % (library_name, strand)
@@ -127,8 +128,8 @@ def compute_wig(bam_path,wig_file_path,library_name,genome_read_dict,genome_min_
     mil_rw_handle=open(wig_file_path_setter(wig_file_path,library_name,"mil","reverse"), "w")
     init_write_wig(mil_fw_handle,library_name,"reverse")
     for (seqid, mappings) in seqid_mapping:
-            no_of_aligned_reads = genome_read_dict[seqid]
-            min_no_of_aligned_reads = genome_min_read_dict[seqid]
+            no_of_aligned_reads = int(genome_read_dict[seqid])
+            min_no_of_aligned_reads = int(genome_min_read_dict[seqid])
             write_wig(raw_fw_handle, seqid, mappings["forward"])
             write_wig(raw_rw_handle, seqid, mappings["reverse"])
             write_wig(min_fw_handle, seqid, mappings["forward"],factor=min_no_of_aligned_reads/no_of_aligned_reads)
@@ -145,7 +146,7 @@ def compute_wig(bam_path,wig_file_path,library_name,genome_read_dict,genome_min_
 def get_read_count_dict(input_read_filepath,library_name):
     genome_read_dict = {}
     genome_min_read_dict = {}
-    with open(input_fai_filepath, newline='\n') as csvfile:
+    with open(input_read_filepath, newline='\n') as csvfile:
         tsvreader = csv.reader(csvfile, delimiter='\t')
         for entry in tsvreader:
             if entry[0]==library_name:
@@ -153,7 +154,8 @@ def get_read_count_dict(input_read_filepath,library_name):
             if entry[1] in genome_min_read_dict:
                 if genome_min_read_dict[entry[1]] < entry[2]:
                     genome_min_read_dict[entry[1]] = entry[2]
-            else genome_min_read_dict[entry[1]] = entry[2]
+            else:
+                genome_min_read_dict[entry[1]] = entry[2]
     return(genome_read_dict,genome_min_read_dict)
 
 def main():
@@ -167,10 +169,10 @@ def main():
     args = parser.parse_args()
     #parse read count files
     (genome_read_dict,genome_min_read_dict) = get_read_count_dict(args.no_of_aligned_reads_file_path,args.library_name)
-    no_of_aligned_reads_file = open(args.no_of_aligned_reads_file_path,"r")
-    no_of_aligned_reads = int(no_of_aligned_reads_file.read())
-    min_no_of_aligned_reads_file = open(args.min_no_of_aligned_reads_file_path,"r")
-    min_no_of_aligned_reads = int(min_no_of_aligned_reads_file.read())
+    #no_of_aligned_reads_file = open(args.no_of_aligned_reads_file_path,"r")
+    #no_of_aligned_reads = int(no_of_aligned_reads_file.read())
+    #min_no_of_aligned_reads_file = open(args.min_no_of_aligned_reads_file_path,"r")
+    #min_no_of_aligned_reads = int(min_no_of_aligned_reads_file.read())
     #mappings = {}
     compute_wig(args.bam_path,args.wiggle_file_path,args.library_name,genome_read_dict,genome_min_read_dict,True,args.mapping_style,11,False,False)
 if __name__ == '__main__':
