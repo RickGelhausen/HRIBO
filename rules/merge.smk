@@ -2,7 +2,7 @@ rule mergeConditions:
     input:
         reparation="tracks/{condition}.reparation.gff"
     output:
-        report("tracks/{condition}.merged.gff", caption="../report/novelmerged.rst", category="Novel ORFs")
+        "tracks/{condition}.merged.gff"
     conda:
         "../envs/bedtools.yaml"
     threads: 1
@@ -13,7 +13,7 @@ rule mergeAll:
     input:
         mergedGff=expand("tracks/{condition}.merged.gff", zip, condition=set(samples["condition"]))
     output:
-        report("tracks/all.gff", caption="../report/novelall.rst", category="Novel ORFs")
+        "tracks/all.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -24,7 +24,7 @@ rule filterAll:
     input:
         "tracks/all.gff"
     output:
-        report("tracks/combined.gff", caption="../report/combined.rst", category="Novel ORFs")
+        "tracks/reparation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -34,18 +34,18 @@ rule filterAll:
 rule reannotatedORFs:
     input:
         annotation=rules.retrieveAnnotation.output,
-        combined="tracks/combined.gff"
+        reparation="tracks/reparation.gff"
     output:
-        report("tracks/combined_annotated.gff", caption="../report/combined_annotation.rst", category="Novel ORFs")
+        tracks/reparation_annotated.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/reannotate_orfs.py -a {input.annotation} -c {input.combined} -o {output}"
+        "mkdir -p tracks; HRIBO/scripts/reannotate_orfs.py -a {input.annotation} -c {input.reparation} -o {output}"
 
 rule newAnnotation:
     input:
-        newOrfs="tracks/combined_annotated.gff",
+        newOrfs="tracks/reparation_annotated.gff",
         currentAnnotation=rules.retrieveAnnotation.output
     output:
         "tracks/totalAnnotation.gff"

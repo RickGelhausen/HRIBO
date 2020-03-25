@@ -144,55 +144,10 @@ rule filterDeepRibo:
     shell:
         "mkdir -p tracks; HRIBO/scripts/merge_duplicates_deepribo.py -i {input.ingff} -o {output} -a {input.annotation}"
 
-rule generateAnnotationDeepRiboReadCounts:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="tracks/deepribo_merged.gff"
-    output:
-        "auxiliary/annotation_deepribo_reads.raw"
-    conda:
-        "../envs/subread.yaml"
-    threads: 5
-    shell:
-        """
-        mkdir -p auxiliary
-        featureCounts -F GTF -s 1 -g ID -O -t CDS -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/annotation_deepribo_reads.raw.tmp
-        cat auxiliary/annotation_deepribo_reads.raw.tmp | sed 1,2d | awk -v var=CDS -FS'\\t' '{{print $0"\\t"var}}' >> {output}
-        rm auxiliary/annotation_deepribo_reads.raw.tmp
-        """
-
-rule mapDeepRiboReads:
-    input:
-        reads="auxiliary/annotation_deepribo_reads.raw",
-        annotation="tracks/deepribo_merged.gff"
-    output:
-        "auxiliary/deepribo_annotation.gff"
-    conda:
-        "../envs/mergetools.yaml"
-    threads: 1
-    shell:
-        """
-        mkdir -p auxiliary; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
-        """
-
-rule mappedReadsDeepRibo:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        mapped="auxiliary/deepribo_sum_mapped_reads.txt",
-        length="auxiliary/deepribo_average_read_lengths.txt"
-    conda:
-        "../envs/pytools.yaml"
-    threads: 1
-    shell:
-        "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
-
 
 rule createExcelSummaryDeepRibo:
     input:
-        total="auxiliary/deepribo_sum_mapped_reads.txt",
+        total="readcounts/deepribo_sum_mapped_reads.txt",
         reads="auxiliary/deepribo_annotation.gff",
         genome="genomes/genome.fa"
     output:
