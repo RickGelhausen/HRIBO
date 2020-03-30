@@ -83,6 +83,7 @@ def getContrastRiborex(wildcards):
             "auxiliary/predictions_reparation.xlsx",
             "figures/heatmap_SpearmanCorr_readCounts.pdf",
             "auxiliary/predictions_deepribo.xlsx",
+            rules.createOverviewTableAll.output,
             unpack(getContrast),
             unpack(getContrastXtail),
             unpack(getContrastRiborex)
@@ -105,7 +106,8 @@ def getContrastRiborex(wildcards):
             "auxiliary/samples.xlsx",
             "auxiliary/predictions_reparation.xlsx",
             "figures/heatmap_SpearmanCorr_readCounts.pdf",
-            "auxiliary/predictions_deepribo.xlsx"
+            "auxiliary/predictions_deepribo.xlsx",
+            rules.createOverviewTablePredictions.output
 
   elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
      rule all:
@@ -125,6 +127,7 @@ def getContrastRiborex(wildcards):
             "auxiliary/samples.xlsx",
             "auxiliary/predictions_reparation.xlsx",
             "figures/heatmap_SpearmanCorr_readCounts.pdf",
+            rules.createOverviewTableDiffExpr.output,
             unpack(getContrast),
             unpack(getContrastXtail),
             unpack(getContrastRiborex)
@@ -147,6 +150,8 @@ def getContrastRiborex(wildcards):
             "auxiliary/samples.xlsx",
             "auxiliary/predictions_reparation.xlsx",
             "figures/heatmap_SpearmanCorr_readCounts.pdf",
+            rules.createOverviewTableReparation.output
+
 
   onsuccess:
       print("Done, no error")

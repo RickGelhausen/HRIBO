@@ -170,8 +170,9 @@ def generate_riborex_dict(riborex_path):
         log2fc = getattr(row, "log2FoldChange")
         pvalue = getattr(row, "pvalue")
         pvalue_adj = getattr(row, "padj")
+        contrasts = getattr(row, "contrasts")
 
-        riborex_dict[gene_id] = (log2fc, pvalue, pvalue_adj)
+        riborex_dict[gene_id] = (log2fc, pvalue, pvalue_adj, contrasts)
 
     return riborex_dict
 
@@ -190,8 +191,9 @@ def generate_xtail_dict(xtail_path):
         log2fc = getattr(row, "log2FC_TE_final")
         pvalue = getattr(row, "pvalue_final")
         pvalue_adj = getattr(row, "_9")
+        contrasts = getattr(row, "contrasts")
 
-        xtail_dict[gene_id] = (log2fc, pvalue, pvalue_adj)
+        xtail_dict[gene_id] = (log2fc, pvalue, pvalue_adj, contrasts)
 
     return xtail_dict
 
@@ -397,6 +399,7 @@ def create_excel_file(args):
         reparation_probability, deepribo_rank, deepribo_score = 0, 0, 0
         riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC = 0, 0, 0
         xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC = 0, 0, 0
+        contrasts = []
         evidence = []
 
         gene_id = ""
@@ -417,14 +420,18 @@ def create_excel_file(args):
             evidence.extend(deepribo_evidence.split(" "))
 
         if key in xtail_dict:
-            xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[key]
+            xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted, contrasts = xtail_dict[key]
+            contrasts.extend(contrasts.split(" "))
         elif gene_id != "" and gene_id in xtail_dict:
-            xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[gene_id]
+            xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted, contrasts = xtail_dict[gene_id]
+            contrasts.extend(contrasts.split(" "))
 
         if key in riborex_dict:
-            riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[key]
+            riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted, contrasts = riborex_dict[key]
+            contrasts.extend(contrasts.split(" "))
         elif gene_id != "" and gene_id in riborex_dict:
-            riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[gene_id]
+            riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted, contrasts = riborex_dict[gene_id]
+            contrasts.extend(contrasts.split(" "))
 
         start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
 
@@ -433,7 +440,6 @@ def create_excel_file(args):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
 
         TE_list = calculate_TE(rpkm_list, wildcards, conditions)
-
 
         evidence = " ".join(evidence)
         result = [chromosome, start, stop, strand, locus_tag, name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\

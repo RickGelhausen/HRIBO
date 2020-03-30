@@ -82,6 +82,7 @@ if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "auxiliary/predictions_deepribo.xlsx",
+          rules.createOverviewTableAll.output,
           unpack(getContrast),
           unpack(getContrastXtail),
           unpack(getContrastRiborex)
@@ -104,7 +105,8 @@ elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
           "auxiliary/samples.xlsx",
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
-          "auxiliary/predictions_deepribo.xlsx"
+          "auxiliary/predictions_deepribo.xlsx",
+          rules.createOverviewTablePredictions.output
 
 elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
    rule all:
@@ -124,6 +126,7 @@ elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
           "auxiliary/samples.xlsx",
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
+          rules.createOverviewTableDiffExpr.output,
           unpack(getContrast),
           unpack(getContrastXtail),
           unpack(getContrastRiborex)
@@ -146,6 +149,7 @@ else:
           "auxiliary/samples.xlsx",
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
+          rules.createOverviewTableReparation.output
 
 onsuccess:
     print("Done, no error")
