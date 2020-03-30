@@ -75,6 +75,7 @@ def get_genome_information(genome, start, stop, strand):
         aa_seq = ""
     else:
         aa_seq = str(coding_dna.translate(table=11,to_stop=True))
+
     return start_codon, stop_codon, nucleotide_seq, aa_seq
 
 def excel_writer(args, data_frames, wildcards):
@@ -155,7 +156,7 @@ def calculate_TE(read_list, wildcards, conditions):
 
     return TE_list
 
-def riborex_dict(riborex_path):
+def generate_riborex_dict(riborex_path):
     """
     create a dictionary containing all important riborex input
     {geneID : (log2fc, pvalue, pvalue_adj)}
@@ -173,9 +174,9 @@ def riborex_dict(riborex_path):
         riborex_dict[gene_id] = (log2fc, pvalue, pvalue_adj)
 
     return riborex_dict
-    
 
-def xtail_dict(xtail_path):
+
+def generate_xtail_dict(xtail_path):
     """
     create a dictionary containing all important xtail input
     {geneID : (log2fc, pvalue, pvalue_adj)}
@@ -193,17 +194,134 @@ def xtail_dict(xtail_path):
         xtail_dict[gene_id] = (log2fc, pvalue, pvalue_adj)
 
     return xtail_dict
-    
 
-def prediction_dict(reparation_path):
+
+def generate_reparation_dict(reparation_path):
     """
-    create a dictionary containing all important prediction input
+    create a dictionary containing all important reparation input
     """
 
+    reparation_df = pd.read_csv(reparation_path, sep="\t", comment="#")
+    prefix_columns = 9
 
+    reparation_dict = {}
+    for row in reparation_df.itertuples(index=False, name='Pandas'):
+        chromosome = getattr(row, "_0")
+        start = getattr(row, "_3")
+        stop = getattr(row, "_4")
+        strand = getattr(row, "_6")
+        attribute_list = [x for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
 
+        if len(attribute_list) % 2 == 0:
+            for i in range(len(attribute_list)):
+                if i % 2 == 0:
+                    attribute_list[i] = attribute_list[i].lower()
+        else:
+            sys.exit("error, invalid gff, wrongly formatted attribute fields.")
 
-def parse_orfs(args):
+        proba = ""
+        if "prob" in attribute_list:
+            proba = attribute_list[attribute_list.index("prob")+1]
+
+        evidence = ""
+        if "evidence" in attribute_list:
+            evidence = attribute_list[attribute_list.index("evidence")+1]
+
+        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
+
+        ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+        reparation_dict[ID] = (proba, evidence, read_list)
+
+    return reparation_dict
+
+def generate_deepribo_dict(deepribo_path):
+    """
+    create a dictionary containing all important deepribo input
+    """
+
+    deepribo_df = pd.read_csv(deepribo_path, sep="\t", comment="#")
+
+    prefix_columns = 9
+
+    deepribo_dict = {}
+    for row in deepribo_df.itertuples(index=False, name='Pandas'):
+        chromosome = getattr(row, "_0")
+        start = getattr(row, "_3")
+        stop = getattr(row, "_4")
+        strand = getattr(row, "_6")
+        attribute_list = [x for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
+
+        if len(attribute_list) % 2 == 0:
+            for i in range(len(attribute_list)):
+                if i % 2 == 0:
+                    attribute_list[i] = attribute_list[i].lower()
+        else:
+            sys.exit("error, invalid gff, wrongly formatted attribute fields.")
+
+        pred_rank = ""
+        if "pred_rank" in attribute_list:
+            pred_rank = attribute_list[attribute_list.index("pred_rank")+1]
+
+        pred_score = ""
+        if "pred_score" in attribute_list:
+            pred_score = attribute_list[attribute_list.index("pred_score")+1]
+
+        evidence = ""
+        if "evidence" in attribute_list:
+            evidence = attribute_list[attribute_list.index("evidence")+1]
+
+        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
+
+        ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+        deepribo_dict[ID] = (pred_rank, pred_score, evidence, read_list)
+
+    return deepribo_dict
+
+def generate_annotation_dict(annotation_path):
+    """
+    create dictionary from annotation.
+    key : (locus_tag, name)
+    """
+
+    annotation_df = pd.read_csv(annotation_path, sep="\t", comment="#")
+    annotation_dict = {}
+
+    for row in annotation_df.itertuples(index=False, name='Pandas'):
+        chromosome = getattr(row, "_0")
+        start = getattr(row, "_3")
+        stop = getattr(row, "_4")
+        strand = getattr(row, "_6")
+        attributes = getattr(row, "_8")
+
+        if ";" in attributes and "=" in attributes:
+            attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
+        else:
+            attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+
+        if len(attribute_list) % 2 == 0:
+            for i in range(len(attribute_list)):
+                if i % 2 == 0:
+                    attribute_list[i] = attribute_list[i].lower()
+        else:
+            sys.exit("error, invalid gff, wrongly formatted attribute fields.")
+
+        locus_tag = ""
+        if "locus_tag" in attribute_list:
+            locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+
+        name = ""
+        if "name" in attribute_list:
+            name = attribute_list[attribute_list.index("name")+1]
+
+        ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+        annotation_dict[ID] = (locus_tag, name)
+
+    return annotation_dict
+
+def create_excel_file(args):
+    # read annotation from file
+    annotation_dict = generate_annotation_dict(args.annotation_path)
+
     # read the genome file
     genome_file = SeqIO.parse(args.genome, "fasta")
     genome_dict = dict()
@@ -245,40 +363,69 @@ def parse_orfs(args):
 
     conditions = get_unique(conditions)
 
-    #read bed file
-    read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
+    if args.xtail_path != "":
+        xtail_dict = generate_xtail_dict(args.xtail_path)
+    if args.riborex_path != "":
+        riborex_dict = generate_riborex_dict(args.riborex_path)
+    if args.reads_deepribo != "":
+        deepribo_dict = generate_deepribo_dict(args.reads_deepribo)
+    if args.reads_reparation != "":
+        reparation_dict = generate_reparation_dict(args.reads_reparation)
+
+    keys_union = list(set(deepribo_dict.keys()) | set(reparation_dict.keys()))
 
     # read gff file
     all_sheet = []
 
+    header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] +\
+             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score", "riborex_pvalue", "riborex_pvalue_adjusted","riborex_log2FC", "xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]
 
-    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
-    prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
 
-    for row in read_df.itertuples(index=False, name='Pandas'):
-        reference_name = getattr(row, "_0")
-        source = getattr(row, "_1")
-        feature = getattr(row, "_2")
-        start = getattr(row, "_3")
-        stop = getattr(row, "_4")
-        strand = getattr(row, "_6")
-        attributes = getattr(row, "_8")
+    for key in keys_union:
+        chromosome, mid, strand = key.split(":")
+        start, stop = mid.split("-")
 
-        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[reference_name], start-1, stop-1, strand)
-        column_info = retrieve_column_information(attributes)
+        locus_tag, name = "",""
+        reparation_probability, deepribo_rank, deepribo_score = 0, 0, 0
+        riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC = 0, 0, 0
+        xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC = 0, 0, 0
+        evidence = []
 
-        length = stop - start + 1
-        codon_count = int(length / 3)
+        length = int(stop) - int(start) + 1
+        codon_count = length / 3
 
-        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
+        read_list = []
+
+        if key in reparation_dict:
+            reparation_probability, reparation_evidence, read_list = reparation_dict[key]
+            evidence.extend(reparation_evidence.split(" "))
+
+        if key in deepribo_dict:
+            deepribo_rank, deepribo_score, deepribo_evidence, read_list = deepribo_dict[key]
+            evidence.extend(deepribo_evidence.split(" "))
+
+        if key in xtail_dict:
+            xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[key]
+
+        if key in riborex_dict:
+            riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[key]
+
+        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
+
         rpkm_list = []
         for idx, val in enumerate(read_list):
-            rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
+            rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
 
         TE_list = calculate_TE(rpkm_list, wildcards, conditions)
-        result = [reference_name, "reparation", feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
+
+        if key in annotation_dict:
+            locus_tag, name = annotation_dict[key]
+
+        evidence = " ".join(evidence)
+        result = [chromosome, start, stop, strand, locus_tag, name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\
+                 [evidence, reparation_probability, deepribo_rank, deepribo_score, riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC, xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
 
         all_sheet.append(nTuple(*result))
 
@@ -289,22 +436,26 @@ def parse_orfs(args):
     excel_writer(args, dataframe_dict, wildcards)
 
 
-
 def main():
     # store commandline args
     parser = argparse.ArgumentParser(description='create ')
     parser.add_argument("-a", "--annotation", action="store", dest="annotation_path", required=True, help= "annotation file path.")
     parser.add_argument("-g", "--genome", action="store", dest="genome_path", required=True, help= "genome file path.")
-    parser.add_argument("-r", "--riborex", action="store", dest="riborex_path", required=True, help= "riborex csv file.")
-    parser.add_argument("-x", "--xtail", action="store", dest="xtail_path", required=True, help= "xtail csv file.")
+    parser.add_argument("-r", "--riborex", action="store", dest="riborex_path", default="", help= "riborex csv file.")
+    parser.add_argument("-x", "--xtail", action="store", dest="xtail_path", default="", help= "xtail csv file.")
     parser.add_argument("-o", "--xlsx", action="store", dest="output_path", required=True, help= "output xlsx file.")
     parser.add_argument("-t", "--total_mapped_reads", action="store", dest="total_mapped", required=True, help= "file containing the total mapped reads for all alignment files.")
-    parser.add_argument("--mapped_reads_deepribo", action="store", dest="reads_deepribo", required=True, help= "file containing the individual read counts for deepribo.")
-    parser.add_argument("--mapped_reads_reparation", action="store", dest="reads_reparation", required=True, help= "file containing the individual read counts for reparation.")
+    parser.add_argument("--mapped_reads_deepribo", action="store", dest="reads_deepribo", default="", help= "file containing the individual read counts for deepribo.")
+    parser.add_argument("--mapped_reads_reparation", action="store", dest="reads_reparation", default="", help= "file containing the individual read counts for reparation.")
     args = parser.parse_args()
+
+    if args.reads_deepribo == "" and args.reads_reparation == "":
+        sys.exit("no read files given!!")
+
+    if args.xtail_path == "" and args.riborex_path == "":
+        print("No differential expression data given. Proceeding without!")
 
     create_excel_file(args)
 
 if __name__ == '__main__':
     main()
-
