@@ -108,3 +108,73 @@ rule createExcelUniqueAnnotationReadCount:
     threads: 1
     shell:
         "mkdir -p auxiliary; HRIBO/scripts/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"
+
+rule createOverviewTablePredictions:
+    input:
+        annotation=rules.retrieveAnnotation.output,
+        genome=rules.retrieveGenome.output,
+        totalreads="readcounts/bam_mapped_reads.txt",
+        reparation="readcounts/reparation_read_counts.raw",
+        deepribo="readcounts/deepribo_read_counts.raw"
+    output:
+        "auxiliary/overview_table.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+        """
+
+rule createOverviewTableReparation:
+    input:
+        annotation=rules.retrieveAnnotation.output,
+        genome=rules.retrieveGenome.output,
+        totalreads="readcounts/bam_mapped_reads.txt",
+        reparation="readcounts/reparation_read_counts.raw"
+    output:
+        "auxiliary/overview_table.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        """
+
+rule createOverviewTableDiffExpr:
+    input:
+        annotation=rules.retrieveAnnotation.output,
+        genome=rules.retrieveGenome.output,
+        riborex="riborex/riborex_all.csv",
+        xtail="xtail/xtail_all.csv",
+        totalreads="readcounts/bam_mapped_reads.txt",
+        reparation="readcounts/reparation_read_counts.raw"
+    output:
+        "auxiliary/overview_table.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -r {input.riborex} -x {input.xtail} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        """
+
+rule createOverviewTableAll:
+    input:
+        annotation=rules.retrieveAnnotation.output,
+        genome=rules.retrieveGenome.output,
+        riborex="riborex/riborex_all.csv",
+        xtail="xtail/xtail_all.csv",
+        totalreads="readcounts/bam_mapped_reads.txt",
+        reparation="readcounts/reparation_read_counts.raw",
+        deepribo="readcounts/deepribo_read_counts.raw"
+    output:
+        "auxiliary/overview_table.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -r {input.riborex} -x {input.xtail} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+        """

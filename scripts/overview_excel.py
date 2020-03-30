@@ -313,8 +313,14 @@ def generate_annotation_dict(annotation_path):
         if "name" in attribute_list:
             name = attribute_list[attribute_list.index("name")+1]
 
+        gene_id = ""
+        if "gene_id" in attribute_list:
+            gene_id = attribute_list[attribute_list.index("gene_id")+1]
+        elif "id" in attribute_list:
+            gene_id = attribute_list[attribute_list.index("id")+1]
+
         ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-        annotation_dict[ID] = (locus_tag, name)
+        annotation_dict[ID] = (gene_id, locus_tag, name)
 
     return annotation_dict
 
@@ -393,6 +399,10 @@ def create_excel_file(args):
         xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC = 0, 0, 0
         evidence = []
 
+        gene_id = ""
+        if key in annotation_dict:
+            gene_id, locus_tag, name = annotation_dict[key]
+
         length = int(stop) - int(start) + 1
         codon_count = length / 3
 
@@ -408,9 +418,13 @@ def create_excel_file(args):
 
         if key in xtail_dict:
             xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[key]
+        elif gene_id != "" and gene_id in xtail_dict:
+            xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[gene_id]
 
         if key in riborex_dict:
             riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[key]
+        elif gene_id != "" and gene_id in riborex_dict:
+            riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[gene_id]
 
         start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
 
@@ -420,8 +434,6 @@ def create_excel_file(args):
 
         TE_list = calculate_TE(rpkm_list, wildcards, conditions)
 
-        if key in annotation_dict:
-            locus_tag, name = annotation_dict[key]
 
         evidence = " ".join(evidence)
         result = [chromosome, start, stop, strand, locus_tag, name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\
