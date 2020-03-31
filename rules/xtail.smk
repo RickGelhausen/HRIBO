@@ -117,3 +117,11 @@ rule riborexxlsx:
         python3 HRIBO/scripts/differential_expression_xlsx.py -a {input.annotation} -g {input.genome} --tool riborex -i {input.riborex_signif} -o {output.xlsx_signif}
         """
 
+rule poolriborex:
+    input:
+        riborex=
+
+    output:
+
+
+rule poolxtail:

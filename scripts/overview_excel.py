@@ -166,11 +166,11 @@ def generate_riborex_dict(riborex_path):
     riborex_dict = {}
 
     for row in riborex_df.itertuples(index=False, name='Pandas'):
-        gene_id = getattr(row, "_0")
+        gene_id = getattr(row, "gene_id")
         log2fc = getattr(row, "log2FoldChange")
         pvalue = getattr(row, "pvalue")
         pvalue_adj = getattr(row, "padj")
-        contrasts = getattr(row, "contrasts")
+        contrasts = getattr(row, "contrast")
 
         riborex_dict[gene_id] = (log2fc, pvalue, pvalue_adj, contrasts)
 
@@ -187,11 +187,11 @@ def generate_xtail_dict(xtail_path):
     xtail_dict = {}
 
     for row in xtail_df.itertuples(index=False, name='Pandas'):
-        gene_id = getattr(row, "_0")
+        gene_id = getattr(row, "gene_id")
         log2fc = getattr(row, "log2FC_TE_final")
         pvalue = getattr(row, "pvalue_final")
-        pvalue_adj = getattr(row, "_9")
-        contrasts = getattr(row, "contrasts")
+        pvalue_adj = getattr(row, "pvalue_adjust")
+        contrasts = getattr(row, "contrast")
 
         xtail_dict[gene_id] = (log2fc, pvalue, pvalue_adj, contrasts)
 
@@ -267,6 +267,9 @@ def generate_deepribo_dict(deepribo_path):
         pred_score = ""
         if "pred_score" in attribute_list:
             pred_score = attribute_list[attribute_list.index("pred_score")+1]
+
+        if pred_score == "" or float(pred_score) < 0:
+            continue
 
         evidence = ""
         if "evidence" in attribute_list:
