@@ -119,9 +119,26 @@ rule riborexxlsx:
 
 rule poolriborex:
     input:
-        riborex=
-
+        riborex=expand("riborex/{contrast}_sorted.xlsx", constrast=constrasts)
     output:
-
+        "riborex/riborex_all.csv"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        python3 HRIBO/scripts/merge_differential_expression.py --contrast_csv {input.riborex} -o {output} -t riborex
+        """
 
 rule poolxtail:
+    input:
+        xtail=expand("xtail/{contrast}_sorted.xlsx", constrast=constrasts)
+    output:
+        "xtail/xtail_all.csv"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        python3 HRIBO/scripts/merge_differential_expression.py --contrast_csv {input.xtail} -o {output} -t xtail
+        """
