@@ -84,7 +84,7 @@ def excel_writer(args, data_frames, wildcards):
     correct the width of each column
     """
     header_only =  ["Note", "Aminoacid_seq", "Nucleotide_seq", "Start_codon", "Stop_codon", "Strand", "Codon_count"] + [card + "_rpkm" for card in wildcards]
-    writer = pd.ExcelWriter(args.output, engine='xlsxwriter')
+    writer = pd.ExcelWriter(args.output_path, engine='xlsxwriter')
     for sheetname, df in data_frames.items():
         df.to_excel(writer, sheet_name=sheetname, index=False)
         worksheet = writer.sheets[sheetname]
@@ -162,7 +162,7 @@ def generate_riborex_dict(riborex_path):
     {geneID : (log2fc, pvalue, pvalue_adj)}
     """
 
-    riborex_df = pd.read_csv(riborex_path, sep="\t", comment="#")
+    riborex_df = pd.read_csv(riborex_path, sep=",", comment="#")
     riborex_dict = {}
 
     for row in riborex_df.itertuples(index=False, name='Pandas'):
@@ -183,7 +183,7 @@ def generate_xtail_dict(xtail_path):
     {geneID : (log2fc, pvalue, pvalue_adj)}
     """
 
-    xtail_df = pd.read_csv(xtail_path, sep="\t", comment="#")
+    xtail_df = pd.read_csv(xtail_path, sep=",", comment="#")
     xtail_dict = {}
 
     for row in xtail_df.itertuples(index=False, name='Pandas'):
@@ -242,7 +242,6 @@ def generate_deepribo_dict(deepribo_path):
     """
 
     deepribo_df = pd.read_csv(deepribo_path, sep="\t", comment="#")
-
     prefix_columns = 9
 
     deepribo_dict = {}
@@ -250,6 +249,7 @@ def generate_deepribo_dict(deepribo_path):
         chromosome = getattr(row, "_0")
         start = getattr(row, "_3")
         stop = getattr(row, "_4")
+        pred_rank = getattr(row, "_5")
         strand = getattr(row, "_6")
         attribute_list = [x for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
 
@@ -260,15 +260,11 @@ def generate_deepribo_dict(deepribo_path):
         else:
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
 
-        pred_rank = ""
-        if "pred_rank" in attribute_list:
-            pred_rank = attribute_list[attribute_list.index("pred_rank")+1]
+        pred_value = ""
+        if "pred_value" in attribute_list:
+            pred_value = attribute_list[attribute_list.index("pred_value")+1]
 
-        pred_score = ""
-        if "pred_score" in attribute_list:
-            pred_score = attribute_list[attribute_list.index("pred_score")+1]
-
-        if pred_score == "" or float(pred_score) < 0:
+        if pred_value == "" or float(pred_value) < 0:
             continue
 
         evidence = ""
@@ -278,21 +274,24 @@ def generate_deepribo_dict(deepribo_path):
         read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
 
         ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-        deepribo_dict[ID] = (pred_rank, pred_score, evidence, read_list)
+        deepribo_dict[ID] = (pred_rank, pred_value, evidence, read_list)
 
     return deepribo_dict
 
 def generate_annotation_dict(annotation_path):
     """
     create dictionary from annotation.
-    key : (locus_tag, name)
+    key : (gene_id, locus_tag, name, gene_name)
     """
 
-    annotation_df = pd.read_csv(annotation_path, sep="\t", comment="#")
+    annotation_df = pd.read_csv(annotation_path, sep="\t", comment="#", header=None)
     annotation_dict = {}
+    gene_dict = {}
+    cds_dict = {}
 
     for row in annotation_df.itertuples(index=False, name='Pandas'):
         chromosome = getattr(row, "_0")
+        feature = getattr(row, "_2")
         start = getattr(row, "_3")
         stop = getattr(row, "_4")
         strand = getattr(row, "_6")
@@ -310,22 +309,37 @@ def generate_annotation_dict(annotation_path):
         else:
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
 
-        locus_tag = ""
-        if "locus_tag" in attribute_list:
-            locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+        if feature.lower() == "cds":
+            locus_tag = ""
+            if "locus_tag" in attribute_list:
+                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
 
-        name = ""
-        if "name" in attribute_list:
-            name = attribute_list[attribute_list.index("name")+1]
+            name = ""
+            if "name" in attribute_list:
+                name = attribute_list[attribute_list.index("name")+1]
 
-        gene_id = ""
-        if "gene_id" in attribute_list:
-            gene_id = attribute_list[attribute_list.index("gene_id")+1]
-        elif "id" in attribute_list:
-            gene_id = attribute_list[attribute_list.index("id")+1]
+            gene_id = ""
+            if "gene_id" in attribute_list:
+                gene_id = attribute_list[attribute_list.index("gene_id")+1]
+            elif "id" in attribute_list:
+                gene_id = attribute_list[attribute_list.index("id")+1]
 
-        ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-        annotation_dict[ID] = (gene_id, locus_tag, name)
+            ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+            cds_dict[ID] = (gene_id, locus_tag, name)
+        elif feature.lower() == "gene":
+            gene_name = ""
+            if "name" in attribute_list:
+                gene_name = attribute_list[attribute_list.index("name")+1]
+
+            ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+            gene_dict[ID] = gene_name
+
+    for key in cds_dict.keys():
+        gene_name = ""
+        if key in gene_dict:
+            gene_name = gene_dict[key]
+
+        annotation_dict[key] = (*cds_dict[key],gene_name)
 
     return annotation_dict
 
@@ -334,7 +348,7 @@ def create_excel_file(args):
     annotation_dict = generate_annotation_dict(args.annotation_path)
 
     # read the genome file
-    genome_file = SeqIO.parse(args.genome, "fasta")
+    genome_file = SeqIO.parse(args.genome_path, "fasta")
     genome_dict = dict()
     for entry in genome_file:
         genome_dict[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
@@ -385,11 +399,13 @@ def create_excel_file(args):
 
     keys_union = list(set(deepribo_dict.keys()) | set(reparation_dict.keys()))
 
+    #keys_union = list(set().union(deepribo_dict.keys(), reparation_dict.keys(), annotation_dict.keys()))
+
     # read gff file
     all_sheet = []
 
-    header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] +\
-             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score", "riborex_pvalue", "riborex_pvalue_adjusted","riborex_log2FC", "xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]
+    header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] +\
+             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score", "contrasts", "riborex_pvalue", "riborex_pvalue_adjusted","riborex_log2FC", "xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]
 
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -398,16 +414,16 @@ def create_excel_file(args):
         chromosome, mid, strand = key.split(":")
         start, stop = mid.split("-")
 
-        locus_tag, name = "",""
+        locus_tag, name, gene_name = "","",""
         reparation_probability, deepribo_rank, deepribo_score = 0, 0, 0
         riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC = 0, 0, 0
         xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC = 0, 0, 0
-        contrasts = []
+        contrast_list = []
         evidence = []
 
         gene_id = ""
         if key in annotation_dict:
-            gene_id, locus_tag, name = annotation_dict[key]
+            gene_id, locus_tag, name, gene_name = annotation_dict[key]
 
         length = int(stop) - int(start) + 1
         codon_count = length / 3
@@ -416,27 +432,42 @@ def create_excel_file(args):
 
         if key in reparation_dict:
             reparation_probability, reparation_evidence, read_list = reparation_dict[key]
-            evidence.extend(reparation_evidence.split(" "))
+            evidence_list = []
+            for e in reparation_evidence.split(" "):
+                if not "reparation" in e:
+                    evidence_list.append("reparation-"+e)
+                else:
+                    evidence_list.append(e)
+            evidence.extend(evidence_list)
 
         if key in deepribo_dict:
             deepribo_rank, deepribo_score, deepribo_evidence, read_list = deepribo_dict[key]
-            evidence.extend(deepribo_evidence.split(" "))
+            evidence_list = []
+            for e in deepribo_evidence.split(" "):
+                if not "deepribo" in e:
+                    evidence_list.append("deepribo-"+e)
+                else:
+                    evidence_list.append(e)
+            evidence.extend(evidence_list)
 
         if key in xtail_dict:
             xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted, contrasts = xtail_dict[key]
-            contrasts.extend(contrasts.split(" "))
+            contrast_list.extend(contrasts.split(" "))
         elif gene_id != "" and gene_id in xtail_dict:
             xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted, contrasts = xtail_dict[gene_id]
-            contrasts.extend(contrasts.split(" "))
+            contrast_list.extend(contrasts.split(" "))
 
         if key in riborex_dict:
             riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted, contrasts = riborex_dict[key]
-            contrasts.extend(contrasts.split(" "))
+            contrast_list.extend(contrasts.split(" "))
         elif gene_id != "" and gene_id in riborex_dict:
             riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted, contrasts = riborex_dict[gene_id]
-            contrasts.extend(contrasts.split(" "))
+            contrast_list.extend(contrasts.split(" "))
 
-        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
+        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
+
+        contrast_list.sort()
+        evidence.sort()
 
         rpkm_list = []
         for idx, val in enumerate(read_list):
@@ -445,13 +476,15 @@ def create_excel_file(args):
         TE_list = calculate_TE(rpkm_list, wildcards, conditions)
 
         evidence = " ".join(evidence)
-        result = [chromosome, start, stop, strand, locus_tag, name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\
-                 [evidence, reparation_probability, deepribo_rank, deepribo_score, riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC, xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
+        result = [chromosome, start, stop, strand, locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\
+                 [evidence, reparation_probability, deepribo_rank, deepribo_score, " ".join(contrast_list), riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC, xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
 
         all_sheet.append(nTuple(*result))
 
     all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
 
+    all_df = all_df.astype({"Start" : "int32", "Stop" : "int32"})
+    all_df = all_df.sort_values(by=["Genome", "Start", "Stop"])
     dataframe_dict = { "all" : all_df }
 
     excel_writer(args, dataframe_dict, wildcards)

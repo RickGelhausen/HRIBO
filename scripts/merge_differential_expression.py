@@ -20,7 +20,7 @@ def pool_contrasts_xtail(args):
     for contrast_file in args.contrast_csv:
         cur_contrast = os.path.basename(contrast_file).split("_")[0]
 
-        contrast_df = pd.read_csv(contrast_file, sep="\t", comment="#")
+        contrast_df = pd.read_csv(contrast_file, sep=",", comment="#")
 
         for row in contrast_df.itertuples(index=False, name='Pandas'):
             gene_id = getattr(row, "_0")
@@ -34,7 +34,7 @@ def pool_contrasts_xtail(args):
             pvalue_final = getattr(row, "pvalue_final")
             pvalue_adj = getattr(row, "_9")
 
-            contrast_tuple = (mRNA_log2FC, RPF_log2FC_TE_v1, pvalue_v1, log2FC_TE_v2, pvalue_v2,
+            contrast_tuple = (mRNA_log2FC, RPF_log2FC, log2FC_TE_v1, pvalue_v1, log2FC_TE_v2, pvalue_v2, \
                               log2FC_TE_final, pvalue_final, pvalue_adj, args.tool + "-" + cur_contrast)
 
             if gene_id in contrast_dict:
@@ -52,7 +52,7 @@ def pool_contrasts_riborex(args):
     for contrast_file in args.contrast_csv:
         cur_contrast = os.path.basename(contrast_file).split("_")[0]
 
-        contrast_df = pd.read_csv(contrast_file, sep="\t", comment="#")
+        contrast_df = pd.read_csv(contrast_file, sep=",", comment="#")
 
         for row in contrast_df.itertuples(index=False, name='Pandas'):
             gene_id = getattr(row, "_0")
@@ -86,7 +86,7 @@ def merge_xtail_results(contrast_dict):
     for key, value in contrast_dict.items():
         contrasts = set()
         for contrast_tuple in value:
-            contrasts.add(contrast_value)
+            contrasts.add(contrast_tuple[-1])
 
         best_tuple = max(value, key=itemgetter(7))
         rows.append(nTuple(key, *list(best_tuple[:-1]), " ".join(list(contrasts))))
@@ -106,7 +106,7 @@ def merge_riborex_results(contrast_dict):
     for key, value in contrast_dict.items():
         contrasts = set()
         for contrast_tuple in value:
-            contrasts.add(contrast_value)
+            contrasts.add(contrast_tuple[-1])
 
         best_tuple = max(value, key=itemgetter(5))
 
@@ -118,7 +118,7 @@ def merge_riborex_results(contrast_dict):
 def main():
     # store commandline args
     parser = argparse.ArgumentParser(description='pool the different contrasts together for each tool.')
-    parser.add_argument("--contrast_csv", nargs="*", metavar="contrast_csv", help="Path to input csv files.")
+    parser.add_argument("contrast_csv", nargs="*", metavar="contrast_csv", help="Path to input csv files.")
     parser.add_argument("-o", "--output_csv", action="store", dest="output_csv", required=True
                                            , help= "the output csv file.")
     parser.add_argument("-t", "--tool", action="store", dest="tool", required=True, help= "tool: riborex/xtail")
@@ -134,7 +134,7 @@ def main():
         sys.exit("invalid toolname!!!")
 
     with open(args.output_csv, "w") as f:
-        result_df.to_csv(f, sep="\t", index=False, quoting=csv.QUOTE_NONE)
+        result_df.to_csv(f, sep=",", index=False, quoting=csv.QUOTE_NONE)
 
 if __name__ == '__main__':
     main()
