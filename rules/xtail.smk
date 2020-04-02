@@ -1,3 +1,4 @@
+
 rule longestTranscript:
     input:
         rules.retrieveAnnotation.output
@@ -117,9 +118,10 @@ rule riborexxlsx:
         python3 HRIBO/scripts/differential_expression_xlsx.py -a {input.annotation} -g {input.genome} --tool riborex -i {input.riborex_signif} -o {output.xlsx_signif}
         """
 
+cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(samples["condition"].unique(),2)))] for item in sublist]
 rule poolriborex:
     input:
-        riborex=expand("riborex/{contrast}_sorted.xlsx", constrast=constrasts)
+        riborex=expand("riborex/{contr}_sorted.xlsx", contr=cur_contrast)
     output:
         "riborex/riborex_all.csv"
     conda:
@@ -132,7 +134,7 @@ rule poolriborex:
 
 rule poolxtail:
     input:
-        xtail=expand("xtail/{contrast}_sorted.xlsx", constrast=constrasts)
+        xtail=expand("xtail/{contr}_sorted.xlsx", contr=cur_contrast)
     output:
         "xtail/xtail_all.csv"
     conda:

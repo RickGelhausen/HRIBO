@@ -22,6 +22,7 @@ if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
     sys.exit("Differential Expression requested, but only one condition given.\n\
             Please ensure, that you either provide multiple condtions or turn off differential expression in the config.yaml.")
 
+
 report: "report/workflow.rst"
 def getContrast(wildcards):
   conditions=samples["condition"].unique()
@@ -62,6 +63,37 @@ def get_wigfiles(wildcards):
       wigfiles.append("%stracks/%s/%s-%s-%s.%s.%s.%s.bw" %(bw[0], bw[1], bw[3][0], bw[3][1], bw[3][2], bw[1], bw[2], bw[0]))
 
   return wigfiles
+
+
+# Preprocessing
+include: "rules/preprocessing.smk"
+# Adaper removal and quality control
+include: "rules/trimming.smk"
+# removal of reads mapping to ribosomal rna genes
+include: "rules/rrnafiltering.smk"
+# mapping
+include: "rules/mapping.smk"
+# Visualization
+include: "rules/visualization.smk"
+include: "rules/merge.smk"
+# reparation
+include: "rules/reparation.smk"
+# metagene
+include: "rules/metageneprofiling.smk"
+include: "rules/auxiliary.smk"
+# multiqc
+include: "rules/qcauxiliary.smk"
+include: "rules/qcsingleend.smk"
+#readcounts
+include: "rules/readcounting.smk"
+if DIFFEXPRESS.lower() == "on":
+    # xtail
+    include: "rules/xtail.smk"
+
+if DEEPRIBO.lower() == "on":
+    #deepribo
+    include: "rules/deepribo.smk"
+
 
 if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
    rule all:
@@ -153,32 +185,3 @@ else:
 
 onsuccess:
     print("Done, no error")
-
-# Preprocessing
-include: "rules/preprocessing.smk"
-# Adaper removal and quality control
-include: "rules/trimming.smk"
-# removal of reads mapping to ribosomal rna genes
-include: "rules/rrnafiltering.smk"
-# mapping
-include: "rules/mapping.smk"
-# Visualization
-include: "rules/visualization.smk"
-include: "rules/merge.smk"
-# reparation
-include: "rules/reparation.smk"
-# metagene
-include: "rules/metageneprofiling.smk"
-include: "rules/auxiliary.smk"
-# multiqc
-include: "rules/qcauxiliary.smk"
-include: "rules/qcsingleend.smk"
-#readcounts
-include: "rules/readcounting.smk"
-if DIFFEXPRESS.lower() == "on":
-    # xtail
-    include: "rules/xtail.smk"
-
-if DEEPRIBO.lower() == "on":
-    #deepribo
-    include: "rules/deepribo.smk"
