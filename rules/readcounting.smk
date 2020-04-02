@@ -34,6 +34,24 @@ rule generateDeepRiboReadCounts:
         rm readcounts/deepribo_read_counts.raw.tmp
         """
 
+rule generateAnnotationIndependantReadCounts:
+    input:
+        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        annotation=rules.retrieveAnnotation.output
+    output:
+        "readcounts/annotation_independant_read_counts.raw"
+    conda:
+        "../envs/subread.yaml"
+    threads: 5
+    shell:
+        """
+        mkdir -p readcounts
+        featureCounts -F GTF -s 1 -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/annotation_independant_read_counts.raw.tmp
+        cat readcounts/annotation_independant_read_counts.raw.tmp | sed 1,2d | awk '{{print $0"\\tCDS"}}' >> {output}
+        rm readcounts/annotation_independant_read_counts.raw.tmp
+        """
+
 rule generateAnnotationTotalReadCounts:
     input:
         bam=expand("bammulti/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -178,4 +196,3 @@ rule maplinkMappedReads:
     threads: 1
     shell:
         "mkdir -p readcounts; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
-

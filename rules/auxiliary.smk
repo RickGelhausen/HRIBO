@@ -162,7 +162,7 @@ rule createOverviewTableDiffExpr:
 
 rule createOverviewTableAll:
     input:
-        annotation=rules.retrieveAnnotation.output,
+        annotation="readcounts/annotation_independant_read_counts.raw",
         genome=rules.retrieveGenome.output,
         riborex="riborex/riborex_all.csv",
         xtail="xtail/xtail_all.csv",

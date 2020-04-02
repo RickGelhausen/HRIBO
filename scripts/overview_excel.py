@@ -296,6 +296,7 @@ def generate_annotation_dict(annotation_path):
         stop = getattr(row, "_4")
         strand = getattr(row, "_6")
         attributes = getattr(row, "_8")
+        read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
 
         if ";" in attributes and "=" in attributes:
             attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
@@ -325,7 +326,7 @@ def generate_annotation_dict(annotation_path):
                 gene_id = attribute_list[attribute_list.index("id")+1]
 
             ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            cds_dict[ID] = (gene_id, locus_tag, name)
+            cds_dict[ID] = (gene_id, locus_tag, name, read_list)
         elif feature.lower() == "gene":
             gene_name = ""
             if "name" in attribute_list:
@@ -397,9 +398,9 @@ def create_excel_file(args):
     if args.reads_reparation != "":
         reparation_dict = generate_reparation_dict(args.reads_reparation)
 
-    keys_union = list(set(deepribo_dict.keys()) | set(reparation_dict.keys()))
+    #keys_union = list(set(deepribo_dict.keys()) | set(reparation_dict.keys()))
 
-    #keys_union = list(set().union(deepribo_dict.keys(), reparation_dict.keys(), annotation_dict.keys()))
+    keys_union = list(set().union(deepribo_dict.keys(), reparation_dict.keys(), annotation_dict.keys()))
 
     # read gff file
     all_sheet = []
@@ -421,14 +422,14 @@ def create_excel_file(args):
         contrast_list = []
         evidence = []
 
+        read_list = []
+
         gene_id = ""
         if key in annotation_dict:
-            gene_id, locus_tag, name, gene_name = annotation_dict[key]
+            gene_id, locus_tag, name, read_list, gene_name = annotation_dict[key]
 
         length = int(stop) - int(start) + 1
         codon_count = length / 3
-
-        read_list = []
 
         if key in reparation_dict:
             reparation_probability, reparation_evidence, read_list = reparation_dict[key]
@@ -492,7 +493,7 @@ def create_excel_file(args):
 
 def main():
     # store commandline args
-    parser = argparse.ArgumentParser(description='create ')
+    parser = argparse.ArgumentParser(description='create an overview table containing all results from the workflow.')
     parser.add_argument("-a", "--annotation", action="store", dest="annotation_path", required=True, help= "annotation file path.")
     parser.add_argument("-g", "--genome", action="store", dest="genome_path", required=True, help= "genome file path.")
     parser.add_argument("-r", "--riborex", action="store", dest="riborex_path", default="", help= "riborex csv file.")
