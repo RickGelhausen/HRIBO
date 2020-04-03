@@ -45,7 +45,8 @@ rule reannotatedORFs:
 
 rule newAnnotation:
     input:
-        newOrfs="tracks/reparation_annotated.gff",
+        reparation_orfs="tracks/reparation_annotated.gff",
+        deepribo_orfs="tracks/deepribo_annotated.gff",
         currentAnnotation=rules.retrieveAnnotation.output
     output:
         "tracks/totalAnnotation.gff"
@@ -53,7 +54,11 @@ rule newAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input.newOrfs} {input.currentAnnotation} -o {output}"
+        """
+        mkdir -p tracks;
+        awk '$6 >= 0' {{input.deepribo_orfs}} > tracks/deepribo_plus.gff
+        HRIBO/scripts/concatenate_gff.py tracks/deepribo_plus.gff {input.reparation_orfs} {input.currentAnnotation} -o {output}
+        """
 
 rule uniteAnnotation:
     input:
