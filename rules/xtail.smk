@@ -129,7 +129,7 @@ rule poolriborex:
     threads: 1
     shell:
         """
-        python3 HRIBO/scripts/merge_differential_expression.py --contrast_csv {input.riborex} -o {output} -t riborex
+        python3 HRIBO/scripts/merge_differential_expression.py {input.riborex} -o {output} -t riborex
         """
 
 rule poolxtail:
@@ -142,5 +142,5 @@ rule poolxtail:
     threads: 1
     shell:
         """
-        python3 HRIBO/scripts/merge_differential_expression.py --contrast_csv {input.xtail} -o {output} -t xtail
+        python3 HRIBO/scripts/merge_differential_expression.py {input.xtail} -o {output} -t xtail
         """
