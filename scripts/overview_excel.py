@@ -297,7 +297,8 @@ def generate_annotation_dict(annotation_path):
         strand = getattr(row, "_6")
         attributes = getattr(row, "_8")
         read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
-
+        print(row)
+        print(attributes)
         if ";" in attributes and "=" in attributes:
             attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
         else:

@@ -19,7 +19,7 @@ def pool_contrasts_xtail(args):
     contrast_dict = {}
     for contrast_file in args.contrast_csv:
         cur_contrast = os.path.basename(contrast_file).split("_")[0]
-
+        print(contrast_file)
         contrast_df = pd.read_csv(contrast_file, sep=",", comment="#")
 
         for row in contrast_df.itertuples(index=False, name='Pandas'):

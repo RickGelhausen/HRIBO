@@ -54,10 +54,10 @@ def map_reads_to_annotation(args):
     """
 
     annotation_df = pd.read_csv(args.annotation, sep="\t", comment="#", header=None)
-    read_dict, size = read_file_to_dictionary(args)
-
-    size += len(annotation_df.columns)
-    name_list = ["s%s" % str(x) for x in range(size)]
+    read_dict, read_number = read_file_to_dictionary(args)
+    read_size = read_number
+    read_number += len(annotation_df.columns)
+    name_list = ["s%s" % str(x) for x in range(read_number)]
     nTuple = collections.namedtuple('Pandas', name_list)
 
     rows = []
@@ -73,7 +73,11 @@ def map_reads_to_annotation(args):
         attributes = getattr(row, "_8")
 
         key = (feature, reference_name, start, stop, strand)
-        result = [reference_name, info, feature, start, stop, score, strand, phase, attributes] + read_dict[key]
+        try:
+            result = [reference_name, info, feature, start, stop, score, strand, phase, attributes] + read_dict[key]
+        except KeyError:
+            result = [reference_name, info, feature, start, stop, score, strand, phase, attributes] + [0]*read_size
+        print(result)
         rows.append(nTuple(*result))
 
     return pd.DataFrame.from_records(rows, columns=[x for x in range(len(name_list))])

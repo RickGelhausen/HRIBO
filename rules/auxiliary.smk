@@ -111,11 +111,11 @@ rule createExcelUniqueAnnotationReadCount:
 
 rule createOverviewTablePredictions:
     input:
-        annotation=rules.retrieveAnnotation.output,
+        annotation="readcounts/independant_annotation.gff",
         genome=rules.retrieveGenome.output,
         totalreads="readcounts/bam_mapped_reads.txt",
-        reparation="readcounts/reparation_read_counts.raw",
-        deepribo="readcounts/deepribo_read_counts.raw"
+        reparation="readcounts/reparation_annotation.gff",
+        deepribo="readcounts/deepribo_annotation.gff"
     output:
         "auxiliary/overview_table.xlsx"
     conda:
@@ -128,10 +128,10 @@ rule createOverviewTablePredictions:
 
 rule createOverviewTableReparation:
     input:
-        annotation=rules.retrieveAnnotation.output,
+        annotation="readcounts/independant_annotation.gff",
         genome=rules.retrieveGenome.output,
         totalreads="readcounts/bam_mapped_reads.txt",
-        reparation="readcounts/reparation_read_counts.raw"
+        reparation="readcounts/reparation_annotation.gff"
     output:
         "auxiliary/overview_table.xlsx"
     conda:
@@ -144,12 +144,12 @@ rule createOverviewTableReparation:
 
 rule createOverviewTableDiffExpr:
     input:
-        annotation=rules.retrieveAnnotation.output,
+        annotation="readcounts/independant_annotation.gff",
         genome=rules.retrieveGenome.output,
         riborex="riborex/riborex_all.csv",
         xtail="xtail/xtail_all.csv",
         totalreads="readcounts/bam_mapped_reads.txt",
-        reparation="readcounts/reparation_read_counts.raw"
+        reparation="readcounts/reparation_annotation.gff"
     output:
         "auxiliary/overview_table.xlsx"
     conda:
@@ -162,13 +162,13 @@ rule createOverviewTableDiffExpr:
 
 rule createOverviewTableAll:
     input:
-        annotation="readcounts/annotation_independant_read_counts.raw",
+        annotation="readcounts/independant_annotation.gff",
         genome=rules.retrieveGenome.output,
         riborex="riborex/riborex_all.csv",
         xtail="xtail/xtail_all.csv",
         totalreads="readcounts/bam_mapped_reads.txt",
-        reparation="readcounts/reparation_read_counts.raw",
-        deepribo="readcounts/deepribo_read_counts.raw"
+        reparation="readcounts/reparation_annotation.gff",
+        deepribo="readcounts/deepribo_annotation.gff"
     output:
         "auxiliary/overview_table.xlsx"
     conda:

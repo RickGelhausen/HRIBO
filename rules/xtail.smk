@@ -119,9 +119,10 @@ rule riborexxlsx:
         """
 
 cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(samples["condition"].unique(),2)))] for item in sublist]
+print(cur_contrast)
 rule poolriborex:
     input:
-        riborex=expand("riborex/{contr}_sorted.xlsx", contr=cur_contrast)
+        riborex=expand("riborex/{contr}_sorted.csv", contr=cur_contrast)
     output:
         "riborex/riborex_all.csv"
     conda:
@@ -134,7 +135,7 @@ rule poolriborex:
 
 rule poolxtail:
     input:
-        xtail=expand("xtail/{contr}_sorted.xlsx", contr=cur_contrast)
+        xtail=expand("xtail/{contr}_sorted.csv", contr=cur_contrast)
     output:
         "xtail/xtail_all.csv"
     conda:

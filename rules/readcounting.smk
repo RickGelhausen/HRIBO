@@ -102,6 +102,20 @@ rule generateAnnotationUniqueReadCounts:
         done
         """
 
+rule mapIndependantReads:
+    input:
+        reads="readcounts/annotation_independant_read_counts.raw",
+        annotation=rules.retrieveAnnotation.output
+    output:
+        "readcounts/independant_annotation.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p readcounts; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        """
+
 rule mapReparationReads:
     input:
         reads="readcounts/reparation_read_counts.raw",
