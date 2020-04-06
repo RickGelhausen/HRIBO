@@ -137,12 +137,13 @@ rule filterDeepRibo:
         ingff="tracks/deepribo_all.gff",
         annotation=rules.retrieveAnnotation.output
     output:
-        "tracks/deepribo_merged.gff"
+        merged="tracks/deepribo_merged.gff",
+        plus="tracks/deepribo_merged_plus.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/merge_duplicates_deepribo.py -i {input.ingff} -o {output} -a {input.annotation}"
+        "mkdir -p tracks; HRIBO/scripts/merge_duplicates_deepribo.py -i {input.ingff} -o {output.merged} -a {input.annotation}"
 
 
 rule createExcelSummaryDeepRibo:

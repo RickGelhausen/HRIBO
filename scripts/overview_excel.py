@@ -407,7 +407,7 @@ def create_excel_file(args):
     all_sheet = []
 
     header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] +\
-             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score", "contrasts", "riborex_pvalue", "riborex_pvalue_adjusted","riborex_log2FC", "xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]
+             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score", "riborex_pvalue", "riborex_pvalue_adjusted","riborex_log2FC", "xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]
 
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -479,7 +479,7 @@ def create_excel_file(args):
 
         evidence = " ".join(evidence)
         result = [chromosome, start, stop, strand, locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\
-                 [evidence, reparation_probability, deepribo_rank, deepribo_score, " ".join(contrast_list), riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC, xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
+                 [evidence, reparation_probability, deepribo_rank, deepribo_score, riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC, xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
 
         all_sheet.append(nTuple(*result))
 

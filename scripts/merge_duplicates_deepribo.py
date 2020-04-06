@@ -148,6 +148,7 @@ def generate_output_gff(args, overlap_dict):
     annotation_dict = generate_annotation_dict(args)
 
     rows = []
+    rows_plus = []
     for key, value in overlap_dict.items():
         reference_name, mid, strand = key.split(":")
         start, stop = mid.split("-")
@@ -188,9 +189,12 @@ def generate_output_gff(args, overlap_dict):
                 name, locus_tag = key, "na"
 
             new_attributes = "ID=%s;Name=%s;Locus_tag=%s;Pred_value=%s;Evidence=%s;" % (key, name,locus_tag,cur_pred_value, " ".join(evidence))
- 
+
+        if pred_value >= 0:
+            rows_plus.append(nTuple(reference_name, "merged", "CDS", start, stop, cur_pred_value, strand, dist, new_attributes))
         rows.append(nTuple(reference_name, "merged", "CDS", start, stop, cur_pred_value, strand, dist, new_attributes))
-    return  pd.DataFrame.from_records(rows, columns=["seqName","source","type","start","stop","score","strand","phase","attribute"])
+    return pd.DataFrame.from_records(rows, columns=["seqName","source","type","start","stop","score","strand","phase","attribute"]), \
+           pd.DataFrame.from_records(rows_plus, columns=["seqName","source","type","start","stop","score","strand","phase","attribute"])
 
 def main():
     # store commandline args
@@ -207,7 +211,7 @@ def main():
         open(args.outputGFF, 'a').close()
     else:
         orf_dict = generate_dictionary(args)
-        newDF = generate_output_gff(args, orf_dict)
+        newDF, plusDF = generate_output_gff(args, orf_dict)
         newDF = newDF.sort_values(by=["score"], ascending=False)
         newDF = newDF.reset_index()
         dist_list = list(newDF["phase"])
@@ -230,6 +234,10 @@ def main():
         with open(args.outputGFF, "a") as f:
             newDF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
+        with open(args.outputGFF.replace(".gff", "_plus.gff"), "w") as f:
+            f.write("##gff-version 3\n")
+        with open(args.outputGFF.replace(".gff", "_plus.gff"), "a") as f:
+            plusDF.to_csv(f, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
 if __name__ == '__main__':
     main()

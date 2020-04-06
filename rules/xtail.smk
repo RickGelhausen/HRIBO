@@ -1,4 +1,3 @@
-
 rule longestTranscript:
     input:
         rules.retrieveAnnotation.output
