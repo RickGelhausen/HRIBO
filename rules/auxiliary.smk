@@ -117,7 +117,7 @@ rule createOverviewTablePredictions:
         reparation="readcounts/reparation_annotation.gff",
         deepribo="readcounts/deepribo_annotation.gff"
     output:
-        "auxiliary/overview_table.xlsx"
+        "auxiliary/overview.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
@@ -133,7 +133,7 @@ rule createOverviewTableReparation:
         totalreads="readcounts/bam_mapped_reads.txt",
         reparation="readcounts/reparation_annotation.gff"
     output:
-        "auxiliary/overview_table.xlsx"
+        "auxiliary/overview.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
@@ -151,7 +151,7 @@ rule createOverviewTableDiffExpr:
         totalreads="readcounts/bam_mapped_reads.txt",
         reparation="readcounts/reparation_annotation.gff"
     output:
-        "auxiliary/overview_table.xlsx"
+        "auxiliary/overview.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
@@ -170,7 +170,7 @@ rule createOverviewTableAll:
         reparation="readcounts/reparation_annotation.gff",
         deepribo="readcounts/deepribo_annotation.gff"
     output:
-        "auxiliary/overview_table.xlsx"
+        "auxiliary/overview.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1

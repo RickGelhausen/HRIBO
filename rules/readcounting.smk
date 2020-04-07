@@ -1,3 +1,20 @@
+rule generateDifferentialExpressionReadCounts:
+    input:
+        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        annotation="tracks/updated_annotation.gff"
+    output:
+        "readcounts/differential_expression_read_counts.csv"
+    conda:
+        "../envs/subread.yaml"
+    threads: 5
+    shell:
+        """
+        mkdir -p readcounts
+        featureCounts -F GTF -s 1 -O -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/differential_expression_read_counts.raw.tmp
+        cat readcounts/differential_expression_read_counts.raw.tmp | sed 1,2d | awk -F "," '{{$2=$3=$4=$5=""; print $0}}' >> {output}
+        """
+
 rule generateReparationReadCounts:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
@@ -11,7 +28,7 @@ rule generateReparationReadCounts:
     shell:
         """
         mkdir -p readcounts
-        featureCounts -F GTF -s 1 -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/reparation_read_counts.raw.tmp
+        featureCounts -F GTF -s 1 -O -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/reparation_read_counts.raw.tmp
         cat readcounts/reparation_read_counts.raw.tmp | sed 1,2d | awk '{{print $0"\\tCDS"}}' >> {output}
         rm readcounts/reparation_read_counts.raw.tmp
         """
@@ -29,7 +46,7 @@ rule generateDeepRiboReadCounts:
     shell:
         """
         mkdir -p readcounts
-        featureCounts -F GTF -s 1 -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/deepribo_read_counts.raw.tmp
+        featureCounts -F GTF -s 1 -O -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/deepribo_read_counts.raw.tmp
         cat readcounts/deepribo_read_counts.raw.tmp | sed 1,2d | awk -v var=CDS -FS'\\t' '{{print $0"\\t"var}}' >> {output}
         rm readcounts/deepribo_read_counts.raw.tmp
         """
@@ -47,7 +64,7 @@ rule generateAnnotationIndependantReadCounts:
     shell:
         """
         mkdir -p readcounts
-        featureCounts -F GTF -s 1 -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/annotation_independant_read_counts.raw.tmp
+        featureCounts -F GTF -s 1 -O -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/annotation_independant_read_counts.raw.tmp
         cat readcounts/annotation_independant_read_counts.raw.tmp | sed 1,2d | awk '{{print $0"\\tCDS"}}' >> {output}
         rm readcounts/annotation_independant_read_counts.raw.tmp
         """

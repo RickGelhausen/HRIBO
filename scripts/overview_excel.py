@@ -297,8 +297,7 @@ def generate_annotation_dict(annotation_path):
         strand = getattr(row, "_6")
         attributes = getattr(row, "_8")
         read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
-        print(row)
-        print(attributes)
+
         if ";" in attributes and "=" in attributes:
             attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
         else:
@@ -333,15 +332,21 @@ def generate_annotation_dict(annotation_path):
             if "name" in attribute_list:
                 gene_name = attribute_list[attribute_list.index("name")+1]
 
+            locus_tag = ""
+            if "locus_tag" in attribute_list:
+                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+
             ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            gene_dict[ID] = gene_name
+            gene_dict[ID] = (gene_name, locus_tag)
 
     for key in cds_dict.keys():
         gene_name = ""
         if key in gene_dict:
-            gene_name = gene_dict[key]
-
-        annotation_dict[key] = (*cds_dict[key],gene_name)
+            gene_id, locus_tag, name, read_list = cds_dict[key]
+            gene_locus_tag, gene_name = gene_dict[key]
+            if locus_tag == "":
+                locus_tag = gene_locus_tag
+        annotation_dict[key] = (gene_id, locus_tag, name, read_list, gene_name)
 
     return annotation_dict
 
@@ -487,6 +492,9 @@ def create_excel_file(args):
 
     all_df = all_df.astype({"Start" : "int32", "Stop" : "int32"})
     all_df = all_df.sort_values(by=["Genome", "Start", "Stop"])
+
+    all_df.to_csv(args.output_path.replace(".xlsx", ".tsv"), sep="\t", index=False, quoting=csv.QUOTE_NONE)
+
     dataframe_dict = { "all" : all_df }
 
     excel_writer(args, dataframe_dict, wildcards)

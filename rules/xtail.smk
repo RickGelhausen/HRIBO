@@ -1,36 +1,3 @@
-rule longestTranscript:
-    input:
-        rules.retrieveAnnotation.output
-    output:
-        "xtail/longest_protein_coding_transcripts.gtf"
-    conda:
-        "../envs/normalization.yaml"
-    threads: 1
-    shell:
-        "mkdir -p xtail; HRIBO/scripts/longest_orf_transcript.py -a {input} -o {output}"
-
-rule sizeFactors:
-    input:
-        rules.longestTranscript.output,
-        expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        "normalization/sfactors.csv"
-    conda:
-        "../envs/normalization.yaml"
-    threads: 1
-    shell: ("mkdir -p normalization; HRIBO/scripts/generate_size_factors.R -t HRIBO/samples.tsv -b maplink/ -a {input[0]} -s {output};")
-
-rule cdsNormalizedCounts:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="tracks/updated_annotation.gff",
-    output:
-        raw="normalization/raw_reads.csv"
-    conda:
-        "../envs/normalization.yaml"
-    threads: 1
-    shell: ("mkdir -p normalization; HRIBO/scripts/generate_raw_counts.R -b maplink/ -a {input.annotation} -t HRIBO/samples.tsv -r {output.raw};")
-
 rule contrastInput:
     output:
         "contrasts/{contrast}"
@@ -43,7 +10,7 @@ rule contrastInput:
 
 rule xtail:
     input:
-        rawreads="normalization/raw_reads.csv",
+        rawreads="readcounts/differential_expression_read_counts.csv",
         contrastfile="contrasts/{contrast}"
     output:
         table=report("xtail/{contrast}.csv", caption="../report/xtail_table.rst", category="Regulation"),
@@ -81,7 +48,7 @@ rule xtailxlsx:
 
 rule riborex:
     input:
-        rawreads="normalization/raw_reads.csv",
+        rawreads="readcounts/differential_expression_read_counts.csv",
         contrastfile="contrasts/{contrast}"
     output:
         tabledeseq2="riborex/{contrast}_deseq2.csv",
