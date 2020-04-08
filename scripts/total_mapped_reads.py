@@ -13,8 +13,9 @@ def count_mapped_reads(args):
 
     output_string_mapped = ""
     output_string_length = ""
+    bamfiles = sorted(args.bamfiles)
     # run over all input files
-    for bamfile in args.bamfiles:
+    for bamfile in bamfiles:
         alignment_file = pysam.AlignmentFile(bamfile)
         total_mapped = {}
         total_length = {}

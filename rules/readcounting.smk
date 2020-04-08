@@ -11,8 +11,7 @@ rule generateDifferentialExpressionReadCounts:
     shell:
         """
         mkdir -p readcounts
-        featureCounts -F GTF -s 1 -O -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/differential_expression_read_counts.raw.tmp
-        cat readcounts/differential_expression_read_counts.raw.tmp | sed 1,2d | awk -F "," '{{$2=$3=$4=$5=""; print $0}}' >> {output}
+        HRIBO/scripts/call_featureCounts.py -b {input.bam} -s 1 --with_O --for_diff_expr -o {output} -t {threads} -a {input.annoation}
         """
 
 rule generateReparationReadCounts:
