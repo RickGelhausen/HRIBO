@@ -5,6 +5,8 @@ import os
 import pandas as pd
 import shlex, subprocess
 import collections
+import sys
+import csv
 
 def call_featureCounts(args):
     """
@@ -19,7 +21,7 @@ def call_featureCounts(args):
     identifier = "ID" if "ID=" in annotation_df[8][0] else "gene_id"
 
     tmp_file = os.path.splitext(args.output)[0] + ".tmp"
-    commandline_parameters = "-a %s -F GTF -g %s -s %s -T %s -o %s" % (args.annotation, identifier, args.strandness, args.threads, tmp_file)
+    commandline_parameters = " -a %s -F GTF -g %s -s %s -T %s -o %s" % (args.annotation, identifier, args.strandness, args.threads, tmp_file)
     if args.assign_to_all:
         commandline_parameters += " -O"
     if args.assign_multi_mappers:
@@ -31,14 +33,14 @@ def call_featureCounts(args):
         header = "," + ",".join([os.path.splitext(os.path.basename(bamfile))[0] for bamfile in bamfiles]) +"\n"
         with open(args.output, "w") as f:
             f.write(header)
-        labels = ["_%s" % x for x in range(0, len(bamfiles)+1)]
+        labels = ["s%s" % x for x in range(0, len(bamfiles)+1)]
         nTuple = collections.namedtuple('Pandas', labels)
     else:
-        labels = ["_%s" % x for x in range(0, len(bamfiles)+6)]
+        labels = ["s%s" % x for x in range(0, len(bamfiles)+6)]
         nTuple = collections.namedtuple('Pandas', labels)
 
     for feature in features:
-        commandline_call = "featureCounts -t %s " %(feature) + " ".join(bamfiles) + commandline_parameters
+        commandline_call = "featureCounts -t %s " %(feature) + commandline_parameters + " "+ " ".join(bamfiles)
         subprocess_call = shlex.split(commandline_call, posix=False)
 
         print(commandline_call)
@@ -50,8 +52,13 @@ def call_featureCounts(args):
             for row in tmp_df.itertuples(index=False, name='Pandas'):
                 gene_id = getattr(row, "_0")
                 chromosome = getattr(row, "_1").split(";")[0]
-                start = getattr(row, "_2").split(";")[0]
-                stop = getattr(row, "_3").split(";")[0]
+                start = getattr(row, "_2")
+                if type(start) is str:
+                    start = start.split(";")[0]
+
+                stop = getattr(row, "_3")
+                if type(stop) is str:
+                    stop = stop.split(";")[0]
                 strand = getattr(row, "_4").split(";")[0]
                 length = getattr(row, "_5")
                 read_list = [getattr(row, "_%s" % x) for x in range(6, len(row))]

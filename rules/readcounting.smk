@@ -11,7 +11,7 @@ rule generateDifferentialExpressionReadCounts:
     shell:
         """
         mkdir -p readcounts
-        HRIBO/scripts/call_featureCounts.py -b {input.bam} -s 1 --with_O --for_diff_expr -o {output} -t {threads} -a {input.annoation}
+        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O --for_diff_expr -o {output} -t {threads} -a {input.annotation}
         """
 
 rule generateReparationReadCounts:
@@ -27,9 +27,7 @@ rule generateReparationReadCounts:
     shell:
         """
         mkdir -p readcounts
-        featureCounts -F GTF -s 1 -O -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/reparation_read_counts.raw.tmp
-        cat readcounts/reparation_read_counts.raw.tmp | sed 1,2d | awk '{{print $0"\\tCDS"}}' >> {output}
-        rm readcounts/reparation_read_counts.raw.tmp
+        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
         """
 
 rule generateDeepRiboReadCounts:
@@ -45,9 +43,7 @@ rule generateDeepRiboReadCounts:
     shell:
         """
         mkdir -p readcounts
-        featureCounts -F GTF -s 1 -O -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/deepribo_read_counts.raw.tmp
-        cat readcounts/deepribo_read_counts.raw.tmp | sed 1,2d | awk -v var=CDS -FS'\\t' '{{print $0"\\t"var}}' >> {output}
-        rm readcounts/deepribo_read_counts.raw.tmp
+        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
         """
 
 rule generateAnnotationIndependantReadCounts:
@@ -63,9 +59,7 @@ rule generateAnnotationIndependantReadCounts:
     shell:
         """
         mkdir -p readcounts
-        featureCounts -F GTF -s 1 -O -g ID -t CDS -a {input.annotation} {input.bam} -T {threads} -o readcounts/annotation_independant_read_counts.raw.tmp
-        cat readcounts/annotation_independant_read_counts.raw.tmp | sed 1,2d | awk '{{print $0"\\tCDS"}}' >> {output}
-        rm readcounts/annotation_independant_read_counts.raw.tmp
+        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
         """
 
 rule generateAnnotationTotalReadCounts:
@@ -81,16 +75,7 @@ rule generateAnnotationTotalReadCounts:
     shell:
         """
         mkdir -p readcounts
-        UNIQUE="$(cut -f3 {input.annotation} | sort | uniq)"
-        IDENTIFIER="ID"
-        LINE="$(sed '3q;d' {input.annotation})"
-        if [[ $LINE == *"gene_id="* ]]; then IDENTIFIER="gene_id"; fi;
-        for f in ${{UNIQUE}}
-        do
-            featureCounts -F GTF -s 1 -g $IDENTIFIER -O -t $f -M --fraction -a {input.annotation} {input.bam} -T {threads} -o readcounts/annotation_total_reads.raw.tmp
-            cat readcounts/annotation_total_reads.raw.tmp | sed 1,2d | awk -v var=$f -FS'\\t' '{{print $0"\\t"var}}' >> {output}
-            rm readcounts/annotation_total_reads.raw.tmp
-        done
+        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O --with_M --fraction -o {output} -t {threads} -a {input.annotation}
         """
 
 rule generateAnnotationUniqueReadCounts:
@@ -106,16 +91,7 @@ rule generateAnnotationUniqueReadCounts:
     shell:
         """
         mkdir -p auxiliary
-        UNIQUE="$(cut -f3 {input.annotation} | sort | uniq)"
-        IDENTIFIER="ID"
-        LINE="$(sed '3q;d' {input.annotation})"
-        if [[ $LINE == *"gene_id="* ]]; then IDENTIFIER="gene_id"; fi;
-        for f in ${{UNIQUE}}
-        do
-            featureCounts -F GTF -s 1 -g $IDENTIFIER -O -t $f -M --fraction -a {input.annotation} {input.bam} -T {threads} -o readcounts/annotation_unique_reads.raw.tmp
-            cat readcounts/annotation_unique_reads.raw.tmp | sed 1,2d | awk -v var=$f -FS'\\t' '{{print $0"\\t"var}}' >> {output}
-            rm readcounts/annotation_unique_reads.raw.tmp
-        done
+        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O --with_M --fraction -o {output} -t {threads} -a {input.annotation}
         """
 
 rule mapIndependantReads:
