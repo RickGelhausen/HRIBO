@@ -64,7 +64,8 @@ def call_featureCounts(args):
                 read_list = [getattr(row, "_%s" % x) for x in range(6, len(row))]
 
                 if args.diff_expr:
-                    new_rows.append(nTuple(gene_id, *read_list))
+                    if feature == "CDS":
+                        new_rows.append(nTuple(gene_id, *read_list))
                 else:
                     new_rows.append(nTuple(gene_id, chromosome, start, stop, strand, *read_list, feature))
 
@@ -95,6 +96,7 @@ def main():
     args = parser.parse_args()
 
     call_featureCounts(args)
+
 
 if __name__ == '__main__':
     main()
