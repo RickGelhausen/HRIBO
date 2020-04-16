@@ -77,7 +77,7 @@ def map_reads_to_annotation(args):
             result = [reference_name, info, feature, start, stop, score, strand, phase, attributes] + read_dict[key]
         except KeyError:
             result = [reference_name, info, feature, start, stop, score, strand, phase, attributes] + [0]*read_size
-        print(result)
+
         rows.append(nTuple(*result))
 
     return pd.DataFrame.from_records(rows, columns=[x for x in range(len(name_list))])

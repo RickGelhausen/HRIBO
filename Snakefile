@@ -93,7 +93,8 @@ if DIFFEXPRESS.lower() == "on":
 if DEEPRIBO.lower() == "on":
     #deepribo
     include: "rules/deepribo.smk"
-
+else:
+    include: "rules/conditionals.smk"
 
 if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
    rule all:

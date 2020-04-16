@@ -50,7 +50,7 @@ rule generateAnnotationIndependantReadCounts:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation=rules.retrieveAnnotation.output
+        annotation="auxiliary/unambigous_annotation.gtf"
     output:
         "readcounts/annotation_independant_read_counts.raw"
     conda:

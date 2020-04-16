@@ -36,7 +36,7 @@ def call_featureCounts(args):
         labels = ["s%s" % x for x in range(0, len(bamfiles)+1)]
         nTuple = collections.namedtuple('Pandas', labels)
     else:
-        labels = ["s%s" % x for x in range(0, len(bamfiles)+6)]
+        labels = ["s%s" % x for x in range(0, len(bamfiles)+7)]
         nTuple = collections.namedtuple('Pandas', labels)
 
     for feature in features:
@@ -67,7 +67,7 @@ def call_featureCounts(args):
                     if feature == "CDS":
                         new_rows.append(nTuple(gene_id, *read_list))
                 else:
-                    new_rows.append(nTuple(gene_id, chromosome, start, stop, strand, *read_list, feature))
+                    new_rows.append(nTuple(gene_id, chromosome, start, stop, strand, length, *read_list, feature))
 
             if args.diff_expr:
                 new_df = pd.DataFrame.from_records(new_rows, columns=labels)

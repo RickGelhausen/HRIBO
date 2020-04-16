@@ -158,3 +158,19 @@ rule createExcelSummaryDeepRibo:
     threads: 1
     shell:
         "mkdir -p auxiliary; HRIBO/scripts/generate_excel_deepribo.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+
+rule newAnnotationDeepRibo:
+    input:
+        reparation_orfs="tracks/reparation_annotated.gff",
+        deepribo_orfs="tracks/deepribo_merged_plus.gff",
+        currentAnnotation=rules.retrieveAnnotation.output
+    output:
+        "tracks/totalAnnotation.gff"
+    conda:
+        "../envs/mergetools.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p tracks;
+        HRIBO/scripts/concatenate_gff.py {input.deepribo_orfs} {input.reparation_orfs} {input.currentAnnotation} -o {output}
+        """
