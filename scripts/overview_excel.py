@@ -309,9 +309,7 @@ def generate_annotation_dict(annotation_path):
                     attribute_list[i] = attribute_list[i].lower()
         else:
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
-    #    print("%s:%s-%s:%s" % (chromosome, start, stop, strand))
-    #    print(feature)
-    #    print(attribute_list)
+
         if feature.lower() == "cds":
             locus_tag = ""
             if "locus_tag" in attribute_list:
@@ -397,6 +395,7 @@ def create_excel_file(args):
 
     conditions = get_unique(conditions)
 
+    xtail_dict, riborex_dict, deepribo_dict, reparation_dict = {}, {}, {}, {}
     if args.xtail_path != "":
         xtail_dict = generate_xtail_dict(args.xtail_path)
     if args.riborex_path != "":
