@@ -103,7 +103,7 @@ rule totalmappedbamindex:
         rules.sammultitobam.output,
         rules.genomeSize.output
     output:
-        "bammulti/{method}-{condition}-{replicate}.bam.bai"
+        temp("bammulti/{method}-{condition}-{replicate}.bam.bai")
     conda:
         "../envs/samtools.yaml"
     threads: 20
@@ -117,7 +117,7 @@ rule uniquemappedbamindex:
         rules.samtobam.output,
         rules.genomeSize.output
     output:
-        "rRNAbam/{method}-{condition}-{replicate}.bam.bai"
+        temp("rRNAbam/{method}-{condition}-{replicate}.bam.bai")
     conda:
         "../envs/samtools.yaml"
     threads: 20

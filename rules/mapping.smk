@@ -2,7 +2,7 @@ rule genomeSegemehlIndex:
     input:
         genome=rules.retrieveGenome.output
     output:
-        index="genomeSegemehlIndex/genome.idx"
+        index=temp("genomeSegemehlIndex/genome.idx")
     conda:
         "../envs/segemehl.yaml"
     threads: 20
@@ -17,7 +17,7 @@ rule map:
         genomeSegemehlIndex="genomeSegemehlIndex/genome.idx",
         fastq="trimmed/{method}-{condition}-{replicate}.fastq",
     output:
-        sammulti="sammulti/{method}-{condition}-{replicate}.sam"
+        sammulti=temp("sammulti/{method}-{condition}-{replicate}.sam")
     conda:
         "../envs/segemehl.yaml"
     threads: 20
@@ -29,12 +29,12 @@ rule map:
         """
         mkdir -p sammulti; segemehl.x -e -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sammulti} 2> {log}
         """
-        
+
 rule samuniq:
     input:
         sammulti="sammulti/{method}-{condition}-{replicate}.sam"
     output:
-        sam="sam/{method}-{condition}-{replicate}.rawsam"
+        sam=temp("sam/{method}-{condition}-{replicate}.rawsam")
     conda:
         "../envs/samtools.yaml"
     threads: 20
@@ -63,7 +63,7 @@ rule samstrandswap:
     input:
         sam="sam/{method}-{condition}-{replicate}.rawsam"
     output:
-        sam="sam/{method}-{condition}-{replicate}.sam"
+        sam=temp("sam/{method}-{condition}-{replicate}.sam")
     threads: 1
     params:
          method=lambda wildcards: wildcards.method
@@ -73,7 +73,7 @@ rule sammultitobam:
     input:
         sam="sammulti/{method}-{condition}-{replicate}.sam"
     output:
-        "bammulti/{method}-{condition}-{replicate}.bam"
+        temp("bammulti/{method}-{condition}-{replicate}.bam")
     conda:
         "../envs/samtools.yaml"
     threads: 20
@@ -84,7 +84,7 @@ rule samtobam:
     input:
         sam="sam/{method}-{condition}-{replicate}.sam"
     output:
-        "rRNAbam/{method}-{condition}-{replicate}.bam"
+        temp("rRNAbam/{method}-{condition}-{replicate}.bam")
     conda:
         "../envs/samtools.yaml"
     threads: 20

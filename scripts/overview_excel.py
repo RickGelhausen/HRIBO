@@ -309,7 +309,9 @@ def generate_annotation_dict(annotation_path):
                     attribute_list[i] = attribute_list[i].lower()
         else:
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
-
+    #    print("%s:%s-%s:%s" % (chromosome, start, stop, strand))
+    #    print(feature)
+    #    print(attribute_list)
         if feature.lower() == "cds":
             locus_tag = ""
             if "locus_tag" in attribute_list:
@@ -325,9 +327,9 @@ def generate_annotation_dict(annotation_path):
             elif "id" in attribute_list:
                 gene_id = attribute_list[attribute_list.index("id")+1]
 
-            ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            cds_dict[ID] = (gene_id, locus_tag, name, read_list)
-        elif feature.lower() == "gene":
+            new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+            cds_dict[new_key] = (gene_id, locus_tag, name, read_list)
+        elif feature.lower() in ["gene","pseudogene"]:
             gene_name = ""
             if "name" in attribute_list:
                 gene_name = attribute_list[attribute_list.index("name")+1]
@@ -336,13 +338,13 @@ def generate_annotation_dict(annotation_path):
             if "locus_tag" in attribute_list:
                 locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
 
-            ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            gene_dict[ID] = (gene_name, locus_tag)
+            new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+            gene_dict[new_key] = (gene_name, locus_tag)
 
     for key in cds_dict.keys():
         gene_name = ""
+        gene_id, locus_tag, name, read_list = cds_dict[key]
         if key in gene_dict:
-            gene_id, locus_tag, name, read_list = cds_dict[key]
             gene_locus_tag, gene_name = gene_dict[key]
             if locus_tag == "":
                 locus_tag = gene_locus_tag

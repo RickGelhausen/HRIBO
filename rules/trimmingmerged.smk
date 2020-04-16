@@ -57,8 +57,8 @@ rule trim:
         fastq1="trimlink/{method}-{condition}-{replicate}_Q.fastq.gz",
         fastq2="trimlink/{method}-{condition}-{replicate}_P.fastq.gz"
     output:
-        fastq1="tmp_trimmed/{method}-{condition}-{replicate}_Q.fastq",
-        fastq2="tmp_trimmed/{method}-{condition}-{replicate}_P.fastq"
+        fastq1=temp("tmp_trimmed/{method}-{condition}-{replicate}_Q.fastq"),
+        fastq2=temp("tmp_trimmed/{method}-{condition}-{replicate}_P.fastq")
     params:
         adapter=lambda wildcards, output: ("" if not ADAPTERS else (" ".join([" -a %s" % adapter for adapter in ADAPTERS.split(",")]))),
         quality=" -q 20 --trim-n ",
@@ -74,7 +74,7 @@ rule mergeTrim:
         read1="tmp_trimmed/{method}-{condition}-{replicate}_Q.fastq",
         read2="tmp_trimmed/{method}-{condition}-{replicate}_P.fastq"
     output:
-        fastq="trimmed/{method}-{condition}-{replicate}.fastq"
+        fastq=temp("trimmed/{method}-{condition}-{replicate}.fastq")
     threads: 5
     conda:
         "../envs/dc.yaml"

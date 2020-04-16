@@ -19,7 +19,7 @@ rule trim:
     input:
         fastq="trimlink/{method}-{condition}-{replicate}.fastq.gz"
     output:
-        fastq="trimmed/{method}-{condition}-{replicate}.fastq"
+        fastq=temp("trimmed/{method}-{condition}-{replicate}.fastq")
     params:
         adapter=lambda wildcards, output: ("" if not ADAPTERS else (" ".join([" -a %s" % adapter for adapter in ADAPTERS.split(",")]))),
         quality=" -q 20 --trim-n ",
