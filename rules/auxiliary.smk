@@ -46,162 +46,13 @@ rule samplesToExcel:
     shell:
         "mkdir -p auxiliary; HRIBO/scripts/samples_to_xlsx.py -i {input} -o {output}"
 
-rule generateCombinedReadCounts:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="tracks/combined_annotated.gff"
-    output:
-        "auxiliary/combined_read_counts.raw"
-    conda:
-        "../envs/subread.yaml"
-    threads: 5
-    shell:
-        """
-        mkdir -p auxiliary
-        featureCounts -F GTF -s 1 -g ID -O -t CDS -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/combined_read_counts.raw.tmp
-        cat auxiliary/combined_read_counts.raw.tmp | sed 1,2d | awk '{{print $0"\\tCDS"}}' >> {output}
-        rm auxiliary/combined_read_counts.raw.tmp
-        """
-
-rule generateAnnotationTotalReadCounts:
-    input:
-        bam=expand("bammulti/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("bammulti/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="auxiliary/unambigous_annotation.gtf"
-    output:
-        "auxiliary/annotation_total_reads.raw"
-    conda:
-        "../envs/subread.yaml"
-    threads: 5
-    shell:
-        """
-        mkdir -p auxiliary
-        UNIQUE="$(cut -f3 {input.annotation} | sort | uniq)"
-        IDENTIFIER="ID"
-        LINE="$(sed '3q;d' {input.annotation})"
-        if [[ $LINE == *"gene_id="* ]]; then IDENTIFIER="gene_id"; fi;
-        for f in ${{UNIQUE}}
-        do
-            featureCounts -F GTF -s 1 -g $IDENTIFIER -O -t $f -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/annotation_total_reads.raw.tmp
-            cat auxiliary/annotation_total_reads.raw.tmp | sed 1,2d | awk -v var=$f -FS'\\t' '{{print $0"\\t"var}}' >> {output}
-            rm auxiliary/annotation_total_reads.raw.tmp
-        done
-        """
-
-rule generateAnnotationUniqueReadCounts:
-    input:
-        bam=expand("rRNAbam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("rRNAbam/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="auxiliary/unambigous_annotation.gtf"
-    output:
-        "auxiliary/annotation_unique_reads.raw"
-    conda:
-        "../envs/subread.yaml"
-    threads: 5
-    shell:
-        """
-        mkdir -p auxiliary
-        UNIQUE="$(cut -f3 {input.annotation} | sort | uniq)"
-        IDENTIFIER="ID"
-        LINE="$(sed '3q;d' {input.annotation})"
-        if [[ $LINE == *"gene_id="* ]]; then IDENTIFIER="gene_id"; fi;
-        for f in ${{UNIQUE}}
-        do
-            featureCounts -F GTF -s 1 -g $IDENTIFIER -O -t $f -M --fraction -a {input.annotation} {input.bam} -T {threads} -o auxiliary/annotation_unique_reads.raw.tmp
-            cat auxiliary/annotation_unique_reads.raw.tmp | sed 1,2d | awk -v var=$f -FS'\\t' '{{print $0"\\t"var}}' >> {output}
-            rm auxiliary/annotation_unique_reads.raw.tmp
-        done
-        """
-
-rule mapPredictionReads:
-    input:
-        reads="auxiliary/combined_read_counts.raw",
-        annotation="tracks/combined_annotated.gff"
-    output:
-        "auxiliary/prediction_annotation.gtf"
-    conda:
-        "../envs/mergetools.yaml"
-    threads: 1
-    shell:
-        """
-        mkdir -p auxiliary; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
-        """
-
-rule mapTotalReads:
-    input:
-        reads="auxiliary/annotation_total_reads.raw",
-        annotation="auxiliary/enriched_annotation.gtf"
-    output:
-        "auxiliary/total_annotation.gtf"
-    conda:
-        "../envs/mergetools.yaml"
-    threads: 1
-    shell:
-        """
-        mkdir -p auxiliary; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
-        """
-
-rule mapUniqueReads:
-    input:
-        reads="auxiliary/annotation_unique_reads.raw",
-        annotation="auxiliary/enriched_annotation.gtf"
-    output:
-        "auxiliary/unique_annotation.gtf"
-    conda:
-        "../envs/mergetools.yaml"
-    threads: 1
-    shell:
-        """
-        mkdir -p auxiliary; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
-        """
-
-rule totalMappedReads:
-    input:
-        bam=expand("bammulti/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("bammulti/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        mapped="auxiliary/total_sum_mapped_reads.txt",
-        length="auxiliary/total_average_read_lengths.txt"
-    conda:
-        "../envs/pytools.yaml"
-    threads: 1
-    shell:
-        "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
-
-rule uniqueMappedReads:
-    input:
-        bam=expand("rRNAbam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("rRNAbam/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        mapped="auxiliary/unique_sum_mapped_reads.txt",
-        length="auxiliary/unique_average_read_lengths.txt"
-    conda:
-        "../envs/pytools.yaml"
-    threads: 1
-    shell:
-        "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
-
-rule finalMappedReads:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        mapped="auxiliary/final_sum_mapped_reads.txt",
-        length="auxiliary/final_average_read_lengths.txt"
-    conda:
-        "../envs/pytools.yaml"
-    threads: 1
-    shell:
-        "mkdir -p auxiliary; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
-
 rule createExcelTotalAnnotation:
     input:
-        total="auxiliary/total_sum_mapped_reads.txt",
-        reads="auxiliary/total_annotation.gtf",
+        total="readcounts/total_mapped_reads.txt",
+        reads="readcounts/total_annotation.gtf",
         genome="genomes/genome.fa"
     output:
-        "auxiliary/annotation_total.xlsx",
+        "auxiliary/annotation_total.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
@@ -210,11 +61,11 @@ rule createExcelTotalAnnotation:
 
 rule createExcelUniqueAnnotation:
     input:
-        total="auxiliary/unique_sum_mapped_reads.txt",
-        reads="auxiliary/unique_annotation.gtf",
+        total="readcounts/unique_mapped_reads.txt",
+        reads="readcounts/unique_annotation.gtf",
         genome="genomes/genome.fa"
     output:
-        "auxiliary/annotation_unique.xlsx",
+        "auxiliary/annotation_unique.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
@@ -223,11 +74,11 @@ rule createExcelUniqueAnnotation:
 
 rule createExcelSummary:
     input:
-        total="auxiliary/final_sum_mapped_reads.txt",
-        reads="auxiliary/prediction_annotation.gtf",
+        total="readcounts/bam_mapped_reads.txt",
+        reads="readcounts/reparation_annotation.gff",
         genome="genomes/genome.fa"
     output:
-        report("auxiliary/predictions_reparation.xlsx", caption="../report/summary.rst", category="Summary table")
+        "auxiliary/predictions_reparation.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
@@ -236,8 +87,8 @@ rule createExcelSummary:
 
 rule createExcelTotalAnnotationReadCount:
     input:
-        reads="auxiliary/total_annotation.gtf",
-        total="auxiliary/total_sum_mapped_reads.txt"
+        reads="readcounts/total_annotation.gtf",
+        total="readcounts/total_mapped_reads.txt"
     output:
         "auxiliary/total_read_counts.xlsx",
     conda:
@@ -248,12 +99,82 @@ rule createExcelTotalAnnotationReadCount:
 
 rule createExcelUniqueAnnotationReadCount:
     input:
-        reads="auxiliary/unique_annotation.gtf",
-        total="auxiliary/unique_sum_mapped_reads.txt"
+        reads="readcounts/unique_annotation.gtf",
+        total="readcounts/unique_mapped_reads.txt"
     output:
-        "auxiliary/unique_read_counts.xlsx",
+        "auxiliary/unique_read_counts.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
     shell:
         "mkdir -p auxiliary; HRIBO/scripts/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"
+
+rule createOverviewTablePredictions:
+    input:
+        annotation="readcounts/independant_annotation.gff",
+        genome=rules.retrieveGenome.output,
+        totalreads="readcounts/bam_mapped_reads.txt",
+        reparation="readcounts/reparation_annotation.gff",
+        deepribo="readcounts/deepribo_annotation.gff"
+    output:
+        "auxiliary/overview.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+        """
+
+rule createOverviewTableReparation:
+    input:
+        annotation="readcounts/independant_annotation.gff",
+        genome=rules.retrieveGenome.output,
+        totalreads="readcounts/bam_mapped_reads.txt",
+        reparation="readcounts/reparation_annotation.gff"
+    output:
+        "auxiliary/overview.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        """
+
+rule createOverviewTableDiffExpr:
+    input:
+        annotation="readcounts/independant_annotation.gff",
+        genome=rules.retrieveGenome.output,
+        riborex="riborex/riborex_all.csv",
+        xtail="xtail/xtail_all.csv",
+        totalreads="readcounts/bam_mapped_reads.txt",
+        reparation="readcounts/reparation_annotation.gff"
+    output:
+        "auxiliary/overview.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -r {input.riborex} -x {input.xtail} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        """
+
+rule createOverviewTableAll:
+    input:
+        annotation="readcounts/independant_annotation.gff",
+        genome=rules.retrieveGenome.output,
+        riborex="riborex/riborex_all.csv",
+        xtail="xtail/xtail_all.csv",
+        totalreads="readcounts/bam_mapped_reads.txt",
+        reparation="readcounts/reparation_annotation.gff",
+        deepribo="readcounts/deepribo_annotation.gff"
+    output:
+        "auxiliary/overview.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -r {input.riborex} -x {input.xtail} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+        """

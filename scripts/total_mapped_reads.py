@@ -5,13 +5,6 @@ import os
 import pandas as pd
 import pysam
 
-def is_mapped(x):
-    binStr = '{0:012b}'.format(x)
-    if binStr[-1] == "1":
-        return binStr[-2] == "1"
-    else:
-        return binStr[-5] == "0"
-
 def count_mapped_reads(args):
     """
     count the total number of reads for each input file
@@ -20,8 +13,9 @@ def count_mapped_reads(args):
 
     output_string_mapped = ""
     output_string_length = ""
+    bamfiles = sorted(args.bamfiles)
     # run over all input files
-    for bamfile in args.bamfiles:
+    for bamfile in bamfiles:
         alignment_file = pysam.AlignmentFile(bamfile)
         total_mapped = {}
         total_length = {}
@@ -30,7 +24,7 @@ def count_mapped_reads(args):
             flag = int(read.flag) # flag: 0-forward-strand 4-unmapped 16-reverse-strand
             reference_name = read.reference_name
 
-            if is_mapped(flag):
+            if not read.is_unmapped:
                 if reference_name in total_mapped:
                     total_mapped[reference_name] += 1
                 else:

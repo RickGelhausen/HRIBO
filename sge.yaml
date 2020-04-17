@@ -19,42 +19,6 @@ samplesToExcel:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=1G"
 
-generateCombinedReadCounts:
-  parallelenvironment : 'smp 5'
-  memory: "h_vmem=5G"
-
-generateAnnotationTotalReadCounts:
-  parallelenvironment : 'smp 5'
-  memory: "h_vmem=10G"
-
-generateAnnotationUniqueReadCounts:
-  parallelenvironment : 'smp 5'
-  memory: "h_vmem=5G"
-
-mapPredictionReads:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=8G"
-
-mapTotalReads:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=8G"
-
-mapUniqueReads:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=8G"
-
-totalMappedReads:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=8G"
-
-uniqueMappedReads:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=8G"
-
-finalMappedReads:
- parallelenvironment : 'smp 1'
- memory: "h_vmem=8G"
-
 createExcelTotalAnnotation:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=8G"
@@ -116,18 +80,6 @@ allDeepRibo:
 filterDeepRibo:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
-
-generateAnnotationDeepRiboReadCounts:
-  parallelenvironment : 'smp 5'
-  memory: "h_vmem=5G"
-
-mapDeepRiboReads:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=8G"
-
-mappedReadsDeepRibo:
-  parallelenvironment : 'smp 1'
-  memory: "h_vmem=8G"
 
 createExcelSummaryDeepRibo:
   parallelenvironment : 'smp 1'
@@ -261,6 +213,51 @@ coveragedepth:
 multiqc:
   parallelenvironment : 'smp 1'
   memory: "h_vmem=4G"
+
+# readcounting.smk
+generateReparationReadCounts:
+  parallelenvironment : 'smp 5'
+  memory: "h_vmem=5G"
+
+generateDeepRiboReadCounts:
+  parallelenvironment : 'smp 5'
+  memory: "h_vmem=5G"
+
+generateAnnotationTotalReadCounts:
+  parallelenvironment : 'smp 5'
+  memory: "h_vmem=10G"
+
+generateAnnotationUniqueReadCounts:
+  parallelenvironment : 'smp 5'
+  memory: "h_vmem=5G"
+
+mapReparationReads:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+mapDeepRiboReads:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+mapTotalReads:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+mapUniqueReads:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+totalMappedReads:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+uniqueMappedReads:
+  parallelenvironment : 'smp 1'
+  memory: "h_vmem=8G"
+
+maplinkMappedReads:
+ parallelenvironment : 'smp 1'
+ memory: "h_vmem=8G"
 
 # reparation.smk
 uniprotDBRetrieve:

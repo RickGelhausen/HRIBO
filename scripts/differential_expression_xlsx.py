@@ -112,7 +112,7 @@ def annotation_to_dict(annotation_file):
                 attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
 
             id = attribute_list[attribute_list.index("ID") + 1]
-            
+
             locus_tag = ""
             if "locus_tag" in attributes.lower():
                 locus_tag = attribute_list[attribute_list.index("locus_tag") + 1]
@@ -120,7 +120,7 @@ def annotation_to_dict(annotation_file):
             old_locus_tag = ""
             if "old_locus_tag" in attributes.lower():
                 old_locus_tag = attribute_list[attribute_list.index("old_locus_tag") + 1]
-            
+
             parent_dict[id] = (locus_tag, old_locus_tag)
 
     annotation_dict = {}
@@ -147,7 +147,7 @@ def annotation_to_dict(annotation_file):
                 annotation_dict[id] = (chromosome, start, stop, strand, attributes, "", "")
             else:
                 annotation_dict[id] = (chromosome, start, stop, strand, attributes, parent_dict[parent][0], parent_dict[parent][1])
-    
+
 
     return annotation_dict
 
@@ -162,7 +162,7 @@ def riborex_output(args):
 
     diff_expr_df = pd.read_csv(args.input_csv, sep=",", comment="#")
 
-    all_sheet = []   
+    all_sheet = []
     header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "ID", "Name", "baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -179,7 +179,7 @@ def riborex_output(args):
                 chromosome, sec, strand = cds_id.split(":")
                 start, stop = sec.split("-")
                 column_info = ["","",""]
-                locus_tag, old_locus_tag = "", "" 
+                locus_tag, old_locus_tag = "", ""
             else:
                 sys.exit("Error... ID is not novel and not in the annotation!")
 
@@ -189,7 +189,7 @@ def riborex_output(args):
         stat = getattr(row, "stat")
         pvalue = getattr(row, "pvalue")
         padj = getattr(row, "padj")
-    
+
         start = int(start)
         stop = int(stop)
         length = stop - start + 1
@@ -217,10 +217,8 @@ def xtail_output(args):
     annotation_dict = annotation_to_dict(args.annotation_file)
 
     diff_expr_df = pd.read_csv(args.input_csv, sep=",", comment="#")
-    print(diff_expr_df)
-    
 
-    all_sheet = []   
+    all_sheet = []
     header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "ID", "Name", "mRNA_log2FC", "RPF_log2FC", "log2FC_TE_v1", "pvalue_v1", "log2FC_TE_v2", "pvalue_v2", "log2FC_TE_final", "pvalue_final", "pvalue.adjust", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -291,13 +289,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-
-
-

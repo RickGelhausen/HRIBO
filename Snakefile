@@ -22,6 +22,7 @@ if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
     sys.exit("Differential Expression requested, but only one condition given.\n\
             Please ensure, that you either provide multiple condtions or turn off differential expression in the config.yaml.")
 
+
 report: "report/workflow.rst"
 def getContrast(wildcards):
   conditions=samples["condition"].unique()
@@ -63,6 +64,38 @@ def get_wigfiles(wildcards):
 
   return wigfiles
 
+
+# Preprocessing
+include: "rules/preprocessing.smk"
+# Adaper removal and quality control
+include: "rules/trimming.smk"
+# removal of reads mapping to ribosomal rna genes
+include: "rules/rrnafiltering.smk"
+# mapping
+include: "rules/mapping.smk"
+# Visualization
+include: "rules/visualization.smk"
+include: "rules/merge.smk"
+# reparation
+include: "rules/reparation.smk"
+# metagene
+include: "rules/metageneprofiling.smk"
+include: "rules/auxiliary.smk"
+# multiqc
+include: "rules/qcauxiliary.smk"
+include: "rules/qcsingleend.smk"
+#readcounts
+include: "rules/readcounting.smk"
+if DIFFEXPRESS.lower() == "on":
+    # xtail
+    include: "rules/xtail.smk"
+
+if DEEPRIBO.lower() == "on":
+    #deepribo
+    include: "rules/deepribo.smk"
+else:
+    include: "rules/conditionals.smk"
+
 if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
    rule all:
       input:
@@ -82,6 +115,7 @@ if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "auxiliary/predictions_deepribo.xlsx",
+          rules.createOverviewTableAll.output,
           unpack(getContrast),
           unpack(getContrastXtail),
           unpack(getContrastRiborex)
@@ -104,7 +138,8 @@ elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
           "auxiliary/samples.xlsx",
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
-          "auxiliary/predictions_deepribo.xlsx"
+          "auxiliary/predictions_deepribo.xlsx",
+          rules.createOverviewTablePredictions.output
 
 elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
    rule all:
@@ -124,6 +159,7 @@ elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
           "auxiliary/samples.xlsx",
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
+          rules.createOverviewTableDiffExpr.output,
           unpack(getContrast),
           unpack(getContrastXtail),
           unpack(getContrastRiborex)
@@ -146,34 +182,7 @@ else:
           "auxiliary/samples.xlsx",
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
+          rules.createOverviewTableReparation.output
 
 onsuccess:
     print("Done, no error")
-
-# Preprocessing
-include: "rules/preprocessing.smk"
-# Adaper removal and quality control
-include: "rules/trimming.smk"
-# removal of reads mapping to ribosomal rna genes
-include: "rules/rrnafiltering.smk"
-# mapping
-include: "rules/mapping.smk"
-# Visualization
-include: "rules/visualization.smk"
-include: "rules/merge.smk"
-# reparation
-include: "rules/reparation.smk"
-# metagene
-include: "rules/metageneprofiling.smk"
-include: "rules/auxiliary.smk"
-# multiqc
-include: "rules/qcauxiliary.smk"
-include: "rules/qcsingleend.smk"
-
-if DIFFEXPRESS.lower() == "on":
-    # xtail
-    include: "rules/xtail.smk"
-
-if DEEPRIBO.lower() == "on":
-    #deepribo
-    include: "rules/deepribo.smk"

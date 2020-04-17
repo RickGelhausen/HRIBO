@@ -1,36 +1,3 @@
-rule longestTranscript:
-    input:
-        rules.retrieveAnnotation.output
-    output:
-        "xtail/longest_protein_coding_transcripts.gtf"
-    conda:
-        "../envs/normalization.yaml"
-    threads: 1
-    shell:
-        "mkdir -p xtail; HRIBO/scripts/longest_orf_transcript.py -a {input} -o {output}"
-
-rule sizeFactors:
-    input:
-        rules.longestTranscript.output,
-        expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        "normalization/sfactors.csv"
-    conda:
-        "../envs/normalization.yaml"
-    threads: 1
-    shell: ("mkdir -p normalization; HRIBO/scripts/generate_size_factors.R -t HRIBO/samples.tsv -b maplink/ -a {input[0]} -s {output};")
-
-rule cdsNormalizedCounts:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="tracks/updated_annotation.gff",
-    output:
-        raw="normalization/raw_reads.csv"
-    conda:
-        "../envs/normalization.yaml"
-    threads: 1
-    shell: ("mkdir -p normalization; HRIBO/scripts/generate_raw_counts.R -b maplink/ -a {input.annotation} -t HRIBO/samples.tsv -r {output.raw};")
-
 rule contrastInput:
     output:
         "contrasts/{contrast}"
@@ -43,7 +10,7 @@ rule contrastInput:
 
 rule xtail:
     input:
-        rawreads="normalization/raw_reads.csv",
+        rawreads="readcounts/differential_expression_read_counts.csv",
         contrastfile="contrasts/{contrast}"
     output:
         table=report("xtail/{contrast}.csv", caption="../report/xtail_table.rst", category="Regulation"),
@@ -81,7 +48,7 @@ rule xtailxlsx:
 
 rule riborex:
     input:
-        rawreads="normalization/raw_reads.csv",
+        rawreads="readcounts/differential_expression_read_counts.csv",
         contrastfile="contrasts/{contrast}"
     output:
         tabledeseq2="riborex/{contrast}_deseq2.csv",
@@ -117,3 +84,30 @@ rule riborexxlsx:
         python3 HRIBO/scripts/differential_expression_xlsx.py -a {input.annotation} -g {input.genome} --tool riborex -i {input.riborex_signif} -o {output.xlsx_signif}
         """
 
+cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(samples["condition"].unique(),2)))] for item in sublist]
+print(cur_contrast)
+rule poolriborex:
+    input:
+        riborex=expand("riborex/{contr}_sorted.csv", contr=cur_contrast)
+    output:
+        "riborex/riborex_all.csv"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        python3 HRIBO/scripts/merge_differential_expression.py {input.riborex} -o {output} -t riborex
+        """
+
+rule poolxtail:
+    input:
+        xtail=expand("xtail/{contr}_sorted.csv", contr=cur_contrast)
+    output:
+        "xtail/xtail_all.csv"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        python3 HRIBO/scripts/merge_differential_expression.py {input.xtail} -o {output} -t xtail
+        """

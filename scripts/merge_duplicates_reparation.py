@@ -47,6 +47,7 @@ def handle_overlap(args):
         sampleRow = geneDict[key][0]
         evidence = set()
         orftype = set()
+        cur_highest_proba = 0
         for row in geneDict[key]:
             attributes = re.split('[;=]', getattr(row, "s8"))
             if "Condition" in attributes and "Method" in attributes and "Replicate" in attributes:
@@ -61,9 +62,13 @@ def handle_overlap(args):
 
             if "ORF_type" in attributes:
                 orftype.add(attributes[attributes.index("ORF_type")+1])
+            if "Prob" in attributes:
+                cur_proba = float(attributes[attributes.index("Prob")+1])
 
-
-        attribute = "ID="+key+";Name="+key+";ORF_type="+",".join(orftype)+";Evidence="+" ".join(evidence)
+            if cur_proba > cur_highest_proba:
+                cur_highest_proba = cur_proba
+        
+        attribute = "ID="+key+";Name="+key+";ORF_type="+",".join(orftype)+";Evidence="+" ".join(evidence)+";Prob=" + str(cur_highest_proba)
 
         rows.append(nTuple(getattr(sampleRow, "s0"),"merged", getattr(sampleRow, "s2"), getattr(sampleRow, "s3"), \
                            getattr(sampleRow, "s4"), getattr(sampleRow, "s5"),getattr(sampleRow, "s6"), \

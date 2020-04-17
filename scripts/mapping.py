@@ -10,6 +10,7 @@ import argparse
 from collections import defaultdict
 from pprint import pprint
 import os
+import csv
 
 def init_write_wig(file_handle,library_name, strand):
     tid = "%s_%s" % (library_name, strand)
@@ -96,7 +97,7 @@ def compute_seqid_mapping(bam_path,read_count_splitting,mapping_add_function,str
     bam = pysam.Samfile(bam_path)
     results = []
     for ref_seq, length in zip(bam.references, bam.lengths):
-        mappings = {}        
+        mappings = {}
         for strand in ["forward", "reverse"]:
             mappings[strand] = np.array([0.0] * length)
         for entry in bam.fetch(ref_seq):
@@ -111,7 +112,7 @@ def compute_seqid_mapping(bam_path,read_count_splitting,mapping_add_function,str
         results.append((ref_seq, mappings))
     return results
 
-def compute_wig(bam_path,wig_file_path,library_name,min_no_of_aligned_reads,no_of_aligned_reads,read_count_splitting=True, mapping_style="centered", clip_length=11, non_strand_specific=False, strand_swap=False):
+def compute_wig(bam_path,wig_file_path,library_name,genome_read_dict,genome_min_read_dict,read_count_splitting=True, mapping_style="centered", clip_length=11, non_strand_specific=False, strand_swap=False):
     mapping_add_function = select_mapping_add_function(mapping_style)
     seqid_mapping = compute_seqid_mapping(bam_path,read_count_splitting,mapping_add_function,strand_swap,clip_length)
     raw_fw_handle=open(wig_file_path_setter(wig_file_path,library_name,"raw","forward"), "w")
@@ -127,6 +128,8 @@ def compute_wig(bam_path,wig_file_path,library_name,min_no_of_aligned_reads,no_o
     mil_rw_handle=open(wig_file_path_setter(wig_file_path,library_name,"mil","reverse"), "w")
     init_write_wig(mil_fw_handle,library_name,"reverse")
     for (seqid, mappings) in seqid_mapping:
+            no_of_aligned_reads = int(genome_read_dict[seqid])
+            min_no_of_aligned_reads = int(genome_min_read_dict[seqid])
             write_wig(raw_fw_handle, seqid, mappings["forward"])
             write_wig(raw_rw_handle, seqid, mappings["reverse"])
             write_wig(min_fw_handle, seqid, mappings["forward"],factor=min_no_of_aligned_reads/no_of_aligned_reads)
@@ -140,6 +143,20 @@ def compute_wig(bam_path,wig_file_path,library_name,min_no_of_aligned_reads,no_o
     mil_fw_handle.close()
     mil_rw_handle.close()
 
+def get_read_count_dict(input_read_filepath,library_name):
+    genome_read_dict = {}
+    genome_min_read_dict = {}
+    with open(input_read_filepath, newline='\n') as csvfile:
+        tsvreader = csv.reader(csvfile, delimiter='\t')
+        for entry in tsvreader:
+            if entry[0]==library_name:
+              genome_read_dict[entry[1]] = int(entry[2])
+            if entry[1] in genome_min_read_dict:
+                if genome_min_read_dict[entry[1]] < entry[2]:
+                    genome_min_read_dict[entry[1]] = entry[2]
+            else:
+                genome_min_read_dict[entry[1]] = entry[2]
+    return(genome_read_dict,genome_min_read_dict)
 
 def main():
     parser = argparse.ArgumentParser(description='Create single nucleotide mapping file')
@@ -149,13 +166,14 @@ def main():
     parser.add_argument("--mapping_style", default="centered", help='Mapping style: global, first_base_only, last_base_only, centered')
     parser.add_argument("--no_of_aligned_reads_file_path", help='File with total number of aligned reads')
     parser.add_argument("--clip_length", type=int, default=11, help='Clip length for centered mapping')
-    parser.add_argument("--min_no_of_aligned_reads_file_path", help='File with minimal number of aligned reads for all used libraries')
     args = parser.parse_args()
-    no_of_aligned_reads_file = open(args.no_of_aligned_reads_file_path,"r")
-    no_of_aligned_reads = int(no_of_aligned_reads_file.read())
-    min_no_of_aligned_reads_file = open(args.min_no_of_aligned_reads_file_path,"r")
-    min_no_of_aligned_reads = int(min_no_of_aligned_reads_file.read())
+    #parse read count files
+    (genome_read_dict,genome_min_read_dict) = get_read_count_dict(args.no_of_aligned_reads_file_path,args.library_name)
+    #no_of_aligned_reads_file = open(args.no_of_aligned_reads_file_path,"r")
+    #no_of_aligned_reads = int(no_of_aligned_reads_file.read())
+    #min_no_of_aligned_reads_file = open(args.min_no_of_aligned_reads_file_path,"r")
+    #min_no_of_aligned_reads = int(min_no_of_aligned_reads_file.read())
     #mappings = {}
-    compute_wig(args.bam_path,args.wiggle_file_path,args.library_name,min_no_of_aligned_reads,no_of_aligned_reads,True,args.mapping_style,11,False,False)
+    compute_wig(args.bam_path,args.wiggle_file_path,args.library_name,genome_read_dict,genome_min_read_dict,True,args.mapping_style,11,False,False)
 if __name__ == '__main__':
     main()
