@@ -5,7 +5,7 @@ idx=$1
 timestamp=$(date +"%d-%m-%y")
 echo "${timestamp}"
 
-report="${idx}report_HRIBO1.3.2_${timestamp}"
+report="${idx}report_HRIBO1.4.0_${timestamp}"
 
 mkdir -p $report
 mkdir -p "${report}/genome-browser/features/"
@@ -25,7 +25,7 @@ mkdir -p "${report}/differential-expression/riborex/"
 cp -r HRIBO/manual/Manual_HRIBO.pdf "${report}/manual.pdf"
 cp auxiliary/samples.xlsx "${report}/samples.xlsx"
 
-cp -r "tracks/combined_annotated.gff" "${report}/ORF-predictions/predictions_reparation.gff"
+cp -r "tracks/reparation_annotated.gff" "${report}/ORF-predictions/predictions_reparation.gff"
 cp -r "tracks/deepribo_merged.gff" "${report}/ORF-predictions/predictions_deepribo.gff"
 cp -r auxiliary/predictions_deepribo.xlsx "${report}/ORF-predictions/predictions_deepribo.xlsx"
 cp -r auxiliary/predictions_reparation.xlsx "${report}/ORF-predictions/predictions_reparation.xlsx"
@@ -57,6 +57,7 @@ cp -r riborex/*_sorted.xlsx "${report}/differential-expression/riborex/"
 cp -r riborex/*_significant.xlsx "${report}/differential-expression/riborex/"
 
 cp -r tracks/updated_annotation.gff "${report}/genome-browser/"
+cp -r auxiliary/overview.xlsx "${report}"
 cp -r metageneprofiling "${report}"
 
 zip -r "${report}.zip" $report
