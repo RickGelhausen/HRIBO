@@ -91,7 +91,7 @@ rule generateAnnotationUniqueReadCounts:
     shell:
         """
         mkdir -p auxiliary
-        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O --with_M --fraction -o {output} -t {threads} -a {input.annotation}
+        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O --fraction -o {output} -t {threads} -a {input.annotation}
         """
 
 rule mapIndependantReads:
