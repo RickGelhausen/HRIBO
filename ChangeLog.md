@@ -1,3 +1,9 @@
+### version 1.4.0 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 17.04.2020
+ * added overview table that aggregates all important information about ORFs
+ * updated readcounting to consitently use the same method
+ * updated makereport script
+ * updated manual
+ 
 ### version 1.3.2 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 24.03.2020
  * updated sge.yaml
  * updated torque.yaml
