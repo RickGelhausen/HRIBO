@@ -6,6 +6,7 @@ import pandas as pd
 import collections
 import csv
 from collections import Counter, OrderedDict
+import itertools as iter
 
 from Bio.Seq import Seq
 from Bio import SeqIO
@@ -170,9 +171,9 @@ def generate_riborex_dict(riborex_path):
         log2fc = getattr(row, "log2FoldChange")
         pvalue = getattr(row, "pvalue")
         pvalue_adj = getattr(row, "padj")
-        contrasts = getattr(row, "contrast")
+        contrast = getattr(row, "contrast").split("_")[1]
 
-        riborex_dict[gene_id] = (log2fc, pvalue, pvalue_adj, contrasts)
+        riborex_dict[(gene_id, contrast)] = (log2fc, pvalue, pvalue_adj)
 
     return riborex_dict
 
@@ -191,9 +192,9 @@ def generate_xtail_dict(xtail_path):
         log2fc = getattr(row, "log2FC_TE_final")
         pvalue = getattr(row, "pvalue_final")
         pvalue_adj = getattr(row, "pvalue_adjust")
-        contrasts = getattr(row, "contrast")
+        contrast = getattr(row, "contrast").split("_")[1]
 
-        xtail_dict[gene_id] = (log2fc, pvalue, pvalue_adj, contrasts)
+        xtail_dict[(gene_id, contrast)] = (log2fc, pvalue, pvalue_adj)
 
     return xtail_dict
 
@@ -412,9 +413,13 @@ def create_excel_file(args):
     # read gff file
     all_sheet = []
 
+    contrasts = sorted(["%s-%s" %(tuple) for tuple in list(iter.combinations(conditions,2))])
+    print(contrasts)
     header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] +\
-             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score", "riborex_pvalue", "riborex_pvalue_adjusted","riborex_log2FC", "xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]
-
+             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score"] +\
+             ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["riborex_pvalue", "riborex_pvalue_adjusted", "riborex_log2FC"]] +\
+             ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]]
+    print(header)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
 
@@ -424,9 +429,6 @@ def create_excel_file(args):
 
         locus_tag, name, gene_name = "","",""
         reparation_probability, deepribo_rank, deepribo_score = 0, 0, 0
-        riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC = 0, 0, 0
-        xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC = 0, 0, 0
-        contrast_list = []
         evidence = []
 
         read_list = []
@@ -458,23 +460,31 @@ def create_excel_file(args):
                     evidence_list.append(e)
             evidence.extend(evidence_list)
 
-        if key in xtail_dict:
-            xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted, contrasts = xtail_dict[key]
-            contrast_list.extend(contrasts.split(" "))
-        elif gene_id != "" and gene_id in xtail_dict:
-            xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted, contrasts = xtail_dict[gene_id]
-            contrast_list.extend(contrasts.split(" "))
+        xtail_list = []
+        for contrast in contrasts:
+            if (key,contrast) in xtail_dict:
+                xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[(key,contrast)]
+                xtail_list += [xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
+            elif gene_id != "" and (gene_id,contrast) in xtail_dict:
+                xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[(gene_id,contrast)]
+                xtail_list += [xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
+            else:
+                xtail_list += [0,0,0]
 
-        if key in riborex_dict:
-            riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted, contrasts = riborex_dict[key]
-            contrast_list.extend(contrasts.split(" "))
-        elif gene_id != "" and gene_id in riborex_dict:
-            riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted, contrasts = riborex_dict[gene_id]
-            contrast_list.extend(contrasts.split(" "))
+
+        riborex_list = []
+        for contrast in contrasts:
+            if (key,contrast) in riborex_dict:
+                riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[(key,contrast)]
+                riborex_list += [riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC]
+            elif gene_id != "" and (gene_id,contrast) in riborex_dict:
+                riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[(gene_id,contrast)]
+                riborex_list += [riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC]
+            else:
+                riborex_list += [0,0,0]
 
         start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
 
-        contrast_list.sort()
         evidence.sort()
 
         rpkm_list = []
@@ -485,7 +495,8 @@ def create_excel_file(args):
 
         evidence = " ".join(evidence)
         result = [chromosome, start, stop, strand, locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\
-                 [evidence, reparation_probability, deepribo_rank, deepribo_score, riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC, xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
+                 [evidence, reparation_probability, deepribo_rank, deepribo_score] +\
+                 riborex_list + xtail_list
 
         all_sheet.append(nTuple(*result))
 

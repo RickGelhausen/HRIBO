@@ -35,7 +35,7 @@ def pool_contrasts_xtail(args):
             pvalue_adj = getattr(row, "_9")
 
             contrast_tuple = (mRNA_log2FC, RPF_log2FC, log2FC_TE_v1, pvalue_v1, log2FC_TE_v2, pvalue_v2, \
-                              log2FC_TE_final, pvalue_final, pvalue_adj, args.tool + "-" + cur_contrast)
+                              log2FC_TE_final, pvalue_final, pvalue_adj, args.tool + "_" + cur_contrast)
 
             if gene_id in contrast_dict:
                 contrast_dict[gene_id].append(contrast_tuple)
@@ -62,7 +62,7 @@ def pool_contrasts_riborex(args):
             stat = getattr(row, "stat")
             pvalue = getattr(row, "pvalue")
             padj = getattr(row, "padj")
-            contrast_tuple = (baseMean, log2FoldChange, lfcSE, stat, pvalue, padj, args.tool + "-" + cur_contrast)
+            contrast_tuple = (baseMean, log2FoldChange, lfcSE, stat, pvalue, padj, args.tool + "_" + cur_contrast)
 
             if gene_id in contrast_dict:
                 contrast_dict[gene_id].append(contrast_tuple)
@@ -84,12 +84,8 @@ def merge_xtail_results(contrast_dict):
 
     rows = []
     for key, value in contrast_dict.items():
-        contrasts = set()
-        for contrast_tuple in value:
-            contrasts.add(contrast_tuple[-1])
-
-        best_tuple = max(value, key=itemgetter(7))
-        rows.append(nTuple(key, *list(best_tuple[:-1]), " ".join(list(contrasts))))
+        for it in value:
+            rows.append(nTuple(key, *it))
 
     return pd.DataFrame.from_records(rows, columns=header)
 
@@ -104,13 +100,8 @@ def merge_riborex_results(contrast_dict):
 
     rows = []
     for key, value in contrast_dict.items():
-        contrasts = set()
-        for contrast_tuple in value:
-            contrasts.add(contrast_tuple[-1])
-
-        best_tuple = max(value, key=itemgetter(5))
-
-        rows.append(nTuple(key, *list(best_tuple[:-1]), " ".join(list(contrasts))))
+        for it in value:
+            rows.append(nTuple(key, *it))
 
     return pd.DataFrame.from_records(rows, columns=header)
 
