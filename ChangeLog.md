@@ -1,3 +1,6 @@
+### version 1.4.1 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 20.04.2020
+ * added support for multi-condition results for differential expression in the overview table
+ 
 ### version 1.4.0 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 17.04.2020
  * added overview table that aggregates all important information about ORFs
  * updated readcounting to consitently use the same method
