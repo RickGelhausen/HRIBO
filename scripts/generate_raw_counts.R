@@ -33,14 +33,14 @@ gencode <- import.gff(options$annotation_file_path)
 # keep only cds
 sel <- gencode$type == "CDS"
 cds <- gencode[which(sel),]
-print(cds)
+s)
 # create empty data frame
 gene.counts <- data.frame(gene.id = cds$ID)
-print(cds$ID)
+
 # get sample files
 sample.files <- paste(options$bam_directory_path, list.files(options$bam_directory_path, pattern = "\\.bam$"), sep = "")
 for (i in sample.files) {
-  print(i)
+
   # get sample name
   name.i <- as.character(i)
   # import reads
@@ -51,10 +51,6 @@ for (i in sample.files) {
   reads <- flank(reads, -1)
   # count reads into genes
 
-  print(cds)
-  print(reads)
-  print(countOverlaps(cds, reads))
-  print(gene.counts)
   gene.counts[, name.i] <- countOverlaps(cds, reads)
 }
 

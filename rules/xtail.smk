@@ -85,7 +85,7 @@ rule riborexxlsx:
         """
 
 cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(samples["condition"].unique(),2)))] for item in sublist]
-print(cur_contrast)
+
 rule poolriborex:
     input:
         riborex=expand("riborex/{contr}_sorted.csv", contr=cur_contrast)

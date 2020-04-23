@@ -17,9 +17,6 @@ def calculate_rpkm(total_mapped, read_count, read_length):
     """
     calculate the rpkm
     """
-    print(read_count)
-    print(total_mapped)
-    print(read_length)
     return float("%.2f" % ((read_count * 1000000000) / (total_mapped * read_length)))
 
 def get_unique(in_list):
