@@ -204,7 +204,7 @@ def generate_reparation_dict(reparation_path):
     create a dictionary containing all important reparation input
     """
 
-    reparation_df = pd.read_csv(reparation_path, sep="\t", comment="#")
+    reparation_df = pd.read_csv(reparation_path, header=None, sep="\t", comment="#")
     prefix_columns = 9
 
     reparation_dict = {}
@@ -242,7 +242,7 @@ def generate_deepribo_dict(deepribo_path):
     create a dictionary containing all important deepribo input
     """
 
-    deepribo_df = pd.read_csv(deepribo_path, sep="\t", comment="#")
+    deepribo_df = pd.read_csv(deepribo_path, header=None, sep="\t", comment="#")
     prefix_columns = 9
 
     deepribo_dict = {}
