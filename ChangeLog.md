@@ -1,3 +1,7 @@
+### version 1.4.2 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 25.04.2020
+ * fixed bug causing overview_excel.py to crash for certain deepribo files
+ * updated manual
+
 ### version 1.4.1 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 20.04.2020
  * added support for multi-condition results for differential expression in the overview table
  * updated manual
