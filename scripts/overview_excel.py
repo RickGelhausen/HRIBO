@@ -415,7 +415,7 @@ def create_excel_file(args):
 
     contrasts = sorted(["%s-%s" %(tuple) for tuple in list(iter.combinations(conditions,2))])
 
-    header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] +\
+    header = ["Identifier","Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] +\
              ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score"] +\
              ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["riborex_pvalue", "riborex_pvalue_adjusted", "riborex_log2FC"]] +\
              ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]]
@@ -493,8 +493,9 @@ def create_excel_file(args):
 
         TE_list = calculate_TE(rpkm_list, wildcards, conditions)
 
+        identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
         evidence = " ".join(evidence)
-        result = [chromosome, start, stop, strand, locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\
+        result = [identifier, chromosome, start, stop, strand, locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\
                  [evidence, reparation_probability, deepribo_rank, deepribo_score] +\
                  riborex_list + xtail_list
 
