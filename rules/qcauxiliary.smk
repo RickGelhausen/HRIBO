@@ -45,7 +45,7 @@ rule fastqcrrnafilter:
 
 rule featurescounts:
     input:
-        annotation={rules.checkAnnotation.output},
+        annotation={rules.unambigousAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/all/{method}-{condition}-{replicate}.txt",
@@ -57,7 +57,7 @@ rule featurescounts:
 
 rule trnafeaturescounts:
     input:
-        annotation={rules.checkAnnotation.output},
+        annotation={rules.unambigousAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/trnainall/{method}-{condition}-{replicate}.txt",
@@ -69,7 +69,7 @@ rule trnafeaturescounts:
 
 rule norrnafeaturescounts:
     input:
-        annotation={rules.checkAnnotation.output},
+        annotation={rules.unambigousAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/rrnainall/{method}-{condition}-{replicate}.txt",
@@ -81,7 +81,7 @@ rule norrnafeaturescounts:
 
 rule rrnatotalfeaturescounts:
     input:
-        annotation={rules.checkAnnotation.output},
+        annotation={rules.unambigousAnnotation.output},
         bam="bammulti/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/rrnainallaligned/{method}-{condition}-{replicate}.txt",
@@ -93,7 +93,7 @@ rule rrnatotalfeaturescounts:
 
 rule rrnauniquefeaturescounts:
     input:
-        annotation={rules.checkAnnotation.output},
+        annotation={rules.unambigousAnnotation.output},
         bam="rRNAbam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/rrnainuniquelyaligned/{method}-{condition}-{replicate}.txt",

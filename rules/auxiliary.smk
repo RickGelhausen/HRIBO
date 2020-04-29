@@ -25,7 +25,7 @@ rule unambigousAnnotation:
     input:
         "auxiliary/enriched_annotation.gff"
     output:
-        "auxiliary/unambigous_annotation.gtf"
+        "auxiliary/unambigous_annotation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
