@@ -12,9 +12,9 @@ def getGFFtype(filename):
 
 rule enrichAnnotation:
     input:
-        annotation=rules.retrieveAnnotation.output
+        annotation=rules.checkAnnotation.output
     output:
-        "auxiliary/enriched_annotation.gtf"
+        "auxiliary/enriched_annotation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -23,7 +23,7 @@ rule enrichAnnotation:
 
 rule unambigousAnnotation:
     input:
-        "auxiliary/enriched_annotation.gtf"
+        "auxiliary/enriched_annotation.gff"
     output:
         "auxiliary/unambigous_annotation.gtf"
     conda:

@@ -31,10 +31,7 @@ def retrieve_column_information(attributes):
     [locus_tag, name, product, note]
     """
 
-    if ";" in attributes and "=" in attributes:
-        attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
-    else:
-        attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+    attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
 
     if "ORF_type=;" in attributes:
         attribute_list.remove("ORF_type")
@@ -115,9 +112,9 @@ def TE(ribo_count, rna_count):
     """
 
     if ribo_count == 0 and rna_count == 0:
-        return 0
+        return "NaN"
     elif rna_count == 0:
-        return ribo_count
+        return "NaN"
     else:
         return ribo_count / rna_count
 
@@ -251,7 +248,10 @@ def parse_orfs(args):
             rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
 
         TE_list = calculate_TE(rpkm_list, wildcards, conditions)
-        result = [reference_name, "reparation", feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
+        if source == "reparation":
+            result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
+        else:
+            result = [reference_name, "HRIBO", feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
 
         all_sheet.append(nTuple(*result))
 

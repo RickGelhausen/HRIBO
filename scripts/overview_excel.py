@@ -105,9 +105,9 @@ def TE(ribo_count, rna_count):
     """
 
     if ribo_count == 0 and rna_count == 0:
-        return 0
+        return "NaN"
     elif rna_count == 0:
-        return ribo_count
+        return "NaN"
     else:
         return ribo_count / rna_count
 
@@ -300,7 +300,7 @@ def generate_annotation_dict(annotation_path):
         read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
 
         if ";" in attributes and "=" in attributes:
-            attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
+            attribute_list = [x for x in re.split('[;= ]', attributes) if x != ""]
         else:
             attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
 
@@ -319,6 +319,8 @@ def generate_annotation_dict(annotation_path):
             name = ""
             if "name" in attribute_list:
                 name = attribute_list[attribute_list.index("name")+1]
+            elif "gene_name" in attribute_list:
+                name = attribute_list[attribute_list.index("gene_name")+1]
 
             gene_id = ""
             if "gene_id" in attribute_list:
@@ -332,10 +334,14 @@ def generate_annotation_dict(annotation_path):
             gene_name = ""
             if "name" in attribute_list:
                 gene_name = attribute_list[attribute_list.index("name")+1]
+            elif "gene_name" in attribute_list:
+                gene_name = attribute_list[attribute_list.index("gene_name")+1]
 
             locus_tag = ""
             if "locus_tag" in attribute_list:
                 locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+            elif "gene_id" in attribute_list:
+                locus_tag = attribute_list[attribute_list.index("gene_id")+1]
 
             new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
             gene_dict[new_key] = (gene_name, locus_tag)
@@ -343,10 +349,14 @@ def generate_annotation_dict(annotation_path):
     for key in cds_dict.keys():
         gene_name = ""
         gene_id, locus_tag, name, read_list = cds_dict[key]
+
         if key in gene_dict:
+            print("KEY IN gene_dict")
             gene_locus_tag, gene_name = gene_dict[key]
+
             if locus_tag == "":
                 locus_tag = gene_locus_tag
+            print(locus_tag)
         annotation_dict[key] = (gene_id, locus_tag, name, read_list, gene_name)
 
     return annotation_dict
@@ -415,8 +425,10 @@ def create_excel_file(args):
 
     contrasts = sorted(["%s-%s" %(tuple) for tuple in list(iter.combinations(conditions,2))])
 
-    header = ["Identifier","Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] +\
-             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score"] +\
+    header = ["Identifier","Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon"] +\
+             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score", "Nucleotide_seq", "Aminoacid_seq"] +\
+             [cond + "_TE" for cond in TE_header] +\
+             [card + "_rpkm" for card in wildcards] +\
              ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["riborex_pvalue", "riborex_pvalue_adjusted", "riborex_log2FC"]] +\
              ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]]
 
@@ -495,8 +507,9 @@ def create_excel_file(args):
 
         identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
         evidence = " ".join(evidence)
-        result = [identifier, chromosome, start, stop, strand, locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\
-                 [evidence, reparation_probability, deepribo_rank, deepribo_score] +\
+        result = [identifier, chromosome, start, stop, strand, locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
+                 [evidence, reparation_probability, deepribo_rank, deepribo_score, nucleotide_seq, aa_seq] +\
+                 TE_list + rpkm_list +\
                  riborex_list + xtail_list
 
         all_sheet.append(nTuple(*result))

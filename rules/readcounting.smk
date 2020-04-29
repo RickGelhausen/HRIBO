@@ -97,7 +97,7 @@ rule generateAnnotationUniqueReadCounts:
 rule mapIndependantReads:
     input:
         reads="readcounts/annotation_independant_read_counts.raw",
-        annotation=rules.retrieveAnnotation.output
+        annotation=rules.checkAnnotation.output
     output:
         "readcounts/independant_annotation.gff"
     conda:
@@ -139,7 +139,7 @@ rule mapDeepRiboReads:
 rule mapTotalReads:
     input:
         reads="readcounts/annotation_total_reads.raw",
-        annotation="auxiliary/enriched_annotation.gtf"
+        annotation="auxiliary/enriched_annotation.gff"
     output:
         "readcounts/total_annotation.gtf"
     conda:
@@ -153,7 +153,7 @@ rule mapTotalReads:
 rule mapUniqueReads:
     input:
         reads="readcounts/annotation_unique_reads.raw",
-        annotation="auxiliary/enriched_annotation.gtf"
+        annotation="auxiliary/enriched_annotation.gff"
     output:
         "readcounts/unique_annotation.gtf"
     conda:

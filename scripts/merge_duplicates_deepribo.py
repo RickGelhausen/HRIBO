@@ -193,7 +193,7 @@ def generate_output_gff(args, overlap_dict):
         if cur_pred_value >= 0:
             rows_plus.append(nTuple(reference_name, "merged", "CDS", start, stop, cur_pred_value, strand, dist, new_attributes))
         rows.append(nTuple(reference_name, "merged", "CDS", start, stop, cur_pred_value, strand, dist, new_attributes))
-        
+
     return pd.DataFrame.from_records(rows, columns=["seqName","source","type","start","stop","score","strand","phase","attribute"]), \
            pd.DataFrame.from_records(rows_plus, columns=["seqName","source","type","start","stop","score","strand","phase","attribute"])
 

@@ -1,7 +1,7 @@
 rule newAnnotationReparationOnly:
     input:
         reparation_orfs="tracks/reparation_annotated.gff",
-        currentAnnotation=rules.retrieveAnnotation.output
+        currentAnnotation=rules.checkAnnotation.output
     output:
         "tracks/totalAnnotation.gff"
     conda:

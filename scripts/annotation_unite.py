@@ -24,22 +24,13 @@ def unite_annotation(args):
         phase = getattr(row, "_7")
         attribute = getattr(row, "_8")
 
-        if ";" in attribute and "=" in attribute:
-            attribute_list = [x for x in re.split('[;=]', attribute) if x != ""]
-            id = ""
-            if "ID" in attribute_list:
-                id = attribute_list[attribute_list.index("ID")+1]
-            else:
-                print("missing ID! Check your annotation.")
-            attribute = "".join(["%s=%s;" % (attribute_list[i], attribute_list[i+1]) for i in range(0, len(attribute_list), 2)])
+        attribute_list = [x for x in re.split('[;=]', attribute) if x != ""]
+        id = ""
+        if "ID" in attribute_list:
+            id = attribute_list[attribute_list.index("ID")+1]
         else:
-            attribute_list = [x.replace(";", "") for x in list(csv.reader([attribute], delimiter=' ', quotechar='"'))[0]]
-            id = ""
-            if "gene_id" in attribute_list:
-                id = attribute_list[attribute_list.index("gene_id")+1]
-            else:
-                print("missing ID! Check your annotation.")
-            attribute = "".join(["%s=%s;" % (attribute_list[i], attribute_list[i+1]) for i in range(0, len(attribute_list), 2)])
+            print("missing ID! Check your annotation.")
+        attribute = "".join(["%s=%s;" % (attribute_list[i], attribute_list[i+1]) for i in range(0, len(attribute_list), 2)])
 
         rows_unite.append(nTuple(reference_name, source, feature, start, stop, score, strand, phase, attribute))
 

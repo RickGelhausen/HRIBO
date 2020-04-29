@@ -43,31 +43,9 @@ rule fastqcrrnafilter:
     shell:
         "mkdir -p qc/5removedrRNA; fastqc -o qc/5removedrRNA -t {threads} {input}; mv qc/5removedrRNA/{params.prefix}_fastqc.html {output.html}; mv qc/5removedrRNA/{params.prefix}_fastqc.zip {output.zip}"
 
-rule gff2gtf:
-    input:
-        annotation={rules.retrieveAnnotation.output},
-    output:
-        gtfcds="qc/featurecount/annotation.gtf",
-    conda:
-        "../envs/cufflinks.yaml"
-    threads: 1
-    shell:
-        "mkdir -p qc/featurecount; gffread -T {input.annotation} -o {output.gtfcds};"
-
-rule featurecountAnnotation:
-    input:
-        annotation={rules.retrieveAnnotation.output},
-    output:
-        "qc/all/annotationall.gtf",
-    conda:
-        "../envs/mergetools.yaml"
-    threads: 1
-    shell:
-        "mkdir -p qc/all; HRIBO/scripts/annotation_featurecount.py -a {input.annotation} -o {output};"
-
 rule featurescounts:
     input:
-        annotation={rules.featurecountAnnotation.output},
+        annotation={rules.checkAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/all/{method}-{condition}-{replicate}.txt",
@@ -75,11 +53,11 @@ rule featurescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/all; featureCounts -T {threads} -t gene -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/all; featureCounts -T {threads} -t gene -g ID -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule trnafeaturescounts:
     input:
-        annotation={rules.featurecountAnnotation.output},
+        annotation={rules.checkAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/trnainall/{method}-{condition}-{replicate}.txt",
@@ -87,11 +65,11 @@ rule trnafeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/trnainall; featureCounts -T {threads} -t tRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/trnainall; featureCounts -T {threads} -t tRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule norrnafeaturescounts:
     input:
-        annotation={rules.featurecountAnnotation.output},
+        annotation={rules.checkAnnotation.output},
         bam="bam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/rrnainall/{method}-{condition}-{replicate}.txt",
@@ -99,11 +77,11 @@ rule norrnafeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/rrnainall; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/rrnainall; featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule rrnatotalfeaturescounts:
     input:
-        annotation={rules.featurecountAnnotation.output},
+        annotation={rules.checkAnnotation.output},
         bam="bammulti/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/rrnainallaligned/{method}-{condition}-{replicate}.txt",
@@ -111,11 +89,11 @@ rule rrnatotalfeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/rrnainallaligned; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/rrnainallaligned; featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule rrnauniquefeaturescounts:
     input:
-        annotation={rules.featurecountAnnotation.output},
+        annotation={rules.checkAnnotation.output},
         bam="rRNAbam/{method}-{condition}-{replicate}.bam"
     output:
         txt="qc/rrnainuniquelyaligned/{method}-{condition}-{replicate}.txt",
@@ -123,7 +101,7 @@ rule rrnauniquefeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/rrnainuniquelyaligned; featureCounts -T {threads} -t rRNA -g gene_id -a {input.annotation} -o {output.txt} {input.bam}"
+        "mkdir -p qc/rrnainuniquelyaligned; featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
 
 rule coveragedepth:
     input:

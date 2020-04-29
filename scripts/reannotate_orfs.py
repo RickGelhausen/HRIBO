@@ -15,99 +15,54 @@ def fill_annotation_dict(args):
     annotation_df = pd.read_csv(args.annotation, comment="#", sep="\t", header=None)
     annotation_dict = dict()
 
-    # try to guess the file type (gff2/3)
-    # number of entries containing ID=
-    true_values = sum(annotation_df[8].str.contains("ID=").tolist())
-    # number of rows
-    nrows = len(annotation_df.index)
-    # if 75% of all rows contain ID= it is likely a gff3
-    if true_values >= nrows * 0.75:
-        # build dictionary
-        for row in annotation_df.itertuples(index=False, name='Pandas'):
-            # using "gene" for gff3 files as it contains most information
-            if getattr(row, "_2").lower() == "gene":
-                start = str(getattr(row, "_3"))
-                stop = str(getattr(row, "_4"))
-                strand = str(getattr(row, "_6"))
-                attributes = getattr(row, "_8")
+    # build dictionary
+    for row in annotation_df.itertuples(index=False, name='Pandas'):
+        # using "gene" for gff3 files as it contains most information
+        if getattr(row, "_2").lower() == "gene":
+            start = str(getattr(row, "_3"))
+            stop = str(getattr(row, "_4"))
+            strand = str(getattr(row, "_6"))
+            attributes = getattr(row, "_8")
 
-                if ";" in attributes and "=" in attributes:
-                    attribute_list =  [x for x in re.split('[;=]', attributes)]
-                else:
-                    attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+            if ";" in attributes and "=" in attributes:
+                attribute_list =  [x for x in re.split('[;=]', attributes)]
+            else:
+                attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
 
-                if len(attribute_list) % 2 == 0:
-                    for i in range(len(attribute_list)):
-                        if i % 2 == 0:
-                            attribute_list[i] = attribute_list[i].lower()
-                else:
-                    print(attributes)
-                    sys.exit("Attributes section of gtf/gff is wrongly formatted!")
+            if len(attribute_list) % 2 == 0:
+                for i in range(len(attribute_list)):
+                    if i % 2 == 0:
+                        attribute_list[i] = attribute_list[i].lower()
+            else:
+                print(attributes)
+                sys.exit("Attributes section of gtf/gff is wrongly formatted!")
 
-                # locus_tag
-                if "locus_tag" in attribute_list:
-                    locus_tag = attribute_list[attribute_list.index("locus_tag") + 1]
-                else:
-                    locus_tag = attribute_list[attribute_list.index("id") + 1]
+            # locus_tag
+            if "locus_tag" in attribute_list:
+                locus_tag = attribute_list[attribute_list.index("locus_tag") + 1]
+            else:
+                locus_tag = attribute_list[attribute_list.index("id") + 1]
 
-                # gene name
-                name = ""
-                if "name" in attribute_list:
-                    name = attribute_list[attribute_list.index("name") + 1]
+            # gene name
+            name = ""
+            if "name" in attribute_list:
+                name = attribute_list[attribute_list.index("name") + 1]
 
-                # update the annotation dictionary
-                if start in annotation_dict:
-                    if stop in annotation_dict[start]:
-                        if strand in annotation_dict[start][stop]:
-                            print("Duplicate found!")
-                        else:
-                            annotation_dict[start][stop][strand] = (locus_tag, name)
+            # update the annotation dictionary
+            if start in annotation_dict:
+                if stop in annotation_dict[start]:
+                    if strand in annotation_dict[start][stop]:
+                        print("Duplicate found!")
                     else:
-                        annotation_dict[start][stop] = {}
                         annotation_dict[start][stop][strand] = (locus_tag, name)
                 else:
-                    annotation_dict[start] = {}
                     annotation_dict[start][stop] = {}
                     annotation_dict[start][stop][strand] = (locus_tag, name)
-    else: # gtf
-        print("gtf detected")
-        # build dictionary
-        for row in annotation_df.itertuples(index=False, name='Pandas'):
-            # using "cds" for gtf files as it contains most information
-            if getattr(row, "_2").lower() == "exon":
-                start = str(getattr(row, "_3"))
-                stop = str(getattr(row, "_4"))
-                strand = str(getattr(row, "_6"))
-                description = getattr(row, "_8")
-                attributes = [x.replace(";", "") for x in list(csv.reader([description], delimiter=' ', quotechar='"'))[0]]
-                # locus_tag
-                if "locus_tag" in attributes:
-                    locus_tag = attributes[attributes.index("locus_tag")+1].replace("\"", "")
-                else:
-                    locus_tag = attributes[attributes.index("gene_id")+1].replace("\"", "")
+            else:
+                annotation_dict[start] = {}
+                annotation_dict[start][stop] = {}
+                annotation_dict[start][stop][strand] = (locus_tag, name)
 
-                # name
-                if "gene_name" in attributes:
-                    name = attributes[attributes.index("gene_name")+1].replace("\"", "")
-                elif "transcript_name" in attributes:
-                    name = attributes[attributes.index("transcript_name")+1].replace("\"", "")
-                else:
-                    name = ""
-
-                # update the annotation dictionary
-                if start in annotation_dict:
-                    if stop in annotation_dict[start]:
-                        if strand in annotation_dict[start][stop]:
-                            print("Duplicate found!")
-                        else:
-                            annotation_dict[start][stop][strand] = (locus_tag, name)
-                    else:
-                        annotation_dict[start][stop] = {}
-                        annotation_dict[start][stop][strand] = (locus_tag, name)
-                else:
-                    annotation_dict[start] = {}
-                    annotation_dict[start][stop] = {}
-                    annotation_dict[start][stop][strand] = (locus_tag, name)
     return annotation_dict
 
 """

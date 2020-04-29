@@ -33,7 +33,7 @@ rule filterAll:
 
 rule reannotatedORFs:
     input:
-        annotation=rules.retrieveAnnotation.output,
+        annotation=rules.checkAnnotation.output,
         reparation="tracks/reparation.gff"
     output:
         "tracks/reparation_annotated.gff"

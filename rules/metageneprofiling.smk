@@ -5,7 +5,7 @@ rule normalizedmetageneprofiling:
         bam=rules.maplink.output,
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.bamindex.output,
-        annotation=rules.retrieveAnnotation.output
+        annotation=rules.checkAnnotation.output
     output: 
         meta=directory("metageneprofiling/norm/{method}-{condition}-{replicate}")
     conda:
@@ -22,7 +22,7 @@ rule metageneprofiling:
         bam=rules.maplink.output,
         genomeSize=rules.genomeSize.output,
         bamIndex=rules.bamindex.output,
-        annotation=rules.retrieveAnnotation.output
+        annotation=rules.checkAnnotation.output
     output:
         directory("metageneprofiling/raw/{method}-{condition}-{replicate}")
     conda:

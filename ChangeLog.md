@@ -1,5 +1,10 @@
-### unversioned [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 27.04.2020
- * added general identifier to overview table
+### version 1.4.3 (in progress) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 28.04.2020
+ * added genome-browser identifier to overview table
+ * completely reworked gff2 support by transforming gff2 to gff3. This is unavoidable as some tools require gff3 format
+ * added script to convert gff2 to gff3
+ * improved overview table by adding and reordering columns
+ * improved TE calculation to be less confusing, using NaN if read-counts are 0 and would lead to division by 0
+ * updated manual + online documentation
 
 ### version 1.4.2 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 25.04.2020
  * fixed bug causing overview_excel.py to crash for certain deepribo files
@@ -8,13 +13,13 @@
 ### version 1.4.1 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 20.04.2020
  * added support for multi-condition results for differential expression in the overview table
  * updated manual
- 
+
 ### version 1.4.0 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 17.04.2020
  * added overview table that aggregates all important information about ORFs
  * updated readcounting to consitently use the same method
  * updated makereport script
  * updated manual
- 
+
 ### version 1.3.2 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 24.03.2020
  * updated sge.yaml
  * updated torque.yaml
