@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import csv
 import collections
+import sys
 
 
 """
@@ -24,10 +25,7 @@ def fill_annotation_dict(args):
             strand = str(getattr(row, "_6"))
             attributes = getattr(row, "_8")
 
-            if ";" in attributes and "=" in attributes:
-                attribute_list =  [x for x in re.split('[;=]', attributes)]
-            else:
-                attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+            attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
 
             if len(attribute_list) % 2 == 0:
                 for i in range(len(attribute_list)):

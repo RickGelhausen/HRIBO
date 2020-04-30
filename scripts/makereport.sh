@@ -5,7 +5,7 @@ idx=$1
 timestamp=$(date +"%d-%m-%y")
 echo "${timestamp}"
 
-report="${idx}report_HRIBO1.4.2_${timestamp}"
+report="${idx}report_HRIBO1.4.3_${timestamp}"
 
 mkdir -p $report
 mkdir -p "${report}/genome-browser/features/"

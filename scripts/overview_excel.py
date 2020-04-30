@@ -32,10 +32,7 @@ def retrieve_column_information(attributes):
     [locus_tag, name, product, note]
     """
 
-    if ";" in attributes and "=" in attributes:
-        attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
-    else:
-        attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+    attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
 
     if "ORF_type=;" in attributes:
         attribute_list.remove("ORF_type")
@@ -105,9 +102,9 @@ def TE(ribo_count, rna_count):
     """
 
     if ribo_count == 0 and rna_count == 0:
-        return "NaN"
+        return 0
     elif rna_count == 0:
-        return "NaN"
+        return 0
     else:
         return ribo_count / rna_count
 

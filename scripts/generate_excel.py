@@ -112,9 +112,9 @@ def TE(ribo_count, rna_count):
     """
 
     if ribo_count == 0 and rna_count == 0:
-        return "NaN"
+        return 0
     elif rna_count == 0:
-        return "NaN"
+        return 0
     else:
         return ribo_count / rna_count
 
