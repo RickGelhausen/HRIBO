@@ -45,7 +45,8 @@ def fill_annotation_dict(args):
             name = ""
             if "name" in attribute_list:
                 name = attribute_list[attribute_list.index("name") + 1]
-
+            elif "gene_name" in attribute_list:
+                name = attribute_list[attribute_list.index("gene_name") + 1]
             # update the annotation dictionary
             if start in annotation_dict:
                 if stop in annotation_dict[start]:

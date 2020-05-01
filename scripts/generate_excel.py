@@ -51,7 +51,9 @@ def retrieve_column_information(attributes):
     name = ""
     if "name" in attribute_list:
         name = attribute_list[attribute_list.index("name")+1]
-
+    elif "gene_name" in attribute_list:
+        name = attribute_list[attribute_list.index("gene_name")+1]
+        
     product = ""
     if "product" in attribute_list:
         product = attribute_list[attribute_list.index("product")+1]
@@ -140,9 +142,9 @@ def calculate_TE(read_list, wildcards, conditions):
                 t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
                 if len(t_eff) > 1:
-                    t_eff.extend([sum(t_eff) / len(ribo_list)])
+                    t_eff = get_avg(t_eff)
 
-                t_eff = [float("%.2f" % x) for x in t_eff]
+                t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
                 TE_list.extend(t_eff)
             else:
                 TE_list.extend([0])
@@ -155,9 +157,9 @@ def calculate_TE(read_list, wildcards, conditions):
                 t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
                 if len(t_eff) > 1:
-                    t_eff.extend([sum(t_eff) / len(ribo_list)])
+                    t_eff = get_avg(t_eff)
 
-                t_eff = [float("%.2f" % x) for x in t_eff]
+                t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
                 TE_list.extend(t_eff)
             else:
                 TE_list.extend([0])
@@ -287,7 +289,8 @@ def parse_orfs(args):
     pseudogene_df = pd.DataFrame.from_records(pseudogene_sheet, columns=[header[x] for x in range(len(header))])
     five_utr_df = pd.DataFrame.from_records(five_utr_sheet, columns=[header[x] for x in range(len(header))])
     misc_df = pd.DataFrame.from_records(misc_sheet, columns=[header[x] for x in range(len(header))])
-
+    all_df = all_df.sort_values(by=["Genome", "Start", "Stop"])
+    cds_df = cds_df.sort_values(by=["Genome", "Start", "Stop"])
     dataframe_dict = {"CDS" : cds_df, "rRNA" : rRNA_df, "sRNA" : sRNA_df, "transcript" : transcript_df, "5'-UTR" : five_utr_df, "tRNA" : tRNA_df, "pseudogene" : pseudogene_df, "gene" : gene_df, "region" : region_df,  "miscellaneous" : misc_df,  "all" : all_df }
 
     excel_writer(args, dataframe_dict, wildcards)

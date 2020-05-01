@@ -102,11 +102,29 @@ def TE(ribo_count, rna_count):
     """
 
     if ribo_count == 0 and rna_count == 0:
-        return 0
+        return "NaN"
     elif rna_count == 0:
-        return 0
+        return "NaN"
     else:
         return ribo_count / rna_count
+
+def get_avg(t_eff):
+    """
+    get the final TE list
+    """
+
+    valid_count = 0
+    sum = 0
+    for t in t_eff:
+        if t != "NaN":
+            valid_count += 1
+            sum += t
+
+    if valid_count == 0:
+        return t_eff.extend(["NaN"])
+
+    else:
+        return t_eff.extrend([sum / valid_count])
 
 def calculate_TE(read_list, wildcards, conditions):
     """
@@ -130,9 +148,9 @@ def calculate_TE(read_list, wildcards, conditions):
                 t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
                 if len(t_eff) > 1:
-                    t_eff.extend([sum(t_eff) / len(ribo_list)])
+                    t_eff = get_avg(t_eff)
 
-                t_eff = [float("%.2f" % x) for x in t_eff]
+                t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
                 TE_list.extend(t_eff)
             else:
                 TE_list.extend([0])
@@ -145,9 +163,9 @@ def calculate_TE(read_list, wildcards, conditions):
                 t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
                 if len(t_eff) > 1:
-                    t_eff.extend([sum(t_eff) / len(ribo_list)])
+                    t_eff = get_avg(t_eff)
 
-                t_eff = [float("%.2f" % x) for x in t_eff]
+                t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
                 TE_list.extend(t_eff)
             else:
                 TE_list.extend([0])
@@ -296,10 +314,7 @@ def generate_annotation_dict(annotation_path):
         attributes = getattr(row, "_8")
         read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
 
-        if ";" in attributes and "=" in attributes:
-            attribute_list = [x for x in re.split('[;= ]', attributes) if x != ""]
-        else:
-            attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+        attribute_list = [x for x in re.split('[;= ]', attributes) if x != ""]
 
         if len(attribute_list) % 2 == 0:
             for i in range(len(attribute_list)):
@@ -348,12 +363,11 @@ def generate_annotation_dict(annotation_path):
         gene_id, locus_tag, name, read_list = cds_dict[key]
 
         if key in gene_dict:
-            print("KEY IN gene_dict")
             gene_locus_tag, gene_name = gene_dict[key]
 
             if locus_tag == "":
                 locus_tag = gene_locus_tag
-            print(locus_tag)
+
         annotation_dict[key] = (gene_id, locus_tag, name, read_list, gene_name)
 
     return annotation_dict
@@ -423,9 +437,10 @@ def create_excel_file(args):
     contrasts = sorted(["%s-%s" %(tuple) for tuple in list(iter.combinations(conditions,2))])
 
     header = ["Identifier","Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon"] +\
-             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score", "Nucleotide_seq", "Aminoacid_seq"] +\
+             ["Nucleotide_seq", "Aminoacid_seq"] +\
              [cond + "_TE" for cond in TE_header] +\
              [card + "_rpkm" for card in wildcards] +\
+             ["Evidence_reparation", "Reparation_probability", "Evidence_deepribo", "Deepribo_rank", "Deepribo_score"] +\
              ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["riborex_pvalue", "riborex_pvalue_adjusted", "riborex_log2FC"]] +\
              ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]]
 
@@ -438,7 +453,7 @@ def create_excel_file(args):
 
         locus_tag, name, gene_name = "","",""
         reparation_probability, deepribo_rank, deepribo_score = 0, 0, 0
-        evidence = []
+        evidence_reparation, evidence_deepribo = [], []
 
         read_list = []
 
@@ -457,7 +472,7 @@ def create_excel_file(args):
                     evidence_list.append("reparation-"+e)
                 else:
                     evidence_list.append(e)
-            evidence.extend(evidence_list)
+            evidence_reparation.extend(evidence_list)
 
         if key in deepribo_dict:
             deepribo_rank, deepribo_score, deepribo_evidence, read_list = deepribo_dict[key]
@@ -467,7 +482,7 @@ def create_excel_file(args):
                     evidence_list.append("deepribo-"+e)
                 else:
                     evidence_list.append(e)
-            evidence.extend(evidence_list)
+            evidence_deepribo.extend(evidence_list)
 
         xtail_list = []
         for contrast in contrasts:
@@ -494,7 +509,8 @@ def create_excel_file(args):
 
         start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
 
-        evidence.sort()
+        evidence_reparation.sort()
+        evidence_deepribo.sort()
 
         rpkm_list = []
         for idx, val in enumerate(read_list):
@@ -503,10 +519,12 @@ def create_excel_file(args):
         TE_list = calculate_TE(rpkm_list, wildcards, conditions)
 
         identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-        evidence = " ".join(evidence)
+        evidence_reparation = " ".join(evidence_reparation)
+        evidence_deepribo = " ".join(evidence_deepribo)
         result = [identifier, chromosome, start, stop, strand, locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
-                 [evidence, reparation_probability, deepribo_rank, deepribo_score, nucleotide_seq, aa_seq] +\
+                 [nucleotide_seq, aa_seq] +\
                  TE_list + rpkm_list +\
+                 [evidence_reparation, reparation_probability, evidence_deepribo, deepribo_rank, deepribo_score]+\
                  riborex_list + xtail_list
 
         all_sheet.append(nTuple(*result))
