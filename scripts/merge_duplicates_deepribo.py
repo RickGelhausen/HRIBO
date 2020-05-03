@@ -66,11 +66,15 @@ def create_gene_dict(annotation_df):
             if "gene" in attribute_list:
                 gene = attribute_list[attribute_list.index("gene")+1]
 
-            locus_tag = "na"
+            locus_tag = ""
             if "locus_tag" in attribute_list:
                 locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
 
-            gene_dict[key] = (gene, locus_tag)
+            old_locus_tag = ""
+            if "old_locus_tag" in attribute_list:
+                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
+
+            gene_dict[key] = (gene, locus_tag, old_locus_tag)
     return gene_dict
 
 
@@ -111,13 +115,13 @@ def generate_annotation_dict(args):
             parent = attribute_list[attribute_list.index("parent")+1]
 
         if parent in parent_dict:
-            name, locus_tag = parent_dict[parent]
+            name, locus_tag, old_locus_tag = parent_dict[parent]
 
             if name == "":
                 name = "%s:%s-%s:%s" % (reference_name, start, stop, strand)
                 if "name" in attribute_list:
                     name = attribute_list[attribute_list.index("name")+1]
-                if "gene" in attribute_list:
+                elif "gene" in attribute_list:
                     name = attribute_list[attribute_list.index("gene")+1]
 
             if locus_tag == "":
@@ -125,18 +129,26 @@ def generate_annotation_dict(args):
                 if "locus_tag" in attribute_list:
                     locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
 
+            if old_locus_tag == "":
+                if "old_locus_tag" in attribute_list:
+                    old_locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+
         else:
             name = "%s:%s-%s:%s" % (reference_name, start, stop, strand)
             if "name" in attribute_list:
                 name = attribute_list[attribute_list.index("name")+1]
-            if "gene" in attribute_list:
+            elif "gene" in attribute_list:
                 name = attribute_list[attribute_list.index("gene")+1]
 
-            locus_tag = "na"
+            locus_tag = ""
             if "locus_tag" in attribute_list:
                 locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
 
-        annotation_dict[key] = (name, locus_tag)
+            if old_locus_tag == "":
+                if "old_locus_tag" in attribute_list:
+                    old_locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+
+        annotation_dict[key] = (name, locus_tag, old_locus_tag)
 
     return annotation_dict
 
@@ -157,7 +169,7 @@ def generate_output_gff(args, overlap_dict):
         cur_pred_value = -10000.0
         for pred, dist, attribute in value:
             if ";" in attribute and "=" in attribute:
-                attribute_list = [x for x in re.split('[;=]', attribute) if x != ""]
+                attribute_list = [x.strip(" ") for x in re.split('[;=]', attribute) if x != ""]
             else:
                 attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attribute) if x != ""]
 
@@ -184,15 +196,22 @@ def generate_output_gff(args, overlap_dict):
                 evidence.add(method + "-" + condition)
 
             if key in annotation_dict:
-                name, locus_tag = annotation_dict[key]
+                name, locus_tag, old_locus_tag = annotation_dict[key]
             else:
-                name, locus_tag = key, "na"
+                name, locus_tag, old_locus_tag = key, "", ""
 
-            new_attributes = "ID=%s;Name=%s;Locus_tag=%s;Pred_value=%s;Evidence=%s;" % (key, name,locus_tag,cur_pred_value, " ".join(evidence))
+
+            new_attributes = "ID=%s;Name=%s;" % (key, name)
+            if locus_tag != "":
+                new_attributes += "locus_tag=%s;" % (locus_tag)
+            if old_locus_tag != "":
+                new_attributes += "old_locus_tag=%s;" % (old_locus_tag)
+
+            new_attributes += "Pred_value=%s;Evidence=%s;" % (cur_pred_value, " ".join(evidence))
 
         if cur_pred_value >= 0:
-            rows_plus.append(nTuple(reference_name, "merged", "CDS", start, stop, cur_pred_value, strand, dist, new_attributes))
-        rows.append(nTuple(reference_name, "merged", "CDS", start, stop, cur_pred_value, strand, dist, new_attributes))
+            rows_plus.append(nTuple(reference_name, "deepribo", "CDS", start, stop, cur_pred_value, strand, dist, new_attributes))
+        rows.append(nTuple(reference_name, "deepribo", "CDS", start, stop, cur_pred_value, strand, dist, new_attributes))
 
     return pd.DataFrame.from_records(rows, columns=["seqName","source","type","start","stop","score","strand","phase","attribute"]), \
            pd.DataFrame.from_records(rows_plus, columns=["seqName","source","type","start","stop","score","strand","phase","attribute"])

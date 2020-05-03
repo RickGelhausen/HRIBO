@@ -58,6 +58,7 @@ cp -r riborex/*_significant.xlsx "${report}/differential-expression/riborex/"
 
 cp -r tracks/updated_annotation.gff "${report}/genome-browser/"
 cp -r auxiliary/overview.xlsx "${report}"
+cp -r auxiliary/overview.gff "${report}"
 cp -r metageneprofiling "${report}"
 
 zip -r "${report}.zip" $report

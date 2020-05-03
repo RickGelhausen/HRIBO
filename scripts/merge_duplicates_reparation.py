@@ -67,10 +67,10 @@ def handle_overlap(args):
 
             if cur_proba > cur_highest_proba:
                 cur_highest_proba = cur_proba
-        
+
         attribute = "ID="+key+";Name="+key+";ORF_type="+",".join(orftype)+";Evidence="+" ".join(evidence)+";Prob=" + str(cur_highest_proba)
 
-        rows.append(nTuple(getattr(sampleRow, "s0"),"merged", getattr(sampleRow, "s2"), getattr(sampleRow, "s3"), \
+        rows.append(nTuple(getattr(sampleRow, "s0"),"reparation", getattr(sampleRow, "s2"), getattr(sampleRow, "s3"), \
                            getattr(sampleRow, "s4"), getattr(sampleRow, "s5"),getattr(sampleRow, "s6"), \
                            getattr(sampleRow, "s7"), attribute))
 

@@ -31,7 +31,7 @@ def retrieve_column_information(attributes):
     [locus_tag, name, product, note]
     """
 
-    attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
+    attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
 
     if "ORF_type=;" in attributes:
         attribute_list.remove("ORF_type")
@@ -48,12 +48,16 @@ def retrieve_column_information(attributes):
     if "locus_tag" in attribute_list:
         locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
 
+    old_locus_tag = ""
+    if "old_locus_tag" in attribute_list:
+        old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
+
     name = ""
     if "name" in attribute_list:
         name = attribute_list[attribute_list.index("name")+1]
     elif "gene_name" in attribute_list:
         name = attribute_list[attribute_list.index("gene_name")+1]
-        
+
     product = ""
     if "product" in attribute_list:
         product = attribute_list[attribute_list.index("product")+1]
@@ -66,7 +70,7 @@ def retrieve_column_information(attributes):
     if "evidence" in attribute_list:
         evidence = attribute_list[attribute_list.index("evidence")+1]
 
-    return [locus_tag, name, product, note, evidence]
+    return [locus_tag, name, product, note, evidence, old_locus_tag]
 
 def get_genome_information(genome, start, stop, strand):
     """
@@ -119,6 +123,26 @@ def TE(ribo_count, rna_count):
         return 0
     else:
         return ribo_count / rna_count
+
+def get_avg(t_eff):
+    """
+    get the final TE list
+    """
+
+    valid_count = 0
+    sum = 0
+    for t in t_eff:
+        if t != "NaN":
+            valid_count += 1
+            sum += t
+
+    if valid_count == 0:
+        t_eff.extend(["NaN"])
+
+    else:
+        t_eff.extend([sum / valid_count])
+
+    return t_eff
 
 def calculate_TE(read_list, wildcards, conditions):
     """
@@ -224,7 +248,7 @@ def parse_orfs(args):
     five_utr_sheet = []
     misc_sheet = []
 
-    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
+    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -251,9 +275,9 @@ def parse_orfs(args):
 
         TE_list = calculate_TE(rpkm_list, wildcards, conditions)
         if source == "reparation":
-            result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
+            result = [reference_name, source, feature, start, stop, strand, column_info[0], column_info[5], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
         else:
-            result = [reference_name, "HRIBO", feature, start, stop, strand, column_info[0], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
+            result = [reference_name, "HRIBO", feature, start, stop, strand, column_info[0], column_info[5], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
 
         all_sheet.append(nTuple(*result))
 

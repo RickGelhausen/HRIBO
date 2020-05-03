@@ -32,7 +32,7 @@ def retrieve_column_information(attributes):
     [locus_tag, name, product, note]
     """
 
-    attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
+    attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
 
     if "ORF_type=;" in attributes:
         attribute_list.remove("ORF_type")
@@ -121,10 +121,12 @@ def get_avg(t_eff):
             sum += t
 
     if valid_count == 0:
-        return t_eff.extend(["NaN"])
+        t_eff.extend(["NaN"])
 
     else:
-        return t_eff.extrend([sum / valid_count])
+        t_eff.extend([sum / valid_count])
+
+    return t_eff
 
 def calculate_TE(read_list, wildcards, conditions):
     """
@@ -149,6 +151,7 @@ def calculate_TE(read_list, wildcards, conditions):
 
                 if len(t_eff) > 1:
                     t_eff = get_avg(t_eff)
+
 
                 t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
                 TE_list.extend(t_eff)
@@ -228,13 +231,14 @@ def generate_reparation_dict(reparation_path):
         start = getattr(row, "_3")
         stop = getattr(row, "_4")
         strand = getattr(row, "_6")
-        attribute_list = [x for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
+        attribute_list = [x.strip(" ") for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
 
         if len(attribute_list) % 2 == 0:
             for i in range(len(attribute_list)):
                 if i % 2 == 0:
                     attribute_list[i] = attribute_list[i].lower()
         else:
+            print(attribute_list)
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
 
         proba = ""
@@ -267,20 +271,21 @@ def generate_deepribo_dict(deepribo_path):
         stop = getattr(row, "_4")
         pred_rank = getattr(row, "_5")
         strand = getattr(row, "_6")
-        attribute_list = [x for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
+        attribute_list = [x.strip(" ") for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
 
         if len(attribute_list) % 2 == 0:
             for i in range(len(attribute_list)):
                 if i % 2 == 0:
                     attribute_list[i] = attribute_list[i].lower()
         else:
+            print(attribute_list)
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
 
         pred_value = ""
         if "pred_value" in attribute_list:
             pred_value = attribute_list[attribute_list.index("pred_value")+1]
 
-        if pred_value == "" or float(pred_value) < 0:
+        if pred_value == "":# or float(pred_value) < 0:
             continue
 
         evidence = ""
@@ -314,19 +319,24 @@ def generate_annotation_dict(annotation_path):
         attributes = getattr(row, "_8")
         read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
 
-        attribute_list = [x for x in re.split('[;= ]', attributes) if x != ""]
+        attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
 
         if len(attribute_list) % 2 == 0:
             for i in range(len(attribute_list)):
                 if i % 2 == 0:
                     attribute_list[i] = attribute_list[i].lower()
         else:
+            print(attribute_list)
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
 
         if feature.lower() == "cds":
             locus_tag = ""
             if "locus_tag" in attribute_list:
                 locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+
+            old_locus_tag = ""
+            if "old_locus_tag" in attribute_list:
+                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
 
             name = ""
             if "name" in attribute_list:
@@ -341,7 +351,7 @@ def generate_annotation_dict(annotation_path):
                 gene_id = attribute_list[attribute_list.index("id")+1]
 
             new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            cds_dict[new_key] = (gene_id, locus_tag, name, read_list)
+            cds_dict[new_key] = (gene_id, locus_tag, name, read_list, old_locus_tag)
         elif feature.lower() in ["gene","pseudogene"]:
             gene_name = ""
             if "name" in attribute_list:
@@ -355,20 +365,26 @@ def generate_annotation_dict(annotation_path):
             elif "gene_id" in attribute_list:
                 locus_tag = attribute_list[attribute_list.index("gene_id")+1]
 
+            old_locus_tag = ""
+            if "old_locus_tag" in attribute_list:
+                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
+
             new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            gene_dict[new_key] = (gene_name, locus_tag)
+            gene_dict[new_key] = (gene_name, locus_tag, old_locus_tag)
 
     for key in cds_dict.keys():
         gene_name = ""
-        gene_id, locus_tag, name, read_list = cds_dict[key]
+        gene_id, locus_tag, name, read_list, old_locus_tag = cds_dict[key]
 
         if key in gene_dict:
-            gene_locus_tag, gene_name = gene_dict[key]
+            gene_locus_tag, gene_name, gene_old_locus_tag = gene_dict[key]
 
             if locus_tag == "":
                 locus_tag = gene_locus_tag
+            if old_locus_tag == "":
+                old_locus_tag = gene_old_locus_tag
 
-        annotation_dict[key] = (gene_id, locus_tag, name, read_list, gene_name)
+        annotation_dict[key] = (gene_id, locus_tag, name, read_list, gene_name, old_locus_tag)
 
     return annotation_dict
 
@@ -433,10 +449,11 @@ def create_excel_file(args):
 
     # read gff file
     all_sheet = []
+    gff_file_rows = []
 
     contrasts = sorted(["%s-%s" %(tuple) for tuple in list(iter.combinations(conditions,2))])
 
-    header = ["Identifier","Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon"] +\
+    header = ["Identifier","Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon"] +\
              ["Nucleotide_seq", "Aminoacid_seq"] +\
              [cond + "_TE" for cond in TE_header] +\
              [card + "_rpkm" for card in wildcards] +\
@@ -446,6 +463,7 @@ def create_excel_file(args):
 
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
+    gffTuple = collections.namedtuple('Pandas', ["s1","s2","s3","s4","s5","s6","s7","s8","s9"])
 
     for key in keys_union:
         chromosome, mid, strand = key.split(":")
@@ -458,8 +476,9 @@ def create_excel_file(args):
         read_list = []
 
         gene_id = ""
+        old_locus_tag = ""
         if key in annotation_dict:
-            gene_id, locus_tag, name, read_list, gene_name = annotation_dict[key]
+            gene_id, locus_tag, name, read_list, gene_name, old_locus_tag = annotation_dict[key]
 
         length = int(stop) - int(start) + 1
         codon_count = length / 3
@@ -521,12 +540,24 @@ def create_excel_file(args):
         identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
         evidence_reparation = " ".join(evidence_reparation)
         evidence_deepribo = " ".join(evidence_deepribo)
-        result = [identifier, chromosome, start, stop, strand, locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
+        result = [identifier, chromosome, start, stop, strand, locus_tag, old_locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
                  [nucleotide_seq, aa_seq] +\
                  TE_list + rpkm_list +\
                  [evidence_reparation, reparation_probability, evidence_deepribo, deepribo_rank, deepribo_score]+\
                  riborex_list + xtail_list
 
+        attributes = "ID=%s;" % identifier
+        if locus_tag != "":
+            attributes += "locus_tag=%s;" % locus_tag
+        if old_locus_tag != "":
+            attributes += "old_locus_tag=%s;" % old_locus_tag
+        if name != "":
+            attributes += "Name=%s;" % name
+        if gene_name != "":
+            attributes += "gene_name=%s;" % gene_name
+
+        gff_result = [chromosome, "HRIBO", "CDS", start, stop, ".", strand, ".", attributes]
+        gff_file_rows.append(gffTuple(*gff_result))
         all_sheet.append(nTuple(*result))
 
     all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
@@ -538,7 +569,14 @@ def create_excel_file(args):
 
     dataframe_dict = { "all" : all_df }
 
+    gff_df = pd.DataFrame.from_records(gff_file_rows, columns=[0,1,2,3,4,5,6,7,8])
     excel_writer(args, dataframe_dict, wildcards)
+
+    with open(args.output_path.replace(".xlsx", ".gff"), "w") as f:
+        f.write("##gff-version 3\n")
+
+    with open(args.output_path.replace(".xlsx", ".gff"), "a") as f:
+        gff_df.to_csv(f, sep="\t", header=None, index=False, quoting=csv.QUOTE_NONE)
 
 
 def main():

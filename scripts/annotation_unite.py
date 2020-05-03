@@ -24,7 +24,7 @@ def unite_annotation(args):
         phase = getattr(row, "_7")
         attribute = getattr(row, "_8")
 
-        attribute_list = [x for x in re.split('[;=]', attribute) if x != ""]
+        attribute_list = [x.strip(" ") for x in re.split('[;=]', attribute) if x != ""]
         id = ""
         if "ID" in attribute_list:
             id = attribute_list[attribute_list.index("ID")+1]
