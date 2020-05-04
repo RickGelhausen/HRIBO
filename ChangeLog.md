@@ -4,10 +4,12 @@
  * added script to convert gff2 to gff3
  * improved overview table by adding and reordering columns
  * improved TE calculation to be less confusing, using NaN if read-counts are 0 and would lead to division by 0
+ * improved excel file generation
+ * resolved redundancies in excel files  
  * updated manual + online documentation
 
 ### version 1.4.2 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 25.04.2020
- * fixed bug causing overview_excel.py to crash for certain deepribo files
+ * fixed bug causing generate_overview_excel.py to crash for certain deepribo files
  * updated manual
 
 ### version 1.4.1 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 20.04.2020

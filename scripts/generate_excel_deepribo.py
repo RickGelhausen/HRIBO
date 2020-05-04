@@ -10,173 +10,12 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.Alphabet import generic_dna
 
+import excel_utils as eu
+
 class OrderedCounter(Counter, OrderedDict):
     pass
 
-def calculate_rpkm(total_mapped, read_count, read_length):
-    """
-    calculate the rpkm
-    """
-    return float("%.2f" % ((read_count * 1000000000) / (total_mapped * read_length)))
-
-def get_unique(in_list):
-    seen = set()
-    seen_add = seen.add
-    return [x for x in in_list if not (x in seen or seen_add(x))]
-
-
-def retrieve_column_information(attributes):
-    """
-    check for gff2/gff3 format and generate a list of information for the final tables
-    [pred_value, name, product, note]
-    """
-
-    attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
-
-    if "ORF_type=;" in attributes:
-        attribute_list.remove("ORF_type")
-
-    if len(attribute_list) % 2 == 0:
-        for i in range(len(attribute_list)):
-            if i % 2 == 0:
-                attribute_list[i] = attribute_list[i].lower()
-    else:
-        print(attributes)
-        sys.exit("Attributes section of gtf/gff is wrongly formatted!")
-
-    pred_value = ""
-    if "pred_value" in attribute_list:
-        pred_value = attribute_list[attribute_list.index("pred_value")+1]
-
-    locus_tag = ""
-    if "locus_tag" in attribute_list:
-        locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-
-    old_locus_tag = ""
-    if "old_locus_tag" in attribute_list:
-        old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
-
-    name = ""
-    if "name" in attribute_list:
-        name = attribute_list[attribute_list.index("name")+1]
-
-    product = ""
-    if "product" in attribute_list:
-        product = attribute_list[attribute_list.index("product")+1]
-
-    note = ""
-    if "note" in attribute_list:
-        note = attribute_list[attribute_list.index("note")+1]
-
-    evidence = ""
-    if "evidence" in attribute_list:
-        evidence = attribute_list[attribute_list.index("evidence")+1]
-
-    return [pred_value, name, product, note, evidence, locus_tag, old_locus_tag]
-
-def get_genome_information(genome, start, stop, strand):
-    """
-    retrieve the nucleotide sequence and amino acid sequence
-    and the start and stop codons
-    """
-    if strand == "+":
-        nucleotide_seq = genome[0][start:stop+1]
-    else:
-        nucleotide_seq = genome[1][start:stop+1][::-1]
-
-    start_codon = nucleotide_seq[0:3]
-    stop_codon = nucleotide_seq[-3:]
-
-    coding_dna = Seq(nucleotide_seq, generic_dna)
-    if len(coding_dna) % 3 != 0:
-        aa_seq = ""
-    else:
-        aa_seq = str(coding_dna.translate(table=11,to_stop=True))
-    return start_codon, stop_codon, nucleotide_seq, aa_seq
-
-def excel_writer(args, data_frames, wildcards):
-    """
-    create an excel sheet out of a dictionary of data_frames
-    correct the width of each column
-    """
-    header_only =  ["Note", "Aminoacid_seq", "Nucleotide_seq", "Start_codon", "Stop_codon", "Strand", "Codon_count"] + [card + "_rpkm" for card in wildcards]
-    writer = pd.ExcelWriter(args.output, engine='xlsxwriter')
-    for sheetname, df in data_frames.items():
-        df.to_excel(writer, sheet_name=sheetname, index=False)
-        worksheet = writer.sheets[sheetname]
-        for idx, col in enumerate(df):
-            series = df[col]
-            if col in header_only:
-                max_len = len(str(series.name)) + 2
-            else:
-                max_len = max(( series.astype(str).str.len().max(), len(str(series.name)) )) + 1
-            print("Sheet: %s | col: %s | max_len: %s" % (sheetname, col, max_len))
-            worksheet.set_column(idx, idx, max_len)
-    writer.save()
-
-def TE(ribo_count, rna_count):
-    """
-    calculate the translational efficiency for one entry
-    """
-
-    if ribo_count == 0 and rna_count == 0:
-        return 0
-    elif rna_count == 0:
-        return 0
-    else:
-        return ribo_count / rna_count
-
-def get_avg(t_eff):
-    """
-    get the final TE list
-    """
-
-    valid_count = 0
-    sum = 0
-    for t in t_eff:
-        if t != "NaN":
-            valid_count += 1
-            sum += t
-
-    if valid_count == 0:
-        t_eff.extend(["NaN"])
-
-    else:
-        t_eff.extend([sum / valid_count])
-
-    return t_eff
-
-def calculate_TE(read_list, wildcards, conditions):
-    """
-    calculate the translational efficiency
-    """
-    read_dict = OrderedDict()
-    for idx in range(len(wildcards)):
-        method, condition, replicate = wildcards[idx].split("-")
-        key = (method, condition)
-        if key in read_dict:
-            read_dict[key].append(read_list[idx])
-        else:
-            read_dict[key] = [read_list[idx]]
-
-    TE_list = []
-    for cond in conditions:
-        if len(read_dict[("RIBO", cond)]) == len(read_dict[("RNA", cond)]):
-            ribo_list = read_dict[("RIBO", cond)]
-            rna_list = read_dict[("RNA", cond)]
-            t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
-
-            if len(t_eff) > 1:
-                t_eff.extend([sum(t_eff) / len(ribo_list)])
-
-            t_eff = [float("%.2f" % x) for x in t_eff]
-            TE_list.extend(t_eff)
-        else:
-            TE_list.extend([0])
-
-    return TE_list
-
-def parse_orfs(args):
+def create_excel_file(args):
     # read the genome file
     genome_file = SeqIO.parse(args.genome, "fasta")
     genome_dict = dict()
@@ -190,11 +29,11 @@ def parse_orfs(args):
 
     wildcards = []
     for line in total:
-        wildcard, reference_name, value = line.strip().split("\t")
-        total_mapped_dict[(wildcard, reference_name)] = int(value)
+        wildcard, chromosome, value = line.strip().split("\t")
+        total_mapped_dict[(wildcard, chromosome)] = int(value)
         wildcards.append(wildcard)
 
-    wildcards = get_unique(wildcards)
+    wildcards = eu.get_unique(wildcards)
 
     TE_header = []
     for card in wildcards:
@@ -213,31 +52,21 @@ def parse_orfs(args):
     for card in wildcards:
         conditions.append(card.split("-")[1])
 
-    conditions = get_unique(conditions)
+    conditions = eu.get_unique(conditions)
 
     #read bed file
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
     # read gff file
-    all_sheet = []
     cds_sheet = []
-    gene_sheet = []
-    region_sheet = []
-    rRNA_sheet = []
-    sRNA_sheet = []
-    transcript_sheet = []
-    pseudogene_sheet = []
-    tRNA_sheet = []
-    five_utr_sheet = []
-    misc_sheet = []
 
-    header = ["Genome", "Source", "Feature", "Start", "Stop", "Strand", "Pred_value", "Pred_rank", "Novel_rank", "Locus_tag", "Old_locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
+    header = ["identifer","Genome", "Source", "Feature", "Start", "Stop", "Strand", "Pred_value", "Pred_rank", "Novel_rank", "Locus_tag", "Old_locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
 
     for row in read_df.itertuples(index=False, name='Pandas'):
-        reference_name = getattr(row, "_0")
+        chromosome = getattr(row, "_0")
         source = getattr(row, "_1")
         feature = getattr(row, "_2")
         start = getattr(row, "_3")
@@ -247,8 +76,8 @@ def parse_orfs(args):
         prediction_rank = getattr(row, "_5")
         novel_rank = getattr(row, "_7")
 
-        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[reference_name], start-1, stop-1, strand)
-        column_info = retrieve_column_information(attributes)
+        start_codon, stop_codon, nucleotide_seq, aa_seq = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
+        pred_value, name, product, note, evidence, locus_tag, old_locus_tag = eu.retrieve_column_information(attributes)
 
         length = stop - start + 1
         codon_count = int(length / 3)
@@ -256,62 +85,32 @@ def parse_orfs(args):
         read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
         rpkm_list = []
         for idx, val in enumerate(read_list):
-            rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], reference_name)], val, length))
+            rpkm_list.append(eu.calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
 
-        TE_list = calculate_TE(rpkm_list, wildcards, conditions)
-        result = [reference_name, source, feature, start, stop, strand, column_info[0], prediction_rank, novel_rank, column_info[5], column_info[6], column_info[1], length, codon_count] + TE_list + rpkm_list + [column_info[4], start_codon, stop_codon, nucleotide_seq, aa_seq, column_info[2], column_info[3]]
+        TE_list = eu.calculate_TE(rpkm_list, wildcards, conditions)
+        identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+        result = [identifier, chromosome, source, feature, start, stop, strand, pred_value, prediction_rank, novel_rank, locus_tag, old_locus_tag, name, length, codon_count] + TE_list + rpkm_list + [evidence, start_codon, stop_codon, nucleotide_seq, aa_seq]
 
-        all_sheet.append(nTuple(*result))
+        cds_sheet.append(nTuple(*result))
 
-        if feature.lower() == "cds":
-            cds_sheet.append(nTuple(*result))
-        elif feature.lower() == "gene":
-            gene_sheet.append(nTuple(*result))
-        elif feature.lower() == "region":
-            region_sheet.append(nTuple(*result))
-        elif feature.lower() == "rrna":
-            rRNA_sheet.append(nTuple(*result))
-        elif feature.lower() == "trna":
-            tRNA_sheet.append(nTuple(*result))
-        elif feature.lower() == "srna":
-            sRNA_sheet.append(nTuple(*result))
-        elif feature.lower() == "transcript":
-            transcript_sheet.append(nTuple(*result))
-        elif feature.lower() == "pseudogene":
-            pseudogene_sheet.append(nTuple(*result))
-        elif feature.lower() == "5'-utr":
-            five_utr_sheet.append(nTuple(*result))
-        else:
-            misc_sheet.append(nTuple(*result))
-
-    all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
     cds_df = pd.DataFrame.from_records(cds_sheet, columns=[header[x] for x in range(len(header))])
-    gene_df = pd.DataFrame.from_records(gene_sheet, columns=[header[x] for x in range(len(header))])
-    region_df = pd.DataFrame.from_records(region_sheet, columns=[header[x] for x in range(len(header))])
-    rRNA_df = pd.DataFrame.from_records(rRNA_sheet, columns=[header[x] for x in range(len(header))])
-    tRNA_df = pd.DataFrame.from_records(tRNA_sheet, columns=[header[x] for x in range(len(header))])
-    sRNA_df = pd.DataFrame.from_records(sRNA_sheet, columns=[header[x] for x in range(len(header))])
-    transcript_df = pd.DataFrame.from_records(transcript_sheet, columns=[header[x] for x in range(len(header))])
-    pseudogene_df = pd.DataFrame.from_records(pseudogene_sheet, columns=[header[x] for x in range(len(header))])
-    five_utr_df = pd.DataFrame.from_records(five_utr_sheet, columns=[header[x] for x in range(len(header))])
-    misc_df = pd.DataFrame.from_records(misc_sheet, columns=[header[x] for x in range(len(header))])
 
-    dataframe_dict = {"CDS" : cds_df, "rRNA" : rRNA_df, "sRNA" : sRNA_df, "transcript" : transcript_df, "5'-UTR" : five_utr_df, "tRNA" : tRNA_df, "pseudogene" : pseudogene_df, "gene" : gene_df, "region" : region_df,  "miscellaneous" : misc_df,  "all" : all_df }
+    dataframe_dict = { "CDS" : cds_df }
 
-    excel_writer(args, dataframe_dict, wildcards)
+    eu.excel_writer(args, dataframe_dict, wildcards)
 
 def main():
     # store commandline args
     parser = argparse.ArgumentParser(description='create excel files containing: \
-                                                id, start, stop, orflength, potential RBS, rpkm')
+                                                id, start, stop, orflength, rpkm')
     parser.add_argument("-g", "--genome", action="store", dest="genome", required=True, help= "reference genome")
     parser.add_argument("-t", "--total_mapped_reads", action="store", dest="total_mapped", required=True\
                                                     , help= "file containing the total mapped reads for all alignment files.")
     parser.add_argument("-r", "--mapped_reads", action="store", dest="reads", required=True, help= "file containing the individual read counts")
-    parser.add_argument("-o", "--xlsx", action="store", dest="output", required=True, help= "output xlsx file")
+    parser.add_argument("-o", "--xlsx", action="store", dest="output_path", required=True, help= "output xlsx file")
     args = parser.parse_args()
 
-    parse_orfs(args)
+    create_excel_file(args)
 
 if __name__ == '__main__':
     main()
