@@ -38,7 +38,9 @@ def create_excel_file(args):
     TE_header = []
     for card in wildcards:
         if "RIBO" in card:
-            TE_header.append(card.split("-")[1])
+            TE_header.append("RIBO-"+card.split("-")[1])
+        elif "TIS" in card and "RNATIS" not in card:
+            TE_header.append("TIS-"+card.split("-")[1])
 
     counter = OrderedCounter(TE_header)
     TE_header = []
@@ -87,7 +89,7 @@ def create_excel_file(args):
 
         TE_list = eu.calculate_TE(rpkm_list, wildcards, conditions)
 
-        identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+        identifier = "%s:%s-%s" % (chromosome, start, stop)
         result = [identifier, chromosome, "reparation", feature, start, stop, strand, pred_value, locus_tag, old_locus_tag, name, length, codon_count] + TE_list + rpkm_list + [evidence, start_codon, stop_codon, nucleotide_seq, aa_seq]
 
 

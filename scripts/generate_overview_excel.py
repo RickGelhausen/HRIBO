@@ -166,7 +166,7 @@ def create_excel_file(args):
 
         TE_list = eu.calculate_TE(rpkm_list, wildcards, conditions)
 
-        identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+        identifier = "%s:%s-%s" % (chromosome, start, stop)
         evidence_reparation = " ".join(evidence_reparation)
         evidence_deepribo = " ".join(evidence_deepribo)
         result = [identifier, chromosome, start, stop, strand, locus_tag, old_locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
