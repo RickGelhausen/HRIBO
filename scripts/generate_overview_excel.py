@@ -169,6 +169,8 @@ def create_excel_file(args):
         identifier = "%s:%s-%s" % (chromosome, start, stop)
         evidence_reparation = " ".join(evidence_reparation)
         evidence_deepribo = " ".join(evidence_deepribo)
+        if deepribo_rank == 0:
+            deepribo_rank = "999999"
         result = [identifier, chromosome, start, stop, strand, locus_tag, old_locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
                  [nucleotide_seq, aa_seq] +\
                  TE_list + rpkm_list +\
