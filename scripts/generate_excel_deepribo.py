@@ -96,6 +96,7 @@ def create_excel_file(args):
         cds_sheet.append(nTuple(*result))
 
     cds_df = pd.DataFrame.from_records(cds_sheet, columns=[header[x] for x in range(len(header))])
+    cds_df = cds_df.sort_values(by=["Genome", "Start", "Stop"])
 
     dataframe_dict = { "CDS" : cds_df }
 
