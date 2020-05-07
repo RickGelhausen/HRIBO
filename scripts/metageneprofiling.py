@@ -22,7 +22,7 @@ def get_start_codons(input_gff_filepath):
     with open(input_gff_filepath, newline='\n') as csvfile:
         gffreader = csv.reader(csvfile, delimiter='\t')
         for entry in gffreader:
-            #filter empty and comment lines 
+            #filter empty and comment lines
             if (not len(entry) == 0 and not entry[0].startswith('#')):
                 gfftype = entry[2]
                 if gfftype == "CDS":
@@ -183,6 +183,10 @@ def metagene_mapping(length, length_reads, seqid, startcodons, strand):
     for read in length_reads:
         if read.seqid == seqid:
             intervals.append((int(read.start), int(read.end)))
+
+    if len(intervals) == 0:
+        return length, globalmapping, fiveprimemapping, centeredmapping, threeprimemapping
+
     inter.update(intervals)
     for codon in startcodons[strand]:
         if strand == "+":
