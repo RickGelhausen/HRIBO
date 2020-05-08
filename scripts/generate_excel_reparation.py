@@ -89,7 +89,10 @@ def create_excel_file(args):
 
         TE_list = eu.calculate_TE(rpkm_list, wildcards, conditions)
 
-        identifier = "%s:%s-%s" % (chromosome, start, stop)
+        if strand == "+":
+            identifier = "%s:%s-%s:" % (chromosome, start, stop)
+        else:
+            identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
         result = [identifier, chromosome, "reparation", feature, start, stop, strand, pred_value, locus_tag, old_locus_tag, name, length, codon_count] + TE_list + rpkm_list + [evidence, start_codon, stop_codon, nucleotide_seq, aa_seq]
 
 

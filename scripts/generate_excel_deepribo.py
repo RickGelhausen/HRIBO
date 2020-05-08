@@ -90,7 +90,11 @@ def create_excel_file(args):
             rpkm_list.append(eu.calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
 
         TE_list = eu.calculate_TE(rpkm_list, wildcards, conditions)
-        identifier = "%s:%s-%s" % (chromosome, start, stop)
+        
+        if strand == "+":
+            identifier = "%s:%s-%s:" % (chromosome, start, stop)
+        else:
+            identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
         result = [identifier, chromosome, source, feature, start, stop, strand, pred_value, prediction_rank, novel_rank, locus_tag, old_locus_tag, name, length, codon_count] + TE_list + rpkm_list + [evidence, start_codon, stop_codon, nucleotide_seq, aa_seq]
 
         cds_sheet.append(nTuple(*result))
