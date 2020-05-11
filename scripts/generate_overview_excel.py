@@ -166,10 +166,8 @@ def create_excel_file(args):
 
         TE_list = eu.calculate_TE(rpkm_list, wildcards, conditions)
 
-        if strand == "+":
-            identifier = "%s:%s-%s:" % (chromosome, start, stop)
-        else:
-            identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+
+        identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
         evidence_reparation = " ".join(evidence_reparation)
         evidence_deepribo = " ".join(evidence_deepribo)
         if deepribo_rank == 0:
@@ -180,7 +178,6 @@ def create_excel_file(args):
                  [evidence_reparation, reparation_probability, evidence_deepribo, deepribo_rank, deepribo_score]+\
                  riborex_list + xtail_list
 
-        identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
         attributes = "ID=%s;" % identifier
         if locus_tag != "":
             attributes += "locus_tag=%s;" % locus_tag

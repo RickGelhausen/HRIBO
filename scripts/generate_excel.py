@@ -101,10 +101,7 @@ def create_excel_file(args):
 
         TE_list = eu.calculate_TE(rpkm_list, wildcards, conditions)
 
-        if strand == "+":
-            identifier = "%s:%s-%s:" % (chromosome, start, stop)
-        else:
-            identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+        identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
         result = [identifier, chromosome, "HRIBO", feature, start, stop, strand, locus_tag, old_locus_tag, name, length, codon_count] + TE_list + rpkm_list + [start_codon, stop_codon, nucleotide_seq, aa_seq, product, note]
 
         all_sheet.append(nTuple(*result))
