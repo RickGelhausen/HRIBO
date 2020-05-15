@@ -19,6 +19,13 @@ def calculate_rpkm(total_mapped, read_count, read_length):
     """
     calculate the rpkm
     """
+    if read_length == 0:
+        print("read_length: 0 detected! Setting RPKM to 0!")
+        return 0
+    elif total_mapped == 0:
+        print("total_mapped: 0 detected! Setting RPKM to 0!")
+        return 0
+
     return float("%.2f" % ((read_count * 1000000000) / (total_mapped * read_length)))
 
 def get_unique(in_list):
@@ -29,13 +36,10 @@ def get_unique(in_list):
 def retrieve_column_information(attributes):
     """
     check for gff2/gff3 format and generate a list of information for the final tables
-    [locus_tag, name, product, note]
+    [pred_value, name, product, note, evidence, locus_tag, old_locus_tag]
     """
 
-    if ";" in attributes and "=" in attributes:
-        attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
-    else:
-        attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+    attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
 
     if "ORF_type=;" in attributes:
         attribute_list.remove("ORF_type")
@@ -48,15 +52,37 @@ def retrieve_column_information(attributes):
         print(attributes)
         sys.exit("Attributes section of gtf/gff is wrongly formatted!")
 
+    pred_value = ""
+    if "pred_value" in attribute_list:
+        pred_value = attribute_list[attribute_list.index("pred_value")+1]
+    elif "prob" in attribute_list:
+        pred_value = attribute_list[attribute_list.index("prob")+1]
+
     locus_tag = ""
     if "locus_tag" in attribute_list:
         locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+
+    old_locus_tag = ""
+    if "old_locus_tag" in attribute_list:
+        old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
 
     name = ""
     if "name" in attribute_list:
         name = attribute_list[attribute_list.index("name")+1]
 
-    return [locus_tag, name]
+    product = ""
+    if "product" in attribute_list:
+        product = attribute_list[attribute_list.index("product")+1]
+
+    note = ""
+    if "note" in attribute_list:
+        note = attribute_list[attribute_list.index("note")+1]
+
+    evidence = ""
+    if "evidence" in attribute_list:
+        evidence = attribute_list[attribute_list.index("evidence")+1]
+
+    return [pred_value, name, product, note, evidence, locus_tag, old_locus_tag]
 
 def get_genome_information(genome, start, stop, strand):
     """
@@ -105,11 +131,31 @@ def TE(ribo_count, rna_count):
     """
 
     if ribo_count == 0 and rna_count == 0:
-        return 0
+        return "NaN"
     elif rna_count == 0:
-        return ribo_count
+        return "NaN"
     else:
         return ribo_count / rna_count
+
+def get_avg(t_eff):
+    """
+    get the final TE list
+    """
+
+    valid_count = 0
+    sum = 0
+    for t in t_eff:
+        if t != "NaN":
+            valid_count += 1
+            sum += t
+
+    if valid_count == 0:
+        t_eff.extend(["NaN"])
+
+    else:
+        t_eff.extend([sum / valid_count])
+
+    return t_eff
 
 def calculate_TE(read_list, wildcards, conditions):
     """
@@ -133,9 +179,10 @@ def calculate_TE(read_list, wildcards, conditions):
                 t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
                 if len(t_eff) > 1:
-                    t_eff.extend([sum(t_eff) / len(ribo_list)])
+                    t_eff = get_avg(t_eff)
 
-                t_eff = [float("%.2f" % x) for x in t_eff]
+
+                t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
                 TE_list.extend(t_eff)
             else:
                 TE_list.extend([0])
@@ -148,9 +195,9 @@ def calculate_TE(read_list, wildcards, conditions):
                 t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
                 if len(t_eff) > 1:
-                    t_eff.extend([sum(t_eff) / len(ribo_list)])
+                    t_eff = get_avg(t_eff)
 
-                t_eff = [float("%.2f" % x) for x in t_eff]
+                t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
                 TE_list.extend(t_eff)
             else:
                 TE_list.extend([0])
@@ -213,13 +260,14 @@ def generate_reparation_dict(reparation_path):
         start = getattr(row, "_3")
         stop = getattr(row, "_4")
         strand = getattr(row, "_6")
-        attribute_list = [x for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
+        attribute_list = [x.strip(" ") for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
 
         if len(attribute_list) % 2 == 0:
             for i in range(len(attribute_list)):
                 if i % 2 == 0:
                     attribute_list[i] = attribute_list[i].lower()
         else:
+            print(attribute_list)
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
 
         proba = ""
@@ -252,20 +300,21 @@ def generate_deepribo_dict(deepribo_path):
         stop = getattr(row, "_4")
         pred_rank = getattr(row, "_5")
         strand = getattr(row, "_6")
-        attribute_list = [x for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
+        attribute_list = [x.strip(" ") for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
 
         if len(attribute_list) % 2 == 0:
             for i in range(len(attribute_list)):
                 if i % 2 == 0:
                     attribute_list[i] = attribute_list[i].lower()
         else:
+            print(attribute_list)
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
 
         pred_value = ""
         if "pred_value" in attribute_list:
             pred_value = attribute_list[attribute_list.index("pred_value")+1]
 
-        if pred_value == "" or float(pred_value) < 0:
+        if pred_value == "":# or float(pred_value) < 0:
             continue
 
         evidence = ""
@@ -299,16 +348,14 @@ def generate_annotation_dict(annotation_path):
         attributes = getattr(row, "_8")
         read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
 
-        if ";" in attributes and "=" in attributes:
-            attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
-        else:
-            attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+        attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
 
         if len(attribute_list) % 2 == 0:
             for i in range(len(attribute_list)):
                 if i % 2 == 0:
                     attribute_list[i] = attribute_list[i].lower()
         else:
+            print(attribute_list)
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
 
         if feature.lower() == "cds":
@@ -316,9 +363,15 @@ def generate_annotation_dict(annotation_path):
             if "locus_tag" in attribute_list:
                 locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
 
+            old_locus_tag = ""
+            if "old_locus_tag" in attribute_list:
+                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
+
             name = ""
             if "name" in attribute_list:
                 name = attribute_list[attribute_list.index("name")+1]
+            elif "gene_name" in attribute_list:
+                name = attribute_list[attribute_list.index("gene_name")+1]
 
             gene_id = ""
             if "gene_id" in attribute_list:
@@ -327,212 +380,39 @@ def generate_annotation_dict(annotation_path):
                 gene_id = attribute_list[attribute_list.index("id")+1]
 
             new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            cds_dict[new_key] = (gene_id, locus_tag, name, read_list)
+            cds_dict[new_key] = (gene_id, locus_tag, name, read_list, old_locus_tag)
         elif feature.lower() in ["gene","pseudogene"]:
             gene_name = ""
             if "name" in attribute_list:
                 gene_name = attribute_list[attribute_list.index("name")+1]
+            elif "gene_name" in attribute_list:
+                gene_name = attribute_list[attribute_list.index("gene_name")+1]
 
             locus_tag = ""
             if "locus_tag" in attribute_list:
                 locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+            elif "gene_id" in attribute_list:
+                locus_tag = attribute_list[attribute_list.index("gene_id")+1]
+
+            old_locus_tag = ""
+            if "old_locus_tag" in attribute_list:
+                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
 
             new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            gene_dict[new_key] = (gene_name, locus_tag)
+            gene_dict[new_key] = (gene_name, locus_tag, old_locus_tag)
 
     for key in cds_dict.keys():
         gene_name = ""
-        gene_id, locus_tag, name, read_list = cds_dict[key]
+        gene_id, locus_tag, name, read_list, old_locus_tag = cds_dict[key]
+
         if key in gene_dict:
-            gene_locus_tag, gene_name = gene_dict[key]
+            gene_locus_tag, gene_name, gene_old_locus_tag = gene_dict[key]
+
             if locus_tag == "":
                 locus_tag = gene_locus_tag
-        annotation_dict[key] = (gene_id, locus_tag, name, read_list, gene_name)
+            if old_locus_tag == "":
+                old_locus_tag = gene_old_locus_tag
+
+        annotation_dict[key] = (gene_id, locus_tag, name, read_list, gene_name, old_locus_tag)
 
     return annotation_dict
-
-def create_excel_file(args):
-    # read annotation from file
-    annotation_dict = generate_annotation_dict(args.annotation_path)
-
-    # read the genome file
-    genome_file = SeqIO.parse(args.genome_path, "fasta")
-    genome_dict = dict()
-    for entry in genome_file:
-        genome_dict[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
-
-    # get the total mapped reads for each bam file
-    total_mapped_dict = {}
-    with open(args.total_mapped, "r") as f:
-        total = f.readlines()
-
-    wildcards = []
-    for line in total:
-        wildcard, reference_name, value = line.strip().split("\t")
-        total_mapped_dict[(wildcard, reference_name)] = int(value)
-        wildcards.append(wildcard)
-
-    wildcards = get_unique(wildcards)
-
-    TE_header = []
-    for card in wildcards:
-        if "RIBO" in card:
-            TE_header.append("RIBO-"+card.split("-")[1])
-        elif "TIS" in card and "RNATIS" not in card:
-            TE_header.append("TIS-"+card.split("-")[1])
-
-    counter = OrderedCounter(TE_header)
-
-    TE_header = []
-    for key, value in counter.items():
-        for idx in range(value):
-            TE_header.append("%s-%s" % (key,(idx+1)))
-        if value > 1:
-            TE_header.append("%s-avg" % key)
-
-    conditions = []
-    for card in wildcards:
-        conditions.append(card.split("-")[1])
-
-    conditions = get_unique(conditions)
-
-    xtail_dict, riborex_dict, deepribo_dict, reparation_dict = {}, {}, {}, {}
-    if args.xtail_path != "":
-        xtail_dict = generate_xtail_dict(args.xtail_path)
-    if args.riborex_path != "":
-        riborex_dict = generate_riborex_dict(args.riborex_path)
-    if args.reads_deepribo != "":
-        deepribo_dict = generate_deepribo_dict(args.reads_deepribo)
-    if args.reads_reparation != "":
-        reparation_dict = generate_reparation_dict(args.reads_reparation)
-
-    #keys_union = list(set(deepribo_dict.keys()) | set(reparation_dict.keys()))
-
-    keys_union = list(set().union(deepribo_dict.keys(), reparation_dict.keys(), annotation_dict.keys()))
-
-    # read gff file
-    all_sheet = []
-
-    contrasts = sorted(["%s-%s" %(tuple) for tuple in list(iter.combinations(conditions,2))])
-
-    header = ["Identifier","Genome", "Start", "Stop", "Strand", "Locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] +\
-             ["Evidence", "Reparation_probability", "Deepribo_rank", "Deepribo_score"] +\
-             ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["riborex_pvalue", "riborex_pvalue_adjusted", "riborex_log2FC"]] +\
-             ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]]
-
-    name_list = ["s%s" % str(x) for x in range(len(header))]
-    nTuple = collections.namedtuple('Pandas', name_list)
-
-    for key in keys_union:
-        chromosome, mid, strand = key.split(":")
-        start, stop = mid.split("-")
-
-        locus_tag, name, gene_name = "","",""
-        reparation_probability, deepribo_rank, deepribo_score = 0, 0, 0
-        evidence = []
-
-        read_list = []
-
-        gene_id = ""
-        if key in annotation_dict:
-            gene_id, locus_tag, name, read_list, gene_name = annotation_dict[key]
-
-        length = int(stop) - int(start) + 1
-        codon_count = length / 3
-
-        if key in reparation_dict:
-            reparation_probability, reparation_evidence, read_list = reparation_dict[key]
-            evidence_list = []
-            for e in reparation_evidence.split(" "):
-                if not "reparation" in e:
-                    evidence_list.append("reparation-"+e)
-                else:
-                    evidence_list.append(e)
-            evidence.extend(evidence_list)
-
-        if key in deepribo_dict:
-            deepribo_rank, deepribo_score, deepribo_evidence, read_list = deepribo_dict[key]
-            evidence_list = []
-            for e in deepribo_evidence.split(" "):
-                if not "deepribo" in e:
-                    evidence_list.append("deepribo-"+e)
-                else:
-                    evidence_list.append(e)
-            evidence.extend(evidence_list)
-
-        xtail_list = []
-        for contrast in contrasts:
-            if (key,contrast) in xtail_dict:
-                xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[(key,contrast)]
-                xtail_list += [xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
-            elif gene_id != "" and (gene_id,contrast) in xtail_dict:
-                xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[(gene_id,contrast)]
-                xtail_list += [xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
-            else:
-                xtail_list += [0,0,0]
-
-
-        riborex_list = []
-        for contrast in contrasts:
-            if (key,contrast) in riborex_dict:
-                riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[(key,contrast)]
-                riborex_list += [riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC]
-            elif gene_id != "" and (gene_id,contrast) in riborex_dict:
-                riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[(gene_id,contrast)]
-                riborex_list += [riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC]
-            else:
-                riborex_list += [0,0,0]
-
-        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
-
-        evidence.sort()
-
-        rpkm_list = []
-        for idx, val in enumerate(read_list):
-            rpkm_list.append(calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
-
-        TE_list = calculate_TE(rpkm_list, wildcards, conditions)
-
-        identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-        evidence = " ".join(evidence)
-        result = [identifier, chromosome, start, stop, strand, locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq] + TE_list + rpkm_list +\
-                 [evidence, reparation_probability, deepribo_rank, deepribo_score] +\
-                 riborex_list + xtail_list
-
-        all_sheet.append(nTuple(*result))
-
-    all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
-
-    all_df = all_df.astype({"Start" : "int32", "Stop" : "int32"})
-    all_df = all_df.sort_values(by=["Genome", "Start", "Stop"])
-
-    all_df.to_csv(args.output_path.replace(".xlsx", ".tsv"), sep="\t", index=False, quoting=csv.QUOTE_NONE)
-
-    dataframe_dict = { "all" : all_df }
-
-    excel_writer(args, dataframe_dict, wildcards)
-
-
-def main():
-    # store commandline args
-    parser = argparse.ArgumentParser(description='create an overview table containing all results from the workflow.')
-    parser.add_argument("-a", "--annotation", action="store", dest="annotation_path", required=True, help= "annotation file path.")
-    parser.add_argument("-g", "--genome", action="store", dest="genome_path", required=True, help= "genome file path.")
-    parser.add_argument("-r", "--riborex", action="store", dest="riborex_path", default="", help= "riborex csv file.")
-    parser.add_argument("-x", "--xtail", action="store", dest="xtail_path", default="", help= "xtail csv file.")
-    parser.add_argument("-o", "--xlsx", action="store", dest="output_path", required=True, help= "output xlsx file.")
-    parser.add_argument("-t", "--total_mapped_reads", action="store", dest="total_mapped", required=True, help= "file containing the total mapped reads for all alignment files.")
-    parser.add_argument("--mapped_reads_deepribo", action="store", dest="reads_deepribo", default="", help= "file containing the individual read counts for deepribo.")
-    parser.add_argument("--mapped_reads_reparation", action="store", dest="reads_reparation", default="", help= "file containing the individual read counts for reparation.")
-    args = parser.parse_args()
-
-    if args.reads_deepribo == "" and args.reads_reparation == "":
-        sys.exit("no read files given!!")
-
-    if args.xtail_path == "" and args.riborex_path == "":
-        print("No differential expression data given. Proceeding without!")
-
-    create_excel_file(args)
-
-if __name__ == '__main__':
-    main()

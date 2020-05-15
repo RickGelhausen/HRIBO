@@ -30,7 +30,7 @@ rule xtail:
 
 rule xtailxlsx:
     input:
-        annotation=rules.retrieveAnnotation.output,
+        annotation=rules.checkAnnotation.output,
         genome=rules.retrieveGenome.output,
         xtail_sorted="xtail/{contrast}_sorted.csv",
         xtail_signif="xtail/{contrast}_significant.csv"
@@ -68,7 +68,7 @@ rule riborexresults:
 
 rule riborexxlsx:
     input:
-        annotation=rules.retrieveAnnotation.output,
+        annotation=rules.checkAnnotation.output,
         genome=rules.retrieveGenome.output,
         riborex_sorted="riborex/{contrast}_sorted.csv",
         riborex_signif="riborex/{contrast}_significant.csv"

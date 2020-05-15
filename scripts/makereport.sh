@@ -5,7 +5,7 @@ idx=$1
 timestamp=$(date +"%d-%m-%y")
 echo "${timestamp}"
 
-report="${idx}report_HRIBO1.4.2_${timestamp}"
+report="${idx}report_HRIBO1.4.3_${timestamp}"
 
 mkdir -p $report
 mkdir -p "${report}/genome-browser/features/"
@@ -56,8 +56,8 @@ cp -r xtail/*.pdf "${report}/differential-expression/xtail/"
 cp -r riborex/*_sorted.xlsx "${report}/differential-expression/riborex/"
 cp -r riborex/*_significant.xlsx "${report}/differential-expression/riborex/"
 
-cp -r tracks/updated_annotation.gff "${report}/genome-browser/"
 cp -r auxiliary/overview.xlsx "${report}"
+cp -r auxiliary/overview.gff "${report}/genome-browser/"
 cp -r metageneprofiling "${report}"
 
 zip -r "${report}.zip" $report

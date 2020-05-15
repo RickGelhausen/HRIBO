@@ -16,3 +16,11 @@ rule retrieveAnnotation:
     shell:
         "mkdir -p annotation; mv annotation.gff annotation/"
 
+rule checkAnnotation:
+    input:
+        rules.retrieveAnnotation.output
+    output:
+        "annotation/annotation_processed.gff"
+    threads: 1
+    shell:
+        "mkdir -p annotation; HRIBO/scripts/gtf2gff3.py -a {input} -o {output}"

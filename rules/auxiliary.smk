@@ -12,9 +12,9 @@ def getGFFtype(filename):
 
 rule enrichAnnotation:
     input:
-        annotation=rules.retrieveAnnotation.output
+        annotation=rules.checkAnnotation.output
     output:
-        "auxiliary/enriched_annotation.gtf"
+        "auxiliary/enriched_annotation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -23,9 +23,9 @@ rule enrichAnnotation:
 
 rule unambigousAnnotation:
     input:
-        "auxiliary/enriched_annotation.gtf"
+        "auxiliary/enriched_annotation.gff"
     output:
-        "auxiliary/unambigous_annotation.gtf"
+        "auxiliary/unambigous_annotation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
@@ -83,7 +83,7 @@ rule createExcelSummary:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; HRIBO/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; HRIBO/scripts/generate_excel_reparation.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule createExcelTotalAnnotationReadCount:
     input:
@@ -123,7 +123,7 @@ rule createOverviewTablePredictions:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         """
 
 rule createOverviewTableReparation:
@@ -139,7 +139,7 @@ rule createOverviewTableReparation:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         """
 
 rule createOverviewTableDiffExpr:
@@ -157,7 +157,7 @@ rule createOverviewTableDiffExpr:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -r {input.riborex} -x {input.xtail} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} -r {input.riborex} -x {input.xtail} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         """
 
 rule createOverviewTableAll:
@@ -176,5 +176,5 @@ rule createOverviewTableAll:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/overview_excel.py -a {input.annotation} -g {input.genome} -r {input.riborex} -x {input.xtail} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} -r {input.riborex} -x {input.xtail} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         """

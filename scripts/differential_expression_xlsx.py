@@ -32,16 +32,14 @@ def excel_writer(args, data_frames):
     writer.save()
 
 
+
 def retrieve_column_information(attributes):
     """
     check for gff2/gff3 format and generate a list of information for the final tables
     [locus_tag, name, product, note]
     """
 
-    if ";" in attributes and "=" in attributes:
-        attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
-    else:
-        attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+    attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
 
     if "ORF_type=;" in attributes:
         attribute_list.remove("ORF_type")
@@ -106,10 +104,7 @@ def annotation_to_dict(annotation_file):
             strand = getattr(row, "_6")
             attributes = getattr(row, "_8")
 
-            if ";" in attributes and "=" in attributes:
-                attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
-            else:
-                attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+            attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
 
             id = attribute_list[attribute_list.index("ID") + 1]
 
@@ -132,10 +127,8 @@ def annotation_to_dict(annotation_file):
             strand = getattr(row, "_6")
             attributes = getattr(row, "_8")
 
-            if ";" in attributes and "=" in attributes:
-                attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
-            else:
-                attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
+
+            attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
 
             parent = ""
             if "parent" in attributes.lower():

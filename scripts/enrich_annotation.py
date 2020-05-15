@@ -101,14 +101,10 @@ def main():
     with open(args.output, "w") as f:
         f.write("##gff-version 3\n")
 
-    contains_ID = sum(annotation_df[8].str.contains("ID=").tolist())
-    if contains_ID >= len(annotation_df.index) * 0.75:
-        with open(args.output, "a") as f:
-            annotation_df = enrich_children(annotation_df)
-            annotation_df.to_csv(f, sep="\t", header=None, index=False, quoting=csv.QUOTE_NONE)
-    else:
-        with open(args.output, "a") as f:
-            annotation_df.to_csv(f, sep="\t", header=None, index=False, quoting=csv.QUOTE_NONE)
+    with open(args.output, "a") as f:
+        annotation_df = enrich_children(annotation_df)
+        annotation_df.to_csv(f, sep="\t", header=None, index=False, quoting=csv.QUOTE_NONE)
+
 
 if __name__ == '__main__':
     main()

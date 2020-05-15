@@ -50,7 +50,7 @@ rule generateAnnotationIndependantReadCounts:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="auxiliary/unambigous_annotation.gtf"
+        annotation={rules.unambigousAnnotation.output}
     output:
         "readcounts/annotation_independant_read_counts.raw"
     conda:
@@ -66,7 +66,7 @@ rule generateAnnotationTotalReadCounts:
     input:
         bam=expand("bammulti/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("bammulti/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="auxiliary/unambigous_annotation.gtf"
+        annotation={rules.unambigousAnnotation.output}
     output:
         "readcounts/annotation_total_reads.raw"
     conda:
@@ -82,7 +82,7 @@ rule generateAnnotationUniqueReadCounts:
     input:
         bam=expand("rRNAbam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("rRNAbam/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="auxiliary/unambigous_annotation.gtf"
+        annotation={rules.unambigousAnnotation.output}
     output:
         "readcounts/annotation_unique_reads.raw"
     conda:
@@ -97,7 +97,7 @@ rule generateAnnotationUniqueReadCounts:
 rule mapIndependantReads:
     input:
         reads="readcounts/annotation_independant_read_counts.raw",
-        annotation=rules.retrieveAnnotation.output
+        annotation={rules.checkAnnotation.output}
     output:
         "readcounts/independant_annotation.gff"
     conda:
@@ -139,7 +139,7 @@ rule mapDeepRiboReads:
 rule mapTotalReads:
     input:
         reads="readcounts/annotation_total_reads.raw",
-        annotation="auxiliary/enriched_annotation.gtf"
+        annotation="auxiliary/enriched_annotation.gff"
     output:
         "readcounts/total_annotation.gtf"
     conda:
@@ -153,7 +153,7 @@ rule mapTotalReads:
 rule mapUniqueReads:
     input:
         reads="readcounts/annotation_unique_reads.raw",
-        annotation="auxiliary/enriched_annotation.gtf"
+        annotation="auxiliary/enriched_annotation.gff"
     output:
         "readcounts/unique_annotation.gtf"
     conda:

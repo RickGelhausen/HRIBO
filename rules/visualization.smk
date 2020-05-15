@@ -741,7 +741,7 @@ rule plotCorrelation:
 
 rule annotationBed:
     input:
-        rules.retrieveAnnotation.output
+        rules.checkAnnotation.output
     output:
         "tracks/annotation.bed"
     conda:

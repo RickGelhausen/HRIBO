@@ -1,6 +1,6 @@
 rule rrnaannotation:
     input:
-        annotation=rules.retrieveAnnotation.output
+        annotation=rules.checkAnnotation.output
     output:
         annotation="annotation/rrna.bed"
     conda:

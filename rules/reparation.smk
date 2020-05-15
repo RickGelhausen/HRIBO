@@ -14,7 +14,7 @@ rule uniprotDBRetrieve:
 rule reparation:
     input:
         genome=rules.retrieveGenome.output,
-        gtf=rules.retrieveAnnotation.output,
+        gtf=rules.checkAnnotation.output,
         db="uniprotDB/uniprot_sprot.fasta",
         bam="bam/RIBO-{condition}-{replicate}.bam",
         bamindex="maplink/RIBO-{condition}-{replicate}.bam.bai"

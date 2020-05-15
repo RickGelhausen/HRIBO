@@ -56,7 +56,7 @@ rule parseDeepRibo:
         asiteS= "coverage_deepribo/{condition}-{replicate}_asite_fwd.bedgraph",
         asiteAS= "coverage_deepribo/{condition}-{replicate}_asite_rev.bedgraph",
         genome= rules.retrieveGenome.output,
-        annotation= rules.retrieveAnnotation.output
+        annotation= rules.checkAnnotation.output
     output:
         "deepribo/{condition}-{replicate}/data_list.csv"
     singularity:
@@ -135,7 +135,7 @@ rule allDeepRibo:
 rule filterDeepRibo:
     input:
         ingff="tracks/deepribo_all.gff",
-        annotation=rules.retrieveAnnotation.output
+        annotation=rules.checkAnnotation.output
     output:
         merged="tracks/deepribo_merged.gff",
         plus="tracks/deepribo_merged_plus.gff"
@@ -162,8 +162,8 @@ rule createExcelSummaryDeepRibo:
 rule newAnnotationDeepRibo:
     input:
         reparation_orfs="tracks/reparation_annotated.gff",
-        deepribo_orfs="tracks/deepribo_merged_plus.gff",
-        currentAnnotation=rules.retrieveAnnotation.output
+        deepribo_orfs="tracks/deepribo_merged.gff",
+        currentAnnotation=rules.checkAnnotation.output
     output:
         "tracks/totalAnnotation.gff"
     conda:
