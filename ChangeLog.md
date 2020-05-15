@@ -1,11 +1,11 @@
-### version 1.4.3 (in progress) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 28.04.2020
+### version 1.4.3 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 15.05.2020
  * added genome-browser identifier to overview table
  * completely reworked gff2 support by transforming gff2 to gff3. This is unavoidable as some tools require gff3 format
  * added script to convert gff2 to gff3
  * improved overview table by adding and reordering columns
  * improved TE calculation to be less confusing, using NaN if read-counts are 0 and would lead to division by 0
  * improved excel file generation
- * resolved redundancies in excel files  
+ * resolved redundancies in excel files
  * updated manual + online documentation
 
 ### version 1.4.2 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 25.04.2020
