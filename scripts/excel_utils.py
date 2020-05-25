@@ -173,35 +173,40 @@ def calculate_TE(read_list, wildcards, conditions):
     TE_list = []
     for cond in conditions:
         if ("RIBO", cond) in read_dict:
-            if len(read_dict[("RIBO", cond)]) == len(read_dict[("RNA", cond)]):
-                ribo_list = read_dict[("RIBO", cond)]
-                rna_list = read_dict[("RNA", cond)]
-                t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
+            try:
+                if len(read_dict[("RIBO", cond)]) == len(read_dict[("RNA", cond)]):
+                    ribo_list = read_dict[("RIBO", cond)]
+                    rna_list = read_dict[("RNA", cond)]
+                    t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
-                if len(t_eff) > 1:
-                    t_eff = get_avg(t_eff)
+                    if len(t_eff) > 1:
+                        t_eff = get_avg(t_eff)
 
 
-                t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
-                TE_list.extend(t_eff)
-            else:
-                TE_list.extend([0])
+                    t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
+                    TE_list.extend(t_eff)
+                else:
+                    TE_list.extend(["NaN" for x in read_dict[("RIBO", cond)]])
+            except KeyError:
+                TE_list.extend(["NaN" for x in read_dict[("RIBO", cond)]])
 
         if ("TIS", cond) in read_dict:
-            if len(read_dict[("TIS", cond)]) == len(read_dict[("RNATIS", cond)]):
-                ribo_list = read_dict[("TIS", cond)]
-                rna_list = read_dict[("RNATIS", cond)]
+            try:
+                if len(read_dict[("TIS", cond)]) == len(read_dict[("RNATIS", cond)]):
+                    ribo_list = read_dict[("TIS", cond)]
+                    rna_list = read_dict[("RNATIS", cond)]
 
-                t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
+                    t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
 
-                if len(t_eff) > 1:
-                    t_eff = get_avg(t_eff)
+                    if len(t_eff) > 1:
+                        t_eff = get_avg(t_eff)
 
-                t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
-                TE_list.extend(t_eff)
-            else:
-                TE_list.extend([0])
-
+                    t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
+                    TE_list.extend(t_eff)
+                else:
+                    TE_list.extend(["NaN" for x in read_dict[("TIS", cond)]])
+            except KeyError:
+                TE_list.extend(["NaN" for x in read_dict[("TIS", cond)]])
     return TE_list
 
 def generate_riborex_dict(riborex_path):
