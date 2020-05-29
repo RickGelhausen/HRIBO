@@ -52,7 +52,7 @@ def attributes_to_gff3(attributes, id, locus_tag, parent=""):
     if "=" in attributes and ";" in attributes:
         attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes)]
     else:
-        attribute_list = [x.replace("\"","") for x in re.split('[; ]', attributes) if x != ""]
+        attribute_list = [x.strip(" ") for x in re.split('[;\"]', attributes) if x != ""]
 
     empty_fields=[]
     for i in range(len(attribute_list)):

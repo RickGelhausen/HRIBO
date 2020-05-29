@@ -53,7 +53,16 @@ rule featurescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/all; featureCounts -T {threads} -t gene -g ID -a {input.annotation} -o {output.txt} {input.bam}"
+        """
+        mkdir -p qc/all;
+        column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
+        if [[ " ${{column3[@]}} " =~ "gene" ]];
+        then
+            featureCounts -T {threads} -t gene -g ID -a {input.annotation} -o {output.txt} {input.bam};
+        else
+            touch {output.txt};
+        fi
+        """
 
 rule trnafeaturescounts:
     input:
@@ -65,7 +74,16 @@ rule trnafeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/trnainall; featureCounts -T {threads} -t tRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
+        """
+        mkdir -p qc/trnainall;
+        column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
+        if [[ " ${{column3[@]}} " =~ "tRNA" ]];
+        then
+            featureCounts -T {threads} -t tRNA -g ID -a {input.annotation} -o {output.txt} {input.bam};
+        else
+            touch {output.txt};
+        fi
+        """
 
 rule norrnafeaturescounts:
     input:
@@ -77,7 +95,16 @@ rule norrnafeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/rrnainall; featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
+        """
+        mkdir -p qc/rrnainall;
+        column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
+        if [[ " ${{column3[@]}} " =~ "rRNA" ]];
+        then
+            featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam};
+        else
+            touch {output.txt};
+        fi
+        """
 
 rule rrnatotalfeaturescounts:
     input:
@@ -89,8 +116,17 @@ rule rrnatotalfeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/rrnainallaligned; featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
-
+        """
+        mkdir -p qc/rrnainallaligned;
+        column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
+        if [[ " ${{column3[@]}} " =~ "rRNA" ]];
+        then
+            featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam};
+        else
+            touch {output.txt};
+        fi
+        """
+        
 rule rrnauniquefeaturescounts:
     input:
         annotation={rules.unambigousAnnotation.output},
@@ -101,7 +137,16 @@ rule rrnauniquefeaturescounts:
         "../envs/subread.yaml"
     threads: 8
     shell:
-        "mkdir -p qc/rrnainuniquelyaligned; featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam}"
+        """
+        mkdir -p qc/rrnainuniquelyaligned;
+        column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
+        if [[ " ${{column3[@]}} " =~ "rRNA" ]];
+        then
+            featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam};
+        else
+            touch {output.txt};
+        fi
+        """
 
 rule coveragedepth:
     input:
