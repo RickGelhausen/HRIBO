@@ -7,3 +7,4 @@ dependencies:
  - openssl =1.0.2
  - pandas =0.25.0
  - biopython =1.74
+ - interlap =0.2.6

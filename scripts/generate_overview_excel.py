@@ -8,6 +8,8 @@ import csv
 from collections import Counter, OrderedDict
 import itertools as iter
 
+import interlap
+
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.Alphabet import generic_dna
@@ -17,9 +19,35 @@ import excel_utils as eu
 class OrderedCounter(Counter, OrderedDict):
     pass
 
+def create_interlap(annotation_dict):
+    """
+    create an interlap object to easily check for overlap of prediction and annotation
+    """
+
+    interlap_dict = {}
+
+    tuples_dict = {}
+    for key, val in annotation_dict.items():
+        chrom, parts, strand = key.split(":")
+        start, stop = parts.split("-")
+
+        if (chrom, strand) in tuples_dict:
+            tuples_dict[(chrom, strand)].append((int(start), int(stop), val[1]))
+        else:
+            tuples_dict[(chrom, strand)] = [(int(start), int(stop), val[1])]
+
+    for key, val in tuples_dict.items():
+        inter = interlap.InterLap()
+        inter.update(val)
+        interlap_dict[key] = inter
+
+    return interlap_dict
+
 def create_excel_file(args):
     # read annotation from file
     annotation_dict = eu.generate_annotation_dict(args.annotation_path)
+
+    inter_dict = create_interlap(annotation_dict)
 
     # read the genome file
     genome_file = SeqIO.parse(args.genome_path, "fasta")
@@ -82,7 +110,7 @@ def create_excel_file(args):
 
     contrasts = sorted(["%s-%s" %(tuple) for tuple in list(iter.combinations(conditions,2))])
 
-    header = ["Identifier","Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon"] +\
+    header = ["Identifier", "Genome", "Start", "Stop", "Strand", "Locus_tag", "Overlapping_genes", "Old_locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon"] +\
              ["Nucleotide_seq", "Aminoacid_seq"] +\
              [cond + "_TE" for cond in TE_header] +\
              [card + "_rpkm" for card in wildcards] +\
@@ -98,11 +126,16 @@ def create_excel_file(args):
         chromosome, mid, strand = key.split(":")
         start, stop = mid.split("-")
 
-        locus_tag, name, gene_name = "","",""
+        locus_tag, locus_tag_overlap, name, gene_name = "","","",""
         reparation_probability, deepribo_rank, deepribo_score = 0, 0, 0
         evidence_reparation, evidence_deepribo = [], []
 
         read_list = []
+
+        overlapping_intervals = list(inter_dict[(chromosome, strand)].find((int(start), int(stop))))
+
+        if len(overlapping_intervals) > 0:
+            locus_tag_overlap = ",".join([interval[2] for interval in overlapping_intervals])
 
         gene_id = ""
         old_locus_tag = ""
@@ -172,7 +205,7 @@ def create_excel_file(args):
         evidence_deepribo = " ".join(evidence_deepribo)
         if deepribo_rank == 0:
             deepribo_rank = "999999"
-        result = [identifier, chromosome, start, stop, strand, locus_tag, old_locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
+        result = [identifier, chromosome, start, stop, strand, locus_tag, locus_tag_overlap, old_locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
                  [nucleotide_seq, aa_seq] +\
                  TE_list + rpkm_list +\
                  [evidence_reparation, reparation_probability, evidence_deepribo, deepribo_rank, deepribo_score]+\
