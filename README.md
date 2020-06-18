@@ -8,7 +8,7 @@
 
 We present HRIBO (High-throughput annotation by Ribo-seq), a workflow to enable reproducible and high-throughput analysis of bacterial and archeal Ribo-seq data. The workflow performs all required pre-processing steps and quality control.  Importantly, HRIBO outputs annotation-independent ORFpredictions based on two complementary prokaryotic-focused tools, and integrates them with additional computed features. This facilitates both the rapid discovery of ORFs and their prioritization for functional characterization.
 
-For a detailed description of this workflow, the installation, usage and exampkes, please refer to the [ReadTheDocs documentation](http://hribo.readthedocs.io/?badge=latest).
+For a detailed description of this workflow, the installation, usage and examples, please refer to the [ReadTheDocs documentation](http://hribo.readthedocs.io/?badge=latest).
 
 HRIBO can be installed with all dependencies via [conda](https://conda.io/docs/install/quick.html). Once you have conda installed simply type:
 
