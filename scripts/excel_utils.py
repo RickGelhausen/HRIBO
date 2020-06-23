@@ -406,7 +406,7 @@ def generate_annotation_dict(annotation_path):
         gene_id, locus_tag, name, read_list, old_locus_tag = cds_dict[key]
 
         if key in gene_dict:
-            gene_locus_tag, gene_name, gene_old_locus_tag = gene_dict[key]
+            gene_name, gene_locus_tag, gene_old_locus_tag = gene_dict[key]
 
             if locus_tag == "":
                 locus_tag = gene_locus_tag
