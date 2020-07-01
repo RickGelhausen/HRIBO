@@ -314,32 +314,6 @@ rule uniquemappedwigtobigwigmilreverse:
     shell:
         "wigToBigWig {input.rev} {input.genomeSize} {output.rev}"
 
-# rule readcountstats:
-#     input:
-#         bam=rules.maplink.output,
-#         genomeSize=rules.genomeSize.output,
-#         bamIndex=rules.bamindex.output
-#     output:
-#         stat="maplink/{method}-{condition}-{replicate}.readstats"
-#     conda:
-#         "../envs/coverage.yaml"
-#     threads: 1
-#     shell:
-#         "mkdir -p tracks; HRIBO/scripts/readstats.py --bam_path {input.bam} > {output.stat};"
-#
-# rule minreadcounts:
-#     input:
-#         stats=expand("maplink/{method}-{condition}-{replicate}.readstats", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-#     output:
-#         minreads="maplink/minreads.txt"
-#     conda:
-#         "../envs/coverage.yaml"
-#     threads: 1
-#     params:
-#         prefix=lambda wildcards, output: (os.path.splitext(output[0])[0])
-#     shell:
-#         "mkdir -p tracks; HRIBO/scripts/minreads.py {input.stats} > {output.minreads};"
-
 rule globalwig:
     input:
         bam=rules.maplink.output,
