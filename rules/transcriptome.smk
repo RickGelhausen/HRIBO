@@ -11,30 +11,30 @@ rule transcripts:
     shell:
         "mkdir -p transcriptome; scallop -i maplink/{params.prefix}.bam -o {output}"
 
-rule mergedtranscripts:
-   input:
+rule mergedTranscripts:
+    input:
         lambda wildcards: expand("transcriptome/RNA-{condition}-{replicate}.reparation.gff", zip, replicate=samples.loc[(samples["method"] == "RNA") & (samples["condition"] == wildcards.condition), "replicate"])
     output:
-        "transcriptome/transcriptome-combined.gtf"
+        "transcriptome/all-combined.gtf"
     conda:
         "../envs/gffcompare.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (os.path.splitext(os.path.basename(output[0]))[0])
     shell:
-        "mkdir -p transcriptome; cd transcriptome; gffcompare -i {input} -o transcriptome"
+        "mkdir -p transcriptome; gffcompare -i {input} -o transcriptome/all"
 
-rule mergedtranscripts:
+rule mergedAnnotationTranscripts:
    input:
-        rules.mergedtranscripts.output,
+        rules.mergedTranscripts.output,
         rules.retrieveAnnotation.output
     output:
-        "transcriptome/transcriptome-annotation-combined.gtf"
+        "transcriptome/all-annotation-combined.gtf"
     conda:
         "../envs/gffcompare.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (os.path.splitext(os.path.basename(output[0]))[0])
     shell:
-        "mkdir -p transcriptome; cd transcriptome; gffcompare -i transcriptome/{params.prefix}.gtf -o transcriptome"
+        "mkdir -p transcriptome; gffcompare -i {input[0]} {input[1]} -o transcriptome/all-annotation"
      
