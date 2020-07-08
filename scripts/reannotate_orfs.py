@@ -86,7 +86,7 @@ def generate_annotation_dict(args):
         gene_id, locus_tag, name, read_list, old_locus_tag = cds_dict[key]
 
         if key in gene_dict:
-            gene_locus_tag, gene_name, gene_old_locus_tag = gene_dict[key]
+            gene_name, gene_locus_tag, gene_old_locus_tag = gene_dict[key]
 
             if locus_tag == "":
                 locus_tag = gene_locus_tag
@@ -121,7 +121,10 @@ def reannotate_ORFs(args):
 
             attribute_list = [x.strip(" ") for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
 
-            if name != "":
+            if gene_name != "":
+                attribute_list[attribute_list.index("Name")+1] = gene_name
+                attributes = ";".join(["%s=%s" % (attribute_list[i], attribute_list[i+1]) for i in range(0,len(attribute_list),2)]) +";"
+            elif name != "":
                 attribute_list[attribute_list.index("Name")+1] = name
                 attributes = ";".join(["%s=%s" % (attribute_list[i], attribute_list[i+1]) for i in range(0,len(attribute_list),2)]) +";"
             else:
@@ -131,8 +134,6 @@ def reannotate_ORFs(args):
                 attributes += "locus_tag=%s;" % locus_tag
             if old_locus_tag != "":
                 attributes += "old_locus_tag=%s;" % old_locus_tag
-            if gene_name != "":
-                attributes += "gene_name=%s;" % gene_name
 
             rows.append(nTuple(getattr(row, "_0"), getattr(row, "_1"), getattr(row, "_2"), start, stop, \
                                getattr(row, "_5"), strand, getattr(row, "_7"), attributes))

@@ -216,10 +216,12 @@ def create_excel_file(args):
             attributes += "locus_tag=%s;" % locus_tag
         if old_locus_tag != "":
             attributes += "old_locus_tag=%s;" % old_locus_tag
-        if name != "":
-            attributes += "Name=%s;" % name
         if gene_name != "":
-            attributes += "gene_name=%s;" % gene_name
+            attributes += "Name=%s;" % gene_name
+        elif name != "":
+            attributes += "Name=%s;" % name
+        else:
+            attributes += "Name=%s;" % identifier
 
         gff_result = [chromosome, "HRIBO", "CDS", start, stop, ".", strand, ".", attributes]
         gff_file_rows.append(gffTuple(*gff_result))
