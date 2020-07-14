@@ -3,3 +3,4 @@ channels:
  - bioconda
 dependencies:
  - scallop =0.10.5-0
+ - stringtie =2.1.2-0

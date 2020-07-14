@@ -11,11 +11,11 @@ rule transcripts:
     params:
         prefix=lambda wildcards, output: (os.path.splitext(os.path.basename(output[0]))[0])
     shell:
-        "mkdir -p transcriptome; scallop -i maplink/{params.prefix}.bam -o {output}"
+        "mkdir -p transcriptome; stringtie -o {output} maplink/{params.prefix}.bam"
 
 rule mergedTranscripts:
     input:
-        lambda wildcards: list(set(expand("transcriptome/RNA-{condition}-{replicate}.gtf", zip, condition=samples["condition"], replicate=samples["replicate"])))
+        lambda wildcards: list(set(expand("transcriptome/{method}-{condition}-{replicate}.gtf", zip, method=samples.loc[(samples["method"] == "RNA"), "method"], condition=samples["condition"], replicate=samples["replicate"])))
     output:
         "transcriptome/all.combined.gtf"
     conda:
@@ -25,7 +25,7 @@ rule mergedTranscripts:
         prefix=lambda wildcards, output: (os.path.splitext(os.path.basename(output[0]))[0])
     shell:
         "mkdir -p transcriptome; echo \"{input}\" | tr \" \" \"\\n\" > transcriptome/inputlist;  gffcompare -i transcriptome/inputlist  -o transcriptome/all"
- 
+
 rule mergedAnnotationTranscripts:
     input:
         "transcriptome/all.combined.gtf",
@@ -37,4 +37,3 @@ rule mergedAnnotationTranscripts:
     threads: 1
     shell:
         "mkdir -p transcriptome; echo \"{input}\" | tr \" \" \"\\n\" > transcriptome/inputlist2;  gffcompare -i transcriptome/inputlist2 -r {input[1]}  -o transcriptome/all_annotation"
-     
