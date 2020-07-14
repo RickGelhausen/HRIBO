@@ -86,6 +86,9 @@ include: "rules/qcauxiliary.smk"
 include: "rules/qcsingleend.smk"
 #readcounts
 include: "rules/readcounting.smk"
+#transcriptome
+include: "rules/transcriptome.smk"
+
 if DIFFEXPRESS.lower() == "on":
     # xtail
     include: "rules/xtail.smk"
@@ -115,6 +118,7 @@ if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "auxiliary/predictions_deepribo.xlsx",
+          "transcriptome/all_annotation.combined.gtf",
           rules.createOverviewTableAll.output,
           unpack(getContrast),
           unpack(getContrastXtail),
@@ -139,6 +143,7 @@ elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           "auxiliary/predictions_deepribo.xlsx",
+          "transcriptome/all_annotation.combined.gtf",
           rules.createOverviewTablePredictions.output
 
 elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
@@ -159,6 +164,7 @@ elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
           "auxiliary/samples.xlsx",
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
+          "transcriptome/all_annotation.combined.gtf",
           rules.createOverviewTableDiffExpr.output,
           unpack(getContrast),
           unpack(getContrastXtail),
@@ -182,6 +188,7 @@ else:
           "auxiliary/samples.xlsx",
           "auxiliary/predictions_reparation.xlsx",
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
+          "transcriptome/all_annotation.combined.gtf",
           rules.createOverviewTableReparation.output
 
 onsuccess:
