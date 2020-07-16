@@ -22,5 +22,7 @@ rule checkAnnotation:
     output:
         "annotation/annotation_processed.gff"
     threads: 1
+    conda:
+        "../envs/pytools.yaml"
     shell:
         "mkdir -p annotation; HRIBO/scripts/gtf2gff3.py -a {input} -o {output}"
