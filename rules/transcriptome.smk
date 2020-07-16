@@ -7,11 +7,11 @@ rule transcripts:
         "../envs/scallop.yaml"
     #wildcard_constraints:
     #    method=["RNA"]
-    threads: 1
+    threads: 5
     params:
         prefix=lambda wildcards, output: (os.path.splitext(os.path.basename(output[0]))[0])
     shell:
-        "mkdir -p transcriptome; stringtie --conservative -l 150 -o {output} maplink/{params.prefix}.bam"
+        "mkdir -p transcriptome; stringtie -p {threads} --conservative -l 150 -o {output} maplink/{params.prefix}.bam"
 
 rule mergedTranscripts:
     input:
@@ -21,11 +21,11 @@ rule mergedTranscripts:
         "transcriptome/all.combined.gtf"
     conda:
         "../envs/scallop.yaml"
-    threads: 1
+    threads: 5
     params:
         prefix=lambda wildcards, output: (os.path.splitext(os.path.basename(output[0]))[0])
     shell:
-        "mkdir -p transcriptome; stringtie --merge {input[0]} -G {input[1]} -o {output}
+        "mkdir -p transcriptome; stringtie -p {threads} --merge {input[0]} -G {input[1]} -C -o {output}
         #"mkdir -p transcriptome; echo \"{input}\" | tr \" \" \"\\n\" > transcriptome/inputlist;  gffcompare -i transcriptome/inputlist  -o transcriptome/all"
 
 rule mergedAnnotationTranscripts:
