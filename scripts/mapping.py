@@ -126,7 +126,7 @@ def compute_wig(bam_path,wig_file_path,library_name,genome_read_dict,genome_min_
     mil_fw_handle=open(wig_file_path_setter(wig_file_path,library_name,"mil","forward"), "w")
     init_write_wig(mil_fw_handle,library_name,"forward")
     mil_rw_handle=open(wig_file_path_setter(wig_file_path,library_name,"mil","reverse"), "w")
-    init_write_wig(mil_fw_handle,library_name,"reverse")
+    init_write_wig(mil_rw_handle,library_name,"reverse")
     for (seqid, mappings) in seqid_mapping:
             no_of_aligned_reads = int(genome_read_dict[seqid])
             min_no_of_aligned_reads = int(genome_min_read_dict[seqid])
