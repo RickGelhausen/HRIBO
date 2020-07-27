@@ -1,3 +1,9 @@
+### version 1.4.4 (in progress,  available on master branch) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 27.07.2020
+ * added overlap column to the overview table, to show whether an entry overlaps with an annotated gene 
+ * minor fix for mapping script that ensures the header is set correctly for the "mil" mapping. 
+ * minor fix that ensures the gene_name is set correctly and not sometimes replaced by the locus_tag
+ * some code clean-up
+ 
 ### version 1.4.3 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 15.05.2020
  * added genome-browser identifier to overview table
  * completely reworked gff2 support by transforming gff2 to gff3. This is unavoidable as some tools require gff3 format
