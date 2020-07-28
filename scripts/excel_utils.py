@@ -15,6 +15,44 @@ from Bio.Alphabet import generic_dna
 class OrderedCounter(Counter, OrderedDict):
     pass
 
+
+def get_TE_header(wildcards):
+    """
+    generate the correct TE_header based on the available data
+    """
+    TE_header = []
+    TE_header_dict = OrderedDict()
+    for card in wildcards:
+        method, condition, replicate = card.split("-")
+        if method == "RIBO":
+            if "%s-%s-%s" %("RNA", condition, replicate) in wildcards:
+                if ("RIBO", condition) in  TE_header_dict:
+                    TE_header_dict[("RIBO", condition)].append(replicate)
+                else:
+                    TE_header_dict[("RIBO", condition)] = [replicate]
+        elif method == "TIS":
+            if "%s-%s-%s" %("RNATIS", condition, replicate) in wildcards:
+                if ("TIS", condition) in  TE_header_dict:
+                    TE_header_dict[("TIS", condition)].append(replicate)
+                else:
+                    TE_header_dict[("TIS", condition)] = [replicate]
+        elif method == "TTS":
+            if "%s-%s-%s" %("RNATTS", condition, replicate) in wildcards:
+                if ("TTS", condition) in  TE_header_dict:
+                    TE_header_dict[("TTS", condition)].append(replicate)
+                else:
+                    TE_header_dict[("TTS", condition)] = [replicate]
+
+    for key, val in TE_header_dict.items():
+        method, condition = key
+        if len(val) > 1:
+            t_header = ["%s-%s-%s" % (method, condition, x) for x in val] + ["%s-%s-avg" % (method, condition)]
+        else:
+            t_header = ["%s-%s-%s" % (method, condition, x) for x in val]
+        TE_header.extend(t_header)
+
+    return TE_header
+
 def calculate_rpkm(total_mapped, read_count, read_length):
     """
     calculate the rpkm
@@ -162,51 +200,56 @@ def calculate_TE(read_list, wildcards, conditions):
     calculate the translational efficiency
     """
     read_dict = OrderedDict()
+    TE_dict = OrderedDict()
     for idx in range(len(wildcards)):
         method, condition, replicate = wildcards[idx].split("-")
-        key = (method, condition)
-        if key in read_dict:
-            read_dict[key].append(read_list[idx])
+        key = (method, condition, replicate)
+        if key not in read_dict:
+            read_dict[key] = read_list[idx]
         else:
-            read_dict[key] = [read_list[idx]]
+            print("warning: multiple equal keys")
 
     TE_list = []
-    for cond in conditions:
-        if ("RIBO", cond) in read_dict:
-            try:
-                if len(read_dict[("RIBO", cond)]) == len(read_dict[("RNA", cond)]):
-                    ribo_list = read_dict[("RIBO", cond)]
-                    rna_list = read_dict[("RNA", cond)]
-                    t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
-
-                    if len(t_eff) > 1:
-                        t_eff = get_avg(t_eff)
-
-
-                    t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
-                    TE_list.extend(t_eff)
+    for key, val in read_dict.items():
+        method, condition, replicate = key
+        if method == "RIBO":
+            if ("RNA", condition, replicate) in read_dict:
+                rpkm_ribo = read_dict[key]
+                rpkm_rna = read_dict[("RNA", condition, replicate)]
+                cur_TE = TE(rpkm_ribo, rpkm_rna)
+                if ("RIBO", condition) in TE_dict:
+                    TE_dict[("RIBO", condition)].append(cur_TE)
                 else:
-                    TE_list.extend(["NaN" for x in read_dict[("RIBO", cond)]])
-            except KeyError:
-                TE_list.extend(["NaN" for x in read_dict[("RIBO", cond)]])
+                    TE_dict[("RIBO", condition)] = [cur_TE]
 
-        if ("TIS", cond) in read_dict:
-            try:
-                if len(read_dict[("TIS", cond)]) == len(read_dict[("RNATIS", cond)]):
-                    ribo_list = read_dict[("TIS", cond)]
-                    rna_list = read_dict[("RNATIS", cond)]
-
-                    t_eff = [TE(ribo_list[idx],rna_list[idx]) for idx in range(len(ribo_list))]
-
-                    if len(t_eff) > 1:
-                        t_eff = get_avg(t_eff)
-
-                    t_eff = [float("%.2f" % x) if type(x) is float else x for x in t_eff]
-                    TE_list.extend(t_eff)
+        elif method == "TIS":
+            if ("RNATIS", condition, replicate) in read_dict:
+                rpkm_ribo = read_dict[key]
+                rpkm_rna = read_dict[("RNATIS", condition, replicate)]
+                cur_TE = TE(rpkm_ribo, rpkm_rna)
+                if ("TIS", condition) in TE_dict:
+                    TE_dict[("TIS", condition)].append(cur_TE)
                 else:
-                    TE_list.extend(["NaN" for x in read_dict[("TIS", cond)]])
-            except KeyError:
-                TE_list.extend(["NaN" for x in read_dict[("TIS", cond)]])
+                    TE_dict[("TIS", condition)] = [cur_TE]
+
+        elif method == "TTS":
+            if ("RNATTS", condition, replicate) in read_dict:
+                rpkm_ribo = read_dict[key]
+                rpkm_rna = read_dict[("RNATTS", condition, replicate)]
+                cur_TE = TE(rpkm_ribo, rpkm_rna)
+                if ("TTS", condition) in TE_dict:
+                    TE_dict[("TTS", condition)].append(cur_TE)
+                else:
+                    TE_dict[("TTS", condition)] = [cur_TE]
+
+    TE_list = []
+    for key, val in TE_dict.items():
+        if len(val) > 1:
+            t_eff = get_avg(val)
+        else:
+            t_eff = val
+        TE_list.extend(t_eff)
+
     return TE_list
 
 def generate_riborex_dict(riborex_path):

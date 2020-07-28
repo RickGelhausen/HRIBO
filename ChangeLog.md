@@ -1,5 +1,6 @@
 ### version 1.4.4 (in progress,  available on master branch) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 27.07.2020
  * added overlap column to the overview table, to show whether an entry overlaps with an annotated gene 
+ * improved the handling of TE wildcards in excel scripts, allowing input combinations that were previously not possible.
  * minor fix for mapping script that ensures the header is set correctly for the "mil" mapping. 
  * minor fix that ensures the gene_name is set correctly and not sometimes replaced by the locus_tag
  * some code clean-up

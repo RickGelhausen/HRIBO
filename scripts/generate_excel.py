@@ -36,21 +36,7 @@ def create_excel_file(args):
 
     wildcards = eu.get_unique(wildcards)
 
-    TE_header = []
-    for card in wildcards:
-        if "RIBO" in card:
-            TE_header.append("RIBO-"+card.split("-")[1])
-        elif "TIS" in card and "RNATIS" not in card:
-            TE_header.append("TIS-"+card.split("-")[1])
-
-    counter = eu.OrderedCounter(TE_header)
-
-    TE_header = []
-    for key, value in counter.items():
-        for idx in range(value):
-            TE_header.append("%s-%s" % (key,(idx+1)))
-        if value > 1:
-            TE_header.append("%s-avg" % key)
+    TE_header = eu.get_TE_header(wildcards)
 
     conditions = []
     for card in wildcards:

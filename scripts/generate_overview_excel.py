@@ -16,8 +16,6 @@ from Bio.Alphabet import generic_dna
 
 import excel_utils as eu
 
-class OrderedCounter(Counter, OrderedDict):
-    pass
 
 def create_interlap(annotation_dict):
     """
@@ -68,21 +66,7 @@ def create_excel_file(args):
 
     wildcards = eu.get_unique(wildcards)
 
-    TE_header = []
-    for card in wildcards:
-        if "RIBO" in card:
-            TE_header.append("RIBO-"+card.split("-")[1])
-        elif "TIS" in card and "RNATIS" not in card:
-            TE_header.append("TIS-"+card.split("-")[1])
-
-    counter = OrderedCounter(TE_header)
-
-    TE_header = []
-    for key, value in counter.items():
-        for idx in range(value):
-            TE_header.append("%s-%s" % (key,(idx+1)))
-        if value > 1:
-            TE_header.append("%s-avg" % key)
+    TE_header = eu.get_TE_header(wildcards)
 
     conditions = []
     for card in wildcards:
@@ -118,6 +102,7 @@ def create_excel_file(args):
              ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["riborex_pvalue", "riborex_pvalue_adjusted", "riborex_log2FC"]] +\
              ["%s_%s" % (contrast, item) for contrast in contrasts for item in ["xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]]
 
+    print(header)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
     gffTuple = collections.namedtuple('Pandas', ["s1","s2","s3","s4","s5","s6","s7","s8","s9"])
@@ -198,7 +183,6 @@ def create_excel_file(args):
             rpkm_list.append(eu.calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
 
         TE_list = eu.calculate_TE(rpkm_list, wildcards, conditions)
-
 
         identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
         evidence_reparation = " ".join(evidence_reparation)
