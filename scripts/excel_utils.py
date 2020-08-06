@@ -139,7 +139,7 @@ def get_genome_information(genome, start, stop, strand):
     if len(coding_dna) % 3 != 0:
         aa_seq = ""
     else:
-        aa_seq = str(coding_dna.translate(table=11,to_stop=True))
+        aa_seq = str(coding_dna.translate(table=11,to_stop=False))
 
     return start_codon, stop_codon, nucleotide_seq, aa_seq
 
