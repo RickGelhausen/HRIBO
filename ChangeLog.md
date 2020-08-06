@@ -3,6 +3,7 @@
  * improved the handling of TE wildcards in excel scripts, allowing input combinations that were previously not possible.
  * minor fix for mapping script that ensures the header is set correctly for the "mil" mapping. 
  * minor fix that ensures the gene_name is set correctly and not sometimes replaced by the locus_tag
+ * fixed a bug where tranlation of nt_seqs were done only up to the first stop codon
  * some code clean-up
  
 ### version 1.4.3 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 15.05.2020
