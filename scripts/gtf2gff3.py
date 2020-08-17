@@ -7,7 +7,6 @@ import collections
 import csv
 from shutil import copyfile
 
-
 def generate_dictionaries(args):
     annotation_df = pd.read_csv(args.annotation, sep="\t", comment="#", header=None)
 
@@ -37,8 +36,16 @@ def generate_dictionaries(args):
                 cds_dict[gene_id] = (reference_name, source, feature, start, stop, score, strand, phase, attributes)
             elif feature.lower() in ["ncrna", "rrna", "trna", "srna"]:
                 RNA_dict[gene_id] = (reference_name, source, feature, start, stop, score, strand, phase, attributes)
+            elif feature.lower() in ["transcript"]:
+                biotype = ""
+                if "gene_biotype" in attribute_list:
+                    biotype = attribute_list[attribute_list.index("gene_biotype")+1]
+                if biotype in ["ncRNA", "rRNA", "tRNA", "sRNA"]:
+                    RNA_dict[gene_id] = (reference_name, source, biotype, start, stop, score, strand, phase, attributes)
+
             elif feature.lower() not in ["exon", "start_codon", "stop_codon", "transcript"]:
                 unknown_entries.append((reference_name, source, feature, start, stop, score, strand, phase, attributes))
+
         else:
             unknown_entries.append((reference_name, source, feature, start, stop, score, strand, phase, attributes))
 

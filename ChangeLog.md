@@ -6,6 +6,7 @@
  * improved TE calculation to be less confusing, using NaN if read-counts are 0 and would lead to division by 0
  * improved excel file generation
  * resolved redundancies in excel files
+ * improved the gtf2gff3 script
  * updated manual + online documentation
 
 ### version 1.4.2 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 25.04.2020
