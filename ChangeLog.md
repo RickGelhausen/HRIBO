@@ -4,6 +4,7 @@
  * minor fix for mapping script that ensures the header is set correctly for the "mil" mapping. 
  * minor fix that ensures the gene_name is set correctly and not sometimes replaced by the locus_tag
  * fixed a bug where tranlation of nt_seqs were done only up to the first stop codon
+ * improved gtf2gff3 script to use gene_biotype to find RNA features.
  * some code clean-up
  
 ### version 1.4.3 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 15.05.2020
@@ -14,7 +15,6 @@
  * improved TE calculation to be less confusing, using NaN if read-counts are 0 and would lead to division by 0
  * improved excel file generation
  * resolved redundancies in excel files
- * improved the gtf2gff3 script
  * updated manual + online documentation
 
 ### version 1.4.2 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 25.04.2020
