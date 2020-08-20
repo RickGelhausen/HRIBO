@@ -49,7 +49,7 @@ def create_excel_file(args):
     # read gff file
     cds_sheet = []
 
-    header = ["identifer","Genome", "Source", "Feature", "Start", "Stop", "Strand", "Pred_value", "Pred_rank", "Novel_rank", "Locus_tag", "Old_locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
+    header = ["identifer","Genome", "Source", "Feature", "Start", "Stop", "Strand", "Pred_value", "Pred_rank", "Novel_rank", "Locus_tag", "Old_locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] + ["Evidence", "Start_codon", "Stop_codon", "15nt upstream", "Nucleotide_seq", "Aminoacid_seq"]
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -65,7 +65,7 @@ def create_excel_file(args):
         prediction_rank = getattr(row, "_5")
         novel_rank = getattr(row, "_7")
 
-        start_codon, stop_codon, nucleotide_seq, aa_seq = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
+        start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
         pred_value, name, product, note, evidence, locus_tag, old_locus_tag = eu.retrieve_column_information(attributes)
 
         length = stop - start + 1
@@ -79,7 +79,7 @@ def create_excel_file(args):
         TE_list = eu.calculate_TE(rpkm_list, wildcards, conditions)
 
         identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-        result = [identifier, chromosome, source, feature, start, stop, strand, pred_value, prediction_rank, novel_rank, locus_tag, old_locus_tag, name, length, codon_count] + TE_list + rpkm_list + [evidence, start_codon, stop_codon, nucleotide_seq, aa_seq]
+        result = [identifier, chromosome, source, feature, start, stop, strand, pred_value, prediction_rank, novel_rank, locus_tag, old_locus_tag, name, length, codon_count] + TE_list + rpkm_list + [evidence, start_codon, stop_codon, nt_window, nucleotide_seq, aa_seq]
 
         cds_sheet.append(nTuple(*result))
 

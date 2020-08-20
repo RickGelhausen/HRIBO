@@ -129,8 +129,10 @@ def get_genome_information(genome, start, stop, strand):
     """
     if strand == "+":
         nucleotide_seq = genome[0][start:stop+1]
+        nt_window = genome[0][start-15:start]
     else:
         nucleotide_seq = genome[1][start:stop+1][::-1]
+        nt_window = str(Seq(genome[0][stop+1:stop+16]).reverse_complement())
 
     start_codon = nucleotide_seq[0:3]
     stop_codon = nucleotide_seq[-3:]
@@ -139,9 +141,9 @@ def get_genome_information(genome, start, stop, strand):
     if len(coding_dna) % 3 != 0:
         aa_seq = ""
     else:
-        aa_seq = str(coding_dna.translate(table=11,to_stop=False))
+        aa_seq = str(coding_dna.translate(table=11,to_stop=True))
 
-    return start_codon, stop_codon, nucleotide_seq, aa_seq
+    return start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window
 
 def excel_writer(args, data_frames, wildcards):
     """

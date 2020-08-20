@@ -6,6 +6,7 @@
  * fixed a bug where tranlation of nt_seqs were done only up to the first stop codon.
  * improved gtf2gff3 script to use gene_biotype to find RNA features.
  * improved start/stop gff files (including motifs and frames)
+ * added 15nt upstream of the start codon to each .xlsx table.
  * some code clean-up
  
 ### version 1.4.3 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 15.05.2020

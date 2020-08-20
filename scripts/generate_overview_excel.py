@@ -95,7 +95,7 @@ def create_excel_file(args):
     contrasts = sorted(["%s-%s" %(tuple) for tuple in list(iter.combinations(conditions,2))])
 
     header = ["Identifier", "Genome", "Start", "Stop", "Strand", "Locus_tag", "Overlapping_genes", "Old_locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon"] +\
-             ["Nucleotide_seq", "Aminoacid_seq"] +\
+             ["15nt upstream", "Nucleotide_seq", "Aminoacid_seq"] +\
              [cond + "_TE" for cond in TE_header] +\
              [card + "_rpkm" for card in wildcards] +\
              ["Evidence_reparation", "Reparation_probability", "Evidence_deepribo", "Deepribo_rank", "Deepribo_score"] +\
@@ -173,7 +173,7 @@ def create_excel_file(args):
             else:
                 riborex_list += [0,0,0]
 
-        start_codon, stop_codon, nucleotide_seq, aa_seq = eu.get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
+        start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
 
         evidence_reparation.sort()
         evidence_deepribo.sort()
@@ -190,7 +190,7 @@ def create_excel_file(args):
         if deepribo_rank == 0:
             deepribo_rank = "999999"
         result = [identifier, chromosome, start, stop, strand, locus_tag, locus_tag_overlap, old_locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
-                 [nucleotide_seq, aa_seq] +\
+                 [nt_window, nucleotide_seq, aa_seq] +\
                  TE_list + rpkm_list +\
                  [evidence_reparation, reparation_probability, evidence_deepribo, deepribo_rank, deepribo_score]+\
                  riborex_list + xtail_list
