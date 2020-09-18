@@ -1,4 +1,4 @@
-### version 1.4.4 (in progress,  available on master branch) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 27.07.2020
+### version 1.4.4 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 18.09.2020
  * added overlap column to the overview table, to show whether an entry overlaps with an annotated gene. 
  * improved the handling of TE wildcards in excel scripts, allowing input combinations that were previously not possible.
  * minor fix for mapping script that ensures the header is set correctly for the "mil" mapping. 
@@ -7,6 +7,7 @@
  * improved gtf2gff3 script to use gene_biotype to find RNA features.
  * improved start/stop gff files (including motifs and frames)
  * added 15nt upstream of the start codon to each .xlsx table.
+ * updated reparation environment
  * some code clean-up
  
 ### version 1.4.3 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 15.05.2020
