@@ -75,6 +75,13 @@ def enrich_children(annotation_df):
                 except StopIteration:
                     locus_tag = ""
 
+            old_locus_tag = ""
+            if "old_locus_tag" not in attributes.lower():
+                try:
+                    old_locus_tag = "old_locus_tag=%s;" % parent_dict[parent][next(i for i,v in enumerate(parent_dict[parent]) if v.lower() == "old_locus_tag")+1]
+                except StopIteration:
+                    old_locus_tag = ""
+
             name = ""
             if "name" not in attributes.lower():
                 try:
@@ -82,7 +89,7 @@ def enrich_children(annotation_df):
                 except:
                     name = ""
 
-            new_rows.append(nTuple(reference_name, source, feature, start, stop, score, strand, phase, attributes + ";" + locus_tag + name))
+            new_rows.append(nTuple(reference_name, source, feature, start, stop, score, strand, phase, attributes + ";" + locus_tag + old_locus_tag + name))
 
         else:
             new_rows.append(row)

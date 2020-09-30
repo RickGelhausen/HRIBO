@@ -1,3 +1,6 @@
+### version 1.4.5 (current master repository) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 30.09.2020
+ * added old_locus_tag information to annotation excel files
+
 ### version 1.4.4 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 18.09.2020
  * added overlap column to the overview table, to show whether an entry overlaps with an annotated gene. 
  * improved the handling of TE wildcards in excel scripts, allowing input combinations that were previously not possible.
