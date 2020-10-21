@@ -22,6 +22,10 @@ if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
     sys.exit("Differential Expression requested, but only one condition given.\n\
             Please ensure, that you either provide multiple condtions or turn off differential expression in the config.yaml.")
 
+hasRIBO=True
+if "RIBO" not in samples["method"].unique():
+    hasRIBO=False
+    print("No Ribo-seq libraries were detected. No prediction tools for this setup are currently implemented. If you have pure Ribo-seq libraries, please use the method tag RIBO. Continuing...") 
 
 report: "report/workflow.rst"
 def getContrast(wildcards):
@@ -96,93 +100,133 @@ if DEEPRIBO.lower() == "on":
 else:
     include: "rules/conditionals.smk"
 
-if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
-   rule all:
-      input:
-          expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          get_wigfiles,
-          "qc/multi/multiqc_report.html",
-          "tracks/potentialStopCodons.gff",
-          "tracks/potentialStartCodons.gff",
-          "tracks/potentialAlternativeStartCodons.gff",
-          "tracks/potentialRibosomeBindingSite.gff",
-          "auxiliary/annotation_total.xlsx",
-          "auxiliary/annotation_unique.xlsx",
-          "auxiliary/total_read_counts.xlsx",
-          "auxiliary/unique_read_counts.xlsx",
-          "auxiliary/samples.xlsx",
-          "auxiliary/predictions_reparation.xlsx",
-          "figures/heatmap_SpearmanCorr_readCounts.pdf",
-          "auxiliary/predictions_deepribo.xlsx",
-          rules.createOverviewTableAll.output,
-          unpack(getContrast),
-          unpack(getContrastXtail),
-          unpack(getContrastRiborex)
+if hasRIBO:
+    if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
+       rule all:
+          input:
+              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              get_wigfiles,
+              "qc/multi/multiqc_report.html",
+              "tracks/potentialStopCodons.gff",
+              "tracks/potentialStartCodons.gff",
+              "tracks/potentialAlternativeStartCodons.gff",
+              "tracks/potentialRibosomeBindingSite.gff",
+              "auxiliary/annotation_total.xlsx",
+              "auxiliary/annotation_unique.xlsx",
+              "auxiliary/total_read_counts.xlsx",
+              "auxiliary/unique_read_counts.xlsx",
+              "auxiliary/samples.xlsx",
+              "auxiliary/predictions_reparation.xlsx",
+              "figures/heatmap_SpearmanCorr_readCounts.pdf",
+              "auxiliary/predictions_deepribo.xlsx",
+              rules.createOverviewTableAll.output,
+              unpack(getContrast),
+              unpack(getContrastXtail),
+              unpack(getContrastRiborex)
+                
 
-elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
-   rule all:
-      input:
-          expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          get_wigfiles,
-          "qc/multi/multiqc_report.html",
-          "tracks/potentialStopCodons.gff",
-          "tracks/potentialStartCodons.gff",
-          "tracks/potentialAlternativeStartCodons.gff",
-          "tracks/potentialRibosomeBindingSite.gff",
-          "auxiliary/annotation_total.xlsx",
-          "auxiliary/annotation_unique.xlsx",
-          "auxiliary/total_read_counts.xlsx",
-          "auxiliary/unique_read_counts.xlsx",
-          "auxiliary/samples.xlsx",
-          "auxiliary/predictions_reparation.xlsx",
-          "figures/heatmap_SpearmanCorr_readCounts.pdf",
-          "auxiliary/predictions_deepribo.xlsx",
-          rules.createOverviewTablePredictions.output
+    elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
+       rule all:
+          input:
+              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              get_wigfiles,
+              "qc/multi/multiqc_report.html",
+              "tracks/potentialStopCodons.gff",
+              "tracks/potentialStartCodons.gff",
+              "tracks/potentialAlternativeStartCodons.gff",
+              "tracks/potentialRibosomeBindingSite.gff",
+              "auxiliary/annotation_total.xlsx",
+              "auxiliary/annotation_unique.xlsx",
+              "auxiliary/total_read_counts.xlsx",
+              "auxiliary/unique_read_counts.xlsx",
+              "auxiliary/samples.xlsx",
+              "auxiliary/predictions_reparation.xlsx",
+              "figures/heatmap_SpearmanCorr_readCounts.pdf",
+              "auxiliary/predictions_deepribo.xlsx",
+              rules.createOverviewTablePredictions.output
 
-elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
-   rule all:
-      input:
-          expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          get_wigfiles,
-          "qc/multi/multiqc_report.html",
-          "tracks/potentialStopCodons.gff",
-          "tracks/potentialStartCodons.gff",
-          "tracks/potentialAlternativeStartCodons.gff",
-          "tracks/potentialRibosomeBindingSite.gff",
-          "auxiliary/annotation_total.xlsx",
-          "auxiliary/annotation_unique.xlsx",
-          "auxiliary/total_read_counts.xlsx",
-          "auxiliary/unique_read_counts.xlsx",
-          "auxiliary/samples.xlsx",
-          "auxiliary/predictions_reparation.xlsx",
-          "figures/heatmap_SpearmanCorr_readCounts.pdf",
-          rules.createOverviewTableDiffExpr.output,
-          unpack(getContrast),
-          unpack(getContrastXtail),
-          unpack(getContrastRiborex)
+    elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
+       rule all:
+          input:
+              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              get_wigfiles,
+              "qc/multi/multiqc_report.html",
+              "tracks/potentialStopCodons.gff",
+              "tracks/potentialStartCodons.gff",
+              "tracks/potentialAlternativeStartCodons.gff",
+              "tracks/potentialRibosomeBindingSite.gff",
+              "auxiliary/annotation_total.xlsx",
+              "auxiliary/annotation_unique.xlsx",
+              "auxiliary/total_read_counts.xlsx",
+              "auxiliary/unique_read_counts.xlsx",
+              "auxiliary/samples.xlsx",
+              "auxiliary/predictions_reparation.xlsx",
+              "figures/heatmap_SpearmanCorr_readCounts.pdf",
+              rules.createOverviewTableDiffExpr.output,
+              unpack(getContrast),
+              unpack(getContrastXtail),
+              unpack(getContrastRiborex)
 
+    else:
+       rule all:
+          input:
+              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              get_wigfiles,
+              "qc/multi/multiqc_report.html",
+              "tracks/potentialStopCodons.gff",
+              "tracks/potentialStartCodons.gff",
+              "tracks/potentialAlternativeStartCodons.gff",
+              "tracks/potentialRibosomeBindingSite.gff",
+              "auxiliary/annotation_total.xlsx",
+              "auxiliary/annotation_unique.xlsx",
+              "auxiliary/total_read_counts.xlsx",
+              "auxiliary/unique_read_counts.xlsx",
+              "auxiliary/samples.xlsx",
+              "auxiliary/predictions_reparation.xlsx",
+              "figures/heatmap_SpearmanCorr_readCounts.pdf",
+              rules.createOverviewTableReparation.output
 else:
-   rule all:
-      input:
-          expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-          get_wigfiles,
-          "qc/multi/multiqc_report.html",
-          "tracks/potentialStopCodons.gff",
-          "tracks/potentialStartCodons.gff",
-          "tracks/potentialAlternativeStartCodons.gff",
-          "tracks/potentialRibosomeBindingSite.gff",
-          "auxiliary/annotation_total.xlsx",
-          "auxiliary/annotation_unique.xlsx",
-          "auxiliary/total_read_counts.xlsx",
-          "auxiliary/unique_read_counts.xlsx",
-          "auxiliary/samples.xlsx",
-          "auxiliary/predictions_reparation.xlsx",
-          "figures/heatmap_SpearmanCorr_readCounts.pdf",
-          rules.createOverviewTableReparation.output
+     if DIFFEXPRESS.lower() == "on":
+       rule all:
+          input:
+              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              get_wigfiles,
+              "qc/multi/multiqc_report.html",
+              "tracks/potentialStopCodons.gff",
+              "tracks/potentialStartCodons.gff",
+              "tracks/potentialAlternativeStartCodons.gff",
+              "tracks/potentialRibosomeBindingSite.gff",
+              "auxiliary/annotation_total.xlsx",
+              "auxiliary/annotation_unique.xlsx",
+              "auxiliary/total_read_counts.xlsx",
+              "auxiliary/unique_read_counts.xlsx",
+              "auxiliary/samples.xlsx",
+              "figures/heatmap_SpearmanCorr_readCounts.pdf",
+              unpack(getContrast),
+              unpack(getContrastXtail),
+              unpack(getContrastRiborex)
+     else:
+       rule all:
+          input:
+              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              get_wigfiles,
+              "qc/multi/multiqc_report.html",
+              "tracks/potentialStopCodons.gff",
+              "tracks/potentialStartCodons.gff",
+              "tracks/potentialAlternativeStartCodons.gff",
+              "tracks/potentialRibosomeBindingSite.gff",
+              "auxiliary/annotation_total.xlsx",
+              "auxiliary/annotation_unique.xlsx",
+              "auxiliary/total_read_counts.xlsx",
+              "auxiliary/unique_read_counts.xlsx",
+              "auxiliary/samples.xlsx",
+              "figures/heatmap_SpearmanCorr_readCounts.pdf"
 
 onsuccess:
     print("Done, no error")
