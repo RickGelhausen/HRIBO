@@ -30,18 +30,19 @@ def get_start_codons(input_gff_filepath):
                     seqid_set.add(seqid)
                     source = entry[1]
                     gfftype = entry[2]
-                    start = entry[3]
-                    end = entry[4]
+                    start = int(entry[3]) - 1
+                    end = int(entry[4]) - 1
                     score = entry[5]
                     strand = entry[6]
                     phase = entry[7]
                     attributes = entry[8]
                     if strand == "+":
-                        startcodons[strand].append(Feature("start", seqid, start, str(int(start)+2), strand))
+                        startcodons[strand].append(Feature("start", seqid, start, str(start+2), strand))
                     else:
-                        startcodons[strand].append(Feature("start", seqid, str(int(end)-2), end, strand))
+                        startcodons[strand].append(Feature("start", seqid, str(end-2), end, strand))
     seqids = list(seqid_set)
     return seqids, startcodons
+
 
 class Feature:
     def __init__(self, gfftype, seqid, start, end, strand):
@@ -81,13 +82,13 @@ def meta_geneprofiling_p(in_gff_filepath, in_bam_filepath, out_plot_filepath, cp
     print("Getting reads per length:")
     for read in bamfile.fetch():
         if not (read.is_unmapped):
-            currentreadlength = read.query_alignment_length
+            currentreadlength = read.query_length
             if currentreadlength >= min_read_length and currentreadlength <= max_read_length:
                 if not read.is_reverse:
-                    readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_end, "+")
+                    readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_start + currentreadlength, "+")
                     forward_length_reads_dict[currentreadlength].append(readfeature)
                 else:
-                    readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_end, "-")
+                    readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_start + currentreadlength, "-")
                     reverse_length_reads_dict[currentreadlength].append(readfeature)
     meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, startcodons, out_plot_filepath, genome_sizes_dict, normalization)
 
@@ -187,6 +188,7 @@ def metagene_mapping(length, length_reads, seqid, startcodons, strand):
     if len(intervals) == 0:
         return length, globalmapping, fiveprimemapping, centeredmapping, threeprimemapping
 
+    count = 0
     inter.update(intervals)
     for codon in startcodons[strand]:
         if strand == "+":
@@ -198,47 +200,28 @@ def metagene_mapping(length, length_reads, seqid, startcodons, strand):
             continue
         for readinterval in overlapping_intervals:
             intersectiv = get_overlap_bounderies(codoninterval, readinterval)
-            #if intersectiv[1]-intersectiv[0] != 3:
-            #    continue
             if strand =="+":
-                #coveragelower = intersectiv[0] - int(readinterval[0])
                 coveragelower = intersectiv[0] - codoninterval[0]
                 coverageupper = intersectiv[1] - codoninterval[0]
-                globalmapping[coveragelower:coverageupper] += 1
-                fiveprimemapping[coveragelower] += 1
+                if readinterval[0] >= codoninterval[0]:
+                    fiveprimemapping[coveragelower] += 1
+                if readinterval[1] <= codoninterval[1]:
+                    threeprimemapping[coverageupper] += 1
+
                 centerednumber = round((coveragelower + coverageupper)/2)
                 centeredmapping[(centerednumber -1):(centerednumber +1)] += 1
-                threeprimemapping[coverageupper] += 1
-                #print("Strand: " + strand)
-                #print("readinterval: ")
-                #print(readinterval)
-                #print("Codon start: " + codon.start)
-                #print("Codon end: " + codon.end)
-                #print("Codon interval: ")
-                #print(codoninterval)
-                #print("Intersectiv: ")
-                #print(intersectiv)
-                #print(coveragelower)
-                #print(coverageupper)
+                globalmapping[coveragelower:coverageupper] += 1
             else:
-                coverageupper = 499 - abs(intersectiv[0] - codoninterval[0])
                 coveragelower = 499 - abs(intersectiv[1] - codoninterval[0])
-                globalmapping[abs(coveragelower):abs(coverageupper)] += 1
-                fiveprimemapping[abs(coveragelower)] += 1
+                coverageupper = 499 - abs(intersectiv[0] - codoninterval[0])
+                if readinterval[1] <= codoninterval[1]:
+                    fiveprimemapping[abs(coveragelower)] += 1
+                if readinterval[0] >= codoninterval[0]:
+                    threeprimemapping[abs(coverageupper)] += 1
                 centerednumber = round((abs(coveragelower) + abs(coverageupper))/2)
                 centeredmapping[(centerednumber -1):(centerednumber +1)] += 1
-                threeprimemapping[abs(coverageupper)] += 1
-                #print("Strand: " + strand)
-                #print("readinterval: ")
-                #print(readinterval)
-                #print("Codon start: " + codon.start)
-                #print("Codon end: " + codon.end)
-                #print("Codon interval: ")
-                #print(codoninterval)
-                #print("Intersectiv: ")
-                #print(intersectiv)
-                #print(coveragelower)
-                #print(coverageupper)
+                globalmapping[abs(coveragelower):abs(coverageupper)] += 1
+
     return length, globalmapping, fiveprimemapping, centeredmapping, threeprimemapping
 
 def main():
@@ -247,8 +230,8 @@ def main():
     parser.add_argument("--in_bam_filepath", help='Input bam path', required=True)
     parser.add_argument("--in_gff_filepath", help='Input gff path', required=True)
     parser.add_argument("--cpu_cores", help='Number of cpu cores to use', type=int, default=1)
-    parser.add_argument("--min_read_length", help='Minimal read length to consider', type=int, default=29)
-    parser.add_argument("--max_read_length", help='Maximal read length to consider', type=int, default=33)
+    parser.add_argument("--min_read_length", help='Minimal read length to consider', type=int, default=15)
+    parser.add_argument("--max_read_length", help='Maximal read length to consider', type=int, default=40)
     parser.add_argument("--out_plot_filepath", help='Directory path to write output files, if not present the directory will be created', required=True)
     parser.add_argument("--normalization", help='Toggles normalization by average read count per nucleotide', action='store_true')
     parser.add_argument("--in_fai_filepath", help='Input genome size (.fa.fai) path', required=True)
