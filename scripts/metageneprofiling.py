@@ -17,6 +17,9 @@ from collections import defaultdict
 from multiprocessing import Pool
 
 def get_start_codons(input_gff_filepath):
+    """
+    read start codons from annotation file
+    """
     startcodons = {"-": [], "+": []}
     seqid_set = set()
     with open(input_gff_filepath, newline='\n') as csvfile:
@@ -56,9 +59,15 @@ class Feature:
         return self.gfftype + "_" + self.seqid + "_" + self.start + "_" + self.end + "_" + self.strand
 
 def get_overlap_bounderies(a, b):
+    """
+    get the overlap between two intervals
+    """
     return (max(a[0], b[0]), min(a[1], b[1]))
 
 def get_genome_sizes_dict(input_fai_filepath):
+    """
+    Read genome size from file and save them in a dictionary
+    """
     genome_sizes_dict = {}
     with open(input_fai_filepath, newline='\n') as csvfile:
         tsvreader = csv.reader(csvfile, delimiter='\t')
@@ -71,9 +80,12 @@ def get_genome_sizes_dict(input_fai_filepath):
 #global, 5', 3', centered profiling for reads overlapping with area around the start codon
 
 def meta_geneprofiling_p(in_gff_filepath, in_bam_filepath, out_plot_filepath, cpu_cores, min_read_length, max_read_length, normalization, in_fai_filepath):
+    """
+    Get all start_codons and all mapped reads,
+    then run the metagene profiling on this data.
+    """
     seqids, startcodons = get_start_codons(in_gff_filepath)
     genome_sizes_dict = get_genome_sizes_dict(in_fai_filepath)
-    # codonmappings = []
     forward_length_reads_dict = defaultdict(list)
     reverse_length_reads_dict = defaultdict(list)
     bamfile = pysam.AlignmentFile(in_bam_filepath, "rb")
@@ -85,20 +97,20 @@ def meta_geneprofiling_p(in_gff_filepath, in_bam_filepath, out_plot_filepath, cp
             currentreadlength = read.query_length
             if currentreadlength >= min_read_length and currentreadlength <= max_read_length:
                 if not read.is_reverse:
-                    readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_start + currentreadlength, "+")
+                    readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_end, "+")
                     forward_length_reads_dict[currentreadlength].append(readfeature)
                 else:
-                    readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_start + currentreadlength, "-")
+                    readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_end, "-")
                     reverse_length_reads_dict[currentreadlength].append(readfeature)
     meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, startcodons, out_plot_filepath, genome_sizes_dict, normalization)
 
 
 def meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, startcodons, out_plot_filepath, genome_sizes_dict, normalization):
-    #TODO: both strands and merged
-    #file = open(out_plot_filepath, 'w')
+    """
+    Call the metagene mapping script for all seqids, read_lengths and mappings.
+    Then plot all files.
+    """
     for seqid in sorted(seqids):
-        #chromosome_size = genome_sizes_dict.get(seqid, None)
-        #genomemapping = np.zeros(int(chromosome_size), dtype=int)
         print("Metagene profiling for " + seqid + ":")
         chromosome_size = genome_sizes_dict.get(seqid, None)
         pool = Pool(processes=cpu_cores)
@@ -111,12 +123,13 @@ def meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_le
                 summarylabel = "mean"
         else:
                 summarylabel = "sum"
+
         for (length, globalforwardmapping, fiveprimeforwardmapping, centeredforwardmapping, threeprimeforwardmapping) in threadsforward:
-            #TODO - different read lengths need to be centered
             globalforwardprofiles[length]=pd.Series(globalforwardmapping)
             fiveprimeforwardprofiles[length]=pd.Series(fiveprimeforwardmapping)
             centeredforwardprofiles[length]=pd.Series(centeredforwardmapping)
             threeprimeforwardprofiles[length]=pd.Series(threeprimeforwardmapping)
+
         globalforwardprofiles.loc[:,summarylabel] = globalforwardprofiles.sum(axis=1)
         fiveprimeforwardprofiles.loc[:,summarylabel] = fiveprimeforwardprofiles.sum(axis=1)
         centeredforwardprofiles.loc[:,summarylabel] = centeredforwardprofiles.sum(axis=1)
@@ -126,6 +139,7 @@ def meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_le
         plotprofile(centeredforwardprofiles, seqid, out_plot_filepath, "centered_forward", normalization)
         plotprofile(threeprimeforwardprofiles, seqid, out_plot_filepath, "threeprime_forward", normalization)
         threadsreverse = pool.starmap(metagene_mapping, [(length, list(reverse_length_reads_dict.get(length)), seqid, startcodons, "-") for length in sorted(reverse_length_reads_dict)])
+
         globalreverseprofiles = dfObj = pd.DataFrame()
         fiveprimereverseprofiles = dfObj = pd.DataFrame()
         threeprimereverseprofiles = dfObj = pd.DataFrame()
@@ -135,6 +149,7 @@ def meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_le
             fiveprimereverseprofiles[length]=pd.Series(fiveprimereversemapping)
             centeredreverseprofiles[length]=pd.Series(centeredreversemapping)
             threeprimereverseprofiles[length]=pd.Series(threeprimereversemapping)
+
         globalreverseprofiles.loc[:,summarylabel] = globalreverseprofiles.sum(axis=1)
         fiveprimereverseprofiles.loc[:,summarylabel] = fiveprimereverseprofiles.sum(axis=1)
         centeredreverseprofiles.loc[:,summarylabel] = centeredreverseprofiles.sum(axis=1)
@@ -155,25 +170,31 @@ def meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_le
 
 
 def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization):
-        if normalization == True:
-            columns = list(profiles)
-            for i in columns:
-                total = profiles[i].sum()
-                average_total = total / 500
-                profiles[i] = profiles[i] / average_total
-        profiles['coordinates'] = range(-100, -100 + len(profiles))
-        profiles.to_csv(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.tsv", index=True, sep="\t", header=True,)
-        profiles.to_excel(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.xlsx")
-        profiles.plot(x="coordinates")
-        plt.axvline(x=0, color="grey")
-        plt.ylabel("Coverage")
-        plt.xlabel("Position")
-        plt.legend(loc='upper left')
-        plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
-        plt.close()
+    """
+    Generate plot for the metagene profiling
+    """
+    if normalization == True:
+        columns = list(profiles)
+        for i in columns:
+            total = profiles[i].sum()
+            average_total = total / 500
+            profiles[i] = profiles[i] / average_total
+    profiles['coordinates'] = range(-100, -100 + len(profiles))
+    profiles.to_csv(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.tsv", index=True, sep="\t", header=True,)
+    profiles.to_excel(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.xlsx")
+    profiles.plot(x="coordinates")
+    plt.axvline(x=0, color="grey")
+    plt.ylabel("Coverage")
+    plt.xlabel("Position")
+    plt.legend(loc='upper left')
+    plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
+    plt.close()
 
 
 def metagene_mapping(length, length_reads, seqid, startcodons, strand):
+    """
+    For a given read length and seqid, calculate the coverage for all mapping methods
+    """
     print("Len:" + str(length) + "\n")
     inter = interlap.InterLap()
     globalmapping = np.zeros(500, dtype=int)
@@ -185,10 +206,10 @@ def metagene_mapping(length, length_reads, seqid, startcodons, strand):
         if read.seqid == seqid:
             intervals.append((int(read.start), int(read.end)))
 
+
     if len(intervals) == 0:
         return length, globalmapping, fiveprimemapping, centeredmapping, threeprimemapping
 
-    count = 0
     inter.update(intervals)
     for codon in startcodons[strand]:
         if strand == "+":
@@ -211,6 +232,7 @@ def metagene_mapping(length, length_reads, seqid, startcodons, strand):
                 centerednumber = round((coveragelower + coverageupper)/2)
                 centeredmapping[(centerednumber -1):(centerednumber +1)] += 1
                 globalmapping[coveragelower:coverageupper] += 1
+
             else:
                 coveragelower = 499 - abs(intersectiv[1] - codoninterval[0])
                 coverageupper = 499 - abs(intersectiv[0] - codoninterval[0])
@@ -218,6 +240,7 @@ def metagene_mapping(length, length_reads, seqid, startcodons, strand):
                     fiveprimemapping[abs(coveragelower)] += 1
                 if readinterval[0] >= codoninterval[0]:
                     threeprimemapping[abs(coverageupper)] += 1
+
                 centerednumber = round((abs(coveragelower) + abs(coverageupper))/2)
                 centeredmapping[(centerednumber -1):(centerednumber +1)] += 1
                 globalmapping[abs(coveragelower):abs(coverageupper)] += 1
