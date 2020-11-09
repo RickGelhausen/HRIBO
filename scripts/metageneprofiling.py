@@ -12,6 +12,7 @@ import csv
 import matplotlib.pyplot as plt
 import pandas as pd
 import interlap
+import random
 
 from collections import defaultdict
 from multiprocessing import Pool
@@ -168,28 +169,78 @@ def meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_le
         plotprofile(centeredprofiles, seqid, out_plot_filepath, "centered", normalization)
         plotprofile(threeprimeprofiles, seqid, out_plot_filepath, "threeprime", normalization)
 
+def split_evenly(column_names, num_chunks):
+    """
+    split a list of column names in approximately equal sized chunks
+    """
+    k, m = divmod(len(column_names), num_chunks)
+    return list((column_names[i * k + min(i, m):(i + 1) * k + min(i+1, m)] for i in range(num_chunks)))
+
+
+def assign_color_list(data_split, color_list):
+    custom_colors = []
+    for ds in range(len(data_split)):
+        custom_colors.append([color_list[x] for x in range(ds, len(color_list), len(data_split))])
+    return custom_colors
 
 def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization):
     """
     Generate plot for the metagene profiling
     """
+
     if normalization == True:
         columns = list(profiles)
         for i in columns:
             total = profiles[i].sum()
             average_total = total / 500
             profiles[i] = profiles[i] / average_total
+
     profiles['coordinates'] = range(-100, -100 + len(profiles))
     profiles.to_csv(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.tsv", index=True, sep="\t", header=True,)
     profiles.to_excel(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.xlsx")
-    profiles.plot(x="coordinates")
-    plt.axvline(x=0, color="grey")
-    plt.ylabel("Coverage")
-    plt.xlabel("Position")
-    plt.legend(loc='upper left')
-    plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
-    plt.close()
 
+    column_names=list(profiles.columns)[:-2]
+
+    #custom_colors = color_list[0:len(column_names[:-2])]
+    cm = plt.get_cmap('gist_rainbow')
+    color_list = [cm(1.*i/len(column_names)) for i in range(len(column_names))]
+    max_Y = max(list(profiles.max(numeric_only=True))[:-2])
+
+    if len(column_names) < 8:
+        cur_ax = profiles.plot(x="coordinates", ylim=[0, max_Y + (max_Y * 5) / 100], color=color_list)
+        cur_ax.set(xlabel="Position", ylabel="Coverage")
+        cur_ax.axvline(x=0, color="grey")
+
+        plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
+        plt.close()
+
+    elif len(column_names) >= 8 and len(column_names) < 16:
+        data_split = split_evenly(column_names, 2)
+
+        custom_colors = assign_color_list(data_split, color_list)
+        fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
+        custom_axes = [ax1, ax2]
+        for i in range(2):
+            cur_ax = profiles.plot(ax=custom_axes[i], x="coordinates", y=data_split[i], ylim=[0, max_Y + (max_Y * 5) / 100], color=custom_colors[i])
+            cur_ax.set(xlabel="Position", ylabel="Coverage")
+            cur_ax.axvline(x=0, color="grey")
+
+        plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
+        plt.close()
+
+    else:
+        data_split = split_evenly(column_names, 4)
+        custom_colors = assign_color_list(data_split, color_list)
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
+
+        custom_axes = [axes[0,0], axes[0,1], axes[1,0], axes[1,1]]
+        for i in range(4):
+            cur_ax = profiles.plot(ax=custom_axes[i], x="coordinates", y=data_split[i], ylim=[0, max_Y + (max_Y * 5) / 100], color=custom_colors[i])
+            cur_ax.set(xlabel="Position", ylabel="Coverage")
+            cur_ax.axvline(x=0, color="grey")
+
+        plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
+        plt.close()
 
 def metagene_mapping(length, length_reads, seqid, startcodons, strand):
     """
