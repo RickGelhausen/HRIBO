@@ -47,6 +47,31 @@ def get_start_codons(input_gff_filepath):
     seqids = list(seqid_set)
     return seqids, startcodons
 
+def get_stop_codons(input_gff_filepath):
+    stopcodons = {"-": [], "+": []}
+    seqid_set = set()
+    with open(input_gff_filepath, newline='\n') as csvfile:
+        gffreader = csv.reader(csvfile, delimiter='\t')
+        for entry in gffreader:
+            if (not entry[0].startswith('#')):
+                gfftype = entry[2]
+                if gfftype == "CDS":
+                    seqid = entry[0]
+                    seqid_set.add(seqid)
+                    source = entry[1]
+                    gfftype = entry[2]
+                    start = int(entry[3]) - 1
+                    end = int(entry[4]) - 1
+                    score = entry[5]
+                    strand = entry[6]
+                    phase = entry[7]
+                    attributes = entry[8]
+                    if strand == "+":
+                        stopcodons[strand].append(Feature("stop", seqid, str(end-2), end, strand))
+                    else:
+                        stopcodons[strand].append(Feature("stop", seqid, start, str(start+2), strand))
+    seqids = list(seqid_set)
+    return seqids, stopcodons
 
 class Feature:
     def __init__(self, gfftype, seqid, start, end, strand):
@@ -80,12 +105,16 @@ def get_genome_sizes_dict(input_fai_filepath):
 #For individual read lengths and indidividual strands and as summarized
 #global, 5', 3', centered profiling for reads overlapping with area around the start codon
 
-def meta_geneprofiling_p(in_gff_filepath, in_bam_filepath, out_plot_filepath, cpu_cores, min_read_length, max_read_length, normalization, in_fai_filepath):
+def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_filepath, cpu_cores, min_read_length, max_read_length, normalization, in_fai_filepath):
     """
     Get all start_codons and all mapped reads,
     then run the metagene profiling on this data.
     """
-    seqids, startcodons = get_start_codons(in_gff_filepath)
+    if input_type == "TIS":
+        seqids, codons = get_start_codons(in_gff_filepath)
+    else:
+        seqids, codons =  get_stop_codons(in_gff_filepath)
+
     genome_sizes_dict = get_genome_sizes_dict(in_fai_filepath)
     forward_length_reads_dict = defaultdict(list)
     reverse_length_reads_dict = defaultdict(list)
@@ -103,10 +132,10 @@ def meta_geneprofiling_p(in_gff_filepath, in_bam_filepath, out_plot_filepath, cp
                 else:
                     readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_end, "-")
                     reverse_length_reads_dict[currentreadlength].append(readfeature)
-    meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, startcodons, out_plot_filepath, genome_sizes_dict, normalization)
+    meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, genome_sizes_dict, normalization)
 
 
-def meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, startcodons, out_plot_filepath, genome_sizes_dict, normalization):
+def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, genome_sizes_dict, normalization):
     """
     Call the metagene mapping script for all seqids, read_lengths and mappings.
     Then plot all files.
@@ -115,7 +144,7 @@ def meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_le
         print("Metagene profiling for " + seqid + ":")
         chromosome_size = genome_sizes_dict.get(seqid, None)
         pool = Pool(processes=cpu_cores)
-        threadsforward = pool.starmap(metagene_mapping, [(length, list(forward_length_reads_dict.get(length)), seqid, startcodons, "+") for length in sorted(forward_length_reads_dict)])
+        threadsforward = pool.starmap(metagene_mapping, [(length, list(forward_length_reads_dict.get(length)), seqid, codons, "+", input_type) for length in sorted(forward_length_reads_dict)])
         globalforwardprofiles = dfObj = pd.DataFrame()
         fiveprimeforwardprofiles = dfObj = pd.DataFrame()
         threeprimeforwardprofiles = dfObj = pd.DataFrame()
@@ -135,11 +164,11 @@ def meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_le
         fiveprimeforwardprofiles.loc[:,summarylabel] = fiveprimeforwardprofiles.sum(axis=1)
         centeredforwardprofiles.loc[:,summarylabel] = centeredforwardprofiles.sum(axis=1)
         threeprimeforwardprofiles.loc[:,summarylabel] = threeprimeforwardprofiles.sum(axis=1)
-        plotprofile(globalforwardprofiles, seqid, out_plot_filepath, "global_forward", normalization)
-        plotprofile(fiveprimeforwardprofiles, seqid, out_plot_filepath, "fiveprime_forward", normalization)
-        plotprofile(centeredforwardprofiles, seqid, out_plot_filepath, "centered_forward", normalization)
-        plotprofile(threeprimeforwardprofiles, seqid, out_plot_filepath, "threeprime_forward", normalization)
-        threadsreverse = pool.starmap(metagene_mapping, [(length, list(reverse_length_reads_dict.get(length)), seqid, startcodons, "-") for length in sorted(reverse_length_reads_dict)])
+        plotprofile(globalforwardprofiles, seqid, out_plot_filepath, "global_forward", normalization, input_type)
+        plotprofile(fiveprimeforwardprofiles, seqid, out_plot_filepath, "fiveprime_forward", normalization, input_type)
+        plotprofile(centeredforwardprofiles, seqid, out_plot_filepath, "centered_forward", normalization, input_type)
+        plotprofile(threeprimeforwardprofiles, seqid, out_plot_filepath, "threeprime_forward", normalization, input_type)
+        threadsreverse = pool.starmap(metagene_mapping, [(length, list(reverse_length_reads_dict.get(length)), seqid, codons, "-", input_type) for length in sorted(reverse_length_reads_dict)])
 
         globalreverseprofiles = dfObj = pd.DataFrame()
         fiveprimereverseprofiles = dfObj = pd.DataFrame()
@@ -155,19 +184,19 @@ def meta_gene_profiling(seqids, cpu_cores, forward_length_reads_dict, reverse_le
         fiveprimereverseprofiles.loc[:,summarylabel] = fiveprimereverseprofiles.sum(axis=1)
         centeredreverseprofiles.loc[:,summarylabel] = centeredreverseprofiles.sum(axis=1)
         threeprimereverseprofiles.loc[:,summarylabel] = threeprimereverseprofiles.sum(axis=1)
-        plotprofile(globalreverseprofiles, seqid, out_plot_filepath, "global_reverse", normalization)
-        plotprofile(fiveprimereverseprofiles, seqid, out_plot_filepath, "fiveprime_reverse", normalization)
-        plotprofile(centeredreverseprofiles, seqid, out_plot_filepath, "centered_reverse", normalization)
-        plotprofile(threeprimereverseprofiles, seqid, out_plot_filepath, "threeprime_reverse", normalization)
+        plotprofile(globalreverseprofiles, seqid, out_plot_filepath, "global_reverse", normalization, input_type)
+        plotprofile(fiveprimereverseprofiles, seqid, out_plot_filepath, "fiveprime_reverse", normalization, input_type)
+        plotprofile(centeredreverseprofiles, seqid, out_plot_filepath, "centered_reverse", normalization, input_type)
+        plotprofile(threeprimereverseprofiles, seqid, out_plot_filepath, "threeprime_reverse", normalization, input_type)
         #merged plotting
         globalprofiles = globalforwardprofiles.add(globalreverseprofiles, fill_value=0)
         fiveprimeprofiles = fiveprimeforwardprofiles.add(fiveprimereverseprofiles, fill_value=0)
         centeredprofiles = centeredforwardprofiles.add(centeredreverseprofiles, fill_value=0)
         threeprimeprofiles = threeprimeforwardprofiles.add(threeprimereverseprofiles, fill_value=0)
-        plotprofile(globalprofiles, seqid, out_plot_filepath, "global", normalization)
-        plotprofile(fiveprimeprofiles, seqid, out_plot_filepath, "fiveprime", normalization)
-        plotprofile(centeredprofiles, seqid, out_plot_filepath, "centered", normalization)
-        plotprofile(threeprimeprofiles, seqid, out_plot_filepath, "threeprime", normalization)
+        plotprofile(globalprofiles, seqid, out_plot_filepath, "global", normalization, input_type)
+        plotprofile(fiveprimeprofiles, seqid, out_plot_filepath, "fiveprime", normalization, input_type)
+        plotprofile(centeredprofiles, seqid, out_plot_filepath, "centered", normalization, input_type)
+        plotprofile(threeprimeprofiles, seqid, out_plot_filepath, "threeprime", normalization, input_type)
 
 def split_evenly(column_names, num_chunks):
     """
@@ -183,7 +212,7 @@ def assign_color_list(data_split, color_list):
         custom_colors.append([color_list[x] for x in range(ds, len(color_list), len(data_split))])
     return custom_colors
 
-def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization):
+def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, input_type):
     """
     Generate plot for the metagene profiling
     """
@@ -195,7 +224,11 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization):
             average_total = total / 500
             profiles[i] = profiles[i] / average_total
 
-    profiles['coordinates'] = range(-100, -100 + len(profiles))
+    if input_type == "TIS":
+        profiles['coordinates'] = range(-100, -100 + len(profiles))
+    else:
+        profiles['coordinates'] = range(-250, -250 + len(profiles))
+
     profiles.to_csv(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.tsv", index=True, sep="\t", header=True,)
     profiles.to_excel(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.xlsx")
 
@@ -242,7 +275,7 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization):
         plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
         plt.close()
 
-def metagene_mapping(length, length_reads, seqid, startcodons, strand):
+def metagene_mapping(length, length_reads, seqid, codons, strand, input_type):
     """
     For a given read length and seqid, calculate the coverage for all mapping methods
     """
@@ -262,11 +295,23 @@ def metagene_mapping(length, length_reads, seqid, startcodons, strand):
         return length, globalmapping, fiveprimemapping, centeredmapping, threeprimemapping
 
     inter.update(intervals)
-    for codon in startcodons[strand]:
-        if strand == "+":
-            codoninterval = (int(codon.start)-100, int(codon.end)+397)
+    for codon in codons[strand]:
+        if input_type == "TIS":
+            plus_strand_interval_begin = int(codon.start)-100
+            plus_strand_interval_end = int(codon.end)+397
+            minus_strand_interval_begin = int(codon.start)-397
+            minus_strand_interval_end = int(codon.end)+100
         else:
-            codoninterval = (int(codon.start)-397, int(codon.end)+100)
+            plus_strand_interval_begin = int(codon.start)-250
+            plus_strand_interval_end = int(codon.end)+247
+            minus_strand_interval_begin = int(codon.start)-247
+            minus_strand_interval_end = int(codon.end)+250
+
+        if strand == "+":
+            codoninterval = (plus_strand_interval_begin, plus_strand_interval_end)
+        else:
+            codoninterval = (minus_strand_interval_begin, minus_strand_interval_end)
+
         overlapping_intervals = list(inter.find(codoninterval))
         if len(overlapping_intervals) == 0:
             continue
@@ -309,8 +354,9 @@ def main():
     parser.add_argument("--out_plot_filepath", help='Directory path to write output files, if not present the directory will be created', required=True)
     parser.add_argument("--normalization", help='Toggles normalization by average read count per nucleotide', action='store_true')
     parser.add_argument("--in_fai_filepath", help='Input genome size (.fa.fai) path', required=True)
+    parser.add_argument("--input_type", help='Input type, either TIS or TTS.', default="TIS")
     args = parser.parse_args()
-    meta_geneprofiling_p(args.in_gff_filepath, args.in_bam_filepath, args.out_plot_filepath, args.cpu_cores, args.min_read_length, args.max_read_length, args.normalization, args.in_fai_filepath)
+    meta_geneprofiling_p(args.input_type, args.in_gff_filepath, args.in_bam_filepath, args.out_plot_filepath, args.cpu_cores, args.min_read_length, args.max_read_length, args.normalization, args.in_fai_filepath)
 
 
 if __name__ == '__main__':

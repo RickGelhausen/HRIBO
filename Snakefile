@@ -18,6 +18,9 @@ samples = pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["method
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
 
+samples_meta_start = samples.loc[(samples["method"] == "RIBO") | (samples["method"] == "TIS") | (samples["method"] == "RNA") | (samples["method"] == "RNATIS")]
+samples_meta_stop = samples.loc[(samples["method"] == "TTS") | (samples["method"] == "RNATTS")]
+
 if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
     sys.exit("Differential Expression requested, but only one condition given.\n\
             Please ensure, that you either provide multiple condtions or turn off differential expression in the config.yaml.")
@@ -25,7 +28,7 @@ if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
 hasRIBO=True
 if "RIBO" not in samples["method"].unique():
     hasRIBO=False
-    print("No Ribo-seq libraries were detected. No prediction tools for this setup are currently implemented. If you have pure Ribo-seq libraries, please use the method tag RIBO. Continuing...") 
+    print("No Ribo-seq libraries were detected. No prediction tools for this setup are currently implemented. If you have pure Ribo-seq libraries, please use the method tag RIBO. Continuing...")
 
 report: "report/workflow.rst"
 def getContrast(wildcards):
@@ -104,8 +107,10 @@ if hasRIBO:
     if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
        rule all:
           input:
-              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
+              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
               "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
@@ -124,13 +129,15 @@ if hasRIBO:
               unpack(getContrast),
               unpack(getContrastXtail),
               unpack(getContrastRiborex)
-                
+
 
     elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
        rule all:
           input:
-              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
+              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
               "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
@@ -150,8 +157,10 @@ if hasRIBO:
     elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
        rule all:
           input:
-              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
+              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
               "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
@@ -173,8 +182,10 @@ if hasRIBO:
     else:
        rule all:
           input:
-              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
+              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
               "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
@@ -193,8 +204,10 @@ else:
      if DIFFEXPRESS.lower() == "on":
        rule all:
           input:
-              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
+              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
               "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
@@ -213,8 +226,10 @@ else:
      else:
        rule all:
           input:
-              expand("metageneprofiling/raw/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-              expand("metageneprofiling/norm/{method}-{condition}-{replicate}", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
+              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
+              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
               "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
