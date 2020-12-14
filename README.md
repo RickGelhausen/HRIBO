@@ -2,7 +2,7 @@
 
 # High-throughput annotation by Ribo-seq
 
-* [![GitHub](https://img.shields.io/github/tag/RickGelhausen/HRIBO.svg)](https://github.com/RickGelhausen/HRIBO) 
+[![GitHub](https://img.shields.io/github/tag/RickGelhausen/HRIBO.svg)](https://github.com/RickGelhausen/HRIBO) 
 [![Snakemake](https://img.shields.io/badge/snakemake-≥5.10.0-brightgreen.svg)](https://snakemake.bitbucket.io) 
 [![Documentation Status](https://readthedocs.org/projects/hribo/badge/?version=latest)](http://hribo.readthedocs.io/?badge=latest)
 
