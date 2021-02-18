@@ -105,7 +105,7 @@ def get_genome_sizes_dict(input_fai_filepath):
 #For individual read lengths and indidividual strands and as summarized
 #global, 5', 3', centered profiling for reads overlapping with area around the start codon
 
-def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_filepath, cpu_cores, min_read_length, max_read_length, normalization, in_fai_filepath):
+def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_filepath, cpu_cores, min_read_length, max_read_length, normalization, in_fai_filepath, noise_analyis):
     """
     Get all start_codons and all mapped reads,
     then run the metagene profiling on this data.
@@ -132,10 +132,10 @@ def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_
                 else:
                     readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_end, "-")
                     reverse_length_reads_dict[currentreadlength].append(readfeature)
-    meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, genome_sizes_dict, normalization)
+    meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, genome_sizes_dict, normalization, noise_analysis)
 
 
-def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, genome_sizes_dict, normalization):
+def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, genome_sizes_dict, normalization, noise_analysis):
     """
     Call the metagene mapping script for all seqids, read_lengths and mappings.
     Then plot all files.
@@ -197,6 +197,8 @@ def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict
         plotprofile(fiveprimeprofiles, seqid, out_plot_filepath, "fiveprime", normalization, input_type)
         plotprofile(centeredprofiles, seqid, out_plot_filepath, "centered", normalization, input_type)
         plotprofile(threeprimeprofiles, seqid, out_plot_filepath, "threeprime", normalization, input_type)
+        if noise_analysis:
+            print("nra on")
 
 def split_evenly(column_names, num_chunks):
     """
@@ -345,18 +347,19 @@ def metagene_mapping(length, length_reads, seqid, codons, strand, input_type):
 
 def main():
     # store commandline args
-    parser = argparse.ArgumentParser(description='TISisitMetageneProfiling')
+    parser = argparse.ArgumentParser(description='HRIBOMetageneProfiling')
     parser.add_argument("--in_bam_filepath", help='Input bam path', required=True)
     parser.add_argument("--in_gff_filepath", help='Input gff path', required=True)
     parser.add_argument("--cpu_cores", help='Number of cpu cores to use', type=int, default=1)
     parser.add_argument("--min_read_length", help='Minimal read length to consider', type=int, default=27)
-    parser.add_argument("--max_read_length", help='Maximal read length to consider', type=int, default=33)
+    parser.add_argument("--max_read_length", help='Maximal read length to consider', type=int, default=33) 
     parser.add_argument("--out_plot_filepath", help='Directory path to write output files, if not present the directory will be created', required=True)
     parser.add_argument("--normalization", help='Toggles normalization by average read count per nucleotide', action='store_true')
+    parser.add_argument("--noise_reduction_analysis", help='Toggles noise reduction analysis', action='store_true')
     parser.add_argument("--in_fai_filepath", help='Input genome size (.fa.fai) path', required=True)
     parser.add_argument("--input_type", help='Input type, either TIS or TTS.', default="TIS")
     args = parser.parse_args()
-    meta_geneprofiling_p(args.input_type, args.in_gff_filepath, args.in_bam_filepath, args.out_plot_filepath, args.cpu_cores, args.min_read_length, args.max_read_length, args.normalization, args.in_fai_filepath)
+    meta_geneprofiling_p(args.input_type, args.in_gff_filepath, args.in_bam_filepath, args.out_plot_filepath, args.cpu_cores, args.min_read_length, args.max_read_length, args.normalization, args.in_fai_filepath, args.noise_reduction_analysis)
 
 
 if __name__ == '__main__':
