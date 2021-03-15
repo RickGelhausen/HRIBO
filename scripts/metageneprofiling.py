@@ -180,7 +180,7 @@ def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict
                     #globalprofiles[length]=pd.Series(globalreversemapping)
                     #print(col)
                     col=globalprofiles[colname]
-                    peaks, properties=find_peaks(col.values, distance=int(colname), width=int(colname))#,prominence=(0.1, 1))
+                    peaks, properties=find_peaks(col.values, distance=int(colname), width=[int(colname)-3,int(colname)+3])#,prominence=(0.1, 1))
                     #peaks, properties=find_peaks(col.values)
                     print(str(colname) + " : " + (','.join(map(str,peaks))) + " : ")
                     print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
