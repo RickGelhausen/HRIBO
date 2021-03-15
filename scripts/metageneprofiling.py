@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import interlap
 import random
-
+from scipy.signal import find_peaks
 from collections import defaultdict
 from multiprocessing import Pool
 
@@ -105,7 +105,7 @@ def get_genome_sizes_dict(input_fai_filepath):
 #For individual read lengths and indidividual strands and as summarized
 #global, 5', 3', centered profiling for reads overlapping with area around the start codon
 
-def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_filepath, cpu_cores, min_read_length, max_read_length, normalization, in_fai_filepath, noise_analyis):
+def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_filepath, cpu_cores, min_read_length, max_read_length, normalization, in_fai_filepath, noise_reduction_analysis):
     """
     Get all start_codons and all mapped reads,
     then run the metagene profiling on this data.
@@ -132,10 +132,10 @@ def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_
                 else:
                     readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_end, "-")
                     reverse_length_reads_dict[currentreadlength].append(readfeature)
-    meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, genome_sizes_dict, normalization, noise_analysis)
+    meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, genome_sizes_dict, normalization, noise_reduction_analysis)
 
 
-def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, genome_sizes_dict, normalization, noise_analysis):
+def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, genome_sizes_dict, normalization, noise_reduction_analysis):
     """
     Call the metagene mapping script for all seqids, read_lengths and mappings.
     Then plot all files.
@@ -144,7 +144,7 @@ def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict
         print("Metagene profiling for " + seqid + ":")
         chromosome_size = genome_sizes_dict.get(seqid, None)
         pool = Pool(processes=cpu_cores)
-        threadsforward = pool.starmap(metagene_mapping, [(length, list(forward_length_reads_dict.get(length)), seqid, codons, "+", input_type) for length in sorted(forward_length_reads_dict)])
+        threadsforward = pool.starmap(metagene_mapping, [(length, list(forward_length_reads_dict.get(length)), seqid, codons, "+", input_type, noise_reduction_analysis) for length in sorted(forward_length_reads_dict)])
         globalforwardprofiles = dfObj = pd.DataFrame()
         fiveprimeforwardprofiles = dfObj = pd.DataFrame()
         threeprimeforwardprofiles = dfObj = pd.DataFrame()
@@ -159,17 +159,7 @@ def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict
             fiveprimeforwardprofiles[length]=pd.Series(fiveprimeforwardmapping)
             centeredforwardprofiles[length]=pd.Series(centeredforwardmapping)
             threeprimeforwardprofiles[length]=pd.Series(threeprimeforwardmapping)
-
-        globalforwardprofiles.loc[:,summarylabel] = globalforwardprofiles.sum(axis=1)
-        fiveprimeforwardprofiles.loc[:,summarylabel] = fiveprimeforwardprofiles.sum(axis=1)
-        centeredforwardprofiles.loc[:,summarylabel] = centeredforwardprofiles.sum(axis=1)
-        threeprimeforwardprofiles.loc[:,summarylabel] = threeprimeforwardprofiles.sum(axis=1)
-        plotprofile(globalforwardprofiles, seqid, out_plot_filepath, "global_forward", normalization, input_type)
-        plotprofile(fiveprimeforwardprofiles, seqid, out_plot_filepath, "fiveprime_forward", normalization, input_type)
-        plotprofile(centeredforwardprofiles, seqid, out_plot_filepath, "centered_forward", normalization, input_type)
-        plotprofile(threeprimeforwardprofiles, seqid, out_plot_filepath, "threeprime_forward", normalization, input_type)
-        threadsreverse = pool.starmap(metagene_mapping, [(length, list(reverse_length_reads_dict.get(length)), seqid, codons, "-", input_type) for length in sorted(reverse_length_reads_dict)])
-
+        threadsreverse = pool.starmap(metagene_mapping, [(length, list(reverse_length_reads_dict.get(length)), seqid, codons, "-", input_type, noise_reduction_analysis) for length in sorted(reverse_length_reads_dict)])
         globalreverseprofiles = dfObj = pd.DataFrame()
         fiveprimereverseprofiles = dfObj = pd.DataFrame()
         threeprimereverseprofiles = dfObj = pd.DataFrame()
@@ -179,26 +169,51 @@ def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict
             fiveprimereverseprofiles[length]=pd.Series(fiveprimereversemapping)
             centeredreverseprofiles[length]=pd.Series(centeredreversemapping)
             threeprimereverseprofiles[length]=pd.Series(threeprimereversemapping)
-
-        globalreverseprofiles.loc[:,summarylabel] = globalreverseprofiles.sum(axis=1)
-        fiveprimereverseprofiles.loc[:,summarylabel] = fiveprimereverseprofiles.sum(axis=1)
-        centeredreverseprofiles.loc[:,summarylabel] = centeredreverseprofiles.sum(axis=1)
-        threeprimereverseprofiles.loc[:,summarylabel] = threeprimereverseprofiles.sum(axis=1)
-        plotprofile(globalreverseprofiles, seqid, out_plot_filepath, "global_reverse", normalization, input_type)
-        plotprofile(fiveprimereverseprofiles, seqid, out_plot_filepath, "fiveprime_reverse", normalization, input_type)
-        plotprofile(centeredreverseprofiles, seqid, out_plot_filepath, "centered_reverse", normalization, input_type)
-        plotprofile(threeprimereverseprofiles, seqid, out_plot_filepath, "threeprime_reverse", normalization, input_type)
-        #merged plotting
-        globalprofiles = globalforwardprofiles.add(globalreverseprofiles, fill_value=0)
-        fiveprimeprofiles = fiveprimeforwardprofiles.add(fiveprimereverseprofiles, fill_value=0)
-        centeredprofiles = centeredforwardprofiles.add(centeredreverseprofiles, fill_value=0)
-        threeprimeprofiles = threeprimeforwardprofiles.add(threeprimereverseprofiles, fill_value=0)
-        plotprofile(globalprofiles, seqid, out_plot_filepath, "global", normalization, input_type)
-        plotprofile(fiveprimeprofiles, seqid, out_plot_filepath, "fiveprime", normalization, input_type)
-        plotprofile(centeredprofiles, seqid, out_plot_filepath, "centered", normalization, input_type)
-        plotprofile(threeprimeprofiles, seqid, out_plot_filepath, "threeprime", normalization, input_type)
-        if noise_analysis:
+        if noise_reduction_analysis:
             print("nra on")
+            #merged plotting
+            globalprofiles = globalforwardprofiles.add(globalreverseprofiles, fill_value=0)
+            fiveprimeprofiles = fiveprimeforwardprofiles.add(fiveprimereverseprofiles, fill_value=0)
+            centeredprofiles = centeredforwardprofiles.add(centeredreverseprofiles, fill_value=0)
+            threeprimeprofiles = threeprimeforwardprofiles.add(threeprimereverseprofiles, fill_value=0)
+            for colname in globalprofiles.columns:
+                    #globalprofiles[length]=pd.Series(globalreversemapping)
+                    #print(col)
+                    col=globalprofiles[colname]
+                    peaks, properties=find_peaks(col.values, distance=int(colname), width=int(colname))#,prominence=(0.1, 1))
+                    #peaks, properties=find_peaks(col.values)
+                    print(str(colname) + " : " + (','.join(map(str,peaks))) + " : ")
+                    print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
+                    #plt.hlines(y=properties["width_heights"], xmin=properties["left_ips"],xmax=properties["right_ips"], color = "C1")
+                    #print(type(peaks))
+                    #print(peaks)
+            plotprofile(globalprofiles, seqid, out_plot_filepath, "global", normalization, input_type, noise_reduction_analysis)
+        else:
+                globalforwardprofiles.loc[:,summarylabel] = globalforwardprofiles.sum(axis=1)
+                fiveprimeforwardprofiles.loc[:,summarylabel] = fiveprimeforwardprofiles.sum(axis=1)
+                centeredforwardprofiles.loc[:,summarylabel] = centeredforwardprofiles.sum(axis=1)
+                threeprimeforwardprofiles.loc[:,summarylabel] = threeprimeforwardprofiles.sum(axis=1)
+                globalreverseprofiles.loc[:,summarylabel] = globalreverseprofiles.sum(axis=1)
+                fiveprimereverseprofiles.loc[:,summarylabel] = fiveprimereverseprofiles.sum(axis=1)
+                centeredreverseprofiles.loc[:,summarylabel] = centeredreverseprofiles.sum(axis=1)
+                threeprimereverseprofiles.loc[:,summarylabel] = threeprimereverseprofiles.sum(axis=1)
+                #merged plotting
+                globalprofiles = globalforwardprofiles.add(globalreverseprofiles, fill_value=0)
+                fiveprimeprofiles = fiveprimeforwardprofiles.add(fiveprimereverseprofiles, fill_value=0)
+                centeredprofiles = centeredforwardprofiles.add(centeredreverseprofiles, fill_value=0)
+                threeprimeprofiles = threeprimeforwardprofiles.add(threeprimereverseprofiles, fill_value=0)
+                plotprofile(globalforwardprofiles, seqid, out_plot_filepath, "global_forward", normalization, input_type, noise_reduction_analysis)
+                plotprofile(fiveprimeforwardprofiles, seqid, out_plot_filepath, "fiveprime_forward", normalization, input_type, noise_reduction_analysis)
+                plotprofile(centeredforwardprofiles, seqid, out_plot_filepath, "centered_forward", normalization, input_type, noise_reduction_analysis)
+                plotprofile(threeprimeforwardprofiles, seqid, out_plot_filepath, "threeprime_forward", normalization, input_type, noise_reduction_analysis)
+                plotprofile(globalreverseprofiles, seqid, out_plot_filepath, "global_reverse", normalization, input_type, noise_reduction_analysis)
+                plotprofile(fiveprimereverseprofiles, seqid, out_plot_filepath, "fiveprime_reverse", normalization, input_type, noise_reduction_analysis)
+                plotprofile(centeredreverseprofiles, seqid, out_plot_filepath, "centered_reverse", normalization, input_type, noise_reduction_analysis)
+                plotprofile(threeprimereverseprofiles, seqid, out_plot_filepath, "threeprime_reverse", normalization, input_type, noise_reduction_analysis)
+                plotprofile(globalprofiles, seqid, out_plot_filepath, "global", normalization, input_type, noise_reduction_analysis)
+                plotprofile(fiveprimeprofiles, seqid, out_plot_filepath, "fiveprime", normalization, input_type, noise_reduction_analysis)
+                plotprofile(centeredprofiles, seqid, out_plot_filepath, "centered", normalization, input_type, noise_reduction_analysis)
+                plotprofile(threeprimeprofiles, seqid, out_plot_filepath, "threeprime", normalization, input_type, noise_reduction_analysis)
 
 def split_evenly(column_names, num_chunks):
     """
@@ -214,22 +229,19 @@ def assign_color_list(data_split, color_list):
         custom_colors.append([color_list[x] for x in range(ds, len(color_list), len(data_split))])
     return custom_colors
 
-def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, input_type):
+def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, input_type, noise_reduction_analysis):
     """
     Generate plot for the metagene profiling
     """
-
+    (window_length,before_start_plus,after_start_plus,before_start_minus,after_start_minus) = set_window(input_type,noise_reduction_analysis)
     if normalization == True:
         columns = list(profiles)
         for i in columns:
             total = profiles[i].sum()
-            average_total = total / 500
+            average_total = total / window_length
             profiles[i] = profiles[i] / average_total
-
-    if input_type == "TIS":
-        profiles['coordinates'] = range(-100, -100 + len(profiles))
-    else:
-        profiles['coordinates'] = range(-250, -250 + len(profiles))
+    print(str(before_start_plus) + " " + str(window_length) + " " + str(len(profiles)))
+    profiles['coordinates'] = range(-before_start_plus, -before_start_plus + len(profiles))
 
     profiles.to_csv(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.tsv", index=True, sep="\t", header=True,)
     profiles.to_excel(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.xlsx")
@@ -277,37 +289,48 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
         plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
         plt.close()
 
-def metagene_mapping(length, length_reads, seqid, codons, strand, input_type):
+def set_window(input_type,noise_reduction_analysis):
+    #length of nucleotides to plot, before start + strand, after start + strand, before start - strand, after start minus strand
+    if noise_reduction_analysis:
+        d = { "TIS" : (200,100,97,97,100),
+            "RIBO" : (200,100,97,97,100),
+            "TTS" : (200,100,97,97,100)
+            }
+    else:
+        d = { "TIS" : (500,100,397,397,100),
+            "RIBO" : (500,100,397,397,100),
+            "TTS" : (500,250,247,247,250)
+            }
+    window= d.get(input_type)
+    if window == None:
+        window=(500,100,397,397,100)
+    return(window)
+
+def metagene_mapping(length, length_reads, seqid, codons, strand, input_type, noise_reduction_analysis):
     """
     For a given read length and seqid, calculate the coverage for all mapping methods
     """
-    print("Len:" + str(length) + "\n")
     inter = interlap.InterLap()
-    globalmapping = np.zeros(500, dtype=int)
-    fiveprimemapping = np.zeros(500, dtype=int)
-    centeredmapping = np.zeros(500, dtype=int)
-    threeprimemapping = np.zeros(500, dtype=int)
+    (window_length,before_start_plus,after_start_plus,before_start_minus,after_start_minus) = set_window(input_type,noise_reduction_analysis)
+    print("Len:" + str(length) + "window" + str(window_length) + "\n")
+    globalmapping = np.zeros(window_length, dtype=int)
+    fiveprimemapping = np.zeros(window_length, dtype=int)
+    centeredmapping = np.zeros(window_length, dtype=int)
+    threeprimemapping = np.zeros(window_length, dtype=int)
     intervals = []
     for read in length_reads:
         if read.seqid == seqid:
             intervals.append((int(read.start), int(read.end)))
-
 
     if len(intervals) == 0:
         return length, globalmapping, fiveprimemapping, centeredmapping, threeprimemapping
 
     inter.update(intervals)
     for codon in codons[strand]:
-        if input_type == "TIS":
-            plus_strand_interval_begin = int(codon.start)-100
-            plus_strand_interval_end = int(codon.end)+397
-            minus_strand_interval_begin = int(codon.start)-397
-            minus_strand_interval_end = int(codon.end)+100
-        else:
-            plus_strand_interval_begin = int(codon.start)-250
-            plus_strand_interval_end = int(codon.end)+247
-            minus_strand_interval_begin = int(codon.start)-247
-            minus_strand_interval_end = int(codon.end)+250
+        plus_strand_interval_begin = int(codon.start)-before_start_plus
+        plus_strand_interval_end = int(codon.end)+after_start_plus
+        minus_strand_interval_begin = int(codon.start)-before_start_minus
+        minus_strand_interval_end = int(codon.end)+after_start_minus
 
         if strand == "+":
             codoninterval = (plus_strand_interval_begin, plus_strand_interval_end)
@@ -332,8 +355,8 @@ def metagene_mapping(length, length_reads, seqid, codons, strand, input_type):
                 globalmapping[coveragelower:coverageupper] += 1
 
             else:
-                coveragelower = 499 - abs(intersectiv[1] - codoninterval[0])
-                coverageupper = 499 - abs(intersectiv[0] - codoninterval[0])
+                coveragelower = (window_length -1) - abs(intersectiv[1] - codoninterval[0])
+                coverageupper = (window_length -1) - abs(intersectiv[0] - codoninterval[0])
                 if readinterval[1] <= codoninterval[1]:
                     fiveprimemapping[abs(coveragelower)] += 1
                 if readinterval[0] >= codoninterval[0]:
@@ -352,7 +375,7 @@ def main():
     parser.add_argument("--in_gff_filepath", help='Input gff path', required=True)
     parser.add_argument("--cpu_cores", help='Number of cpu cores to use', type=int, default=1)
     parser.add_argument("--min_read_length", help='Minimal read length to consider', type=int, default=27)
-    parser.add_argument("--max_read_length", help='Maximal read length to consider', type=int, default=33) 
+    parser.add_argument("--max_read_length", help='Maximal read length to consider', type=int, default=33)
     parser.add_argument("--out_plot_filepath", help='Directory path to write output files, if not present the directory will be created', required=True)
     parser.add_argument("--normalization", help='Toggles normalization by average read count per nucleotide', action='store_true')
     parser.add_argument("--noise_reduction_analysis", help='Toggles noise reduction analysis', action='store_true')
