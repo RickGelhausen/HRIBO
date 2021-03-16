@@ -176,17 +176,12 @@ def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict
             fiveprimeprofiles = fiveprimeforwardprofiles.add(fiveprimereverseprofiles, fill_value=0)
             centeredprofiles = centeredforwardprofiles.add(centeredreverseprofiles, fill_value=0)
             threeprimeprofiles = threeprimeforwardprofiles.add(threeprimereverseprofiles, fill_value=0)
-            for colname in globalprofiles.columns:
-                    #globalprofiles[length]=pd.Series(globalreversemapping)
-                    #print(col)
-                    col=globalprofiles[colname]
-                    peaks, properties=find_peaks(col.values, distance=int(colname), width=[int(colname)-3,int(colname)+3])#,prominence=(0.1, 1))
-                    #peaks, properties=find_peaks(col.values)
-                    print(str(colname) + " : " + (','.join(map(str,peaks))) + " : ")
-                    print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
+            #for colname in globalprofiles.columns:
+            #        col=globalprofiles[colname]
+            #        peaks, properties=find_peaks(col.values, distance=int(colname), width=[int(colname)-3,int(colname)+3])#,prominence=(0.1, 1))
+            #        print(str(colname) + " : " + (','.join(map(str,peaks))) + " : ")
+            #        print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
                     #plt.hlines(y=properties["width_heights"], xmin=properties["left_ips"],xmax=properties["right_ips"], color = "C1")
-                    #print(type(peaks))
-                    #print(peaks)
             plotprofile(globalprofiles, seqid, out_plot_filepath, "global", normalization, input_type, noise_reduction_analysis)
         else:
                 globalforwardprofiles.loc[:,summarylabel] = globalforwardprofiles.sum(axis=1)
@@ -257,7 +252,15 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
         cur_ax = profiles.plot(x="coordinates", ylim=[0, max_Y + (max_Y * 5) / 100], color=color_list)
         cur_ax.set(xlabel="Position", ylabel="Coverage")
         cur_ax.axvline(x=0, color="grey")
-
+        read_colums = profiles.columns[1:-1]
+        for colname in read_colums:
+            col=profiles[colname]
+            peaks, properties=find_peaks(col.values, distance=int(colname), width=[int(colname)-3,int(colname)+3])#,prominence=(0.1, 1))
+            print(str(colname) + " : " + (','.join(map(str,peaks))) + " : ")
+            print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
+            xmins=a = [x - 100 for x in properties["left_ips"]]
+            xmaxs=[x - 100 for x in  properties["right_ips"]]
+            plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs, color = color_list)
         plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
         plt.close()
 
