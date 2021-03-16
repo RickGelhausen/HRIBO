@@ -256,11 +256,13 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
         for colname in read_colums:
             col=profiles[colname]
             peaks, properties=find_peaks(col.values, distance=int(colname), width=[int(colname)-3,int(colname)+3])#,prominence=(0.1, 1))
-            print(str(colname) + " : " + (','.join(map(str,peaks))) + " : ")
+            peaks_offset=[x - 100 for x in peaks]
+            print(str(colname) + " : " + (','.join(map(str,peaks_offset))) + " : ")
             print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
             xmins=a = [x - 100 for x in properties["left_ips"]]
             xmaxs=[x - 100 for x in  properties["right_ips"]]
             plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs, color = color_list)
+            plt.vlines(x=peaks_offset, ymin=col[peaks] - properties["prominences"], ymax = col[peaks], color = color_list)
         plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
         plt.close()
 
