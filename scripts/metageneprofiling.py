@@ -241,18 +241,20 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
     profiles.to_csv(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.tsv", index=True, sep="\t", header=True,)
     profiles.to_excel(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.xlsx")
 
-    column_names=list(profiles.columns)[:-2]
+    column_names=list(profiles.columns)[:-1]
 
     #custom_colors = color_list[0:len(column_names[:-2])]
     cm = plt.get_cmap('gist_rainbow')
     color_list = [cm(1.*i/len(column_names)) for i in range(len(column_names))]
-    max_Y = max(list(profiles.max(numeric_only=True))[:-2])
+    max_Y = max(list(profiles.max(numeric_only=True))[:-1])
 
     if len(column_names) < 8:
+        print(color_list)
         cur_ax = profiles.plot(x="coordinates", ylim=[0, max_Y + (max_Y * 5) / 100], color=color_list)
         cur_ax.set(xlabel="Position", ylabel="Coverage")
         cur_ax.axvline(x=0, color="grey")
         read_colums = profiles.columns[1:-1]
+        color_index=0
         for colname in read_colums:
             col=profiles[colname]
             peaks, properties=find_peaks(col.values, distance=int(colname), width=[int(colname)-3,int(colname)+3])#,prominence=(0.1, 1))
@@ -261,8 +263,10 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
             print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
             xmins=a = [x - 100 for x in properties["left_ips"]]
             xmaxs=[x - 100 for x in  properties["right_ips"]]
-            plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs, color = color_list)
-            plt.vlines(x=peaks_offset, ymin=col[peaks] - properties["prominences"], ymax = col[peaks], color = color_list)
+            print(color_list)
+            plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs, color = color_list[color_index])
+            plt.vlines(x=peaks_offset, ymin=col[peaks] - properties["prominences"], ymax = col[peaks], color = color_list[color_index])
+            color_index=color_index + 1
         plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
         plt.close()
 
