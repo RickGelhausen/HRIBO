@@ -4,6 +4,7 @@ import os
 import pysam
 import csv
 import matplotlib.pyplot as plt
+from scipy.signal import find_peaks
 
 def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_plot_filepath):
     readlengths = []
@@ -24,7 +25,12 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_plot_
         readlength += 1
     print(readlengths)
     print(readcounts)
+    peaks, properties=find_peaks(readcounts)
     plt.plot(readlengths, readcounts)
+    xmins=a = [x - 100 for x in properties["left_ips"]]
+    xmaxs=[x - 100 for x in  properties["right_ips"]]
+    plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs)
+    plt.vlines(x=peaks_offset, ymin=col[peaks] - properties["prominences"], ymax = col[peaks])
     plt.xlabel('read_lengths')
     plt.ylabel('counts')
     plt.savefig(out_plot_filepath + '/stat.pdf', format='pdf')
