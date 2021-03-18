@@ -10,6 +10,8 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_plot_
     readlengths = []
     readcounts = []
     readlength = min_read_length
+    length_count_dict={}
+    count_length_dict={}
     while readlength <= max_read_length:
         bamfile = pysam.AlignmentFile(input_bam_filepath, "rb")
         readcounter = 0
@@ -19,18 +21,31 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_plot_
                     currentreadlength = read.query_alignment_length
                     if currentreadlength == readlength:
                         readcounter += 1
+        length_count_dict[readlength]=readcounter
+        count_length_dict[readcounter]=readlength
         readlengths.append(readlength)
         readcounts.append(readcounter)
-        print(str(readlength) + ":" + str(readcounter))
+        #print(str(readlength) + ":" + str(readcounter))
         readlength += 1
-    print(readlengths)
-    print(readcounts)
-    peaks, properties=find_peaks(readcounts)
+    #print(readlengths)
+    #print(readcounts)
+    print(length_count_dict)
+    print(count_length_dict)
+    peaks, properties=find_peaks(readcounts,width=[1,7])
+    print(peaks)
+    readlength_peaks=[readlengths[x] for x in peaks]
+    print(readlength_peaks)
     plt.plot(readlengths, readcounts)
-    xmins=a = [x - 100 for x in properties["left_ips"]]
-    xmaxs=[x - 100 for x in  properties["right_ips"]]
+    xmins=[readlengths[int(round(left))] for left in properties["left_ips"]]
+    print(xmins)
+    xmaxs=[readlengths[int(round(right))] for right in properties["right_ips"]]
+    print(xmaxs)
     plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs)
-    plt.vlines(x=peaks_offset, ymin=col[peaks] - properties["prominences"], ymax = col[peaks])
+    ymaxs=[length_count_dict.get(key) for key in readlength_peaks]
+    print(ymaxs)
+    ymins =[0 for key in readlength_peaks]
+    print(ymins)
+    plt.vlines(x=readlength_peaks, ymin=ymins, ymax = ymaxs)
     plt.xlabel('read_lengths')
     plt.ylabel('counts')
     plt.savefig(out_plot_filepath + '/stat.pdf', format='pdf')
@@ -40,8 +55,8 @@ def main():
     # store commandline args
     parser = argparse.ArgumentParser(description='ReadLengthStat')
     parser.add_argument("--in_bam_filepath", help='Input bam path', required=True)
-    parser.add_argument("--min_read_length", help='Minimal read length to consider', type=int, default=27)
-    parser.add_argument("--max_read_length", help='Maximal read length to consider', type=int, default=33)
+    parser.add_argument("--min_read_length", help='Minimal read length to consider', type=int, default=20)
+    parser.add_argument("--max_read_length", help='Maximal read length to consider', type=int, default=50)
     parser.add_argument("--out_plot_filepath", help='Directory path to write output files, if not present the directory will be created', required=True)
     args = parser.parse_args()
     readlengthstats(args.in_bam_filepath,args.min_read_length,args.max_read_length,args.out_plot_filepath)
