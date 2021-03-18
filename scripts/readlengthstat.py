@@ -25,15 +25,15 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_plot_
         count_length_dict[readcounter]=readlength
         readlengths.append(readlength)
         readcounts.append(readcounter)
-        #print(str(readlength) + ":" + str(readcounter))
         readlength += 1
-    #print(readlengths)
-    #print(readcounts)
     print(length_count_dict)
     print(count_length_dict)
     peaks, properties=find_peaks(readcounts,width=[1,7])
     print(peaks)
     readlength_peaks=[readlengths[x] for x in peaks]
+    #find max peak
+    ymaxs=[length_count_dict.get(key) for key in readlength_peaks]
+    index_max_peak=ymaxs.index(max(ymaxs))
     print(readlength_peaks)
     plt.plot(readlengths, readcounts)
     xmins=[readlengths[int(round(left))] for left in properties["left_ips"]]
@@ -45,6 +45,10 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_plot_
     print(ymaxs)
     ymins =[0 for key in readlength_peaks]
     print(ymins)
+    max_length=readlength_peaks[index_max_peak]
+    max_lower=xmins[index_max_peak]
+    max_upper=xmaxs[index_max_peak]
+    print(str(max_length) + " " + str(max_lower) + " " + str(max_upper))
     plt.vlines(x=readlength_peaks, ymin=ymins, ymax = ymaxs)
     plt.xlabel('read_lengths')
     plt.ylabel('counts')
