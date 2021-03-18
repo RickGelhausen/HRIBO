@@ -253,7 +253,7 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
         cur_ax = profiles.plot(x="coordinates", ylim=[0, max_Y + (max_Y * 5) / 100], color=color_list)
         cur_ax.set(xlabel="Position", ylabel="Coverage")
         cur_ax.axvline(x=0, color="grey")
-        read_colums = profiles.columns[1:-1]
+        read_colums = column_names#[1:-1]# profiles.columns[1:-1]
         color_index=0
         for colname in read_colums:
             col=profiles[colname]
