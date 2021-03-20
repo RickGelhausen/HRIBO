@@ -224,6 +224,18 @@ def assign_color_list(data_split, color_list):
         custom_colors.append([color_list[x] for x in range(ds, len(color_list), len(data_split))])
     return custom_colors
 
+def find_optimal_offset(peaks,col):
+    window_dict={}
+    for peak in peaks:
+        window1_sum=col[peak-2] + col[peak-1] + col[peak]
+        window2_sum=col[peak-1] + col[peak] + col[peak+1]
+        window3_sum=col[peak] + col[peak+1] + col[peak+2]
+        window_dict[window1_sum]=peak-2-100
+        window_dict[window2_sum]=peak-1-100
+        window_dict[window3_sum]=peak-100
+    opt_window=max(window_dict.keys())
+    return(window_dict.get(opt_window))
+
 def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, input_type, noise_reduction_analysis):
     """
     Generate plot for the metagene profiling
@@ -261,12 +273,14 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
             peaks_offset=[x - 100 for x in peaks]
             print(str(colname) + " : " + (','.join(map(str,peaks_offset))) + " : ")
             print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
-            xmins=a = [x - 100 for x in properties["left_ips"]]
+            xmins=[x - 100 for x in properties["left_ips"]]
             xmaxs=[x - 100 for x in  properties["right_ips"]]
             print(color_list)
+            optimal_offset=find_optimal_offset(peaks,col)
             plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs, color = color_list[color_index])
             plt.vlines(x=peaks_offset, ymin=col[peaks] - properties["prominences"], ymax = col[peaks], color = color_list[color_index])
             color_index=color_index + 1
+            print("Offset " + str(colname) + " " + str(optimal_offset))
         plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
         plt.close()
 
