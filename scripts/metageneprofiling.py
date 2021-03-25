@@ -16,6 +16,10 @@ import random
 from scipy.signal import find_peaks
 from collections import defaultdict
 from multiprocessing import Pool
+import json
+import numbers
+import statistics
+import math
 
 def get_start_codons(input_gff_filepath):
     """
@@ -176,39 +180,33 @@ def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict
             fiveprimeprofiles = fiveprimeforwardprofiles.add(fiveprimereverseprofiles, fill_value=0)
             centeredprofiles = centeredforwardprofiles.add(centeredreverseprofiles, fill_value=0)
             threeprimeprofiles = threeprimeforwardprofiles.add(threeprimereverseprofiles, fill_value=0)
-            #for colname in globalprofiles.columns:
-            #        col=globalprofiles[colname]
-            #        peaks, properties=find_peaks(col.values, distance=int(colname), width=[int(colname)-3,int(colname)+3])#,prominence=(0.1, 1))
-            #        print(str(colname) + " : " + (','.join(map(str,peaks))) + " : ")
-            #        print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
-                    #plt.hlines(y=properties["width_heights"], xmin=properties["left_ips"],xmax=properties["right_ips"], color = "C1")
             plotprofile(globalprofiles, seqid, out_plot_filepath, "global", normalization, input_type, noise_reduction_analysis)
         else:
-                globalforwardprofiles.loc[:,summarylabel] = globalforwardprofiles.sum(axis=1)
-                fiveprimeforwardprofiles.loc[:,summarylabel] = fiveprimeforwardprofiles.sum(axis=1)
-                centeredforwardprofiles.loc[:,summarylabel] = centeredforwardprofiles.sum(axis=1)
-                threeprimeforwardprofiles.loc[:,summarylabel] = threeprimeforwardprofiles.sum(axis=1)
-                globalreverseprofiles.loc[:,summarylabel] = globalreverseprofiles.sum(axis=1)
-                fiveprimereverseprofiles.loc[:,summarylabel] = fiveprimereverseprofiles.sum(axis=1)
-                centeredreverseprofiles.loc[:,summarylabel] = centeredreverseprofiles.sum(axis=1)
-                threeprimereverseprofiles.loc[:,summarylabel] = threeprimereverseprofiles.sum(axis=1)
-                #merged plotting
-                globalprofiles = globalforwardprofiles.add(globalreverseprofiles, fill_value=0)
-                fiveprimeprofiles = fiveprimeforwardprofiles.add(fiveprimereverseprofiles, fill_value=0)
-                centeredprofiles = centeredforwardprofiles.add(centeredreverseprofiles, fill_value=0)
-                threeprimeprofiles = threeprimeforwardprofiles.add(threeprimereverseprofiles, fill_value=0)
-                plotprofile(globalforwardprofiles, seqid, out_plot_filepath, "global_forward", normalization, input_type, noise_reduction_analysis)
-                plotprofile(fiveprimeforwardprofiles, seqid, out_plot_filepath, "fiveprime_forward", normalization, input_type, noise_reduction_analysis)
-                plotprofile(centeredforwardprofiles, seqid, out_plot_filepath, "centered_forward", normalization, input_type, noise_reduction_analysis)
-                plotprofile(threeprimeforwardprofiles, seqid, out_plot_filepath, "threeprime_forward", normalization, input_type, noise_reduction_analysis)
-                plotprofile(globalreverseprofiles, seqid, out_plot_filepath, "global_reverse", normalization, input_type, noise_reduction_analysis)
-                plotprofile(fiveprimereverseprofiles, seqid, out_plot_filepath, "fiveprime_reverse", normalization, input_type, noise_reduction_analysis)
-                plotprofile(centeredreverseprofiles, seqid, out_plot_filepath, "centered_reverse", normalization, input_type, noise_reduction_analysis)
-                plotprofile(threeprimereverseprofiles, seqid, out_plot_filepath, "threeprime_reverse", normalization, input_type, noise_reduction_analysis)
-                plotprofile(globalprofiles, seqid, out_plot_filepath, "global", normalization, input_type, noise_reduction_analysis)
-                plotprofile(fiveprimeprofiles, seqid, out_plot_filepath, "fiveprime", normalization, input_type, noise_reduction_analysis)
-                plotprofile(centeredprofiles, seqid, out_plot_filepath, "centered", normalization, input_type, noise_reduction_analysis)
-                plotprofile(threeprimeprofiles, seqid, out_plot_filepath, "threeprime", normalization, input_type, noise_reduction_analysis)
+            globalforwardprofiles.loc[:,summarylabel] = globalforwardprofiles.sum(axis=1)
+            fiveprimeforwardprofiles.loc[:,summarylabel] = fiveprimeforwardprofiles.sum(axis=1)
+            centeredforwardprofiles.loc[:,summarylabel] = centeredforwardprofiles.sum(axis=1)
+            threeprimeforwardprofiles.loc[:,summarylabel] = threeprimeforwardprofiles.sum(axis=1)
+            globalreverseprofiles.loc[:,summarylabel] = globalreverseprofiles.sum(axis=1)
+            fiveprimereverseprofiles.loc[:,summarylabel] = fiveprimereverseprofiles.sum(axis=1)
+            centeredreverseprofiles.loc[:,summarylabel] = centeredreverseprofiles.sum(axis=1)
+            threeprimereverseprofiles.loc[:,summarylabel] = threeprimereverseprofiles.sum(axis=1)
+            #merged plotting
+            globalprofiles = globalforwardprofiles.add(globalreverseprofiles, fill_value=0)
+            fiveprimeprofiles = fiveprimeforwardprofiles.add(fiveprimereverseprofiles, fill_value=0)
+            centeredprofiles = centeredforwardprofiles.add(centeredreverseprofiles, fill_value=0)
+            threeprimeprofiles = threeprimeforwardprofiles.add(threeprimereverseprofiles, fill_value=0)
+            plotprofile(globalforwardprofiles, seqid, out_plot_filepath, "global_forward", normalization, input_type, noise_reduction_analysis)
+            plotprofile(fiveprimeforwardprofiles, seqid, out_plot_filepath, "fiveprime_forward", normalization, input_type, noise_reduction_analysis)
+            plotprofile(centeredforwardprofiles, seqid, out_plot_filepath, "centered_forward", normalization, input_type, noise_reduction_analysis)
+            plotprofile(threeprimeforwardprofiles, seqid, out_plot_filepath, "threeprime_forward", normalization, input_type, noise_reduction_analysis)
+            plotprofile(globalreverseprofiles, seqid, out_plot_filepath, "global_reverse", normalization, input_type, noise_reduction_analysis)
+            plotprofile(fiveprimereverseprofiles, seqid, out_plot_filepath, "fiveprime_reverse", normalization, input_type, noise_reduction_analysis)
+            plotprofile(centeredreverseprofiles, seqid, out_plot_filepath, "centered_reverse", normalization, input_type, noise_reduction_analysis)
+            plotprofile(threeprimereverseprofiles, seqid, out_plot_filepath, "threeprime_reverse", normalization, input_type, noise_reduction_analysis)
+            plotprofile(globalprofiles, seqid, out_plot_filepath, "global", normalization, input_type, noise_reduction_analysis)
+            plotprofile(fiveprimeprofiles, seqid, out_plot_filepath, "fiveprime", normalization, input_type, noise_reduction_analysis)
+            plotprofile(centeredprofiles, seqid, out_plot_filepath, "centered", normalization, input_type, noise_reduction_analysis)
+            plotprofile(threeprimeprofiles, seqid, out_plot_filepath, "threeprime", normalization, input_type, noise_reduction_analysis)
 
 def split_evenly(column_names, num_chunks):
     """
@@ -226,15 +224,26 @@ def assign_color_list(data_split, color_list):
 
 def find_optimal_offset(peaks,col):
     window_dict={}
+    col_length=len(col)
     for peak in peaks:
-        window1_sum=col[peak-2] + col[peak-1] + col[peak]
-        window2_sum=col[peak-1] + col[peak] + col[peak+1]
-        window3_sum=col[peak] + col[peak+1] + col[peak+2]
-        window_dict[window1_sum]=peak-2-100
-        window_dict[window2_sum]=peak-1-100
-        window_dict[window3_sum]=peak-100
-    opt_window=max(window_dict.keys())
-    return(window_dict.get(opt_window))
+        if (peak > 1) and (peak + 2 < col_length):
+            window3_sum=math.floor(col[peak] + col[peak+1] + col[peak+2])
+            print(window3_sum)
+            if window3_sum>1:
+                window_dict[window3_sum]=peak-100
+        if peak > 2 and (peak + 1 < col_length):
+            window2_sum=math.floor(col[peak-1] + col[peak] + col[peak+1])
+            if window2_sum>1:
+                window_dict[window2_sum]=peak-1-100
+        if peak > 3 and (peak < col_length):
+            window1_sum=math.floor(col[peak-2] + col[peak-1] + col[peak])
+            if window1_sum>1:
+                window_dict[window1_sum]=peak-2-100
+    if window_dict:
+        opt_window=max(window_dict.keys())
+        return(window_dict.get(opt_window),opt_window)
+    else:
+        return("No peaks","no offset")
 
 def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, input_type, noise_reduction_analysis):
     """
@@ -259,28 +268,42 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
     cm = plt.get_cmap('gist_rainbow')
     color_list = [cm(1.*i/len(column_names)) for i in range(len(column_names))]
     max_Y = max(list(profiles.max(numeric_only=True))[:-1])
-
+    offset_dict={}
     if len(column_names) < 8:
         print(color_list)
         cur_ax = profiles.plot(x="coordinates", ylim=[0, max_Y + (max_Y * 5) / 100], color=color_list)
         cur_ax.set(xlabel="Position", ylabel="Coverage")
         cur_ax.axvline(x=0, color="grey")
-        read_colums = column_names#[1:-1]# profiles.columns[1:-1]
+        read_columns = column_names#[1:-1]# profiles.columns[1:-1]
         color_index=0
-        for colname in read_colums:
+        print(read_columns)
+        average_read_length = math.floor(statistics.mean([x for x in read_columns if isinstance(x, (int,float))]))
+        #average_read_length = math.floor(statistics.mean(filter(isInstance()columns if isinstance(x, int)]))
+        for colname in read_columns:
             col=profiles[colname]
-            peaks, properties=find_peaks(col.values, distance=int(colname), width=[int(colname)-3,int(colname)+3])#,prominence=(0.1, 1))
-            peaks_offset=[x - 100 for x in peaks]
+            if (colname=="sum" or colname=="mean"):
+                readlength= average_read_length
+            else:
+                readlength=int(colname)
+            #peaks, properties=find_peaks(col.values, distance=readlength, width=[readlength-3,readlength+3])#,prominence=(0.1, 1))
+            peaks, properties=find_peaks(col.values, distance=readlength, width=[5,40])#,prominence=(0.1, 1))
+            peaks_offset=[math.floor(x) - 100 for x in peaks]
             print(str(colname) + " : " + (','.join(map(str,peaks_offset))) + " : ")
             print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
             xmins=[x - 100 for x in properties["left_ips"]]
             xmaxs=[x - 100 for x in  properties["right_ips"]]
-            print(color_list)
-            optimal_offset=find_optimal_offset(peaks,col)
+            (optimal_offset,optimal_count)=find_optimal_offset(peaks,col)
             plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs, color = color_list[color_index])
             plt.vlines(x=peaks_offset, ymin=col[peaks] - properties["prominences"], ymax = col[peaks], color = color_list[color_index])
             color_index=color_index + 1
-            print("Offset " + str(colname) + " " + str(optimal_offset))
+            if (colname=="sum" or colname=="mean"):
+                print("length " + str(colname) + "average read length " + str(average_read_length) + " offset " + str(optimal_offset) + " count " + str(optimal_count))
+            else:
+                print("length " + str(colname) + "offset " + str(optimal_offset) + " count " + str(optimal_count))
+            offset_dict[colname]=str(optimal_offset) + "," +  str(optimal_count)
+        json_file_path = out_plot_filepath + "/" + seqid + "_" + profiletype +  "_length_offset.json"
+        json_file = open(json_file_path, 'w')
+        json.dump(offset_dict, json_file)
         plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
         plt.close()
 
