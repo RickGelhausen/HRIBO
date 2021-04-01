@@ -121,9 +121,9 @@ def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_
     if os.path.isfile(in_readlengthstat_filepath) and os.access(in_readlengthstat_filepath, os.R_OK):
         with open(in_readlengthstat_filepath) as json_file:
             length_reads_dict = json.load(json_file)
-            max_reads_length = max(length_reads_dict,key=a_dictionary.get)
-            min_read_length = int(max_reads_length)-3
-            max_read_length = int(max_reads_length)+3
+            max_reads_length = max(length_reads_dict,key=length_reads_dict.get)
+            min_read_length = int(max_reads_length)-2
+            max_read_length = int(max_reads_length)+2
     genome_sizes_dict = get_genome_sizes_dict(in_fai_filepath)
     forward_length_reads_dict = defaultdict(list)
     reverse_length_reads_dict = defaultdict(list)
