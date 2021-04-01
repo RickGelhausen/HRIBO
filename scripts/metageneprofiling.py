@@ -125,7 +125,7 @@ def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_
     bamfile = pysam.AlignmentFile(in_bam_filepath, "rb")
     if not os.path.exists(out_plot_filepath):
         os.makedirs(out_plot_filepath)
-    print("Getting reads per length:")
+    #print("Getting reads per length:")
     for read in bamfile.fetch():
         if not (read.is_unmapped):
             currentreadlength = read.query_length
@@ -145,7 +145,7 @@ def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict
     Then plot all files.
     """
     for seqid in sorted(seqids):
-        print("Metagene profiling for " + seqid + ":")
+        #print("Metagene profiling for " + seqid + ":")
         chromosome_size = genome_sizes_dict.get(seqid, None)
         pool = Pool(processes=cpu_cores)
         threadsforward = pool.starmap(metagene_mapping, [(length, list(forward_length_reads_dict.get(length)), seqid, codons, "+", input_type, noise_reduction_analysis) for length in sorted(forward_length_reads_dict)])
@@ -228,7 +228,6 @@ def find_optimal_offset(peaks,col):
     for peak in peaks:
         if (peak > 1) and (peak + 2 < col_length):
             window3_sum=math.floor(col[peak] + col[peak+1] + col[peak+2])
-            print(window3_sum)
             if window3_sum>1:
                 window_dict[window3_sum]=peak-100
         if peak > 2 and (peak + 1 < col_length):
@@ -256,7 +255,7 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
             total = profiles[i].sum()
             average_total = total / window_length
             profiles[i] = profiles[i] / average_total
-    print(str(before_start_plus) + " " + str(window_length) + " " + str(len(profiles)))
+    #print(str(before_start_plus) + " " + str(window_length) + " " + str(len(profiles)))
     profiles['coordinates'] = range(-before_start_plus, -before_start_plus + len(profiles))
 
     profiles.to_csv(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.tsv", index=True, sep="\t", header=True,)
@@ -270,13 +269,13 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
     max_Y = max(list(profiles.max(numeric_only=True))[:-1])
     offset_dict={}
     if len(column_names) < 8:
-        print(out_plot_filepath + "/" + seqid + "_" + profiletype)
+        #print(out_plot_filepath + "/" + seqid + "_" + profiletype)
         cur_ax = profiles.plot(x="coordinates", ylim=[0, max_Y + (max_Y * 5) / 100], color=color_list)
         cur_ax.set(xlabel="Position", ylabel="Coverage")
         cur_ax.axvline(x=0, color="grey")
         read_columns = column_names#[1:-1]# profiles.columns[1:-1]
         color_index=0
-        print(read_columns)
+        #print(read_columns)
         average_read_length = math.floor(statistics.mean([x for x in read_columns if isinstance(x, (int,float))]))
         #average_read_length = math.floor(statistics.mean(filter(isInstance()columns if isinstance(x, int)]))
         for colname in read_columns:
@@ -288,24 +287,25 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
             #peaks, properties=find_peaks(col.values, distance=readlength, width=[readlength-3,readlength+3])#,prominence=(0.1, 1))
             peaks, properties=find_peaks(col.values, distance=readlength, width=[1,40])#,prominence=(0.1, 1))
             peaks_offset=[math.floor(x) - 100 for x in peaks]
-            print(str(colname) + " : " + (','.join(map(str,peaks_offset))) + " : ")
-            print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
+            #print(str(colname) + " : " + (','.join(map(str,peaks_offset))) + " : ")
+            #print(','.join(map(str,properties["prominences"])) + " : " + (','.join(map(str,properties["widths"]))) + " : " + (','.join(map(str,properties["left_ips"]))) + " : " + (','.join(map(str,properties["right_ips"]))))
             xmins=[x - 100 for x in properties["left_ips"]]
             xmaxs=[x - 100 for x in  properties["right_ips"]]
             (optimal_offset,optimal_count)=find_optimal_offset(peaks,col)
             plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs, color = color_list[color_index])
             plt.vlines(x=peaks_offset, ymin=col[peaks] - properties["prominences"], ymax = col[peaks], color = color_list[color_index])
             color_index=color_index + 1
-            if (colname=="sum" or colname=="mean"):
-                print("length " + str(colname) + "average read length " + str(average_read_length) + " offset " + str(optimal_offset) + " count " + str(optimal_count))
-            else:
-                print("length " + str(colname) + "offset " + str(optimal_offset) + " count " + str(optimal_count))
+            #if (colname=="sum" or colname=="mean"):
+            #    print("length " + str(colname) + "average read length " + str(average_read_length) + " offset " + str(optimal_offset) + " count " + str(optimal_count))
+            #else:
+            #    print("length " + str(colname) + "offset " + str(optimal_offset) + " count " + str(optimal_count))
             offset_dict[colname]=str(optimal_offset) + "," +  str(optimal_count)
         json_file_path = out_plot_filepath + "/" + seqid + "_" + profiletype +  "_length_offset.json"
         json_file = open(json_file_path, 'w')
         json.dump(offset_dict, json_file)
         plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
         plt.close()
+
 
     elif len(column_names) >= 8 and len(column_names) < 16:
         data_split = split_evenly(column_names, 2)
@@ -358,7 +358,7 @@ def metagene_mapping(length, length_reads, seqid, codons, strand, input_type, no
     """
     inter = interlap.InterLap()
     (window_length,before_start_plus,after_start_plus,before_start_minus,after_start_minus) = set_window(input_type,noise_reduction_analysis)
-    print("Len:" + str(length) + "window" + str(window_length) + "\n")
+    #print("Len:" + str(length) + "window" + str(window_length) + "\n")
     globalmapping = np.zeros(window_length, dtype=int)
     fiveprimemapping = np.zeros(window_length, dtype=int)
     centeredmapping = np.zeros(window_length, dtype=int)
