@@ -109,7 +109,7 @@ def get_genome_sizes_dict(input_fai_filepath):
 #For individual read lengths and indidividual strands and as summarized
 #global, 5', 3', centered profiling for reads overlapping with area around the start codon
 
-def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_filepath, cpu_cores, min_read_length, max_read_length, normalization, in_fai_filepath, noise_reduction_analysis):
+def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_filepath, cpu_cores, min_read_length, max_read_length, normalization, in_fai_filepath, noise_reduction_analysis, in_readlengthstat_filepath):
     """
     Get all start_codons and all mapped reads,
     then run the metagene profiling on this data.
@@ -118,7 +118,12 @@ def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_
         seqids, codons = get_start_codons(in_gff_filepath)
     else:
         seqids, codons =  get_stop_codons(in_gff_filepath)
-
+    if os.path.isfile(in_readlengthstat_filepath) and os.access(in_readlengthstat_filepath, os.R_OK):
+        with open(in_readlengthstat_filepath) as json_file:
+            length_reads_dict = json.load(json_file)
+            max_reads_length = max(length_reads_dict,key=a_dictionary.get)
+            min_read_length = int(max_reads_length)-3
+            max_read_length = int(max_reads_length)+3
     genome_sizes_dict = get_genome_sizes_dict(in_fai_filepath)
     forward_length_reads_dict = defaultdict(list)
     reverse_length_reads_dict = defaultdict(list)
@@ -419,6 +424,7 @@ def main():
     parser = argparse.ArgumentParser(description='HRIBOMetageneProfiling')
     parser.add_argument("--in_bam_filepath", help='Input bam path', required=True)
     parser.add_argument("--in_gff_filepath", help='Input gff path', required=True)
+    parser.add_argument("--in_readlengthstat_filepath", help='Input read length statistics json path')
     parser.add_argument("--cpu_cores", help='Number of cpu cores to use', type=int, default=1)
     parser.add_argument("--min_read_length", help='Minimal read length to consider', type=int, default=27)
     parser.add_argument("--max_read_length", help='Maximal read length to consider', type=int, default=33)
@@ -428,7 +434,7 @@ def main():
     parser.add_argument("--in_fai_filepath", help='Input genome size (.fa.fai) path', required=True)
     parser.add_argument("--input_type", help='Input type, either TIS or TTS.', default="TIS")
     args = parser.parse_args()
-    meta_geneprofiling_p(args.input_type, args.in_gff_filepath, args.in_bam_filepath, args.out_plot_filepath, args.cpu_cores, args.min_read_length, args.max_read_length, args.normalization, args.in_fai_filepath, args.noise_reduction_analysis)
+    meta_geneprofiling_p(args.input_type, args.in_gff_filepath, args.in_bam_filepath, args.out_plot_filepath, args.cpu_cores, args.min_read_length, args.max_read_length, args.normalization, args.in_fai_filepath, args.noise_reduction_analysis, args.in_readlengthstat_filepath)
 
 
 if __name__ == '__main__':
