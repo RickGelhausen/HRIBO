@@ -29,7 +29,7 @@ def merge_offset(in_metagene_directorypath,out_path):
                 json_files = [f for f in files if f.find(".json") != -1]
                 for json_file in json_files:
                     json_filename = os.path.basename(json_file)
-                    json_filename = re.sub('\.json$', '', json_filename)
+                    json_filename = re.sub('\_length_offset.json$', '', json_filename)
                     offset_dict[profiling_type_dir_key][norm_type_dir_key][sample_key][json_filename]={}
                     #print(json_filename)
                     with open((path + "/" +  json_file), 'r') as jf:
