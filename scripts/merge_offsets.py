@@ -13,17 +13,31 @@ def merge_offset(in_metagene_directorypath,out_path):
     profiling_type_dirs = [f.path for f in os.scandir(in_metagene_directorypath) if f.is_dir()]
     for profiling_type_dir in profiling_type_dirs:
         #norm/raw
+        profiling_type_dir_key=os.path.basename(os.path.normpath(profiling_type_dir))
+        offset_dict[profiling_type_dir_key]={}
         norm_type_dirs = [f.path for f in os.scandir(profiling_type_dir) if f.is_dir()]
         for norm_type_dir in norm_type_dirs:
             #samples
+            norm_type_dir_key=os.path.basename(os.path.normpath(norm_type_dir))
+            offset_dict[profiling_type_dir_key][norm_type_dir_key]={}
             samples = [f.path for f in os.scandir(norm_type_dir) if f.is_dir()]
             for sample in samples:
+                sample_key=os.path.basename(os.path.normpath(sample))
+                offset_dict[profiling_type_dir_key][norm_type_dir_key][sample_key]={}
+                path=sample #os.path.dirname(sample)
                 files = [f for f in listdir(sample) if isfile(join(sample, f))]
                 json_files = [f for f in files if f.find(".json") != -1]
                 for json_file in json_files:
                     json_filename = os.path.basename(json_file)
                     json_filename = re.sub('\.json$', '', json_filename)
-                    print(json_filename)
+                    offset_dict[profiling_type_dir_key][norm_type_dir_key][sample_key][json_filename]={}
+                    #print(json_filename)
+                    with open((path + "/" +  json_file), 'r') as jf:
+                        data=jf.read()
+                        read_dict = json.loads(data)
+                        offset_dict[profiling_type_dir_key][norm_type_dir_key][sample_key][json_filename]=read_dict
+    with open((out_path + "/" + 'merged_offsets.json'), 'w') as fp:
+        json.dump(offset_dict, fp)
 
     return ""
 
