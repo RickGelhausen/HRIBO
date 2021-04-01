@@ -4,6 +4,7 @@ rule normalizedmetageneprofilingTIS:
     input:
         bam=rules.maplink.output,
         genomeSize=rules.genomeSize.output,
+        readlengthstat="metageneprofiling/readlengthstats/{method}-{condition}-{replicate}.bam_read_length_distribution.json",
         bamIndex=rules.bamindex.output,
         annotation=rules.checkAnnotation.output
     output:
@@ -14,13 +15,27 @@ rule normalizedmetageneprofilingTIS:
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem)
     shell:
-        "mkdir -p metageneprofiling/TIS/norm; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TIS/norm/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --normalization"
+        "mkdir -p metageneprofiling/TIS/norm; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TIS/norm/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --normalization --in_readlengthstat_filepath {input.readlengthstat}"
 
+rule readlengthstat:
+    input:
+        bam=rules.maplink.output,
+        bamIndex=rules.bamindex.output
+    output:
+        directory("metageneprofiling/readlengthstats/{method}-{condition}-{replicate}.bam_read_length_distribution.json")
+    conda:
+        "../envs/metageneprofiling.yaml"
+    threads: 1
+    params:
+        prefix=lambda wildcards, output: (Path(output[0]).stem)
+    shell:
+        "mkdir -p metageneprofiling/readlengthstats; HRIBO/scripts/readlengthstat.py --in_bam_filepath {input.bam} --out_folder_filepath {output} --in_readlengthstat_filepath {input.readlengthstat}"
 
 rule metageneprofilingTIS:
     input:
         bam=rules.maplink.output,
         genomeSize=rules.genomeSize.output,
+        readlengthstat="metageneprofiling/readlengthstats/{method}-{condition}-{replicate}.bam_read_length_distribution.json",
         bamIndex=rules.bamindex.output,
         annotation=rules.checkAnnotation.output
     output:
@@ -31,12 +46,13 @@ rule metageneprofilingTIS:
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem)
     shell:
-        "mkdir -p metageneprofiling/TIS/raw; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TIS/raw/{params.prefix} --in_fai_filepath genomes/genome.fa.fai"
+        "mkdir -p metageneprofiling/TIS/raw; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TIS/raw/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --in_readlengthstat_filepath {input.readlengthstat}"
 
 rule normalizedmetageneprofilingTTS:
     input:
         bam=rules.maplink.output,
         genomeSize=rules.genomeSize.output,
+        readlengthstat="metageneprofiling/readlengthstats/{method}-{condition}-{replicate}.bam_read_length_distribution.json",
         bamIndex=rules.bamindex.output,
         annotation=rules.checkAnnotation.output
     output:
@@ -45,15 +61,16 @@ rule normalizedmetageneprofilingTTS:
         "../envs/metageneprofiling.yaml"
     threads: 1
     params:
-        prefix=lambda wildcards, output: (Path(output[0]).stem)
+        prefix=lambda wildcards, output: (Path(output[0]).stem),
     shell:
-        "mkdir -p metageneprofiling/TTS/norm; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TTS/norm/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --normalization --input_type TTS"
+        "mkdir -p metageneprofiling/TTS/norm; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TTS/norm/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --normalization --input_type TTS --in_readlengthstat_filepath {input.readlengthstat}"
 
 
 rule metageneprofilingTTS:
     input:
         bam=rules.maplink.output,
         genomeSize=rules.genomeSize.output,
+        readlengthstat="metageneprofiling/readlengthstats/{method}-{condition}-{replicate}.bam_read_length_distribution.json",
         bamIndex=rules.bamindex.output,
         annotation=rules.checkAnnotation.output
     output:
@@ -64,4 +81,4 @@ rule metageneprofilingTTS:
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem)
     shell:
-        "mkdir -p metageneprofiling/TTS/raw; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TTS/raw/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --input_type TTS"
+        "mkdir -p metageneprofiling/TTS/raw; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TTS/raw/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --input_type TTS --in_readlengthstat_filepath {input.readlengthstat}"
