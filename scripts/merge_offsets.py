@@ -27,6 +27,8 @@ def merge_offset(in_metagene_directorypath,out_path):
                 path=sample #os.path.dirname(sample)
                 files = [f for f in listdir(sample) if isfile(join(sample, f))]
                 json_files = [f for f in files if f.find(".json") != -1]
+                json_wo_forward = [f for f in json_files if f.find("forward") == -1]
+                json_wo_reverse_forward = [f for f in json_wo_forward if f.find("reverse") == -1]
                 for json_file in json_files:
                     json_filename = os.path.basename(json_file)
                     json_filename = re.sub('\_length_offset.json$', '', json_filename)
