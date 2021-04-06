@@ -36,6 +36,8 @@ def merge_offset(in_metagene_directorypath,out_path):
                         data=jf.read()
                         read_dict = json.loads(data)
                         offset_dict[profiling_type_dir_key][norm_type_dir_key][sample_key][json_filename]=read_dict
+    #delete readlengthstat node obtained from adding length_reads_dict
+    offset_dict.pop('readlengthstats', None)
     with open((out_path + "/" + 'merged_offsets.json'), 'w') as fp:
         json.dump(offset_dict, fp)
 
