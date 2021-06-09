@@ -12,6 +12,10 @@ import statistics
 import math
 import os
 import ntpath
+from os import listdir
+from os.path import isfile, join
+import re
+
 
 def get_start_codons(input_gff_filepath):
     """
@@ -446,3 +450,38 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_folde
     plt.ylabel('counts')
     plt.savefig(out_folder_filepath + ntpath.basename(input_bam_filepath) +  "_read_length_distribution.pdf", format='pdf')
 
+def merge_offset(in_metagene_directorypath, out_path):
+    # tis/tts
+    offset_dict = {}
+    profiling_type_dirs = [f.path for f in os.scandir(in_metagene_directorypath) if f.is_dir()]
+    for profiling_type_dir in profiling_type_dirs:
+        # norm/raw
+        profiling_type_dir_key=os.path.basename(os.path.normpath(profiling_type_dir))
+        offset_dict[profiling_type_dir_key]={}
+        norm_type_dirs = [f.path for f in os.scandir(profiling_type_dir) if f.is_dir()]
+        for norm_type_dir in norm_type_dirs:
+            # samples
+            norm_type_dir_key = os.path.basename(os.path.normpath(norm_type_dir))
+            offset_dict[profiling_type_dir_key][norm_type_dir_key] = {}
+            samples = [f.path for f in os.scandir(norm_type_dir) if f.is_dir()]
+            for sample in samples:
+                sample_key = os.path.basename(os.path.normpath(sample))
+                offset_dict[profiling_type_dir_key][norm_type_dir_key][sample_key] = {}
+                path = sample
+                files = [f for f in listdir(sample) if isfile(join(sample, f))]
+                json_files = [f for f in files if f.find(".json") != -1]
+                json_wo_forward = [f for f in json_files if f.find("forward") == -1]
+                json_wo_reverse_forward = [f for f in json_wo_forward if f.find("reverse") == -1]
+                for json_file in json_wo_reverse_forward:
+                    json_filename = os.path.basename(json_file)
+                    json_filename = re.sub('\_length_offset.json$', '', json_filename)
+                    offset_dict[profiling_type_dir_key][norm_type_dir_key][sample_key][json_filename] = {}
+                    with open((path + "/" + json_file), 'r') as jf:
+                        data = jf.read()
+                        read_dict = json.loads(data)
+                        offset_dict[profiling_type_dir_key][norm_type_dir_key][sample_key][json_filename] = read_dict
+    # delete readlengthstat node obtained from adding length_reads_dict
+    offset_dict.pop('readlengthstats', None)
+    with open((out_path + "/" + 'merged_offsets.json'), 'w') as fp:
+        json.dump(offset_dict, fp)
+    return ""
