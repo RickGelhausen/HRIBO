@@ -126,11 +126,16 @@ def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_
                 max_reads_length = max(length_reads_dict, key=length_reads_dict.get)
                 min_read_length = int(max_reads_length)-2
                 max_read_length = int(max_reads_length)+2
+    (forward_length_reads_dict,reverse_length_reads_dict) = get_length_read_dicts(in_bam_filepath, min_read_length, max_read_length)
+    if not os.path.exists(out_plot_filepath):
+        os.makedirs(out_plot_filepath)
+    meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, normalization, noise_reduction_analysis)
+
+
+def get_length_read_dicts(in_bam_filepath, min_read_length, max_read_length):
     forward_length_reads_dict = defaultdict(list)
     reverse_length_reads_dict = defaultdict(list)
     bamfile = pysam.AlignmentFile(in_bam_filepath, "rb")
-    if not os.path.exists(out_plot_filepath):
-        os.makedirs(out_plot_filepath)
     for read in bamfile.fetch():
         if not (read.is_unmapped):
             currentreadlength = read.query_length
@@ -141,8 +146,7 @@ def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_
                 else:
                     readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_end, "-")
                     reverse_length_reads_dict[currentreadlength].append(readfeature)
-    meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, normalization, noise_reduction_analysis)
-
+    return(forward_length_reads_dict,forward_length_reads_dict)
 
 def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, normalization, noise_reduction_analysis):
     """
