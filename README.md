@@ -5,6 +5,7 @@
 [![GitHub](https://img.shields.io/github/tag/RickGelhausen/HRIBO.svg)](https://github.com/RickGelhausen/HRIBO) 
 [![Snakemake](https://img.shields.io/badge/snakemake-≥5.10.0-brightgreen.svg)](https://snakemake.bitbucket.io) 
 [![Documentation Status](https://readthedocs.org/projects/hribo/badge/?version=latest)](http://hribo.readthedocs.io/?badge=latest)
+[![PyPI Latest Release](https://img.shields.io/pypi/v/hribo.svg)](https://pypi.org/project/hribo/)
 
 We present HRIBO (High-throughput annotation by Ribo-seq), a workflow to enable reproducible and high-throughput analysis of bacterial Ribo-seq data. The workflow performs all required pre-processing steps and quality control.  Importantly, HRIBO outputs annotation-independent ORF predictions based on two complementary prokaryotic-focused tools, and integrates them with additional computed features. This facilitates both the rapid discovery of ORFs and their prioritization for functional characterization.
 
