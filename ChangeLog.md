@@ -1,3 +1,11 @@
+### version 1.5.0 (current master repository) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 09.06.2021
+ * added improved meta gene profiling figures
+ * added automatic detection of peak read lengths
+ * added detection of best offset for individual readlengths
+ * added pip packaging
+ * functions organized in library
+
+
 ### version 1.4.5 (current master repository) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 30.09.2020
  * added old_locus_tag information to annotation excel files.
  * fixed a bug in the metagene-profiling that would cause a strange peak at the start/end for 5 or 3prime mappings.
