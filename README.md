@@ -57,14 +57,14 @@ Now you can start your workflow.
 
 Run Snakemake locally:
 
-         snakemake --use-conda -s Snakefile --configfile HRIBO/config.yaml --directory ${PWD} -j 20 --latency-wait 60 
+         snakemake --use-conda -s HRIBO/Snakefile --configfile HRIBO/config.yaml --directory ${PWD} -j 20 --latency-wait 60 
          
 
 Run Snakemake on the cluster:
 
 Edit cluster.yaml according to your queuing system and cluster hardware. The following example works for Grid Engine:
 
-       snakemake --use-conda -s Snakefile --configfile HRIBO/config.yaml --directory ${PWD} -j 20 --cluster-config HRIBO/cluster.yaml --cluster "qsub -N {cluster.jobname} -cwd -q {cluster.qname} -pe {cluster.parallelenvironment} -l {cluster.memory} -o {cluster.logoutputdir} -e {cluster.erroroutputdir} -j {cluster.joinlogs} -M <email>" --latency-wait 60 
+       snakemake --use-conda -s HRIBO/Snakefile --configfile HRIBO/config.yaml --directory ${PWD} -j 20 --cluster-config HRIBO/cluster.yaml --cluster "qsub -N {cluster.jobname} -cwd -q {cluster.qname} -pe {cluster.parallelenvironment} -l {cluster.memory} -o {cluster.logoutputdir} -e {cluster.erroroutputdir} -j {cluster.joinlogs} -M <email>" --latency-wait 60 
 
 Once the workflow has finished you can request a automatically generated report.html file with the following command:
          
