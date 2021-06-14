@@ -15,7 +15,7 @@ rule normalizedmetageneprofilingTIS:
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem)
     shell:
-        "mkdir -p metageneprofiling/TIS/norm; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TIS/norm/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --normalization --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
+        "mkdir -p metageneprofiling/TIS/norm; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TIS/norm/{params.prefix} --normalization --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
 
 rule readlengthstat:
     input:
@@ -47,7 +47,7 @@ rule metageneprofilingTIS:
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem)
     shell:
-        "mkdir -p metageneprofiling/TIS/raw; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TIS/raw/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
+        "mkdir -p metageneprofiling/TIS/raw; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TIS/raw/{params.prefix} --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
 
 rule normalizedmetageneprofilingTTS:
     input:
