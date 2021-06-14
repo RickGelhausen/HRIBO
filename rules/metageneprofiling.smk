@@ -64,7 +64,7 @@ rule normalizedmetageneprofilingTTS:
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem),
     shell:
-        "mkdir -p metageneprofiling/TTS/norm; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TTS/norm/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --normalization --input_type TTS --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
+        "mkdir -p metageneprofiling/TTS/norm; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TTS/norm/{params.prefix} --normalization --input_type TTS --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
 
 
 rule metageneprofilingTTS:
@@ -82,7 +82,7 @@ rule metageneprofilingTTS:
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem)
     shell:
-        "mkdir -p metageneprofiling/TTS/raw; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TTS/raw/{params.prefix} --in_fai_filepath genomes/genome.fa.fai --input_type TTS --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
+        "mkdir -p metageneprofiling/TTS/raw; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TTS/raw/{params.prefix} --input_type TTS --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
 
 rule merged_offsets:
     input:
