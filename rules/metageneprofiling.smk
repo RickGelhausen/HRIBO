@@ -98,5 +98,5 @@ rule merged_offsets:
     params:
         prefix=lambda wildcards, output: (os.path.dirname(output[0]) + "/")
     shell:
-        "mkdir -p metageneprofiling/; HRIBO/scripts/merged_offsets.py --in_metagene_directorypath metageneprofiling --out_filepath metageneprofiling"
+        "mkdir -p metageneprofiling/; HRIBO/scripts/merge_offsets.py --in_metagene_directorypath metageneprofiling --out_filepath metageneprofiling"
 
