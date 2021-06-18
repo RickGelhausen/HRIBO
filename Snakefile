@@ -18,8 +18,8 @@ samples = pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["method
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
 
-samples_meta_start = samples.loc[(samples["method"] == "RIBO") | (samples["method"] == "TIS") | (samples["method"] == "RNA") | (samples["method"] == "RNATIS")]
-samples_meta_stop = samples.loc[(samples["method"] == "TTS") | (samples["method"] == "RNATTS")]
+samples_meta_start = samples.loc[(samples["method"] == "RIBO") | (samples["method"] == "TIS")]
+samples_meta_stop = samples.loc[(samples["method"] == "TTS")]
 
 if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
     sys.exit("Differential Expression requested, but only one condition given.\n\
