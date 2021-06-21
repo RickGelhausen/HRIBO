@@ -418,7 +418,7 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_folde
         readlength += 1
     #print(length_count_dict)
     #print(count_length_dict)
-    peaks, properties=find_peaks(readcounts,width=[1,7])
+    peaks, properties=find_peaks(readcounts, width=[0,7])
     #print(peaks)
     readlength_peaks=[readlengths[x] for x in peaks]
     #find max peak
