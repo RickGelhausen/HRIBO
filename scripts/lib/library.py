@@ -297,10 +297,11 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
         custom_colors = assign_color_list(data_split, color_list)
         fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
         custom_axes = [ax1, ax2]
-        for i in range(2):
-            cur_ax = profiles.plot(ax=custom_axes[i], x="coordinates", y=data_split[i], ylim=[0, max_Y + (max_Y * 5) / 100], color=custom_colors[i])
-            cur_ax.set(xlabel="Position", ylabel="Coverage")
-            cur_ax.axvline(x=0, color="grey")
+        if type(max_Y) == int or type(max_Y) == float:
+            for i in range(2):
+                cur_ax = profiles.plot(ax=custom_axes[i], x="coordinates", y=data_split[i], ylim=[0, max_Y + (max_Y * 5) / 100], color=custom_colors[i])
+                cur_ax.set(xlabel="Position", ylabel="Coverage")
+                cur_ax.axvline(x=0, color="grey")
         plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
         plt.close()
 
