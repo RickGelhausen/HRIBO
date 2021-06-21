@@ -260,6 +260,8 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
     cm = plt.get_cmap('gist_rainbow')
     color_list = [cm(1.*i/len(column_names)) for i in range(len(column_names))]
     max_Y = max(list(profiles.max(numeric_only=True))[:-1])
+    if type(max_Y) != int or type(max_Y) != float:
+        max_Y=20
     offset_dict = {}
     if len(column_names) < 8:
         # print(out_plot_filepath + "/" + seqid + "_" + profiletype)
@@ -297,11 +299,10 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
         custom_colors = assign_color_list(data_split, color_list)
         fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
         custom_axes = [ax1, ax2]
-        if type(max_Y) == int or type(max_Y) == float:
-            for i in range(2):
-                cur_ax = profiles.plot(ax=custom_axes[i], x="coordinates", y=data_split[i], ylim=[0, max_Y + (max_Y * 5) / 100], color=custom_colors[i])
-                cur_ax.set(xlabel="Position", ylabel="Coverage")
-                cur_ax.axvline(x=0, color="grey")
+        for i in range(2):
+            cur_ax = profiles.plot(ax=custom_axes[i], x="coordinates", y=data_split[i], ylim=[0, max_Y + (max_Y * 5) / 100], color=custom_colors[i])
+            cur_ax.set(xlabel="Position", ylabel="Coverage")
+            cur_ax.axvline(x=0, color="grey")
         plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
         plt.close()
 
