@@ -3,7 +3,7 @@ FTP = FTPRemoteProvider()
 
 rule uniprotDBRetrieve:
     input:
-        FTP.remote("ftp://biftp.informatik.uni-freiburg.de/pub/HRIBO/uniprot_sprot.fasta.gz",keep_local=True,allow_redirects=True)
+        FTP.remote("biftp.informatik.uni-freiburg.de/pub/HRIBO/uniprot_sprot.fasta.gz",keep_local=True,allow_redirects=True)
     output:
         "uniprotDB/uniprot_sprot.fasta"
     threads: 1

@@ -140,7 +140,7 @@ rule totalmappedwig:
         fmin="totalmappedtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="totalmappedtracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
     conda:
-        "../envs/coverage.yaml"
+        "../envs/metageneprofiling.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
@@ -162,7 +162,7 @@ rule uniquemappedwig:
         fmin="uniquemappedtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="uniquemappedtracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
     conda:
-        "../envs/coverage.yaml"
+        "../envs/metageneprofiling.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
@@ -328,7 +328,7 @@ rule globalwig:
         fmin="globaltracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="globaltracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
     conda:
-        "../envs/coverage.yaml"
+        "../envs/metageneprofiling.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
@@ -422,7 +422,7 @@ rule centeredwig:
         fmin="centeredtracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="centeredtracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
     conda:
-        "../envs/coverage.yaml"
+        "../envs/metageneprofiling.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
@@ -515,7 +515,7 @@ rule fiveprimewig:
         fmin="fiveprimetracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="fiveprimetracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
     conda:
-        "../envs/coverage.yaml"
+        "../envs/metageneprofiling.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
@@ -609,7 +609,7 @@ rule threeprimewig:
         fmin="threeprimetracks/min/{method}-{condition}-{replicate}.min.forward.wig",
         rmin="threeprimetracks/min/{method}-{condition}-{replicate}.min.reverse.wig"
     conda:
-        "../envs/coverage.yaml"
+        "../envs/metageneprofiling.yaml"
     threads: 1
     params:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),

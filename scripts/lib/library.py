@@ -264,6 +264,8 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
     cm = plt.get_cmap('gist_rainbow')
     color_list = [cm(1.*i/len(column_names)) for i in range(len(column_names))]
     max_Y = max(list(profiles.max(numeric_only=True))[:-1])
+    if type(max_Y) != int or type(max_Y) != float:
+        max_Y=20
     offset_dict = {}
     if len(column_names) < 8:
         # print(out_plot_filepath + "/" + seqid + "_" + profiletype)
@@ -422,7 +424,7 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_folde
         readlength += 1
     #print(length_count_dict)
     #print(count_length_dict)
-    peaks, properties=find_peaks(readcounts,width=[1,7])
+    peaks, properties=find_peaks(readcounts, width=[0,7])
     #print(peaks)
     readlength_peaks=[readlengths[x] for x in peaks]
     #find max peak

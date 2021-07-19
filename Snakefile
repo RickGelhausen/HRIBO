@@ -18,8 +18,8 @@ samples = pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["method
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
 
-samples_meta_start = samples.loc[(samples["method"] == "RIBO") | (samples["method"] == "TIS") | (samples["method"] == "RNA") | (samples["method"] == "RNATIS")]
-samples_meta_stop = samples.loc[(samples["method"] == "TTS") | (samples["method"] == "RNATTS")]
+samples_meta_start = samples.loc[(samples["method"] == "RIBO") | (samples["method"] == "TIS")]
+samples_meta_stop = samples.loc[(samples["method"] == "TTS")]
 
 if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
     sys.exit("Differential Expression requested, but only one condition given.\n\
@@ -112,7 +112,7 @@ if hasRIBO:
               expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
-              "qc/multi/multiqc_report.html",
+              "qc/multi/multiqc_report.html",              
               "tracks/potentialStopCodons.gff",
               "tracks/potentialStartCodons.gff",
               "tracks/potentialAlternativeStartCodons.gff",
@@ -128,7 +128,8 @@ if hasRIBO:
               rules.createOverviewTableAll.output,
               unpack(getContrast),
               unpack(getContrastXtail),
-              unpack(getContrastRiborex)
+              unpack(getContrastRiborex),
+              "metageneprofiling/merged_offsets.json"
 
 
     elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
@@ -139,7 +140,7 @@ if hasRIBO:
               expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
-              "qc/multi/multiqc_report.html",
+              "qc/multi/multiqc_report.html",              
               "tracks/potentialStopCodons.gff",
               "tracks/potentialStartCodons.gff",
               "tracks/potentialAlternativeStartCodons.gff",
@@ -152,7 +153,8 @@ if hasRIBO:
               "auxiliary/predictions_reparation.xlsx",
               "figures/heatmap_SpearmanCorr_readCounts.pdf",
               "auxiliary/predictions_deepribo.xlsx",
-              rules.createOverviewTablePredictions.output
+              rules.createOverviewTablePredictions.output,
+              "metageneprofiling/merged_offsets.json"
 
     elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
        rule all:
@@ -162,7 +164,7 @@ if hasRIBO:
               expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
-              "qc/multi/multiqc_report.html",
+              "qc/multi/multiqc_report.html",  
               "tracks/potentialStopCodons.gff",
               "tracks/potentialStartCodons.gff",
               "tracks/potentialAlternativeStartCodons.gff",
@@ -177,7 +179,8 @@ if hasRIBO:
               rules.createOverviewTableDiffExpr.output,
               unpack(getContrast),
               unpack(getContrastXtail),
-              unpack(getContrastRiborex)
+              unpack(getContrastRiborex),
+              "metageneprofiling/merged_offsets.json"
 
     else:
        rule all:
@@ -199,7 +202,8 @@ if hasRIBO:
               "auxiliary/samples.xlsx",
               "auxiliary/predictions_reparation.xlsx",
               "figures/heatmap_SpearmanCorr_readCounts.pdf",
-              rules.createOverviewTableReparation.output
+              rules.createOverviewTableReparation.output,
+              "metageneprofiling/merged_offsets.json"
 else:
      if DIFFEXPRESS.lower() == "on":
        rule all:
@@ -209,7 +213,6 @@ else:
               expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
-              "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
               "tracks/potentialStartCodons.gff",
               "tracks/potentialAlternativeStartCodons.gff",
@@ -222,7 +225,8 @@ else:
               "figures/heatmap_SpearmanCorr_readCounts.pdf",
               unpack(getContrast),
               unpack(getContrastXtail),
-              unpack(getContrastRiborex)
+              unpack(getContrastRiborex),
+              "metageneprofiling/merged_offsets.json"
      else:
        rule all:
           input:
@@ -231,7 +235,6 @@ else:
               expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
-              "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
               "tracks/potentialStartCodons.gff",
               "tracks/potentialAlternativeStartCodons.gff",
@@ -241,7 +244,8 @@ else:
               "auxiliary/total_read_counts.xlsx",
               "auxiliary/unique_read_counts.xlsx",
               "auxiliary/samples.xlsx",
-              "figures/heatmap_SpearmanCorr_readCounts.pdf"
+              "figures/heatmap_SpearmanCorr_readCounts.pdf",
+              "metageneprofiling/merged_offsets.json"
 
 onsuccess:
     print("Done, no error")
