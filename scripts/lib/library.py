@@ -424,37 +424,38 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_folde
         readlength += 1
     #print(length_count_dict)
     #print(count_length_dict)
+    #print(readcounts)
     peaks, properties=find_peaks(readcounts, width=[0,7])
     #print(peaks)
     readlength_peaks=[readlengths[x] for x in peaks]
     #find max peak
-    ymaxs=[length_count_dict.get(key) for key in readlength_peaks]
-    index_max_peak=ymaxs.index(max(ymaxs))
-    #print(readlength_peaks)
-    plt.plot(readlengths, readcounts)
-    xmins=[readlengths[int(math.floor(left))] for left in properties["left_ips"]]
-    #print(xmins)
-    xmaxs=[readlengths[int(math.ceil(right))] for right in properties["right_ips"]]
-    #print(xmaxs)
-    plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs)
-    ymaxs=[length_count_dict.get(key) for key in readlength_peaks]
-    #print(ymaxs)
-    ymins =[0 for key in readlength_peaks]
-    #print(ymins)
-    max_length=readlength_peaks[index_max_peak]
-    max_lower=xmins[index_max_peak]
-    max_upper=xmaxs[index_max_peak]
+    if readlength_peaks != []:        
+        ymaxs=[length_count_dict.get(key) for key in readlength_peaks]
+        index_max_peak=ymaxs.index(max(ymaxs))
+        
+        plt.plot(readlengths, readcounts)
+        xmins=[readlengths[int(math.floor(left))] for left in properties["left_ips"]]
+        xmaxs=[readlengths[int(math.ceil(right))] for right in properties["right_ips"]]
+        plt.hlines(y=properties["width_heights"], xmin = xmins, xmax = xmaxs)
+        ymaxs=[length_count_dict.get(key) for key in readlength_peaks]
+        ymins =[0 for key in readlength_peaks]
+        max_length=readlength_peaks[index_max_peak]
+        
+        max_lower=xmins[index_max_peak]
+        max_upper=xmaxs[index_max_peak]
+        
+        txt_file_path = out_folder_filepath + ntpath.basename(input_bam_filepath) +  "_read_length_distribution.txt"
+        txt_file = open(txt_file_path, 'w')
+        txt_file.write(str(max_length) + ":" + str(max_lower) + "-" + str(max_upper))
+        txt_file.close()
+        plt.vlines(x=readlength_peaks, ymin=ymins, ymax = ymaxs)
+        plt.xlabel('read_lengths')
+        plt.ylabel('counts')
+        plt.savefig(out_folder_filepath + ntpath.basename(input_bam_filepath) +  "_read_length_distribution.pdf", format='pdf')
+
     json_file_path=out_folder_filepath + ntpath.basename(input_bam_filepath) +  "_read_length_distribution.json"
     json_file = open(json_file_path, 'w')
     json.dump(length_count_dict, json_file)
-    txt_file_path = out_folder_filepath + ntpath.basename(input_bam_filepath) +  "_read_length_distribution.txt"
-    txt_file = open(txt_file_path, 'w')
-    txt_file.write(str(max_length) + ":" + str(max_lower) + "-" + str(max_upper))
-    txt_file.close()
-    plt.vlines(x=readlength_peaks, ymin=ymins, ymax = ymaxs)
-    plt.xlabel('read_lengths')
-    plt.ylabel('counts')
-    plt.savefig(out_folder_filepath + ntpath.basename(input_bam_filepath) +  "_read_length_distribution.pdf", format='pdf')
 
 def merge_offset(in_metagene_directorypath, out_path):
     # tis/tts
