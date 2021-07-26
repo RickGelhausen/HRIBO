@@ -11,7 +11,7 @@ We present HRIBO (High-throughput annotation by Ribo-seq), a workflow to enable 
 
 For a detailed description of this workflow, the installation, usage and examples, please refer to the [ReadTheDocs documentation](http://hribo.readthedocs.io/?badge=latest).
 
-HRIBO can be installed with all dependencies via [conda](https://conda.io/docs/install/quick.html). Once you have conda installed simply type:
+HRIBO installs all dependencies via [conda](https://conda.io/docs/install/quick.html). Once you have conda installed simply type:
 
          conda create -c bioconda -c conda-forge -n snakemake snakemake 
          
