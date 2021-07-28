@@ -1,4 +1,9 @@
-### version 1.5.0 (current master repository) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 09.06.2021
+### version 1.5.1 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 28.07.2021
+ * fixed issue which sometimes caused crashes in coverage file generation.
+ * fixed versioning issues with snakemake and multiQC.
+ * updated documentation + Manual
+ 
+### version 1.5.0 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 09.06.2021
  * added improved meta gene profiling figures
  * added automatic detection of peak read lengths
  * added detection of best offset for individual readlengths
