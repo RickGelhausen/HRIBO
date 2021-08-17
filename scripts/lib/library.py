@@ -264,8 +264,9 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
     cm = plt.get_cmap('gist_rainbow')
     color_list = [cm(1.*i/len(column_names)) for i in range(len(column_names))]
     max_Y = max(list(profiles.max(numeric_only=True))[:-1])
-    if type(max_Y) != int or type(max_Y) != float:
-        max_Y=20
+
+    if type(max_Y) != int and type(max_Y) != float:
+        max_Y=40
     offset_dict = {}
     if len(column_names) < 8:
         # print(out_plot_filepath + "/" + seqid + "_" + profiletype)
