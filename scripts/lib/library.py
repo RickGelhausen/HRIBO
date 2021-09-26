@@ -264,65 +264,65 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
     cm = plt.get_cmap('gist_rainbow')
     color_list = [cm(1.*i/len(column_names)) for i in range(len(column_names))]
     max_Y = max(list(profiles.max(numeric_only=True))[:-1])
-
-    if type(max_Y) != int and type(max_Y) != float:
-        max_Y=40
-    offset_dict = {}
-    if len(column_names) < 8:
-        # print(out_plot_filepath + "/" + seqid + "_" + profiletype)
-        cur_ax = profiles.plot(x="coordinates", ylim=[0, max_Y + (max_Y * 5) / 100], color=color_list)
-        cur_ax.set(xlabel="Position", ylabel="Coverage")
-        cur_ax.axvline(x=0, color="grey")
-        read_columns = column_names#[1:-1]# profiles.columns[1:-1]
-        color_index=0
-        # print(read_columns)
-        average_read_length = math.floor(statistics.mean([x for x in read_columns if isinstance(x, (int,float))]))
-        # average_read_length = math.floor(statistics.mean(filter(isInstance()columns if isinstance(x, int)]))
-        for colname in read_columns:
-            col =  profiles[colname]
-            if (colname == "sum" or colname == "mean"):
-                readlength = average_read_length
-            else:
-                readlength = int(colname)
-            # peaks, properties=find_peaks(col.values, distance=readlength, width=[readlength-3,readlength+3])#,prominence=(0.1, 1))
-            peaks, properties = find_peaks(col.values, distance=readlength, width=[1,40])#,prominence=(0.1, 1))
-            peaks_offset =[math.floor(x) - 100 for x in peaks]
-            xmins = [x - 100 for x in properties["left_ips"]]
-            xmaxs = [x - 100 for x in  properties["right_ips"]]
-            (optimal_offset,optimal_count) = find_optimal_offset(peaks,col)
-            plt.hlines(y=properties["width_heights"], xmin=xmins, xmax=xmaxs, color=color_list[color_index])
-            plt.vlines(x=peaks_offset, ymin=col[peaks] - properties["prominences"], ymax=col[peaks], color=color_list[color_index])
-            color_index = color_index + 1
-            offset_dict[colname] = str(optimal_offset) + "," + str(optimal_count)
-        json_file_path = out_plot_filepath + "/" + seqid + "_" + profiletype + "_length_offset.json"
-        json_file = open(json_file_path, 'w')
-        json.dump(offset_dict, json_file)
-        plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
-        plt.close()
-    elif len(column_names) >= 8 and len(column_names) < 16:
-        data_split = split_evenly(column_names, 2)
-        custom_colors = assign_color_list(data_split, color_list)
-        fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
-        custom_axes = [ax1, ax2]
-        for i in range(2):
-            cur_ax = profiles.plot(ax=custom_axes[i], x="coordinates", y=data_split[i], ylim=[0, max_Y + (max_Y * 5) / 100], color=custom_colors[i])
+    if not math.isnan(max_Y):
+        if type(max_Y) != int and type(max_Y) != float:
+            max_Y=40
+        offset_dict = {}
+        if len(column_names) < 8:
+            # print(out_plot_filepath + "/" + seqid + "_" + profiletype)
+            cur_ax = profiles.plot(x="coordinates", ylim=[0, max_Y + (max_Y * 5) / 100], color=color_list)
             cur_ax.set(xlabel="Position", ylabel="Coverage")
             cur_ax.axvline(x=0, color="grey")
-        plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
-        plt.close()
+            read_columns = column_names#[1:-1]# profiles.columns[1:-1]
+            color_index=0
+            # print(read_columns)
+            average_read_length = math.floor(statistics.mean([x for x in read_columns if isinstance(x, (int,float))]))
+            # average_read_length = math.floor(statistics.mean(filter(isInstance()columns if isinstance(x, int)]))
+            for colname in read_columns:
+                col =  profiles[colname]
+                if (colname == "sum" or colname == "mean"):
+                    readlength = average_read_length
+                else:
+                    readlength = int(colname)
+                # peaks, properties=find_peaks(col.values, distance=readlength, width=[readlength-3,readlength+3])#,prominence=(0.1, 1))
+                peaks, properties = find_peaks(col.values, distance=readlength, width=[1,40])#,prominence=(0.1, 1))
+                peaks_offset =[math.floor(x) - 100 for x in peaks]
+                xmins = [x - 100 for x in properties["left_ips"]]
+                xmaxs = [x - 100 for x in  properties["right_ips"]]
+                (optimal_offset,optimal_count) = find_optimal_offset(peaks,col)
+                plt.hlines(y=properties["width_heights"], xmin=xmins, xmax=xmaxs, color=color_list[color_index])
+                plt.vlines(x=peaks_offset, ymin=col[peaks] - properties["prominences"], ymax=col[peaks], color=color_list[color_index])
+                color_index = color_index + 1
+                offset_dict[colname] = str(optimal_offset) + "," + str(optimal_count)
+            json_file_path = out_plot_filepath + "/" + seqid + "_" + profiletype + "_length_offset.json"
+            json_file = open(json_file_path, 'w')
+            json.dump(offset_dict, json_file)
+            plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
+            plt.close()
+        elif len(column_names) >= 8 and len(column_names) < 16:
+            data_split = split_evenly(column_names, 2)
+            custom_colors = assign_color_list(data_split, color_list)
+            fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
+            custom_axes = [ax1, ax2]
+            for i in range(2):
+                cur_ax = profiles.plot(ax=custom_axes[i], x="coordinates", y=data_split[i], ylim=[0, max_Y + (max_Y * 5) / 100], color=custom_colors[i])
+                cur_ax.set(xlabel="Position", ylabel="Coverage")
+                cur_ax.axvline(x=0, color="grey")
+            plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
+            plt.close()
 
-    else:
-        data_split = split_evenly(column_names, 4)
-        custom_colors = assign_color_list(data_split, color_list)
-        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
-        custom_axes = [axes[0,0], axes[0,1], axes[1,0], axes[1,1]]
-        for i in range(4):
-            cur_ax = profiles.plot(ax=custom_axes[i], x="coordinates", y=data_split[i], ylim=[0, max_Y + (max_Y * 5) / 100], color=custom_colors[i])
-            cur_ax.set(xlabel="Position", ylabel="Coverage")
-            cur_ax.axvline(x=0, color="grey")
+        else:
+            data_split = split_evenly(column_names, 4)
+            custom_colors = assign_color_list(data_split, color_list)
+            fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
+            custom_axes = [axes[0,0], axes[0,1], axes[1,0], axes[1,1]]
+            for i in range(4):
+                cur_ax = profiles.plot(ax=custom_axes[i], x="coordinates", y=data_split[i], ylim=[0, max_Y + (max_Y * 5) / 100], color=custom_colors[i])
+                cur_ax.set(xlabel="Position", ylabel="Coverage")
+                cur_ax.axvline(x=0, color="grey")
 
-        plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
-        plt.close()
+            plt.savefig(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.pdf", format='pdf')
+            plt.close()
 
 def set_window(input_type,noise_reduction_analysis):
     #length of nucleotides to plot, before start + strand, after start + strand, before start - strand, after start minus strand
@@ -430,10 +430,10 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_folde
     #print(peaks)
     readlength_peaks=[readlengths[x] for x in peaks]
     #find max peak
-    if readlength_peaks != []:        
+    if readlength_peaks != []:
         ymaxs=[length_count_dict.get(key) for key in readlength_peaks]
         index_max_peak=ymaxs.index(max(ymaxs))
-        
+
         plt.plot(readlengths, readcounts)
         xmins=[readlengths[int(math.floor(left))] for left in properties["left_ips"]]
         xmaxs=[readlengths[int(math.ceil(right))] for right in properties["right_ips"]]
@@ -441,10 +441,10 @@ def readlengthstats(input_bam_filepath,min_read_length,max_read_length,out_folde
         ymaxs=[length_count_dict.get(key) for key in readlength_peaks]
         ymins =[0 for key in readlength_peaks]
         max_length=readlength_peaks[index_max_peak]
-        
+
         max_lower=xmins[index_max_peak]
         max_upper=xmaxs[index_max_peak]
-        
+
         txt_file_path = out_folder_filepath + ntpath.basename(input_bam_filepath) +  "_read_length_distribution.txt"
         txt_file = open(txt_file_path, 'w')
         txt_file.write(str(max_length) + ":" + str(max_lower) + "-" + str(max_upper))

@@ -116,8 +116,10 @@ def create_excel_file(args):
         evidence_reparation, evidence_deepribo = [], []
 
         read_list = []
-
-        overlapping_intervals = list(inter_dict[(chromosome, strand)].find((int(start), int(stop))))
+        if (chromosome, strand) in inter_dict:
+            overlapping_intervals = list(inter_dict[(chromosome, strand)].find((int(start), int(stop))))
+        else:
+            overlapping_intervals = []
 
         if len(overlapping_intervals) > 0:
             locus_tag_overlap = ",".join([interval[2] for interval in overlapping_intervals])

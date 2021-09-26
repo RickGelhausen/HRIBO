@@ -10,7 +10,7 @@ import numpy as np
 import os
 import csv
 import collections
-
+import sys
 
 def create_dictionary(inputDF):
     """
