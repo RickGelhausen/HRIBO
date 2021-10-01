@@ -119,13 +119,13 @@ def meta_geneprofiling_p(input_type, in_gff_filepath, in_bam_filepath, out_plot_
         seqids, codons = get_start_codons(in_gff_filepath)
     else:
         seqids, codons = get_stop_codons(in_gff_filepath)
-    if in_readlengthstat_filepath:
-        if os.path.isfile(in_readlengthstat_filepath) and os.access(in_readlengthstat_filepath, os.R_OK):
-            with open(in_readlengthstat_filepath) as json_file:
-                length_reads_dict = json.load(json_file)
-                max_reads_length = max(length_reads_dict, key=length_reads_dict.get)
-                min_read_length = int(max_reads_length)-2
-                max_read_length = int(max_reads_length)+2
+    #if in_readlengthstat_filepath:
+        #if os.path.isfile(in_readlengthstat_filepath) and os.access(in_readlengthstat_filepath, os.R_OK):
+            #with open(in_readlengthstat_filepath) as json_file:
+                #length_reads_dict = json.load(json_file)
+                #max_reads_length = max(length_reads_dict, key=length_reads_dict.get)
+                #min_read_length = int(max_reads_length)-2
+                #max_read_length = int(max_reads_length)+2
     (forward_length_reads_dict,reverse_length_reads_dict) = get_length_read_dicts(in_bam_filepath, min_read_length, max_read_length)
     if not os.path.exists(out_plot_filepath):
         os.makedirs(out_plot_filepath)
@@ -260,17 +260,17 @@ def plotprofile(profiles, seqid, out_plot_filepath, profiletype, normalization, 
     profiles.to_csv(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.tsv", index=True, sep="\t", header=True,)
     profiles.to_excel(out_plot_filepath + "/" + seqid + "_" + profiletype + "_profiling.xlsx")
 
-    column_names=list(profiles.columns)[:-1]
+    column_names=list(profiles.columns)[:-2]
     cm = plt.get_cmap('gist_rainbow')
     color_list = [cm(1.*i/len(column_names)) for i in range(len(column_names))]
-    max_Y = max(list(profiles.max(numeric_only=True))[:-1])
+    max_Y = max(list(profiles.max(numeric_only=True))[:-2])
     if not math.isnan(max_Y):
         if type(max_Y) != int and type(max_Y) != float:
             max_Y=40
         offset_dict = {}
         if len(column_names) < 8:
             # print(out_plot_filepath + "/" + seqid + "_" + profiletype)
-            cur_ax = profiles.plot(x="coordinates", ylim=[0, max_Y + (max_Y * 5) / 100], color=color_list)
+            cur_ax = profiles.loc[:, profiles.columns.difference(["sum"])].plot(x="coordinates", ylim=[0, max_Y + (max_Y * 5) / 100], color=color_list)
             cur_ax.set(xlabel="Position", ylabel="Coverage")
             cur_ax.axvline(x=0, color="grey")
             read_columns = column_names#[1:-1]# profiles.columns[1:-1]
