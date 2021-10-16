@@ -60,7 +60,7 @@ rule parseDeepRibo:
     output:
         "deepribo/{condition}-{replicate}/data_list.csv"
     singularity:
-        "docker://gelhausr/deepribo:minimal"
+        "docker://gelhausr/deepribo:latest"
     threads: 1
     shell:
         """
@@ -75,7 +75,7 @@ rule parameterEstimation:
     output:
         "deepribo/{condition}-{replicate}/parameters.txt"
     singularity:
-        "docker://gelhausr/deepribo:minimal"
+        "docker://gelhausr/deepribo:latest"
     threads: 1
     shell:
         "mkdir -p deepribo; Rscript HRIBO/scripts/parameter_estimation.R -f {input} -o {output}"
@@ -88,7 +88,7 @@ rule predictDeepRibo:
     output:
         "deepribo/{condition}-{replicate}/predictions.csv"
     singularity:
-        "docker://gelhausr/deepribo:minimal"
+        "docker://gelhausr/deepribo:latest"
     threads: 10
     params:
         rpkm= lambda wildcards, input: read_parameters(input[2], 0),
