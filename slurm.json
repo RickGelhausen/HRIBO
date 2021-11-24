@@ -1,8 +1,8 @@
 {
-    "__default__" :
+    "__default__":
     {
         "time" : "04:00:00",
-        "n" : 1,
+        "nodes" : 1,
         "mem" : 8000,
         "partition" : "cluster"
     },
@@ -25,171 +25,171 @@
     "predictDeepRibo" :
     {
         "mem" : 2000,
-        "n" : 10
+        "nodes" : 10
     },
     "genomeSegemehlIndex" :
     {
         "mem" : 2000,
-        "n" : 20
+        "nodes" : 20
     },
     "map" :
     {
         "mem" : 2000,
-        "n" : 20
+        "nodes" : 20
     },
     "samuniq" :
     {
         "mem" : 2000,
-        "n" : 20
+        "nodes" : 20
     },
     "sammultitobam" :
     {
         "mem" : 2000,
-        "n" : 20
+        "nodes" : 20
     },
     "samtobam" :
     {
         "mem" : 2000,
-        "n" : 20
+        "nodes" : 20
     },
     "normalizedmetageneprofiling" :
     {
         "mem" : 20000,
-        "n" : 1
+        "nodes" : 1
     },
     "metageneprofiling" :
     {
         "mem" : 20000,
-        "n" : 1
+        "nodes" : 1
     },
     "fastqcunique" :
     {
         "mem" : 3000,
-        "n" : 8
+        "nodes" : 8
     },
     "fastqcmulti" :
     {
         "mem" : 5000,
-        "n" : 8
+        "nodes" : 8
     },
     "fastqcraw" :
     {
         "mem" : 3000,
-        "n" : 8
+        "nodes" : 8
     },
     "fastqctrimmed" :
     {
         "mem" : 3000,
-        "n" : 8
+        "nodes" : 8
     },
     "fastqcuniq" :
     {
         "mem" : 3000,
-        "n" : 8
+        "nodes" : 8
     },
     "featurecountAnnotation" :
     {
         "mem" : 3000,
-        "n" : 8
+        "nodes" : 8
     },
     "featurecounts" :
     {
         "mem" : 3000,
-        "n" : 8
+        "nodes" : 8
     },
     "trnafeaturecounts" :
     {
         "mem" : 3000,
-        "n" : 8
+        "nodes" : 8
     },
     "norrnafeaturecounts" :
     {
         "mem" : 3000,
-        "n" : 8
+        "nodes" : 8
     },
     "rrnatotalfeaturecounts" :
     {
         "mem" : 3000,
-        "n" : 8
+        "nodes" : 8
     },
     "generateReparationReadCounts" :
     {
         "mem" : 5000,
-        "n" : 5
+        "nodes" : 5
     },
     "generateDeepRiboReadCounts" :
     {
         "mem" : 5000,
-        "n" : 5
+        "nodes" : 5
     },
     "generateAnnotationTotalReadCounts" :
     {
         "mem" : 10000,
-        "n" : 5
+        "nodes" : 5
     },
     "generateAnnotationUniqueReadCounts" :
     {
         "mem" : 5000,
-        "n" : 5
+        "nodes" : 5
     },
     "reparation" :
     {
         "mem" : 3000,
-        "n" : 12
+        "nodes" : 12
     },
     "rrnafilter2" :
     {
         "mem" : 3000,
-        "n" : 20
+        "nodes" : 20
     },
     "trim" :
     {
         "mem" : 2000,
-        "n" : 20
+        "nodes" : 20
     },
     "mergeTrim" :
     {
         "mem" : 5000,
-        "n" : 5
+        "nodes" : 5
     },
     "bamindex" :
     {
         "mem" : 3000,
-        "n" : 20
+        "nodes" : 20
     },
     "totalmappedbamindex" :
     {
         "mem" : 2000,
-        "n" : 20
+        "nodes" : 20
     },
     "uniquemappedbamindex" :
     {
         "mem" : 2000,
-        "n" : 20
+        "nodes" : 20
     },
     "bamcompare" :
     {
         "mem" : 3000,
-        "n" : 5
+        "nodes" : 5
     },
     "annotationBed" :
     {
         "mem" : 30000,
-        "n" : 1
+        "nodes" : 1
     },
     "annotationBigBed" :
     {
         "mem" : 30000,
-        "n" : 1
+        "nodes" : 1
     },
     "xtail" :
     {
         "mem" : 30000,
-        "n" : 1
+        "nodes" : 1
     },
     "xtailclassicnormalize" :
     {
         "mem" : 30000,
-        "n" : 1
+        "nodes" : 1
     }
 }
