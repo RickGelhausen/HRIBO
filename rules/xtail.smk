@@ -46,58 +46,7 @@ rule xtailxlsx:
         python3 HRIBO/scripts/differential_expression_xlsx.py -a {input.annotation} -g {input.genome} --tool xtail -i {input.xtail_signif} -o {output.xlsx_signif}
         """
 
-rule riborex:
-    input:
-        rawreads="readcounts/differential_expression_read_counts.csv",
-        contrastfile="contrasts/{contrast}"
-    output:
-        tabledeseq2="riborex/{contrast}_deseq2.csv",
-    conda:
-        "../envs/riborex.yaml"
-    threads: 1
-    shell: ("mkdir -p riborex; HRIBO/scripts/riborex.R -c {input.contrastfile} -t HRIBO/samples.tsv -r {input.rawreads} -x {output.tabledeseq2};")
-
-rule riborexresults:
-    input:
-        tabledeseq2="riborex/{contrast}_deseq2.csv"
-    output:
-        tablesorted="riborex/{contrast}_sorted.csv",
-        tablesignificant=report("riborex/{contrast}_significant.csv", caption="../report/riborex.rst", category="Regulation")
-    threads: 1
-    shell: ("mkdir -p riborex; (head -n 2 {input.tabledeseq2} && tail -n +3 {input.tabledeseq2} | sort -r -n -t',' -k 7) > {output.tablesorted};  awk -F ',' 'NR==1; (NR>1) && ($7 < 0.05 )' {output.tablesorted} > {output.tablesignificant};")
-
-rule riborexxlsx:
-    input:
-        annotation=rules.checkAnnotation.output,
-        genome=rules.retrieveGenome.output,
-        riborex_sorted="riborex/{contrast}_sorted.csv",
-        riborex_signif="riborex/{contrast}_significant.csv"
-    output:
-        xlsx_sorted="riborex/{contrast}_sorted.xlsx",
-        xlsx_signif="riborex/{contrast}_significant.xlsx"
-    conda:
-        "../envs/excel.yaml"
-    threads: 1
-    shell:
-        """
-        python3 HRIBO/scripts/differential_expression_xlsx.py -a {input.annotation} -g {input.genome} --tool riborex -i {input.riborex_sorted} -o {output.xlsx_sorted}
-        python3 HRIBO/scripts/differential_expression_xlsx.py -a {input.annotation} -g {input.genome} --tool riborex -i {input.riborex_signif} -o {output.xlsx_signif}
-        """
-
-cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(samples["condition"].unique(),2)))] for item in sublist]
-
-rule poolriborex:
-    input:
-        riborex=expand("riborex/{contr}_sorted.csv", contr=cur_contrast)
-    output:
-        "riborex/riborex_all.csv"
-    conda:
-        "../envs/excel.yaml"
-    threads: 1
-    shell:
-        """
-        python3 HRIBO/scripts/merge_differential_expression.py {input.riborex} -o {output} -t riborex
-        """
+cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique()),2)))] for item in sublist]
 
 rule poolxtail:
     input:

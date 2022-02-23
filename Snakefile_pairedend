@@ -27,7 +27,7 @@ if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
 
 report: "report/workflow.rst"
 def getContrast(wildcards):
-  conditions=samples["condition"].unique()
+  conditions=sorted(samples["condition"].unique())
 
   contrastsTupleList=list((iter.combinations(conditions,2)))
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
@@ -36,20 +36,13 @@ def getContrast(wildcards):
   return elements
 
 def getContrastXtail(wildcards):
-  conditions=samples["condition"].unique()
+  conditions=sorted(samples["condition"].unique())
   contrastsTupleList=list((iter.combinations(conditions,2)))
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
   flat_contrasts= [item for sublist in contrasts for item in sublist]
   elements = [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
   return elements
 
-def getContrastRiborex(wildcards):
-  conditions=samples["condition"].unique()
-  contrastsTupleList=list((iter.combinations(conditions,2)))
-  contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
-  flat_contrasts= [item for sublist in contrasts for item in sublist]
-  elements = [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
-  return elements
 
 
 def get_wigfiles(wildcards):
@@ -127,8 +120,7 @@ if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
           "auxiliary/predictions_deepribo.xlsx",
           rules.createOverviewTableAll.output,
           unpack(getContrast),
-          unpack(getContrastXtail),
-          unpack(getContrastRiborex)
+          unpack(getContrastXtail)
 
 elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
    rule all:
@@ -175,8 +167,7 @@ elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           rules.createOverviewTableDiffExpr.output,
           unpack(getContrast),
-          unpack(getContrastXtail),
-          unpack(getContrastRiborex)
+          unpack(getContrastXtail)
 
 else:
    rule all:

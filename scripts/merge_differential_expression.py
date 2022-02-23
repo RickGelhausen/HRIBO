@@ -3,11 +3,9 @@
 overlapping intervals, by removing duplicates and
 finding the longest non-overlapping interval.
 '''
-from operator import itemgetter
+
 import pandas as pd
-import re
 import argparse
-import numpy as np
 import os
 import csv
 import collections
@@ -26,16 +24,16 @@ def pool_contrasts_xtail(args):
             gene_id = getattr(row, "_0")
             mRNA_log2FC = getattr(row, "mRNA_log2FC")
             RPF_log2FC = getattr(row, "RPF_log2FC")
-            log2FC_TE_v1 = getattr(row, "log2FC_TE_v1")
+            log2FC_te_v1 = getattr(row, "log2FC_TE_v1")
             pvalue_v1 = getattr(row, "pvalue_v1")
-            log2FC_TE_v2 = getattr(row, "log2FC_TE_v2")
+            log2FC_te_v2 = getattr(row, "log2FC_TE_v2")
             pvalue_v2 = getattr(row, "pvalue_v2")
-            log2FC_TE_final = getattr(row, "log2FC_TE_final")
+            log2FC_te_final = getattr(row, "log2FC_TE_final")
             pvalue_final = getattr(row, "pvalue_final")
             pvalue_adj = getattr(row, "_9")
 
-            contrast_tuple = (mRNA_log2FC, RPF_log2FC, log2FC_TE_v1, pvalue_v1, log2FC_TE_v2, pvalue_v2, \
-                              log2FC_TE_final, pvalue_final, pvalue_adj, args.tool + "_" + cur_contrast)
+            contrast_tuple = (mRNA_log2FC, RPF_log2FC, log2FC_te_v1, pvalue_v1, log2FC_te_v2, pvalue_v2, \
+                              log2FC_te_final, pvalue_final, pvalue_adj, args.tool + "_" + cur_contrast)
 
             if gene_id in contrast_dict:
                 contrast_dict[gene_id].append(contrast_tuple)

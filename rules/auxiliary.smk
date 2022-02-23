@@ -146,7 +146,6 @@ rule createOverviewTableDiffExpr:
     input:
         annotation="readcounts/independant_annotation.gff",
         genome=rules.retrieveGenome.output,
-        riborex="riborex/riborex_all.csv",
         xtail="xtail/xtail_all.csv",
         totalreads="readcounts/bam_mapped_reads.txt",
         reparation="readcounts/reparation_annotation.gff"
@@ -157,14 +156,13 @@ rule createOverviewTableDiffExpr:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} -r {input.riborex} -x {input.xtail} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} -x {input.xtail} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         """
 
 rule createOverviewTableAll:
     input:
         annotation="readcounts/independant_annotation.gff",
         genome=rules.retrieveGenome.output,
-        riborex="riborex/riborex_all.csv",
         xtail="xtail/xtail_all.csv",
         totalreads="readcounts/bam_mapped_reads.txt",
         reparation="readcounts/reparation_annotation.gff",
@@ -176,5 +174,5 @@ rule createOverviewTableAll:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} -r {input.riborex} -x {input.xtail} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} -x {input.xtail} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         """

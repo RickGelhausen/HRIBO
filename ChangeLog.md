@@ -1,8 +1,13 @@
+### version 1.5.2 (in progress) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 28.07.2021
+ * removed riborex support and improved xtail support
+ * fixed issue with missing xtail results in overview tables
+ * added all annotated features to overview.xlsx
+
 ### version 1.5.1 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 28.07.2021
  * fixed issue which sometimes caused crashes in coverage file generation.
  * fixed versioning issues with snakemake and multiQC.
  * updated documentation + Manual
- 
+
 ### version 1.5.0 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 09.06.2021
  * added improved meta gene profiling figures
  * added automatic detection of peak read lengths
@@ -16,9 +21,9 @@
  * added metagene profiling for stop codons, this is automatically used on TTS and RNATTS libraries.
 
 ### version 1.4.4 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 18.09.2020
- * added overlap column to the overview table, to show whether an entry overlaps with an annotated gene. 
+ * added overlap column to the overview table, to show whether an entry overlaps with an annotated gene.
  * improved the handling of TE wildcards in excel scripts, allowing input combinations that were previously not possible.
- * minor fix for mapping script that ensures the header is set correctly for the "mil" mapping. 
+ * minor fix for mapping script that ensures the header is set correctly for the "mil" mapping.
  * minor fix that ensures the gene_name is set correctly and not sometimes replaced by the locus_tag.
  * fixed a bug where tranlation of nt_seqs were done only up to the first stop codon.
  * improved gtf2gff3 script to use gene_biotype to find RNA features.
@@ -26,7 +31,7 @@
  * added 15nt upstream of the start codon to each .xlsx table.
  * updated reparation environment
  * some code clean-up
- 
+
 ### version 1.4.3 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 15.05.2020
  * added genome-browser identifier to overview table
  * completely reworked gff2 support by transforming gff2 to gff3. This is unavoidable as some tools require gff3 format

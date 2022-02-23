@@ -36,7 +36,7 @@ def create_excel_file(args):
 
     wildcards = eu.get_unique(wildcards)
 
-    TE_header = eu.get_TE_header(wildcards)
+    te_header = eu.get_te_header(wildcards)
 
     conditions = []
     for card in wildcards:
@@ -60,7 +60,7 @@ def create_excel_file(args):
     five_utr_sheet = []
     misc_sheet = []
 
-    header = ["Identifier", "Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in TE_header] + [card + "_rpkm" for card in wildcards] + ["Start_codon", "Stop_codon", "15nt upstream", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
+    header = ["Identifier", "Genome", "Source", "Feature", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Name", "Length", "Codon_count"] + [cond + "_TE" for cond in te_header] + [card + "_rpkm" for card in wildcards] + ["Start_codon", "Stop_codon", "15nt upstream", "Nucleotide_seq", "Aminoacid_seq",  "Product", "Note"]
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -85,10 +85,10 @@ def create_excel_file(args):
         for idx, val in enumerate(read_list):
             rpkm_list.append(eu.calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
 
-        TE_list = eu.calculate_TE(rpkm_list, wildcards, conditions)
+        te_list = eu.calculate_te(rpkm_list, wildcards, conditions)
 
         identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-        result = [identifier, chromosome, "HRIBO", feature, start, stop, strand, locus_tag, old_locus_tag, name, length, codon_count] + TE_list + rpkm_list + [start_codon, stop_codon, nt_window, nucleotide_seq, aa_seq, product, note]
+        result = [identifier, chromosome, "HRIBO", feature, start, stop, strand, locus_tag, old_locus_tag, name, length, codon_count] + te_list + rpkm_list + [start_codon, stop_codon, nt_window, nucleotide_seq, aa_seq, product, note]
 
         all_sheet.append(nTuple(*result))
 

@@ -144,61 +144,6 @@ def annotation_to_dict(annotation_file):
 
     return annotation_dict
 
-def riborex_output(args):
-    # read the genome file
-    genome_file = SeqIO.parse(args.genome, "fasta")
-    genome_dict = dict()
-    for entry in genome_file:
-        genome_dict[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
-
-    annotation_dict = annotation_to_dict(args.annotation_file)
-
-    diff_expr_df = pd.read_csv(args.input_csv, sep=",", comment="#")
-
-    all_sheet = []
-    header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "ID", "Name", "baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
-    name_list = ["s%s" % str(x) for x in range(len(header))]
-    nTuple = collections.namedtuple('Pandas', name_list)
-
-    for row in diff_expr_df.itertuples(index=False, name='Pandas'):
-        cds_id = getattr(row, "_0")
-
-        if cds_id in annotation_dict:
-            chromosome, start, stop, strand, attributes, locus_tag, old_locus_tag = annotation_dict[cds_id]
-            column_info = retrieve_column_information(attributes)
-
-        else:
-            if ":" in cds_id and "-" in cds_id:
-                chromosome, sec, strand = cds_id.split(":")
-                start, stop = sec.split("-")
-                column_info = ["","",""]
-                locus_tag, old_locus_tag = "", ""
-            else:
-                sys.exit("Error... ID is not novel and not in the annotation!")
-
-        baseMean = getattr(row, "baseMean")
-        log2FoldChange = getattr(row, "log2FoldChange")
-        lfcSE = getattr(row, "lfcSE")
-        stat = getattr(row, "stat")
-        pvalue = getattr(row, "pvalue")
-        padj = getattr(row, "padj")
-
-        start = int(start)
-        stop = int(stop)
-        length = stop - start + 1
-        codon_count = int(length / 3)
-        start_codon, stop_codon, nucleotide_seq, aa_seq = get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
-
-        result = [chromosome, start, stop, strand, locus_tag, old_locus_tag, cds_id, column_info[0], baseMean, log2FoldChange, lfcSE, stat, pvalue, padj, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq]
-
-        all_sheet.append(nTuple(*result))
-
-    all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
-
-    dataframe_dict = {"all" : all_df }
-
-    excel_writer(args, dataframe_dict)
-
 
 def xtail_output(args):
     # read the genome file
@@ -213,7 +158,7 @@ def xtail_output(args):
 
     all_sheet = []
     header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "ID", "Name", "mRNA_log2FC", "RPF_log2FC", "log2FC_TE_v1", "pvalue_v1", "log2FC_TE_v2", "pvalue_v2", "log2FC_TE_final", "pvalue_final", "pvalue.adjust", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
-    name_list = ["s%s" % str(x) for x in range(len(header))]
+    name_list = [f"s{x}" for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
 
     for row in diff_expr_df.itertuples(index=False, name='Pandas'):
@@ -258,16 +203,6 @@ def xtail_output(args):
 
     excel_writer(args, dataframe_dict)
 
-
-def create_excel_file(args):
-    """
-    write excel file depending on the tool in use
-    """
-    if args.tool == "riborex":
-        riborex_output(args)
-    else:
-        xtail_output(args)
-
 def main():
     # store commandline args
     parser = argparse.ArgumentParser(description='create excel files from xtail/riborex output')
@@ -278,7 +213,7 @@ def main():
     parser.add_argument("-o", "--xlsx", action="store", dest="output", required=True, help= "output xlsx file")
     args = parser.parse_args()
 
-    create_excel_file(args)
+    xtail_output(args)
 
 if __name__ == '__main__':
     main()

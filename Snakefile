@@ -32,7 +32,7 @@ if "RIBO" not in samples["method"].unique():
 
 report: "report/workflow.rst"
 def getContrast(wildcards):
-  conditions=samples["condition"].unique()
+  conditions=sorted(samples["condition"].unique())
   contrastsTupleList=list((iter.combinations(conditions,2)))
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
   flat_contrasts= [item for sublist in contrasts for item in sublist]
@@ -40,21 +40,12 @@ def getContrast(wildcards):
   return elements
 
 def getContrastXtail(wildcards):
-  conditions=samples["condition"].unique()
+  conditions=sorted(samples["condition"].unique())
   contrastsTupleList=list((iter.combinations(conditions,2)))
   contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
   flat_contrasts= [item for sublist in contrasts for item in sublist]
   elements = [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
   return elements
-
-def getContrastRiborex(wildcards):
-  conditions=samples["condition"].unique()
-  contrastsTupleList=list((iter.combinations(conditions,2)))
-  contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
-  flat_contrasts= [item for sublist in contrasts for item in sublist]
-  elements = [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
-  return elements
-
 
 def get_wigfiles(wildcards):
   method=samples["method"]
@@ -112,7 +103,7 @@ if hasRIBO:
               expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
-              "qc/multi/multiqc_report.html",              
+              "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
               "tracks/potentialStartCodons.gff",
               "tracks/potentialAlternativeStartCodons.gff",
@@ -128,7 +119,6 @@ if hasRIBO:
               rules.createOverviewTableAll.output,
               unpack(getContrast),
               unpack(getContrastXtail),
-              unpack(getContrastRiborex),
               "metageneprofiling/merged_offsets.json"
 
 
@@ -140,7 +130,7 @@ if hasRIBO:
               expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
-              "qc/multi/multiqc_report.html",              
+              "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
               "tracks/potentialStartCodons.gff",
               "tracks/potentialAlternativeStartCodons.gff",
@@ -164,7 +154,7 @@ if hasRIBO:
               expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
               get_wigfiles,
-              "qc/multi/multiqc_report.html",  
+              "qc/multi/multiqc_report.html",
               "tracks/potentialStopCodons.gff",
               "tracks/potentialStartCodons.gff",
               "tracks/potentialAlternativeStartCodons.gff",
@@ -179,7 +169,6 @@ if hasRIBO:
               rules.createOverviewTableDiffExpr.output,
               unpack(getContrast),
               unpack(getContrastXtail),
-              unpack(getContrastRiborex),
               "metageneprofiling/merged_offsets.json"
 
     else:
@@ -225,7 +214,6 @@ else:
               "figures/heatmap_SpearmanCorr_readCounts.pdf",
               unpack(getContrast),
               unpack(getContrastXtail),
-              unpack(getContrastRiborex),
               "metageneprofiling/merged_offsets.json"
      else:
        rule all:

@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-import argparse
+
 import re
-import os, sys
+import sys
 import pandas as pd
-import collections
-import csv
 from collections import Counter, OrderedDict
-import itertools as iter
+
 
 from Bio.Seq import Seq
 from Bio import SeqIO
@@ -16,42 +14,42 @@ class OrderedCounter(Counter, OrderedDict):
     pass
 
 
-def get_TE_header(wildcards):
+def get_te_header(wildcards):
     """
     generate the correct TE_header based on the available data
     """
-    TE_header = []
-    TE_header_dict = OrderedDict()
+    te_header = []
+    te_header_dict = OrderedDict()
     for card in wildcards:
         method, condition, replicate = card.split("-")
         if method == "RIBO":
             if "%s-%s-%s" %("RNA", condition, replicate) in wildcards:
-                if ("RIBO", condition) in  TE_header_dict:
-                    TE_header_dict[("RIBO", condition)].append(replicate)
+                if ("RIBO", condition) in  te_header_dict:
+                    te_header_dict[("RIBO", condition)].append(replicate)
                 else:
-                    TE_header_dict[("RIBO", condition)] = [replicate]
+                    te_header_dict[("RIBO", condition)] = [replicate]
         elif method == "TIS":
             if "%s-%s-%s" %("RNATIS", condition, replicate) in wildcards:
-                if ("TIS", condition) in  TE_header_dict:
-                    TE_header_dict[("TIS", condition)].append(replicate)
+                if ("TIS", condition) in  te_header_dict:
+                    te_header_dict[("TIS", condition)].append(replicate)
                 else:
-                    TE_header_dict[("TIS", condition)] = [replicate]
+                    te_header_dict[("TIS", condition)] = [replicate]
         elif method == "TTS":
             if "%s-%s-%s" %("RNATTS", condition, replicate) in wildcards:
-                if ("TTS", condition) in  TE_header_dict:
-                    TE_header_dict[("TTS", condition)].append(replicate)
+                if ("TTS", condition) in  te_header_dict:
+                    te_header_dict[("TTS", condition)].append(replicate)
                 else:
-                    TE_header_dict[("TTS", condition)] = [replicate]
+                    te_header_dict[("TTS", condition)] = [replicate]
 
-    for key, val in TE_header_dict.items():
+    for key, val in te_header_dict.items():
         method, condition = key
         if len(val) > 1:
             t_header = ["%s-%s-%s" % (method, condition, x) for x in val] + ["%s-%s-avg" % (method, condition)]
         else:
             t_header = ["%s-%s-%s" % (method, condition, x) for x in val]
-        TE_header.extend(t_header)
+        te_header.extend(t_header)
 
-    return TE_header
+    return te_header
 
 def calculate_rpkm(total_mapped, read_count, read_length):
     """
@@ -69,7 +67,7 @@ def calculate_rpkm(total_mapped, read_count, read_length):
 def get_unique(in_list):
     seen = set()
     seen_add = seen.add
-    return [x for x in in_list if not (x in seen or seen_add(x))]
+    return sorted([x for x in in_list if not (x in seen or seen_add(x))])
 
 def retrieve_column_information(attributes):
     """
@@ -161,11 +159,11 @@ def excel_writer(args, data_frames, wildcards):
                 max_len = len(str(series.name)) + 2
             else:
                 max_len = max(( series.astype(str).str.len().max(), len(str(series.name)) )) + 1
-            print("Sheet: %s | col: %s | max_len: %s" % (sheetname, col, max_len))
+            #print("Sheet: %s | col: %s | max_len: %s" % (sheetname, col, max_len))
             worksheet.set_column(idx, idx, max_len)
     writer.save()
 
-def TE(ribo_count, rna_count):
+def te(ribo_count, rna_count):
     """
     calculate the translational efficiency for one entry
     """
@@ -197,12 +195,12 @@ def get_avg(t_eff):
 
     return t_eff
 
-def calculate_TE(read_list, wildcards, conditions):
+def calculate_te(read_list, wildcards, conditions):
     """
     calculate the translational efficiency
     """
     read_dict = OrderedDict()
-    TE_dict = OrderedDict()
+    te_dict = OrderedDict()
     for idx in range(len(wildcards)):
         method, condition, replicate = wildcards[idx].split("-")
         key = (method, condition, replicate)
@@ -211,48 +209,48 @@ def calculate_TE(read_list, wildcards, conditions):
         else:
             print("warning: multiple equal keys")
 
-    TE_list = []
+    te_list = []
     for key, val in read_dict.items():
         method, condition, replicate = key
         if method == "RIBO":
             if ("RNA", condition, replicate) in read_dict:
                 rpkm_ribo = read_dict[key]
                 rpkm_rna = read_dict[("RNA", condition, replicate)]
-                cur_TE = TE(rpkm_ribo, rpkm_rna)
-                if ("RIBO", condition) in TE_dict:
-                    TE_dict[("RIBO", condition)].append(cur_TE)
+                cur_te = te(rpkm_ribo, rpkm_rna)
+                if ("RIBO", condition) in te_dict:
+                    te_dict[("RIBO", condition)].append(cur_te)
                 else:
-                    TE_dict[("RIBO", condition)] = [cur_TE]
+                    te_dict[("RIBO", condition)] = [cur_te]
 
         elif method == "TIS":
             if ("RNATIS", condition, replicate) in read_dict:
                 rpkm_ribo = read_dict[key]
                 rpkm_rna = read_dict[("RNATIS", condition, replicate)]
-                cur_TE = TE(rpkm_ribo, rpkm_rna)
-                if ("TIS", condition) in TE_dict:
-                    TE_dict[("TIS", condition)].append(cur_TE)
+                cur_te = te(rpkm_ribo, rpkm_rna)
+                if ("TIS", condition) in te_dict:
+                    te_dict[("TIS", condition)].append(cur_te)
                 else:
-                    TE_dict[("TIS", condition)] = [cur_TE]
+                    te_dict[("TIS", condition)] = [cur_te]
 
         elif method == "TTS":
             if ("RNATTS", condition, replicate) in read_dict:
                 rpkm_ribo = read_dict[key]
                 rpkm_rna = read_dict[("RNATTS", condition, replicate)]
-                cur_TE = TE(rpkm_ribo, rpkm_rna)
-                if ("TTS", condition) in TE_dict:
-                    TE_dict[("TTS", condition)].append(cur_TE)
+                cur_te = te(rpkm_ribo, rpkm_rna)
+                if ("TTS", condition) in te_dict:
+                    te_dict[("TTS", condition)].append(cur_te)
                 else:
-                    TE_dict[("TTS", condition)] = [cur_TE]
+                    te_dict[("TTS", condition)] = [cur_te]
 
-    TE_list = []
-    for key, val in TE_dict.items():
+    te_list = []
+    for key, val in te_dict.items():
         if len(val) > 1:
             t_eff = get_avg(val)
         else:
             t_eff = val
-        TE_list.extend(t_eff)
+        te_list.extend(t_eff)
 
-    return TE_list
+    return te_list
 
 def generate_riborex_dict(riborex_path):
     """
@@ -385,7 +383,8 @@ def generate_annotation_dict(annotation_path):
     """
 
     annotation_df = pd.read_csv(annotation_path, sep="\t", comment="#", header=None)
-    annotation_dict = {}
+    annotation_meta_dict = {}
+
     gene_dict = {}
     cds_dict = {}
 
@@ -407,6 +406,7 @@ def generate_annotation_dict(annotation_path):
         else:
             print(attribute_list)
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
+
 
         if feature.lower() == "cds":
             locus_tag = ""
@@ -451,6 +451,7 @@ def generate_annotation_dict(annotation_path):
             new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
             gene_dict[new_key] = (gene_name, locus_tag, old_locus_tag)
 
+
     for key in cds_dict.keys():
         gene_name = ""
         gene_id, locus_tag, name, read_list, old_locus_tag = cds_dict[key]
@@ -463,6 +464,99 @@ def generate_annotation_dict(annotation_path):
             if old_locus_tag == "":
                 old_locus_tag = gene_old_locus_tag
 
-        annotation_dict[key] = (gene_id, locus_tag, name, read_list, gene_name, old_locus_tag)
+        annotation_meta_dict[key] = (gene_id, locus_tag, name, gene_name, old_locus_tag, read_list)
 
-    return annotation_dict
+    return annotation_meta_dict
+
+def generate_non_cds_dict(annotation_path):
+    """
+    create dictionary from annotation ignoring cds.
+    key : (gene_id, locus_tag, name, gene_name)
+    """
+
+    gene_dict = {}
+    non_cds_dict = {}
+
+    annotation_meta_dict = {}
+    annotation_df = pd.read_csv(annotation_path, sep="\t", comment="#", header=None)
+
+    for row in annotation_df.itertuples(index=False, name='Pandas'):
+        chromosome = getattr(row, "_0")
+        feature = getattr(row, "_2")
+        start = getattr(row, "_3")
+        stop = getattr(row, "_4")
+        strand = getattr(row, "_6")
+        attributes = getattr(row, "_8")
+        read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
+
+        attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
+
+        if len(attribute_list) % 2 == 0:
+            for i in range(len(attribute_list)):
+                if i % 2 == 0:
+                    attribute_list[i] = attribute_list[i].lower()
+        else:
+            print(attribute_list)
+            sys.exit("error, invalid gff, wrongly formatted attribute fields.")
+
+
+        if feature.lower() not in ["cds", "gene", "pseudogene", "exon"]:
+            locus_tag = None
+            if "locus_tag" in attribute_list:
+                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+
+            old_locus_tag = None
+            if "old_locus_tag" in attribute_list:
+                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
+
+            name = None
+            if "name" in attribute_list:
+                name = attribute_list[attribute_list.index("name")+1]
+            elif "gene_name" in attribute_list:
+                name = attribute_list[attribute_list.index("gene_name")+1]
+
+            gene_id = None
+            if "gene_id" in attribute_list:
+                gene_id = attribute_list[attribute_list.index("gene_id")+1]
+            elif "id" in attribute_list:
+                gene_id = attribute_list[attribute_list.index("id")+1]
+
+            key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+            non_cds_dict[key] = (feature, gene_id, locus_tag, old_locus_tag, name, read_list)
+
+        elif feature.lower() in ["gene","pseudogene"]:
+            gene_name = ""
+            if "name" in attribute_list:
+                gene_name = attribute_list[attribute_list.index("name")+1]
+            elif "gene_name" in attribute_list:
+                gene_name = attribute_list[attribute_list.index("gene_name")+1]
+
+            locus_tag = ""
+            if "locus_tag" in attribute_list:
+                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+            elif "gene_id" in attribute_list:
+                locus_tag = attribute_list[attribute_list.index("gene_id")+1]
+
+            old_locus_tag = ""
+            if "old_locus_tag" in attribute_list:
+                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
+
+            new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+            gene_dict[new_key] = (gene_name, locus_tag, old_locus_tag)
+
+
+    for key in non_cds_dict.keys():
+        gene_name = ""
+        feature, gene_id, locus_tag, old_locus_tag, name, read_list = non_cds_dict[key]
+
+        if key in gene_dict:
+            gene_name, gene_locus_tag, gene_old_locus_tag = gene_dict[key]
+
+            if locus_tag == "":
+                locus_tag = gene_locus_tag
+            if old_locus_tag == "":
+                old_locus_tag = gene_old_locus_tag
+
+        annotation_meta_dict[key] = (feature, gene_id, locus_tag, name, gene_name, old_locus_tag, read_list)
+
+    return annotation_meta_dict

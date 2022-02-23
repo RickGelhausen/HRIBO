@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
-import re
+from random import choice
+
 import os
 import pandas as pd
 import shlex, subprocess
@@ -21,7 +22,7 @@ def call_featureCounts(args):
     identifier = "ID" if "ID=" in annotation_df[8][0] else "gene_id"
 
     tmp_file = os.path.splitext(args.output)[0] + ".tmp"
-    commandline_parameters = " -a %s -F GTF -g %s -s %s -T %s -o %s" % (args.annotation, identifier, args.strandness, args.threads, tmp_file)
+    commandline_parameters = f" -a {args.annotation} -F GTF -g {identifier} -s {args.strandness} -T {args.threads} -o {tmp_file}"
     if args.assign_to_all:
         commandline_parameters += " -O"
     if args.assign_multi_mappers:
@@ -30,17 +31,17 @@ def call_featureCounts(args):
         commandline_parameters += " --fraction"
 
     if args.diff_expr:
-        header = "," + ",".join([os.path.splitext(os.path.basename(bamfile))[0] for bamfile in bamfiles]) +"\n"
+        header = "Identifier," + ",".join([os.path.splitext(os.path.basename(bamfile))[0] for bamfile in bamfiles]) +"\n"
         with open(args.output, "w") as f:
             f.write(header)
-        labels = ["s%s" % x for x in range(0, len(bamfiles)+1)]
+        labels = [f"s{x}" for x in range(0, len(bamfiles)+1)]
         nTuple = collections.namedtuple('Pandas', labels)
     else:
-        labels = ["s%s" % x for x in range(0, len(bamfiles)+7)]
+        labels = [f"s{x}" for x in range(0, len(bamfiles)+7)]
         nTuple = collections.namedtuple('Pandas', labels)
 
     for feature in features:
-        commandline_call = "featureCounts -t %s " %(feature) + commandline_parameters + " "+ " ".join(bamfiles)
+        commandline_call = f"featureCounts -t {feature} {commandline_parameters} " + " ".join(bamfiles)
         subprocess_call = shlex.split(commandline_call, posix=False)
 
         print(commandline_call)
@@ -61,11 +62,11 @@ def call_featureCounts(args):
                     stop = stop.split(";")[0]
                 strand = getattr(row, "_4").split(";")[0]
                 length = getattr(row, "_5")
-                read_list = [getattr(row, "_%s" % x) for x in range(6, len(row))]
+                read_list = [getattr(row, f"_{x}") for x in range(6, len(row))]
 
                 if args.diff_expr:
-                    if feature == "CDS":
-                        new_rows.append(nTuple(gene_id, *read_list))
+                    if feature not in ["gene", "pseudogene"]:
+                        new_rows.append(nTuple(f"{chromosome}:{start}-{stop}:{strand}", *read_list))
                 else:
                     new_rows.append(nTuple(gene_id, chromosome, start, stop, strand, length, *read_list, feature))
 
@@ -80,6 +81,12 @@ def call_featureCounts(args):
 
         except FileNotFoundError:
             sys.exit("temporary file was not found.")
+
+    if args.diff_expr:
+        df = pd.read_csv(args.output, sep=",")
+        df.drop_duplicates(subset=["Identifier"], keep="first", inplace=True)
+        with open(args.output, "w") as f:
+            df.to_csv(f, sep=",", index=False, quoting=csv.QUOTE_NONE)
 
 def main():
     # store commandline args
