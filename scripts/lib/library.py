@@ -643,8 +643,8 @@ def get_read_count_dict(input_read_filepath,library_name):
             if entry[0] == library_name:
                genome_read_dict[entry[1]] = int(entry[2])
             if entry[1] in genome_min_read_dict:
-                if genome_min_read_dict[entry[1]] < entry[2]:
-                    genome_min_read_dict[entry[1]] = entry[2]
+                if genome_min_read_dict[entry[1]] > int(entry[2]):
+                    genome_min_read_dict[entry[1]] = int(entry[2])
             else:
-                genome_min_read_dict[entry[1]] = entry[2]
+                genome_min_read_dict[entry[1]] = int(entry[2])
     return(genome_read_dict, genome_min_read_dict)
