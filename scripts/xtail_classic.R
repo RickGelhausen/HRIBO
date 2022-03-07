@@ -27,20 +27,23 @@ if (is.null(options$raw_read_counts_csv_path)){
 
 library(xtail)
 
-# read table with mormalized read counts
+# read table with raw read counts
 counts <- read.csv(options$raw_read_counts_csv_path, row.names = 1, check.names = FALSE, stringsAsFactors = FALSE)
 
 # get sample sheet
-sampleSheet <- read.csv(file=options$sample_file_path ,header=TRUE, sep="\t", stringsAsFactors=FALSE)
+sampleSheet <- read.csv(file=options$sample_file_path, header=TRUE, sep="\t", stringsAsFactors=FALSE)
+sampleSheet <- sampleSheet[
+  order( sampleSheet[,1], sampleSheet[,2], sampleSheet[,3] ),
+]
 
 #create condition vector
 constraststring <- gsub("contrasts/", "", options$contrast)
-contrastconditions <- unlist(strsplit(constraststring,"-"))
+contrastconditions <- unlist(strsplit(constraststring, "-"))
 cond1 <- contrastconditions[1]
 cond2 <- contrastconditions[2]
 
-
 # split data frame into RIBO and RNA
+print((sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2))
 RIBO <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 
@@ -55,8 +58,9 @@ conditionsvector1 <- rep(cond1,each=replicatescondition1)
 conditionsvector2 <- rep(cond2,each=replicatescondition2)
 contrastconditionsvector <- c(conditionsvector1, conditionsvector2)
 
+
 # run xtail analysis
-test.results <- xtail(RNA, RIBO, contrastconditionsvector)
+test.results <- xtail(RNA, RIBO, contrastconditionsvector, bins=50000)
 
 # turn results into table
 test.tab <- resultsTable(test.results, log2FCs = TRUE)
