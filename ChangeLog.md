@@ -2,6 +2,7 @@
  * removed riborex support and improved xtail support
  * fixed issue with missing xtail results in overview tables
  * added all annotated features to overview.xlsx
+ * fixed bug where the min normalization was not correctly using the minimal value.
 
 ### version 1.5.1 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 28.07.2021
  * fixed issue which sometimes caused crashes in coverage file generation.
