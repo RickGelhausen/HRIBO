@@ -43,7 +43,6 @@ cond1 <- contrastconditions[1]
 cond2 <- contrastconditions[2]
 
 # split data frame into RIBO and RNA
-print((sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2))
 RIBO <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
 
@@ -60,7 +59,7 @@ contrastconditionsvector <- c(conditionsvector1, conditionsvector2)
 
 
 # run xtail analysis
-test.results <- xtail(RNA, RIBO, contrastconditionsvector, bins=50000)
+test.results <- xtail(RNA, RIBO, contrastconditionsvector)
 
 # turn results into table
 test.tab <- resultsTable(test.results, log2FCs = TRUE)

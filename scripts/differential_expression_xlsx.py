@@ -1,35 +1,15 @@
 #!/usr/bin/env python
 import argparse
 import re
-import os, sys
+import sys
 import pandas as pd
 import collections
-import csv
+
+import excel_utils as eu
 
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.Alphabet import generic_dna
-
-
-def excel_writer(args, data_frames):
-    """
-    create an excel sheet out of a dictionary of data_frames
-    correct the width of each column
-    """
-    header_only =  ["Note", "Aminoacid_seq", "Nucleotide_seq", "Start_codon", "Stop_codon", "Strand", "Codon_count"]
-    writer = pd.ExcelWriter(args.output, engine='xlsxwriter')
-    for sheetname, df in data_frames.items():
-        df.to_excel(writer, sheet_name=sheetname, index=False)
-        worksheet = writer.sheets[sheetname]
-        for idx, col in enumerate(df):
-            series = df[col]
-            if col in header_only:
-                max_len = len(str(series.name)) + 2
-            else:
-                max_len = max(( series.astype(str).str.len().max(), len(str(series.name)) )) + 1
-            print("Sheet: %s | col: %s | max_len: %s" % (sheetname, col, max_len))
-            worksheet.set_column(idx, idx, max_len)
-    writer.save()
 
 
 
@@ -201,7 +181,7 @@ def xtail_output(args):
 
     dataframe_dict = {"all" : all_df }
 
-    excel_writer(args, dataframe_dict)
+    eu.excel_writer(args.output, dataframe_dict, [])
 
 def main():
     # store commandline args

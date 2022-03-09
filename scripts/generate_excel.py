@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 import argparse
-import re
-import os, sys
 import pandas as pd
 import collections
-import csv
 from collections import Counter, OrderedDict
 
 from Bio.Seq import Seq
@@ -128,7 +125,7 @@ def create_excel_file(args):
     cds_df = cds_df.sort_values(by=["Genome", "Start", "Stop"])
     dataframe_dict = {"CDS" : cds_df, "rRNA" : rRNA_df, "sRNA" : sRNA_df, "transcript" : transcript_df, "5'-UTR" : five_utr_df, "tRNA" : tRNA_df, "pseudogene" : pseudogene_df, "gene" : gene_df, "region" : region_df,  "miscellaneous" : misc_df,  "all" : all_df }
 
-    eu.excel_writer(args, dataframe_dict, wildcards)
+    eu.excel_writer(args.output_path, dataframe_dict, wildcards)
 
 def main():
     # store commandline args

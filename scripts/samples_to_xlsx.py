@@ -1,24 +1,8 @@
 #!/usr/bin/env python
 import argparse
-import re
-import os, sys
 import pandas as pd
-import collections
 
-def excel_writer(args, data_frames):
-    """
-    create an excel sheet out of a dictionary of data_frames
-    correct the width of each column
-    """
-    writer = pd.ExcelWriter(args.output, engine='xlsxwriter')
-    for sheetname, df in data_frames.items():
-        df.to_excel(writer, sheet_name=sheetname, index=False)
-        worksheet = writer.sheets[sheetname]
-        for idx, col in enumerate(df):
-            series = df[col]
-            max_len = max(( series.astype(str).str.len().max(), len(str(series.name)) )) + 1
-            worksheet.set_column(idx, idx, max_len)
-    writer.save()
+import excel_utils as eu
 
 def convert_to_xlsx(args):
     """
@@ -28,7 +12,6 @@ def convert_to_xlsx(args):
     samples_df = pd.read_csv(args.samples, comment="#", sep="\t")
 
     column_names = [name.capitalize() for name in list(samples_df.columns)]
-    nTuple = collections.namedtuple('Pandas', column_names)
 
     samples_sheet = []
     for row in samples_df.itertuples(index=False, name='Pandas'):
@@ -50,7 +33,7 @@ def convert_to_xlsx(args):
 
     sheets = {"samples" : samples_df}
 
-    excel_writer(args, sheets)
+    eu.excel_writer(args.output, sheets, [])
 
 def main():
     # store commandline args

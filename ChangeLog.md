@@ -3,6 +3,10 @@
  * fixed issue with missing xtail results in overview tables
  * added all annotated features to overview.xlsx
  * fixed bug where the min normalization was not correctly using the minimal value.
+ * changed excel_writer to create xlsx files with freezed header
+ * ensured correct sorting of xtail sorted files
+ * fixed issue where xtail result tables had wrong naming
+ * Changed naming of makereport.sh output files to ensure correct sorting
 
 ### version 1.5.1 [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 28.07.2021
  * fixed issue which sometimes caused crashes in coverage file generation.

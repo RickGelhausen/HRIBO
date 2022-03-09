@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 import argparse
-import re
-import os, sys
 import pandas as pd
 import collections
 from collections import Counter, OrderedDict
@@ -88,7 +86,7 @@ def create_excel_file(args):
 
     dataframe_dict = { "CDS" : cds_df }
 
-    eu.excel_writer(args, dataframe_dict, wildcards)
+    eu.excel_writer(args.output_path, dataframe_dict, wildcards)
 
 def main():
     # store commandline args

@@ -143,16 +143,17 @@ def get_genome_information(genome, start, stop, strand):
 
     return start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window
 
-def excel_writer(args, data_frames, wildcards):
+def excel_writer(output_path, data_frames, wildcards):
     """
     create an excel sheet out of a dictionary of data_frames
     correct the width of each column
     """
     header_only =  ["Note", "Aminoacid_seq", "Nucleotide_seq", "Start_codon", "Stop_codon", "Strand", "Codon_count"] + [card + "_rpkm" for card in wildcards]
-    writer = pd.ExcelWriter(args.output_path, engine='xlsxwriter')
+    writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
     for sheetname, df in data_frames.items():
         df.to_excel(writer, sheet_name=sheetname, index=False)
         worksheet = writer.sheets[sheetname]
+        worksheet.freeze_panes(1, 0)
         for idx, col in enumerate(df):
             series = df[col]
             if col in header_only:

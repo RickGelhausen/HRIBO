@@ -2,7 +2,7 @@
 idx=$1
 
 # timestamp
-timestamp=$(date +"%d-%m-%y")
+timestamp=$(date +"%y-%m-%d")
 echo "${timestamp}"
 
 report="${idx}report_HRIBO1.5.1_${timestamp}"
@@ -53,8 +53,6 @@ cp -r threeprimetracks/mil/*.bw "${report}/genome-browser/coverage/threeprime/mi
 cp -r xtail/*_sorted.xlsx "${report}/differential-expression/xtail/"
 cp -r xtail/*_significant.xlsx "${report}/differential-expression/xtail/"
 cp -r xtail/*.pdf "${report}/differential-expression/xtail/"
-cp -r riborex/*_sorted.xlsx "${report}/differential-expression/riborex/"
-cp -r riborex/*_significant.xlsx "${report}/differential-expression/riborex/"
 
 cp -r auxiliary/overview.xlsx "${report}"
 cp -r auxiliary/overview.gff "${report}/genome-browser/"

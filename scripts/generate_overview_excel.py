@@ -318,7 +318,7 @@ def create_excel_sheets(args):
     excel_sheet_dict = create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dict, wildcards, conditions, contrasts, te_header)
     excel_sheet_dict = create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dict, wildcards, conditions, contrasts, te_header)
 
-    eu.excel_writer(args, excel_sheet_dict, wildcards)
+    eu.excel_writer(args.output_path, excel_sheet_dict, wildcards)
 
 
 def main():

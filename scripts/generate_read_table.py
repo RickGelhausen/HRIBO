@@ -1,36 +1,13 @@
 #!/usr/bin/env python
 import argparse
-import re
-import os
 import pandas as pd
 import collections
+import excel_utils as eu
 
 def get_unique(in_list):
     seen = set()
     seen_add = seen.add
     return [x for x in in_list if not (x in seen or seen_add(x))]
-
-
-
-def excel_writer(args, data_frames, wildcards):
-    """
-    create an excel sheet out of a dictionary of data_frames
-    correct the width of each column
-    """
-    header_only =  ["Note", "Aminoacid_seq", "Nucleotide_seq", "Start_codon", "Stop_codon", "Strand", "Codon_count"] + [card + "_rpkm" for card in wildcards]
-    writer = pd.ExcelWriter(args.output, engine='xlsxwriter')
-    for sheetname, df in data_frames.items():
-        df.to_excel(writer, sheet_name=sheetname, index=False)
-        worksheet = writer.sheets[sheetname]
-        for idx, col in enumerate(df):
-            series = df[col]
-            if col in header_only:
-                max_len = len(str(series.name)) + 2
-            else:
-                max_len = max(( series.astype(str).str.len().max(), len(str(series.name)) )) + 1
-            print("Sheet: %s | col: %s | max_len: %s" % (sheetname, col, max_len))
-            worksheet.set_column(idx, idx, max_len)
-    writer.save()
 
 def parse_orfs(args):
 
@@ -89,7 +66,7 @@ def parse_orfs(args):
 
     dataframe_dict = { "Main" : main_df }
 
-    excel_writer(args, dataframe_dict, wildcards)
+    eu.excel_writer(args.output, dataframe_dict, wildcards)
 
 def main():
     # store commandline args
