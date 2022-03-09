@@ -336,7 +336,7 @@ def main():
     if args.reads_deepribo == "" and args.reads_reparation == "":
         sys.exit("no read files given!!")
 
-    if args.xtail_path == "" and args.riborex_path == "":
+    if args.xtail_path == "":
         print("No differential expression data given. Proceeding without!")
 
     create_excel_sheets(args)
