@@ -21,7 +21,7 @@ def motif_gff3_forward_strand(args):
                 end_out = end_coordinate
                 id_out = f"{seq_record.id}:{start_out}-{end_out}:+"
                 motif_entry = f"{seq_record.id}\tHRIBO\tnucleotide_motif\t{start_out}\t{end_out}"\
-                            + f"\t.\t+\t.\tID={id_out}:;Name={motif};Frame={frame};\n"
+                            + f"\t.\t+\t.\tID={id_out}:;Name={motif};frame={frame};\n"
 
                 out_entries += motif_entry
                 counter += 1
@@ -43,7 +43,7 @@ def motif_gff3_reverse_strand(args):
                 end_out = length_reverse_seq - start_coordinate
                 id_out = f"{seq_record.id}:{start_out}-{end_out}:-"
                 motif_entry = f"{seq_record.id}\tHRIBO\tnucleotide_motif\t{start_out}\t{end_out}"\
-                            + f"\t.\t-\t.\tID={id_out};Name={motif};Frame={frame};\n"
+                            + f"\t.\t-\t.\tID={id_out};Name={motif};frame={frame};\n"
 
                 out_entries += motif_entry
                 counter += 1
