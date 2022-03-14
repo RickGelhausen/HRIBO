@@ -14,7 +14,7 @@ from Bio.Alphabet import generic_dna
 
 import excel_utils as eu
 
-FEATURE_MAP = { "ncrna" : "ncRNA", "trna" : "tRNA", "rrna" : "rRNA",\
+FEATURE_MAP = { "ncrna" : "ncRNA", "trna" : "tRNA", "rrna" : "rRNA", "srna" : "sRNA",\
                 "repeat_region" : "repeat_region", "start_codon" : "start_codons",\
                 "stop_codon" : "stop_codon", "3'-utr" : "3'-UTR", "5'-utr" : "5'-UTR"}
 
