@@ -15,6 +15,7 @@ onstart:
      os.makedirs("logs")
 
 samples = pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["method", "condition", "replicate"], drop=False)
+samples.sort_values(by=["method", "condition", "replicate"], axis=1, inplace=True)
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
 
@@ -26,22 +27,22 @@ if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
             Please ensure, that you either provide multiple condtions or turn off differential expression in the config.yaml.")
 
 report: "report/workflow.rst"
-def getContrast(wildcards):
-  conditions=sorted(samples["condition"].unique())
+conditions=sorted(samples["condition"].unique())
+contrastsTupleList=list((iter.combinations(conditions,2)))
+contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
+flat_contrasts= [item for sublist in contrasts for item in sublist]
 
-  contrastsTupleList=list((iter.combinations(conditions,2)))
-  contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
-  flat_contrasts= [item for sublist in contrasts for item in sublist]
-  elements = [("contrasts/"+((element.replace("[", '')).replace("]", '')).replace("'", '')) for element in flat_contrasts]
-  return elements
+def getContrast(flat_contrasts):
+    return [("contrasts/"+((element.replace("[", '')).replace("]", '')).replace("'", '')) for element in flat_contrasts]
 
-def getContrastXtail(wildcards):
-  conditions=sorted(samples["condition"].unique())
-  contrastsTupleList=list((iter.combinations(conditions,2)))
-  contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
-  flat_contrasts= [item for sublist in contrasts for item in sublist]
-  elements = [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
-  return elements
+def getContrastXtail(flat_contrasts):
+    return [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
+
+def getContrastRiborex(flat_contrasts):
+    return [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
+
+def getContrastDeltaTE(flat_contrasts):
+    return [("deltate/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
 
 
 
@@ -88,8 +89,10 @@ include: "rules/qcmerged.smk"
 include: "rules/readcounting.smk"
 
 if DIFFEXPRESS.lower() == "on":
-    # xtail
+    include: "rules/contrast.smk"
     include: "rules/xtail.smk"
+    include: "rules/riborex.smk"
+    include: "rules/deltate.smk"
 
 if DEEPRIBO.lower() == "on":
     #deepribo
@@ -120,7 +123,9 @@ if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
           "auxiliary/predictions_deepribo.xlsx",
           rules.createOverviewTableAll.output,
           unpack(getContrast),
-          unpack(getContrastXtail)
+          unpack(getContrastXtail),
+          unpack(getContrastRiborex),
+          unpack(getContrastDeltaTE)
 
 elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
    rule all:
@@ -167,7 +172,9 @@ elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
           "figures/heatmap_SpearmanCorr_readCounts.pdf",
           rules.createOverviewTableDiffExpr.output,
           unpack(getContrast),
-          unpack(getContrastXtail)
+          unpack(getContrastXtail),
+          unpack(getContrastRiborex),
+          unpack(getContrastDeltaTE)
 
 else:
    rule all:

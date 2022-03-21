@@ -15,6 +15,7 @@ onstart:
      os.makedirs("logs")
 
 samples = pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["method", "condition", "replicate"], drop=False)
+samples.sort_values(by=["method", "condition", "replicate"], inplace=True)
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
 
@@ -31,36 +32,38 @@ if "RIBO" not in samples["method"].unique():
     print("No Ribo-seq libraries were detected. No prediction tools for this setup are currently implemented. If you have pure Ribo-seq libraries, please use the method tag RIBO. Continuing...")
 
 report: "report/workflow.rst"
-def getContrast(wildcards):
-  conditions=sorted(samples["condition"].unique())
-  contrastsTupleList=list((iter.combinations(conditions,2)))
-  contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
-  flat_contrasts= [item for sublist in contrasts for item in sublist]
-  elements = [("contrasts/"+((element.replace("[", '')).replace("]", '')).replace("'", '')) for element in flat_contrasts]
-  return elements
 
-def getContrastXtail(wildcards):
-  conditions=sorted(samples["condition"].unique())
-  contrastsTupleList=list((iter.combinations(conditions,2)))
-  contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
-  flat_contrasts= [item for sublist in contrasts for item in sublist]
-  elements = [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
-  return elements
+conditions=sorted(samples["condition"].unique())
+contrastsTupleList=list((iter.combinations(conditions,2)))
+contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
+flat_contrasts= [item for sublist in contrasts for item in sublist]
+
+def getContrast(flat_contrasts):
+    return [("contrasts/"+((element.replace("[", '')).replace("]", '')).replace("'", '')) for element in flat_contrasts]
+
+def getContrastXtail(flat_contrasts):
+    return [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
+
+def getContrastRiborex(flat_contrasts):
+    return [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
+
+def getContrastDeltaTE(flat_contrasts):
+    return [("deltate/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in flat_contrasts]
 
 def get_wigfiles(wildcards):
-  method=samples["method"]
-  condition=samples["condition"]
-  replicate=samples["replicate"]
-  wilds = zip(method, condition, replicate)
+    method=samples["method"]
+    condition=samples["condition"]
+    replicate=samples["replicate"]
+    wilds = zip(method, condition, replicate)
 
-  bigwigs = [["totalmapped", "uniquemapped", "global", "centered", "fiveprime", "threeprime"], ["raw", "mil", "min"], ["forward", "reverse"], list(wilds)]
-  bigwigs = list(iter.product(*bigwigs))
+    bigwigs = [["totalmapped", "uniquemapped", "global", "centered", "fiveprime", "threeprime"], ["raw", "mil", "min"], ["forward", "reverse"], list(wilds)]
+    bigwigs = list(iter.product(*bigwigs))
 
-  wigfiles = []
-  for bw in bigwigs:
-      wigfiles.append("%stracks/%s/%s-%s-%s.%s.%s.%s.bw" %(bw[0], bw[1], bw[3][0], bw[3][1], bw[3][2], bw[1], bw[2], bw[0]))
+    wigfiles = []
+    for bw in bigwigs:
+        wigfiles.append("%stracks/%s/%s-%s-%s.%s.%s.%s.bw" %(bw[0], bw[1], bw[3][0], bw[3][1], bw[3][2], bw[1], bw[2], bw[0]))
 
-  return wigfiles
+    return wigfiles
 
 
 # Preprocessing
@@ -85,8 +88,10 @@ include: "rules/qcsingleend.smk"
 #readcounts
 include: "rules/readcounting.smk"
 if DIFFEXPRESS.lower() == "on":
-    # xtail
+    include: "rules/contrast.smk"
     include: "rules/xtail.smk"
+    include: "rules/riborex.smk"
+    include: "rules/deltate.smk"
 
 if DEEPRIBO.lower() == "on":
     #deepribo
@@ -119,6 +124,8 @@ if hasRIBO:
               rules.createOverviewTableAll.output,
               unpack(getContrast),
               unpack(getContrastXtail),
+              unpack(getContrastRiborex),
+              unpack(getContrastDeltaTE),
               "metageneprofiling/merged_offsets.json"
 
 
@@ -169,6 +176,8 @@ if hasRIBO:
               rules.createOverviewTableDiffExpr.output,
               unpack(getContrast),
               unpack(getContrastXtail),
+              unpack(getContrastRiborex),
+              unpack(getContrastDeltaTE),
               "metageneprofiling/merged_offsets.json"
 
     else:
@@ -214,6 +223,8 @@ else:
               "figures/heatmap_SpearmanCorr_readCounts.pdf",
               unpack(getContrast),
               unpack(getContrastXtail),
+              unpack(getContrastRiborex),
+              unpack(getContrastDeltaTE),
               "metageneprofiling/merged_offsets.json"
      else:
        rule all:

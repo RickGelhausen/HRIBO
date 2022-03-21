@@ -147,6 +147,8 @@ rule createOverviewTableDiffExpr:
         annotation="readcounts/independant_annotation.gff",
         genome=rules.retrieveGenome.output,
         xtail="xtail/xtail_all.csv",
+        riborex="riborex/riborex_all.csv",
+        deltate="deltate/deltate_all.csv",
         totalreads="readcounts/bam_mapped_reads.txt",
         reparation="readcounts/reparation_annotation.gff"
     output:
@@ -156,7 +158,7 @@ rule createOverviewTableDiffExpr:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} -x {input.xtail} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         """
 
 rule createOverviewTableAll:
@@ -164,6 +166,8 @@ rule createOverviewTableAll:
         annotation="readcounts/independant_annotation.gff",
         genome=rules.retrieveGenome.output,
         xtail="xtail/xtail_all.csv",
+        riborex="riborex/riborex_all.csv",
+        deltate="deltate/deltate_all.csv",
         totalreads="readcounts/bam_mapped_reads.txt",
         reparation="readcounts/reparation_annotation.gff",
         deepribo="readcounts/deepribo_annotation.gff"
@@ -174,5 +178,5 @@ rule createOverviewTableAll:
     threads: 1
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} -x {input.xtail} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_overview_excel.py -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         """
