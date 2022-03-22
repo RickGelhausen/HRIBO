@@ -49,6 +49,12 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
     xtail_dict = {}
     if args.xtail_path != "":
         xtail_dict = eu.generate_xtail_dict(args.xtail_path)
+    riborex_dict = {}
+    if args.riborex_path != "":
+        riborex_dict = eu.generate_riborex_dict(args.riborex_path)
+    deltate_dict = {}
+    if args.deltate_path != "":
+        deltate_dict = eu.generate_deltate_dict(args.deltate_path)
 
     sheet_row_dict = {}
     gff_rows = []
@@ -57,8 +63,9 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
              ["15nt upstream", "Nucleotide_seq", "Aminoacid_seq"] +\
              [f"{cond}_TE" for cond in te_header] +\
              [f"{card}_rpkm" for card in wildcards] +\
-             [f"{contrast}_{item}" for contrast in contrasts for item in ["xtail_pvalue", "xtail_pvalue_adjusted", "xtail_log2FC"]]
-
+             [f"xtail_{contrast}_{item}" for contrast in contrasts for item in ["TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]] +\
+             [f"riborex_{contrast}_{item}" for contrast in contrasts for item in ["TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]] +\
+             [f"deltaTE_{contrast}_{item}" for contrast in contrasts for item in ["RIBO_pvalue", "RIBO_pvalue_adjusted", "RIBO_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted", "RNA_log2FC", "TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]]
 
     name_list = [f"s{x}" for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -81,6 +88,21 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
             else:
                 xtail_list += [None, None, None]
 
+        riborex_list = []
+        for contrast in contrasts:
+            if (key, contrast) in riborex_dict:
+                riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[(key, contrast)]
+                riborex_list += [riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC]
+            else:
+                riborex_list += [None, None, None]
+
+        deltate_list = []
+        for contrast in contrasts:
+            if (key, contrast) in deltate_dict:
+                deltate_list += list(deltate_dict[(key, contrast)])
+            else:
+                deltate_list += [None, None, None, None, None, None, None, None, None]
+
         start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
 
         rpkm_list = []
@@ -92,7 +114,7 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
         identifier = f"{chromosome}:{start}-{stop}:{strand}"
 
         result = [identifier, chromosome, start, stop, strand, feature, locus_tag, old_locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
-                 [nt_window, nucleotide_seq, aa_seq] + te_list + rpkm_list + xtail_list
+                 [nt_window, nucleotide_seq, aa_seq] + te_list + rpkm_list + xtail_list + riborex_list + deltate_list
 
         attributes = f"ID={identifier};"
         if locus_tag != "":
@@ -169,7 +191,9 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
              [f"{cond}_TE" for cond in te_header] +\
              [f"{card}_rpkm" for card in wildcards] +\
              ["Evidence_reparation", "Reparation_probability", "Evidence_deepribo", "Deepribo_rank", "Deepribo_score"] +\
-             [f"xtail_{contrast}_{item}" for contrast in contrasts for item in [ "log2FC_final", "pvalue_final", "pvalue_adjusted"]]
+             [f"xtail_{contrast}_{item}" for contrast in contrasts for item in ["TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]] +\
+             [f"riborex_{contrast}_{item}" for contrast in contrasts for item in ["TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]] +\
+             [f"deltaTE_{contrast}_{item}" for contrast in contrasts for item in ["RIBO_pvalue", "RIBO_pvalue_adjusted", "RIBO_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted", "RNA_log2FC", "TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]]
 
     name_list = [f"s{x}" for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -228,21 +252,20 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
             else:
                 xtail_list += [None, None, None]
 
-        # riborex_list = []
-        # for contrast in contrasts:
-        #     if (key, contrast) in xtail_dict:
-        #         xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[(key, contrast)]
-        #         xtail_list += [xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted]
-        #     else:
-        #         xtail_list += [None, None, None]
+        riborex_list = []
+        for contrast in contrasts:
+            if (key, contrast) in riborex_dict:
+                riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[(key, contrast)]
+                riborex_list += [riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC]
+            else:
+                riborex_list += [None, None, None]
 
-        # xtail_list = []
-        # for contrast in contrasts:
-        #     if (key, contrast) in xtail_dict:
-        #         xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[(key, contrast)]
-        #         xtail_list += [xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted]
-        #     else:
-        #         xtail_list += [None, None, None]
+        deltate_list = []
+        for contrast in contrasts:
+            if (key, contrast) in deltate_dict:
+                deltate_list += list(deltate_dict[(key, contrast)])
+            else:
+                deltate_list += [None, None, None, None, None, None, None, None, None]
 
         start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
 
@@ -265,7 +288,7 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
                  [nt_window, nucleotide_seq, aa_seq] +\
                  te_list + rpkm_list +\
                  [evidence_reparation, reparation_probability, evidence_deepribo, deepribo_rank, deepribo_score]+\
-                  xtail_list
+                  xtail_list + riborex_list + deltate_list
 
         attributes = f"ID={identifier};"
         if locus_tag != "":
