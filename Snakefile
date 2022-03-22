@@ -88,10 +88,10 @@ include: "rules/qcsingleend.smk"
 #readcounts
 include: "rules/readcounting.smk"
 if DIFFEXPRESS.lower() == "on":
-    include: "rules/contrast.smk"
-    include: "rules/xtail.smk"
-    include: "rules/riborex.smk"
-    include: "rules/deltate.smk"
+    include: "rules/diffex_contrast.smk"
+    include: "rules/diffex_xtail.smk"
+    include: "rules/diffex_riborex.smk"
+    include: "rules/diffex_deltate.smk"
 
 if DEEPRIBO.lower() == "on":
     #deepribo

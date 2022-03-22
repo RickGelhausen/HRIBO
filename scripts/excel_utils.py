@@ -8,7 +8,6 @@ from collections import Counter, OrderedDict
 
 from Bio.Seq import Seq
 from Bio import SeqIO
-from Bio.Alphabet import generic_dna
 
 class OrderedCounter(Counter, OrderedDict):
     pass
@@ -135,7 +134,7 @@ def get_genome_information(genome, start, stop, strand):
     start_codon = nucleotide_seq[0:3]
     stop_codon = nucleotide_seq[-3:]
 
-    coding_dna = Seq(nucleotide_seq, generic_dna)
+    coding_dna = Seq(nucleotide_seq)
     if len(coding_dna) % 3 != 0:
         aa_seq = ""
     else:
@@ -468,6 +467,69 @@ def generate_annotation_dict(annotation_path):
         annotation_meta_dict[key] = (gene_id, locus_tag, name, gene_name, old_locus_tag, read_list)
 
     return annotation_meta_dict
+
+def annotation_to_dict(annotation_file):
+    """
+    read the annotation file into a dictionary
+    { ID : (chromosome,start,stop,strand,attributes) }
+    """
+
+    annotation_df = pd.read_csv(annotation_file, sep="\t", comment="#", header=None)
+
+    parent_dict = {}
+    for row in annotation_df.itertuples(index=False, name='Pandas'):
+        if getattr(row, "_2").lower() in ["gene","pseudogene"]:
+            chromosome = getattr(row, "_0")
+            start = getattr(row, "_3")
+            stop = getattr(row, "_4")
+            strand = getattr(row, "_6")
+            attributes = getattr(row, "_8")
+
+            attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
+
+            id = attribute_list[attribute_list.index("ID") + 1]
+
+            locus_tag = ""
+            if "locus_tag" in attributes.lower():
+                locus_tag = attribute_list[attribute_list.index("locus_tag") + 1]
+
+            old_locus_tag = ""
+            if "old_locus_tag" in attributes.lower():
+                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag") + 1]
+
+            name = ""
+            if "gene" in attributes.lower():
+                name = attribute_list[attribute_list.index("gene") + 1]
+
+            parent_dict[id] = (locus_tag, old_locus_tag, name)
+
+    annotation_dict = {}
+    for row in annotation_df.itertuples(index=False, name='Pandas'):
+        if getattr(row, "_2").lower() in ["cds", "rrna", "ncrna", "trna"]:
+            chromosome = getattr(row, "_0")
+            start = getattr(row, "_3")
+            stop = getattr(row, "_4")
+            strand = getattr(row, "_6")
+            attributes = getattr(row, "_8")
+
+            attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
+
+            parent = ""
+            if "parent" in attributes.lower():
+                parent = attribute_list[attribute_list.index("Parent") + 1]
+
+            id = f"{chromosome}:{start}-{stop}:{strand}"
+            name = parent_dict[parent][2]
+            if name == "":
+                if "name" in attributes.lower():
+                    name = attribute_list[attribute_list.index("Name") + 1]
+
+            if parent == "" or parent not in parent_dict:
+                annotation_dict[id] = (chromosome, start, stop, strand, name, "", "")
+            else:
+                annotation_dict[id] = (chromosome, start, stop, strand, name, parent_dict[parent][0], parent_dict[parent][1])
+
+    return annotation_dict
 
 def generate_non_cds_dict(annotation_path):
     """

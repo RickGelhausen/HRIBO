@@ -3,11 +3,11 @@ import argparse
 import sys
 import pandas as pd
 import collections
+import re
 
 import excel_utils as eu
 
 from Bio import SeqIO
-
 
 def xtail_output(args):
     # read the genome file
@@ -16,12 +16,16 @@ def xtail_output(args):
     for entry in genome_file:
         genome_dict[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
 
-    annotation_dict = eu.generate_annotation_dict(args.annotation_file)
+    annotation_dict = eu.annotation_to_dict(args.annotation_file)
 
     diff_expr_df = pd.read_csv(args.input_csv, sep=",", comment="#")
 
     all_sheet = []
-    header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "ID", "Name", "mRNA_log2FC", "RPF_log2FC", "log2FC_TE_v1", "pvalue_v1", "log2FC_TE_v2", "pvalue_v2", "log2FC_TE_final", "pvalue_final", "pvalue_adjusted", "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
+    header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Identifier", "Name", \
+              "mRNA_log2FC", "RPF_log2FC", "log2FC_TE_v1", "pvalue_v1", "log2FC_TE_v2", "pvalue_v2", \
+              "log2FC_TE_final", "pvalue_final", "pvalue_adjusted", \
+              "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
+
     name_list = [f"s{x}" for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
 
@@ -29,9 +33,7 @@ def xtail_output(args):
         unique_id = getattr(row, "_0")
 
         if unique_id in annotation_dict:
-            chromosome, start, stop, strand, attributes, locus_tag, old_locus_tag = annotation_dict[unique_id]
-            _, gene_name, _, _, _, locus_tag, old_locus_tag = eu.retrieve_column_information(attributes)
-
+            chromosome, start, stop, strand, gene_name, locus_tag, old_locus_tag = annotation_dict[unique_id]
         else:
             if ":" in unique_id and "-" in unique_id:
                 chromosome, sec, strand = unique_id.split(":")

@@ -20,21 +20,20 @@ rule riborexxlsx:
         genome=rules.retrieveGenome.output,
         riborex_out="riborex/{contrast}_deseq2.csv"
     output:
-        xlsx_sorted="riborex/{contrast}_sorted.xlsx",
-        xlsx_signif="riborex/{contrast}_significant.xlsx"
+        xlsx_sorted="riborex/{contrast}_sorted.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
     shell:
         """
-        python3 HRIBO/scripts/generate_excel_xtail.py -a {input.annotation} -g {input.genome} -i {input.riborex_out} -o {output.xlsx_sorted}
+        python3 HRIBO/scripts/generate_excel_riborex.py -a {input.annotation} -g {input.genome} -i {input.riborex_out} -o {output.xlsx_sorted}
         """
 
 cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(samples["condition"].unique(),2)))] for item in sublist]
 
 rule poolriborex:
     input:
-        riborex=expand("riborex/{contr}_sorted.csv", contr=cur_contrast)
+        riborex=expand("riborex/{contr}_sorted.xlsx", contr=cur_contrast)
     output:
         "riborex/riborex_all.csv"
     conda:

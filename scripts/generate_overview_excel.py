@@ -8,9 +8,7 @@ import itertools as iter
 
 import interlap
 
-from Bio.Seq import Seq
 from Bio import SeqIO
-from Bio.Alphabet import generic_dna
 
 import excel_utils as eu
 

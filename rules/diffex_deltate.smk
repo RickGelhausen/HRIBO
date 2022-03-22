@@ -56,3 +56,36 @@ rule deltate:
             touch {output.fig}
         fi
         """
+
+rule deltatexlsx:
+    input:
+        annotation=rules.checkAnnotation.output,
+        genome=rules.retrieveGenome.output,
+        deltate_ribo="deltate/{contrast}/fold_changes/deltaRibo.txt",
+        deltate_rna="deltate/{contrast}/fold_changes/deltaRNA.txt,
+        deltate_te="deltate/{contrast}/fold_changes/deltaTE.txt
+    output:
+        xlsx_sorted="deltate/{contrast}_sorted.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        python3 HRIBO/scripts/generate_excel_deltate.py -a {input.annotation} -g {input.genome} -i {input.deltate_ribo} -r {input.deltate_rna} -t {input.deltate_te} -o {output.xlsx_sorted}
+        """
+
+
+cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(samples["condition"].unique(),2)))] for item in sublist]
+
+rule pooldeltate:
+    input:
+        deltate=expand("deltate/{contr}_sorted.xlsx", contr=cur_contrast)
+    output:
+        "deltate/deltate_all.csv"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    shell:
+        """
+        python3 HRIBO/scripts/merge_differential_expression.py {input.deltate} -o {output} -t deltate
+        """

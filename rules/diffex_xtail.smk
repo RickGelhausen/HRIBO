@@ -23,7 +23,6 @@ rule xtailxlsx:
         xtail_out="xtail/{contrast}.csv",
     output:
         xlsx_sorted="xtail/{contrast}_sorted.xlsx",
-        xlsx_signif="xtail/{contrast}_significant.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
@@ -36,7 +35,7 @@ cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list
 
 rule poolxtail:
     input:
-        xtail=expand("xtail/{contr}_sorted.csv", contr=cur_contrast)
+        xtail=expand("xtail/{contr}_sorted.xlsx", contr=cur_contrast)
     output:
         "xtail/xtail_all.csv"
     conda:
