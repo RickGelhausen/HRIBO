@@ -2,7 +2,12 @@ def read_has_replicates(filename):
     try:
         line = False
         with open(filename, "r") as f:
-            line = bool(f.readline().strip())
+            line = f.readline().strip()
+            print(line)
+            if line == "False":
+                line = False
+            else:
+                line = True
         return line
     except FileNotFoundError:
         return "failed"
@@ -18,12 +23,15 @@ rule deltatePrepareInput:
         samples="deltate/{contrast}/samples_info.txt",
         replicates="deltate/{contrast}/has_replicates.txt"
     conda:
-        "../envs/pytools.yaml"
+        "../envs/excel.yaml"
     threads: 1
+    params:
+        contrast = lambda wildcards, input: input[1].split("/")[1],
+        out_dir = lambda wildcards, output: os.path.dirname(output[0])
     shell:
         """
         mkdir -p deltate;
-        HRIBO/scripts/prepare_deltate_input.py -c {contrast} -r {input.rawreads} -b bam/ -o deltate/{contrast}
+        HRIBO/scripts/prepare_deltate_input.py -c {params.contrast} -r {input.rawreads} -b bam/ -o {params.out_dir}
         """
 
 rule deltate:
@@ -42,13 +50,15 @@ rule deltate:
         "docker://gelhausr/deltate:latest"
     threads: 1
     params:
-        has_replicates=lambda wildcards, input: read_has_replicates(input[2])
+        has_replicates=lambda wildcards, input: read_has_replicates(input[4]),
+        out_dir = lambda wildcards, output: os.path.dirname(output[3])
     shell:
         """
         mkdir -p deltate;
-        if [ params.has_replicates ]
+        x={params.has_replicates}
+        if [ "$x" = "True" ]
         then
-            DTEG.R -c {input.ribo} {input.rna} {input.samples} 1 deltate/{contrast}/
+            DTEG.R -c {input.ribo} {input.rna} {input.samples} 1 {params.out_dir}
         else
             touch {output.fcribo}
             touch {output.fcrna}
@@ -62,8 +72,8 @@ rule deltatexlsx:
         annotation=rules.checkAnnotation.output,
         genome=rules.retrieveGenome.output,
         deltate_ribo="deltate/{contrast}/fold_changes/deltaRibo.txt",
-        deltate_rna="deltate/{contrast}/fold_changes/deltaRNA.txt,
-        deltate_te="deltate/{contrast}/fold_changes/deltaTE.txt
+        deltate_rna="deltate/{contrast}/fold_changes/deltaRNA.txt",
+        deltate_te="deltate/{contrast}/fold_changes/deltaTE.txt"
     output:
         xlsx_sorted="deltate/{contrast}_sorted.xlsx"
     conda:
@@ -75,7 +85,7 @@ rule deltatexlsx:
         """
 
 
-cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(samples["condition"].unique(),2)))] for item in sublist]
+cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))] for item in sublist]
 
 rule pooldeltate:
     input:

@@ -14,8 +14,9 @@ onstart:
    if not os.path.exists("logs"):
      os.makedirs("logs")
 
-samples = pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["method", "condition", "replicate"], drop=False)
-samples.sort_values(by=["method", "condition", "replicate"], inplace=True)
+samples = pd.read_csv(config["samples"], dtype=str, sep="\t")
+samples.sort_values(by=["method", "condition", "replicate"], key=lambda col: col.str.lower() if col.dtype==str else col, inplace=True)
+samples.set_index(["method", "condition", "replicate"], drop=False, inplace=True)
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
 
@@ -33,11 +34,11 @@ if "RIBO" not in samples["method"].unique():
 
 report: "report/workflow.rst"
 
-conditions=sorted(samples["condition"].unique())
+conditions=sorted(samples["condition"].unique(), key=lambda s: s.lower())
 contrastsTupleList=list((iter.combinations(conditions,2)))
 contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
 flat_contrasts= [item for sublist in contrasts for item in sublist]
-
+print(contrasts)
 def getContrast(flat_contrasts):
     return [("contrasts/"+((element.replace("[", '')).replace("]", '')).replace("'", '')) for element in flat_contrasts]
 

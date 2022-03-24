@@ -29,7 +29,7 @@ rule riborexxlsx:
         python3 HRIBO/scripts/generate_excel_riborex.py -a {input.annotation} -g {input.genome} -i {input.riborex_out} -o {output.xlsx_sorted}
         """
 
-cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(samples["condition"].unique(),2)))] for item in sublist]
+cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))] for item in sublist]
 
 rule poolriborex:
     input:

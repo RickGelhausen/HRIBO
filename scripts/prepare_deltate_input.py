@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import pandas as pd
 from pathlib import Path
 import argparse
@@ -46,7 +47,7 @@ def create_sample_sheet(ribo_bam, rna_bam, output_path):
     replicate_dict = {}
     with open(output_file, "w") as of:
         of.write("SampleID\tCondition\tSeqType\tBatch\n")
-        for ribo_file in sorted(ribo_bam):
+        for ribo_file in sorted(ribo_bam, key=lambda s: str(s).lower()):
             file_prefix = ribo_file.stem
             method, condition, replicate = file_prefix.split("-")
             if (method, condition) in replicate_dict:
@@ -55,7 +56,7 @@ def create_sample_sheet(ribo_bam, rna_bam, output_path):
                 replicate_dict[(method, condition)] = [replicate]
             of.write(f"{file_prefix}\t{condition}\t{method}\t{replicate}\n")
 
-        for rna_file in sorted(rna_bam):
+        for rna_file in sorted(rna_bam, key=lambda s: str(s).lower()):
             file_prefix = rna_file.stem
             method, condition, replicate = file_prefix.split("-")
             if (method, condition) in replicate_dict:
@@ -79,11 +80,13 @@ def create_readcount_table(bam_files, read_count_dict, output_path, file_name):
 
     output_file = os.path.join(output_path, file_name)
 
-    bam_files = sorted(bam_files)
+    bam_files = sorted(bam_files, key=lambda s: str(s).lower())
     columns = [file.stem for file in bam_files]
 
     counts_dict = {}
-    counts_dict["Identifier"] = read_count_dict["Unnamed: 0"]
+    print(read_count_dict)
+    counts_dict["Identifier"] = read_count_dict["Identifier"]
+    print(counts_dict)
     for idx in range(len(columns)):
         counts_dict[columns[idx]] = read_count_dict[columns[idx]]
 

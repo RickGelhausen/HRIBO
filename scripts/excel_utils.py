@@ -66,7 +66,7 @@ def calculate_rpkm(total_mapped, read_count, read_length):
 def get_unique(in_list):
     seen = set()
     seen_add = seen.add
-    return sorted([x for x in in_list if not (x in seen or seen_add(x))])
+    return sorted([x for x in in_list if not (x in seen or seen_add(x))], key=lambda s: s.lower() if type(s)==str else s)
 
 def retrieve_column_information(attributes):
     """
@@ -512,18 +512,30 @@ def annotation_to_dict(annotation_file):
 
             attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
 
-            id = attribute_list[attribute_list.index("ID") + 1]
+            if len(attribute_list) % 2 == 0:
+                for i in range(len(attribute_list)):
+                    if i % 2 == 0:
+                        attribute_list[i] = attribute_list[i].lower()
+            else:
+                print(attribute_list)
+                sys.exit("error, invalid gff, wrongly formatted attribute fields.")
+
+            id = ""
+            if "id" in attribute_list:
+                id = attribute_list[attribute_list.index("id") + 1]
+            else:
+                continue
 
             locus_tag = ""
-            if "locus_tag" in attributes.lower():
+            if "locus_tag" in attribute_list:
                 locus_tag = attribute_list[attribute_list.index("locus_tag") + 1]
 
             old_locus_tag = ""
-            if "old_locus_tag" in attributes.lower():
+            if "old_locus_tag" in attribute_list:
                 old_locus_tag = attribute_list[attribute_list.index("old_locus_tag") + 1]
 
             name = ""
-            if "gene" in attributes.lower():
+            if "gene" in attribute_list:
                 name = attribute_list[attribute_list.index("gene") + 1]
 
             parent_dict[id] = (locus_tag, old_locus_tag, name)
@@ -539,15 +551,27 @@ def annotation_to_dict(annotation_file):
 
             attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
 
+            if len(attribute_list) % 2 == 0:
+                for i in range(len(attribute_list)):
+                    if i % 2 == 0:
+                        attribute_list[i] = attribute_list[i].lower()
+            else:
+                print(attribute_list)
+                sys.exit("error, invalid gff, wrongly formatted attribute fields.")
+
             parent = ""
-            if "parent" in attributes.lower():
-                parent = attribute_list[attribute_list.index("Parent") + 1]
+            if "parent" in attribute_list:
+                parent = attribute_list[attribute_list.index("parent") + 1]
 
             id = f"{chromosome}:{start}-{stop}:{strand}"
-            name = parent_dict[parent][2]
+            if parent == "" or parent not in parent_dict:
+                name = ""
+            else:
+                name = parent_dict[parent][2]
+
             if name == "":
-                if "name" in attributes.lower():
-                    name = attribute_list[attribute_list.index("Name") + 1]
+                if "name" in attribute_list:
+                    name = attribute_list[attribute_list.index("name") + 1]
 
             if parent == "" or parent not in parent_dict:
                 annotation_dict[id] = (chromosome, start, stop, strand, name, "", "")

@@ -15,7 +15,7 @@ def pool_contrasts_xtail(args):
     collect all contrasts and pool files together
     """
     contrast_dict = {}
-    for contrast_file in args.contrast_csv:
+    for contrast_file in args.contrast_xlsx:
         cur_contrast = os.path.basename(contrast_file).split("_")[0]
 
         contrast_df = pd.read_excel(contrast_file, engine="openpyxl", sheet_name=0)
@@ -47,7 +47,7 @@ def pool_contrasts_riborex(args):
     collect all contrasts and pool files together
     """
     contrast_dict = {}
-    for contrast_file in args.contrast_csv:
+    for contrast_file in args.contrast_xlsx:
         cur_contrast = os.path.basename(contrast_file).split("_")[0]
 
         contrast_df = pd.read_excel(contrast_file, engine="openpyxl", sheet_name=0)
@@ -74,7 +74,7 @@ def pool_contrasts_deltate(args):
     collect all contrasts and pool files together
     """
     contrast_dict = {}
-    for contrast_file in args.contrast_csv:
+    for contrast_file in args.contrast_xlsx:
         cur_contrast = os.path.basename(contrast_file).split("_")[0]
 
         contrast_df = pd.read_excel(contrast_file, engine="openpyxl", sheet_name=0)
