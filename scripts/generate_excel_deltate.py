@@ -49,17 +49,26 @@ def deltate_output(args):
 
     annotation_dict = eu.annotation_to_dict(args.annotation_file)
 
-    ribo_expr_df = pd.read_csv(args.input_ribo, sep="\t", comment="#")
-    ribo_expr_df.index.name = "Identifier"
-    ribo_expr_df = ribo_expr_df.reset_index(level=["Identifier"])
+    try:
+        ribo_expr_df = pd.read_csv(args.input_ribo, sep="\t", comment="#")
+        ribo_expr_df.index.name = "Identifier"
+        ribo_expr_df = ribo_expr_df.reset_index(level=["Identifier"])
 
-    rna_expr_df = pd.read_csv(args.input_rna, sep="\t", comment="#")
-    rna_expr_df.index.name = "Identifier"
-    rna_expr_df = rna_expr_df.reset_index(level=["Identifier"])
+        rna_expr_df = pd.read_csv(args.input_rna, sep="\t", comment="#")
+        rna_expr_df.index.name = "Identifier"
+        rna_expr_df = rna_expr_df.reset_index(level=["Identifier"])
 
-    te_expr_df = pd.read_csv(args.input_te, sep="\t", comment="#")
-    te_expr_df.index.name = "Identifier"
-    te_expr_df = te_expr_df.reset_index(level=["Identifier"])
+        te_expr_df = pd.read_csv(args.input_te, sep="\t", comment="#")
+        te_expr_df.index.name = "Identifier"
+        te_expr_df = te_expr_df.reset_index(level=["Identifier"])
+    except pd.errors.EmptyDataError:
+        print("Warning deltaTE output is empty. Likely this is due to lacking replicates.")
+
+        columns_ribo_rna = ["Identifier", "baseMean", "log2FoldChange", "lfcSE", "pvalue", "padj"]
+        columns_te = ["Identifier", "baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj"]
+        ribo_expr_df = pd.DataFrame(columns=columns_ribo_rna)
+        rna_expr_df = pd.DataFrame(columns=columns_ribo_rna)
+        te_expr_df = pd.DataFrame(columns=columns_te)
 
     combined_dict = create_combined_dict(ribo_expr_df, rna_expr_df, te_expr_df)
 

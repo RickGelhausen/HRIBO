@@ -63,9 +63,9 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
              ["15nt upstream", "Nucleotide_seq", "Aminoacid_seq"] +\
              [f"{cond}_TE" for cond in te_header] +\
              [f"{card}_rpkm" for card in wildcards] +\
-             [f"xtail_{contrast}_{item}" for contrast in contrasts for item in ["TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]] +\
-             [f"riborex_{contrast}_{item}" for contrast in contrasts for item in ["TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]] +\
-             [f"deltaTE_{contrast}_{item}" for contrast in contrasts for item in ["RIBO_pvalue", "RIBO_pvalue_adjusted", "RIBO_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted", "RNA_log2FC", "TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]]
+             [f"xtail_{contrast}_{item}" for contrast in contrasts for item in ["TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
+             [f"riborex_{contrast}_{item}" for contrast in contrasts for item in ["TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
+             [f"deltaTE_{contrast}_{item}" for contrast in contrasts for item in ["RIBO_log2FC", "RIBO_pvalue", "RIBO_pvalue_adjusted", "RNA_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted", "TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]]
 
     name_list = [f"s{x}" for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -84,7 +84,7 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
         for contrast in contrasts:
             if (key, contrast) in xtail_dict:
                 xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted = xtail_dict[(key, contrast)]
-                xtail_list += [xtail_pvalue, xtail_pvalue_adjusted, xtail_log2FC]
+                xtail_list += [xtail_log2FC, xtail_pvalue, xtail_pvalue_adjusted]
             else:
                 xtail_list += [None, None, None]
 
@@ -92,7 +92,7 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
         for contrast in contrasts:
             if (key, contrast) in riborex_dict:
                 riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[(key, contrast)]
-                riborex_list += [riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC]
+                riborex_list += [riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted]
             else:
                 riborex_list += [None, None, None]
 
@@ -168,7 +168,7 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
     annotation_dict = eu.generate_annotation_dict(args.annotation_path)
     inter_dict = create_interlap(annotation_dict)
 
-    xtail_dict, riborex_dict, deltate_dict, deepribo_dict, reparation_dict = {}, {}, {}
+    xtail_dict, riborex_dict, deltate_dict, deepribo_dict, reparation_dict = {}, {}, {}, {}, {}
     if args.xtail_path != "":
         xtail_dict = eu.generate_xtail_dict(args.xtail_path)
     if args.riborex_path != "":
@@ -191,9 +191,9 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
              [f"{cond}_TE" for cond in te_header] +\
              [f"{card}_rpkm" for card in wildcards] +\
              ["Evidence_reparation", "Reparation_probability", "Evidence_deepribo", "Deepribo_rank", "Deepribo_score"] +\
-             [f"xtail_{contrast}_{item}" for contrast in contrasts for item in ["TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]] +\
-             [f"riborex_{contrast}_{item}" for contrast in contrasts for item in ["TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]] +\
-             [f"deltaTE_{contrast}_{item}" for contrast in contrasts for item in ["RIBO_pvalue", "RIBO_pvalue_adjusted", "RIBO_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted", "RNA_log2FC", "TE_pvalue", "TE_pvalue_adjusted", "TE_log2FC"]]
+             [f"xtail_{contrast}_{item}" for contrast in contrasts for item in ["TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
+             [f"riborex_{contrast}_{item}" for contrast in contrasts for item in ["TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
+             [f"deltaTE_{contrast}_{item}" for contrast in contrasts for item in ["RIBO_log2FC", "RIBO_pvalue", "RIBO_pvalue_adjusted", "RNA_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted", "TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]]
 
     name_list = [f"s{x}" for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -256,7 +256,7 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
         for contrast in contrasts:
             if (key, contrast) in riborex_dict:
                 riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted = riborex_dict[(key, contrast)]
-                riborex_list += [riborex_pvalue, riborex_pvalue_adjusted, riborex_log2FC]
+                riborex_list += [riborex_log2FC, riborex_pvalue, riborex_pvalue_adjusted]
             else:
                 riborex_list += [None, None, None]
 
@@ -354,7 +354,7 @@ def create_excel_sheets(args):
         conditions.append(card.split("-")[1])
 
     conditions = eu.get_unique(conditions)
-    contrasts = sorted([f"{x}-{y}" for x,y in list(iter.combinations(conditions, 2))])
+    contrasts = sorted([f"{x}-{y}" for x,y in list(iter.combinations(conditions, 2))], key= lambda s: s.lower())
 
     excel_sheet_dict = create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dict, wildcards, conditions, contrasts, te_header)
     excel_sheet_dict = create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dict, wildcards, conditions, contrasts, te_header)
