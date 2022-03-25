@@ -154,7 +154,7 @@ def merge_deltate_results(contrast_dict):
 
     header = ["gene_id", "RIBO_baseMean", "RIBO_log2FoldChange", "RIBO_lfcSE", "RIBO_pvalue", "RIBO_padj", \
               "RNA_baseMean", "RNA_log2FoldChange", "RNA_lfcSE", "RNA_pvalue", "RNA_padj", \
-              "TE_baseMean", "TE_log2FoldChange", "TE_lfcSE", "TE_stat", "TE_pvalue", "TE_padj"]
+              "TE_baseMean", "TE_log2FoldChange", "TE_lfcSE", "TE_stat", "TE_pvalue", "TE_padj", "contrast"]
 
     nTuple = collections.namedtuple('Pandas', header)
 

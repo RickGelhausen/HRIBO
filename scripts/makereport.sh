@@ -21,6 +21,7 @@ mkdir -p "${report}/quality-control"
 mkdir -p "${report}/ORF-predictions"
 mkdir -p "${report}/differential-expression/xtail/"
 mkdir -p "${report}/differential-expression/riborex/"
+mkdir -p "${report}/differential-expression/deltate/"
 
 cp -r HRIBO/manual/Manual_HRIBO.pdf "${report}/manual.pdf"
 cp auxiliary/samples.xlsx "${report}/samples.xlsx"
@@ -51,8 +52,10 @@ cp -r threeprimetracks/min/*.bw "${report}/genome-browser/coverage/threeprime/mi
 cp -r threeprimetracks/mil/*.bw "${report}/genome-browser/coverage/threeprime/mil"
 
 cp -r xtail/*_sorted.xlsx "${report}/differential-expression/xtail/"
-cp -r xtail/*_significant.xlsx "${report}/differential-expression/xtail/"
 cp -r xtail/*.pdf "${report}/differential-expression/xtail/"
+cp -r riborex/*_sorted.xlsx "${report}/differential-expression/riborex"
+cp -r deltate/*_sorted.xlsx "${report}/differential-expression/deltate"
+cp -r deltate/*.pdf "${report}/differential-expression/deltate"
 
 cp -r auxiliary/overview.xlsx "${report}"
 cp -r auxiliary/overview.gff "${report}/genome-browser/"

@@ -45,26 +45,27 @@ rule deltate:
         fcribo="deltate/{contrast}/fold_changes/deltaRibo.txt",
         fcrna="deltate/{contrast}/fold_changes/deltaRNA.txt",
         fcte="deltate/{contrast}/fold_changes/deltaTE.txt",
-        fig="deltate/{contrast}/Result_figures.pdf"
+        fig="deltate/{contrast}_figures.pdf"
     singularity:
         "docker://gelhausr/deltate:latest"
     threads: 1
     params:
         has_replicates=lambda wildcards, input: read_has_replicates(input[4]),
-        out_dir = lambda wildcards, output: os.path.dirname(output[3])
+        contrast=lambda wildcards, input: input[0].split("/")[1]
     shell:
         """
         mkdir -p deltate;
         x={params.has_replicates}
         if [ "$x" = "True" ]
         then
-            DTEG.R -c {input.ribo} {input.rna} {input.samples} 1 {params.out_dir}
+            DTEG.R {input.ribo} {input.rna} {input.samples} 1 deltate/{params.contrast}/
         else
             touch {output.fcribo}
             touch {output.fcrna}
             touch {output.fcte}
-            touch {output.fig}
+            touch deltate/{params.contrast}/Result_figures.pdf
         fi
+        cp deltate/{params.contrast}/Result_figures.pdf {output.fig}
         """
 
 rule deltatexlsx:

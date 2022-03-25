@@ -1,4 +1,11 @@
-### version 1.5.2 (in progress) [Rick Gelhausen & Florian Eggenhofer](mailto:gelhausr@informatik.uni-freiburg.de) 28.07.2021
+### version 1.6.0 (in progress) [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) ?
+ * complete restructering of differential expression analysis
+ * added deltaTE and re-added riborex
+ * fixed issue with sorting between python and R
+ * changed .xlsx format for differential expression, using sheets rather than multiple files.
+ * cleaned differential expression scripts
+
+### version 1.5.2 (added to 1.6.0) [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) -
  * removed riborex support and improved xtail support
  * fixed issue with missing xtail results in overview tables
  * added all annotated features to overview.xlsx

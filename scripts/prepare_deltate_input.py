@@ -36,6 +36,22 @@ def prepare_read_count_dict(read_count_file):
 
     return read_count_df.to_dict("series")
 
+def compute_condition_map(ribo_bam, rna_bam):
+    """
+    Return a map of condition to integer
+    """
+
+    counter = 1
+    condition_map = {}
+    all_files = sorted(ribo_bam + rna_bam, key=lambda s: str(s).lower())
+    for file in all_files:
+        _, condition, _ = file.stem.split("-")
+        if condition not in condition_map:
+            condition_map[condition] = counter
+            counter += 1
+
+    return condition_map
+
 def create_sample_sheet(ribo_bam, rna_bam, output_path):
     """
     Create a sample sheet with RIBO and RNA samples
@@ -43,6 +59,8 @@ def create_sample_sheet(ribo_bam, rna_bam, output_path):
 
     output_file = os.path.join(output_path, "samples_info.txt")
     replicate_file = os.path.join(output_path, "has_replicates.txt")
+
+    condition_map = compute_condition_map(ribo_bam, rna_bam)
 
     replicate_dict = {}
     with open(output_file, "w") as of:
@@ -54,7 +72,7 @@ def create_sample_sheet(ribo_bam, rna_bam, output_path):
                 replicate_dict[(method, condition)].append(replicate)
             else:
                 replicate_dict[(method, condition)] = [replicate]
-            of.write(f"{file_prefix}\t{condition}\t{method}\t{replicate}\n")
+            of.write(f"{file_prefix}\t{condition_map[condition]}\t{method}\t{replicate}\n")
 
         for rna_file in sorted(rna_bam, key=lambda s: str(s).lower()):
             file_prefix = rna_file.stem
@@ -63,7 +81,7 @@ def create_sample_sheet(ribo_bam, rna_bam, output_path):
                 replicate_dict[(method, condition)].append(replicate)
             else:
                 replicate_dict[(method, condition)] = [replicate]
-            of.write(f"{file_prefix}\t{condition}\t{method}\t{replicate}\n")
+            of.write(f"{file_prefix}\t{condition_map[condition]}\t{method}\t{replicate}\n")
 
     has_replicates = True
     for key, val in replicate_dict.items():
@@ -84,9 +102,7 @@ def create_readcount_table(bam_files, read_count_dict, output_path, file_name):
     columns = [file.stem for file in bam_files]
 
     counts_dict = {}
-    print(read_count_dict)
     counts_dict["Identifier"] = read_count_dict["Identifier"]
-    print(counts_dict)
     for idx in range(len(columns)):
         counts_dict[columns[idx]] = read_count_dict[columns[idx]]
 
