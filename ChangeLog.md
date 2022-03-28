@@ -1,4 +1,5 @@
 ### version 1.6.0 (in progress) [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) ?
+ * fixed bug in metagene-profiling that caused negative strand not to be used correctly * fixed bug in metagene-profiling that caused negative strand not to be used correctly.
  * complete restructering of differential expression analysis
  * added deltaTE and re-added riborex
  * fixed issue with sorting between python and R
