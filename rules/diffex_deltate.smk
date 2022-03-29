@@ -55,16 +55,11 @@ rule deltate:
     shell:
         """
         mkdir -p deltate;
-        x={params.has_replicates}
-        if [ "$x" = "True" ]
-        then
-            DTEG.R {input.ribo} {input.rna} {input.samples} 1 deltate/{params.contrast}/
-        else
-            touch {output.fcribo}
-            touch {output.fcrna}
-            touch {output.fcte}
-            touch deltate/{params.contrast}/Result_figures.pdf
-        fi
+        touch {output.fcribo}
+        touch {output.fcrna}
+        touch {output.fcte}
+        touch deltate/{params.contrast}/Result_figures.pdf
+	    DTEG.R {input.ribo} {input.rna} {input.samples} 1 deltate/{params.contrast}/ || true
         cp deltate/{params.contrast}/Result_figures.pdf {output.fig}
         """
 

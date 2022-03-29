@@ -372,9 +372,6 @@ def metagene_mapping(length, length_reads, seqid, codons, strand, input_type, no
             codoninterval = (minus_strand_interval_begin, minus_strand_interval_end)
 
         overlapping_intervals = list(inter.find(codoninterval))
-        if strand == "-":
-            print(codoninterval)
-            print(overlapping_intervals)
         if len(overlapping_intervals) == 0:
             continue
         for readinterval in overlapping_intervals:
