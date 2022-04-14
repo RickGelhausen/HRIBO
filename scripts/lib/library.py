@@ -146,7 +146,7 @@ def get_length_read_dicts(in_bam_filepath, min_read_length, max_read_length):
                 else:
                     readfeature = Feature("read", read.reference_name, read.reference_start, read.reference_end, "-")
                     reverse_length_reads_dict[currentreadlength].append(readfeature)
-    return(forward_length_reads_dict,forward_length_reads_dict)
+    return(forward_length_reads_dict,reverse_length_reads_dict)
 
 def meta_gene_profiling(input_type, seqids, cpu_cores, forward_length_reads_dict, reverse_length_reads_dict, codons, out_plot_filepath, normalization, noise_reduction_analysis):
     """

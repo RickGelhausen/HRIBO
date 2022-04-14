@@ -8,7 +8,6 @@ from collections import Counter, OrderedDict
 
 from Bio.Seq import Seq
 from Bio import SeqIO
-from Bio.Alphabet import generic_dna
 
 class OrderedCounter(Counter, OrderedDict):
     pass
@@ -67,7 +66,7 @@ def calculate_rpkm(total_mapped, read_count, read_length):
 def get_unique(in_list):
     seen = set()
     seen_add = seen.add
-    return sorted([x for x in in_list if not (x in seen or seen_add(x))])
+    return sorted([x for x in in_list if not (x in seen or seen_add(x))], key=lambda s: s.lower() if type(s)==str else s)
 
 def retrieve_column_information(attributes):
     """
@@ -135,7 +134,7 @@ def get_genome_information(genome, start, stop, strand):
     start_codon = nucleotide_seq[0:3]
     stop_codon = nucleotide_seq[-3:]
 
-    coding_dna = Seq(nucleotide_seq, generic_dna)
+    coding_dna = Seq(nucleotide_seq)
     if len(coding_dna) % 3 != 0:
         aa_seq = ""
     else:
@@ -294,6 +293,31 @@ def generate_xtail_dict(xtail_path):
 
     return xtail_dict
 
+def generate_deltate_dict(deltate_path):
+    """
+    create a dictionary containing all important deltate input
+    {geneID : (log2fc, pvalue, pvalue_adj)}
+    """
+
+    deltate_df = pd.read_csv(deltate_path, sep=",", comment="#")
+    deltate_dict = {}
+
+    for row in deltate_df.itertuples(index=False, name='Pandas'):
+        gene_id = getattr(row, "gene_id")
+        ribo_log2fc = getattr(row, "RIBO_log2FoldChange")
+        ribo_pvalue = getattr(row, "RIBO_pvalue")
+        ribo_pvalue_adj = getattr(row, "RIBO_padj")
+        rna_log2fc = getattr(row, "RNA_log2FoldChange")
+        rna_pvalue = getattr(row, "RNA_pvalue")
+        rna_pvalue_adj = getattr(row, "RNA_padj")
+        te_log2fc = getattr(row, "TE_log2FoldChange")
+        te_pvalue = getattr(row, "TE_pvalue")
+        te_pvalue_adj = getattr(row, "TE_padj")
+        contrast = getattr(row, "contrast").split("_")[1]
+
+        deltate_dict[(gene_id, contrast)] = (ribo_log2fc, ribo_pvalue, ribo_pvalue_adj, rna_log2fc, rna_pvalue, rna_pvalue_adj, te_log2fc, te_pvalue, te_pvalue_adj)
+
+    return deltate_dict
 
 def generate_reparation_dict(reparation_path):
     """
@@ -468,6 +492,93 @@ def generate_annotation_dict(annotation_path):
         annotation_meta_dict[key] = (gene_id, locus_tag, name, gene_name, old_locus_tag, read_list)
 
     return annotation_meta_dict
+
+def annotation_to_dict(annotation_file):
+    """
+    read the annotation file into a dictionary
+    { ID : (chromosome,start,stop,strand,attributes) }
+    """
+
+    annotation_df = pd.read_csv(annotation_file, sep="\t", comment="#", header=None)
+
+    parent_dict = {}
+    for row in annotation_df.itertuples(index=False, name='Pandas'):
+        if getattr(row, "_2").lower() in ["gene","pseudogene"]:
+            chromosome = getattr(row, "_0")
+            start = getattr(row, "_3")
+            stop = getattr(row, "_4")
+            strand = getattr(row, "_6")
+            attributes = getattr(row, "_8")
+
+            attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
+
+            if len(attribute_list) % 2 == 0:
+                for i in range(len(attribute_list)):
+                    if i % 2 == 0:
+                        attribute_list[i] = attribute_list[i].lower()
+            else:
+                print(attribute_list)
+                sys.exit("error, invalid gff, wrongly formatted attribute fields.")
+
+            id = ""
+            if "id" in attribute_list:
+                id = attribute_list[attribute_list.index("id") + 1]
+            else:
+                continue
+
+            locus_tag = ""
+            if "locus_tag" in attribute_list:
+                locus_tag = attribute_list[attribute_list.index("locus_tag") + 1]
+
+            old_locus_tag = ""
+            if "old_locus_tag" in attribute_list:
+                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag") + 1]
+
+            name = ""
+            if "gene" in attribute_list:
+                name = attribute_list[attribute_list.index("gene") + 1]
+
+            parent_dict[id] = (locus_tag, old_locus_tag, name)
+
+    annotation_dict = {}
+    for row in annotation_df.itertuples(index=False, name='Pandas'):
+        if getattr(row, "_2").lower() in ["cds", "rrna", "ncrna", "trna"]:
+            chromosome = getattr(row, "_0")
+            start = getattr(row, "_3")
+            stop = getattr(row, "_4")
+            strand = getattr(row, "_6")
+            attributes = getattr(row, "_8")
+
+            attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
+
+            if len(attribute_list) % 2 == 0:
+                for i in range(len(attribute_list)):
+                    if i % 2 == 0:
+                        attribute_list[i] = attribute_list[i].lower()
+            else:
+                print(attribute_list)
+                sys.exit("error, invalid gff, wrongly formatted attribute fields.")
+
+            parent = ""
+            if "parent" in attribute_list:
+                parent = attribute_list[attribute_list.index("parent") + 1]
+
+            id = f"{chromosome}:{start}-{stop}:{strand}"
+            if parent == "" or parent not in parent_dict:
+                name = ""
+            else:
+                name = parent_dict[parent][2]
+
+            if name == "":
+                if "name" in attribute_list:
+                    name = attribute_list[attribute_list.index("name") + 1]
+
+            if parent == "" or parent not in parent_dict:
+                annotation_dict[id] = (chromosome, start, stop, strand, name, "", "")
+            else:
+                annotation_dict[id] = (chromosome, start, stop, strand, name, parent_dict[parent][0], parent_dict[parent][1])
+
+    return annotation_dict
 
 def generate_non_cds_dict(annotation_path):
     """

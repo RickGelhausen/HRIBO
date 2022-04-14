@@ -4,14 +4,13 @@ import pandas as pd
 import collections
 from collections import Counter, OrderedDict
 
-from Bio.Seq import Seq
 from Bio import SeqIO
-from Bio.Alphabet import generic_dna
 
 import excel_utils as eu
 
 class OrderedCounter(Counter, OrderedDict):
     pass
+
 
 def create_excel_file(args):
     # read the genome file

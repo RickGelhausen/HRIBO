@@ -15,7 +15,7 @@ def call_featureCounts(args):
     """
     open(args.output, "w").close()
 
-    bamfiles = sorted(args.bamfiles)
+    bamfiles = sorted(args.bamfiles, key=lambda s: s.lower())
     annotation_df = pd.read_csv(args.annotation, sep="\t", header=None, comment="#")
     features = list(annotation_df[2].unique())
 
