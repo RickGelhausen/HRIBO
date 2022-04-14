@@ -184,6 +184,7 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
 
     # read gff file
     all_sheet = []
+    annotated_sheet = []
     gff_file_rows = []
 
     header = ["Identifier", "Genome", "Start", "Stop", "Strand", "Locus_tag", "Overlapping_genes", "Old_locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon"] +\
@@ -305,6 +306,8 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
         gff_result = [chromosome, "HRIBO", "CDS", start, stop, ".", strand, ".", attributes]
         gff_file_rows.append(gffTuple(*gff_result))
         all_sheet.append(nTuple(*result))
+        if locus_tag != "" or name != "" or gene_name != "" or old_locus_tag != "":
+            annotated_sheet.append(nTuple(*result))
 
     all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
 
@@ -313,7 +316,13 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
 
     all_df.to_csv(args.output_path.replace(".xlsx", ".tsv"), sep="\t", index=False, quoting=csv.QUOTE_NONE)
 
+    annotated_df = pd.DataFrame.from_records(annotated_sheet, columns=[header[x] for x in range(len(header))])
+
+    annotated_df = annotated_df.astype({"Start" : "int32", "Stop" : "int32"})
+    annotated_df = annotated_df.sort_values(by=["Genome", "Start", "Stop"])
+
     excel_sheet_dict["all"] = all_df
+    excel_sheet_dict["annotated"] = annotated_df
 
     gff_df = pd.DataFrame.from_records(gff_file_rows, columns=[0,1,2,3,4,5,6,7,8])
 
