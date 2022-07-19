@@ -4,4 +4,5 @@ channels:
 dependencies:
  - r-base =3.4.1
  - riborex =2.4.0
+ - r-plyr
  - r-optparse =1.6.0

@@ -121,9 +121,11 @@ rule createOverviewTablePredictions:
     conda:
         "../envs/excel.yaml"
     threads: 1
+    params:
+        contrasts=CONTRASTS
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -c {params.contrasts} -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         """
 
 rule createOverviewTableReparation:
@@ -137,9 +139,11 @@ rule createOverviewTableReparation:
     conda:
         "../envs/excel.yaml"
     threads: 1
+    params:
+        contrasts=CONTRASTS
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -c {params.contrasts} -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         """
 
 rule createOverviewTableDiffExpr:
@@ -156,9 +160,11 @@ rule createOverviewTableDiffExpr:
     conda:
         "../envs/excel.yaml"
     threads: 1
+    params:
+        contrasts=CONTRASTS
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -c {params.contrasts} -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         """
 
 rule createOverviewTableAll:
@@ -176,7 +182,9 @@ rule createOverviewTableAll:
     conda:
         "../envs/excel.yaml"
     threads: 1
+    params:
+        contrasts=CONTRASTS
     shell:
         """
-        mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+        mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -c {params.contrasts} -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         """

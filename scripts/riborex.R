@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 
 library(optparse)
+library(plyr)
 
 option_list = list(
   make_option(c("-r", "--raw_read_counts_csv_path"), type = "character", default = NULL,
@@ -36,7 +37,6 @@ print(sampleSheet)
 sampleSheet <- sampleSheet[
   order( sampleSheet[,1], sampleSheet[,2], sampleSheet[,3] ),
 ]
-print(sampleSheet)
 
 #create condition vector
 constraststring <- gsub("contrasts/", "", options$contrast)
@@ -46,15 +46,31 @@ cond1 <- contrastconditions[1]
 cond2 <- contrastconditions[2]
 print(cond1)
 print(cond2)
+
 # split data frame into RIBO and RNA
-RIBO <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
-RNA <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2)]
+RIBO_c1 <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1)]
+RIBO_c1 <- cbind(identifier = rownames(RIBO_c1), RIBO_c1)
+rownames(RIBO_c1) <- 1:nrow(RIBO_c1)
+RIBO_c2 <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond2)]
+RIBO_c2 <- cbind(identifier = rownames(RIBO_c2), RIBO_c2)
+rownames(RIBO_c2) <- 1:nrow(RIBO_c2)
 
-head(count,5)
-print((sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1 | sampleSheet$condition == cond2))
+RIBO <- join(RIBO_c1, RIBO_c2, by = "identifier")
+rownames(RIBO) <- RIBO$identifier
+RIBO <- subset(RIBO, select = -c(identifier))
 
-head(RIBO,5)
-head(RNA,5)
+
+RNA_c1 <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1)]
+RNA_c1 <- cbind(identifier = rownames(RNA_c1), RNA_c1)
+rownames(RNA_c1) <- 1:nrow(RNA_c1)
+RNA_c2 <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond2)]
+RNA_c2 <- cbind(identifier = rownames(RNA_c2), RNA_c2)
+rownames(RNA_c2) <- 1:nrow(RNA_c2)
+
+RNA <- join(RNA_c1, RNA_c2, by = "identifier")
+rownames(RNA) <- RNA$identifier
+RNA <- subset(RNA, select = -c(identifier))
+
 countsheader <- colnames(counts)
 countsheader <- countsheader[grepl("RIBO", countsheader)]
 replicatescondition1 <- length(grep(paste("-",cond1,"-",sep=""), countsheader))
@@ -64,6 +80,9 @@ conditionsvector1 <- rep(cond1,each=replicatescondition1)
 conditionsvector2 <- rep(cond2,each=replicatescondition2)
 contrastconditionsvector <- c(conditionsvector1, conditionsvector2)
 
+head(RNA)
+head(RIBO)
+print(contrastconditionsvector)
 # run riborex analysis
 results.deseq2 <- riborex(RNA, RIBO, contrastconditionsvector, contrastconditionsvector)
 

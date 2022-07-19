@@ -65,7 +65,8 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
              [f"{card}_rpkm" for card in wildcards] +\
              [f"xtail_{contrast}_{item}" for contrast in contrasts for item in ["TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
              [f"riborex_{contrast}_{item}" for contrast in contrasts for item in ["TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
-             [f"deltaTE_{contrast}_{item}" for contrast in contrasts for item in ["RIBO_log2FC", "RIBO_pvalue", "RIBO_pvalue_adjusted", "RNA_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted", "TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]]
+             [f"deltaTE_{contrast}_{item}" for contrast in contrasts for item in ["RIBO_log2FC", "RIBO_pvalue", "RIBO_pvalue_adjusted", "RNA_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted", "TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
+             ["Product", "Note"]
 
     name_list = [f"s{x}" for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -75,7 +76,7 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
         chromosome, mid, strand = key.split(":")
         start, stop = mid.split("-")
 
-        feature, gene_id, locus_tag, name, gene_name, old_locus_tag, read_list = annotation_dict[key]
+        feature, gene_id, locus_tag, name, gene_name, old_locus_tag, product, note, read_list = annotation_dict[key]
 
         length = int(stop) - int(start) + 1
         codon_count = length / 3
@@ -114,7 +115,7 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
         identifier = f"{chromosome}:{start}-{stop}:{strand}"
 
         result = [identifier, chromosome, start, stop, strand, feature, locus_tag, old_locus_tag, name, gene_name, length, codon_count, start_codon, stop_codon] +\
-                 [nt_window, nucleotide_seq, aa_seq] + te_list + rpkm_list + xtail_list + riborex_list + deltate_list
+                 [nt_window, nucleotide_seq, aa_seq] + te_list + rpkm_list + xtail_list + riborex_list + deltate_list + [product, note]
 
         attributes = f"ID={identifier};"
         if locus_tag != "":
@@ -194,7 +195,8 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
              ["Evidence_reparation", "Reparation_probability", "Evidence_deepribo", "Deepribo_rank", "Deepribo_score"] +\
              [f"xtail_{contrast}_{item}" for contrast in contrasts for item in ["TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
              [f"riborex_{contrast}_{item}" for contrast in contrasts for item in ["TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
-             [f"deltaTE_{contrast}_{item}" for contrast in contrasts for item in ["RIBO_log2FC", "RIBO_pvalue", "RIBO_pvalue_adjusted", "RNA_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted", "TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]]
+             [f"deltaTE_{contrast}_{item}" for contrast in contrasts for item in ["RIBO_log2FC", "RIBO_pvalue", "RIBO_pvalue_adjusted", "RNA_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted", "TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
+             ["Product", "Note"]
 
     name_list = [f"s{x}" for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
@@ -204,7 +206,7 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
         chromosome, mid, strand = key.split(":")
         start, stop = mid.split("-")
 
-        locus_tag, locus_tag_overlap, name, gene_name = "","","",""
+        locus_tag, locus_tag_overlap, name, gene_name, product, note = "","","","","",""
         reparation_probability, deepribo_rank, deepribo_score = 0, 0, 0
         evidence_reparation, evidence_deepribo = [], []
 
@@ -220,7 +222,7 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
         gene_id = ""
         old_locus_tag = ""
         if key in annotation_dict:
-            gene_id, locus_tag, name, gene_name, old_locus_tag, read_list = annotation_dict[key]
+            gene_id, locus_tag, name, gene_name, old_locus_tag, product, note, read_list = annotation_dict[key]
 
         length = int(stop) - int(start) + 1
         codon_count = length / 3
@@ -289,7 +291,7 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
                  [nt_window, nucleotide_seq, aa_seq] +\
                  te_list + rpkm_list +\
                  [evidence_reparation, reparation_probability, evidence_deepribo, deepribo_rank, deepribo_score]+\
-                  xtail_list + riborex_list + deltate_list
+                  xtail_list + riborex_list + deltate_list + [product, note]
 
         attributes = f"ID={identifier};"
         if locus_tag != "":
@@ -363,7 +365,11 @@ def create_excel_sheets(args):
         conditions.append(card.split("-")[1])
 
     conditions = eu.get_unique(conditions)
-    contrasts = sorted([f"{x}-{y}" for x,y in list(iter.combinations(conditions, 2))], key= lambda s: s.lower())
+
+    if args.contrasts is None or "," not in args.contrasts:
+        contrasts = sorted([f"{x}-{y}" for x,y in list(iter.combinations(conditions, 2))], key= lambda s: s.lower())
+    else:
+        contrasts = args.contrasts.split(",")
 
     excel_sheet_dict = create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dict, wildcards, conditions, contrasts, te_header)
     excel_sheet_dict = create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dict, wildcards, conditions, contrasts, te_header)
@@ -381,6 +387,7 @@ def main():
     parser.add_argument("-d", "--deltate", action="store", dest="deltate_path", default="", help= "deltate csv file.")
     parser.add_argument("-o", "--xlsx", action="store", dest="output_path", required=True, help= "output xlsx file.")
     parser.add_argument("-t", "--total_mapped_reads", action="store", dest="total_mapped", required=True, help= "file containing the total mapped reads for all alignment files.")
+    parser.add_argument("-c", "--contrasts", action="store", dest="contrasts", default=None, help="file containing the contrasts for differential expression. If none provided, default sorting will be used.")
     parser.add_argument("--mapped_reads_deepribo", action="store", dest="reads_deepribo", default="", help= "file containing the individual read counts for deepribo.")
     parser.add_argument("--mapped_reads_reparation", action="store", dest="reads_reparation", default="", help= "file containing the individual read counts for reparation.")
     args = parser.parse_args()
