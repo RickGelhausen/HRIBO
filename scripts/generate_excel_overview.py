@@ -108,7 +108,10 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
 
         rpkm_list = []
         for idx, val in enumerate(read_list):
-            rpkm_list.append(eu.calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
+            if (wildcards[idx], chromosome) not in total_mapped_dict:
+                rpkm_list.append(0)
+            else:
+                rpkm_list.append(eu.calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
 
         te_list = eu.calculate_te(rpkm_list, wildcards, conditions)
 
@@ -277,7 +280,10 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
 
         rpkm_list = []
         for idx, val in enumerate(read_list):
-            rpkm_list.append(eu.calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
+            if (wildcards[idx], chromosome) not in total_mapped_dict:
+                rpkm_list.append(0)
+            else:
+                rpkm_list.append(eu.calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
 
         te_list = eu.calculate_te(rpkm_list, wildcards, conditions)
 
