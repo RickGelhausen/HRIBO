@@ -454,8 +454,16 @@ def generate_annotation_dict(annotation_path):
             elif "id" in attribute_list:
                 gene_id = attribute_list[attribute_list.index("id")+1]
 
+            product = ""
+            if "product" in attribute_list:
+                product = attribute_list[attribute_list.index("product")+1]
+
+            note = ""
+            if "note" in attribute_list:
+                note = attribute_list[attribute_list.index("note")+1]
+
             new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            cds_dict[new_key] = (gene_id, locus_tag, name, read_list, old_locus_tag)
+            cds_dict[new_key] = (gene_id, locus_tag, name, old_locus_tag, product, note, read_list)
         elif feature.lower() in ["gene","pseudogene"]:
             gene_name = ""
             if "name" in attribute_list:
@@ -479,7 +487,7 @@ def generate_annotation_dict(annotation_path):
 
     for key in cds_dict.keys():
         gene_name = ""
-        gene_id, locus_tag, name, read_list, old_locus_tag = cds_dict[key]
+        gene_id, locus_tag, name, old_locus_tag, product, note, read_list = cds_dict[key]
 
         if key in gene_dict:
             gene_name, gene_locus_tag, gene_old_locus_tag = gene_dict[key]
@@ -489,7 +497,7 @@ def generate_annotation_dict(annotation_path):
             if old_locus_tag == "":
                 old_locus_tag = gene_old_locus_tag
 
-        annotation_meta_dict[key] = (gene_id, locus_tag, name, gene_name, old_locus_tag, read_list)
+        annotation_meta_dict[key] = (gene_id, locus_tag, name, gene_name, old_locus_tag, product, note, read_list)
 
     return annotation_meta_dict
 
@@ -633,8 +641,16 @@ def generate_non_cds_dict(annotation_path):
             elif "id" in attribute_list:
                 gene_id = attribute_list[attribute_list.index("id")+1]
 
+            product = None
+            if "product" in attribute_list:
+                product = attribute_list[attribute_list.index("product")+1]
+
+            note = None
+            if "note" in attribute_list:
+                note = attribute_list[attribute_list.index("note")+1]
+
             key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            non_cds_dict[key] = (feature, gene_id, locus_tag, old_locus_tag, name, read_list)
+            non_cds_dict[key] = (feature, gene_id, locus_tag, old_locus_tag, name, product, note, read_list)
 
         elif feature.lower() in ["gene","pseudogene"]:
             gene_name = ""
@@ -659,7 +675,7 @@ def generate_non_cds_dict(annotation_path):
 
     for key in non_cds_dict.keys():
         gene_name = ""
-        feature, gene_id, locus_tag, old_locus_tag, name, read_list = non_cds_dict[key]
+        feature, gene_id, locus_tag, old_locus_tag, name, product, note, read_list = non_cds_dict[key]
 
         if key in gene_dict:
             gene_name, gene_locus_tag, gene_old_locus_tag = gene_dict[key]
@@ -669,6 +685,6 @@ def generate_non_cds_dict(annotation_path):
             if old_locus_tag == "":
                 old_locus_tag = gene_old_locus_tag
 
-        annotation_meta_dict[key] = (feature, gene_id, locus_tag, name, gene_name, old_locus_tag, read_list)
+        annotation_meta_dict[key] = (feature, gene_id, locus_tag, name, gene_name, old_locus_tag, product, note, read_list)
 
     return annotation_meta_dict

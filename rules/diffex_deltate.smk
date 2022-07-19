@@ -59,7 +59,7 @@ rule deltate:
         touch {output.fcrna}
         touch {output.fcte}
         touch deltate/{params.contrast}/Result_figures.pdf
-	    DTEG.R {input.ribo} {input.rna} {input.samples} 1 deltate/{params.contrast}/ || true
+        DTEG.R {input.ribo} {input.rna} {input.samples} 1 deltate/{params.contrast}/ || true
         cp deltate/{params.contrast}/Result_figures.pdf {output.fig}
         """
 
@@ -81,7 +81,10 @@ rule deltatexlsx:
         """
 
 
-cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))] for item in sublist]
+if CONTRASTS != "":
+    cur_contrast = CONTRASTS.split(",")
+else:
+    cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
 
 rule pooldeltate:
     input:

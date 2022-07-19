@@ -9,6 +9,7 @@ ADAPTERS=config["adapter"]
 CODONS=config["alternativestartcodons"]
 DIFFEXPRESS=config["differentialexpression"]
 DEEPRIBO=config["deepribo"]
+CONTRASTS=config["contrasts"]
 
 onstart:
    if not os.path.exists("logs"):
@@ -35,10 +36,14 @@ if "RIBO" not in samples["method"].unique():
 report: "report/workflow.rst"
 
 conditions=sorted(samples["condition"].unique(), key=lambda s: s.lower())
-contrastsTupleList=list((iter.combinations(conditions,2)))
-contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
-flat_contrasts= [item for sublist in contrasts for item in sublist]
-print(contrasts)
+
+if CONTRASTS == "":
+    contrastsTupleList=list((iter.combinations(conditions,2)))
+    contrasts=[[('-'.join(str(i) for i in x))] for x in contrastsTupleList]
+    flat_contrasts= [item for sublist in contrasts for item in sublist]
+else:
+    flat_contrasts=CONTRASTS.split(",")
+
 def getContrast(flat_contrasts):
     return [("contrasts/"+((element.replace("[", '')).replace("]", '')).replace("'", '')) for element in flat_contrasts]
 

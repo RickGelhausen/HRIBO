@@ -5,6 +5,7 @@
  * fixed issue with sorting between python and R
  * changed .xlsx format for differential expression, using sheets rather than multiple files.
  * cleaned differential expression scripts
+ * added option to customize the input contrasts
 
 ### version 1.5.2 (added to 1.6.0) [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) -
  * removed riborex support and improved xtail support

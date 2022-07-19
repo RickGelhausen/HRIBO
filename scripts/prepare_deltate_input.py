@@ -10,20 +10,23 @@ def split_bam_files(bam_folder, contrast):
     """
 
     files = [entry for entry in Path(bam_folder).glob("*.bam") if entry.is_file()]
+    files = sorted(files, key=lambda s: str(s.stem).lower())
 
     ribo_bam = []
     rna_bam = []
-    for file in files:
-        file_prefix = file.stem
-        method, condition, replicate = file_prefix.split("-")
-        if condition not in contrast.split("-"):
-            continue
+    contrasts = contrast.split("-")
+    for contrast in contrasts:
+        for file in files:
+            file_prefix = file.stem
+            method, condition, replicate = file_prefix.split("-")
+            if condition != contrast:
+                continue
 
-        if "ribo" == method.lower():
-            ribo_bam.append(file)
+            if "ribo" == method.lower():
+                ribo_bam.append(file)
 
-        if "rna" == method.lower():
-            rna_bam.append(file)
+            if "rna" == method.lower():
+                rna_bam.append(file)
 
     return ribo_bam, rna_bam
 
@@ -43,7 +46,7 @@ def compute_condition_map(ribo_bam, rna_bam):
 
     counter = 1
     condition_map = {}
-    all_files = sorted(ribo_bam + rna_bam, key=lambda s: str(s).lower())
+    all_files = ribo_bam + rna_bam
     for file in all_files:
         _, condition, _ = file.stem.split("-")
         if condition not in condition_map:
@@ -65,7 +68,7 @@ def create_sample_sheet(ribo_bam, rna_bam, output_path):
     replicate_dict = {}
     with open(output_file, "w") as of:
         of.write("SampleID\tCondition\tSeqType\tBatch\n")
-        for ribo_file in sorted(ribo_bam, key=lambda s: str(s).lower()):
+        for ribo_file in ribo_bam:
             file_prefix = ribo_file.stem
             method, condition, replicate = file_prefix.split("-")
             if (method, condition) in replicate_dict:
@@ -74,7 +77,7 @@ def create_sample_sheet(ribo_bam, rna_bam, output_path):
                 replicate_dict[(method, condition)] = [replicate]
             of.write(f"{file_prefix}\t{condition_map[condition]}\t{method}\t{replicate}\n")
 
-        for rna_file in sorted(rna_bam, key=lambda s: str(s).lower()):
+        for rna_file in rna_bam:
             file_prefix = rna_file.stem
             method, condition, replicate = file_prefix.split("-")
             if (method, condition) in replicate_dict:
@@ -98,7 +101,6 @@ def create_readcount_table(bam_files, read_count_dict, output_path, file_name):
 
     output_file = os.path.join(output_path, file_name)
 
-    bam_files = sorted(bam_files, key=lambda s: str(s).lower())
     columns = [file.stem for file in bam_files]
 
     counts_dict = {}
