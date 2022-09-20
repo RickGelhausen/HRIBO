@@ -29,14 +29,9 @@ rule riborexxlsx:
         python3 HRIBO/scripts/generate_excel_riborex.py -a {input.annotation} -g {input.genome} -i {input.riborex_out} -o {output.xlsx_sorted}
         """
 
-if CONTRASTS != "":
-    cur_contrast = CONTRASTS.split(",")
-else:
-    cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
-
 rule poolriborex:
     input:
-        riborex=expand("riborex/{contr}_sorted.xlsx", contr=cur_contrast)
+        riborex=expand("riborex/{contr}_sorted.xlsx", contr=CONTRASTS)
     output:
         "riborex/riborex_all.csv"
     conda:

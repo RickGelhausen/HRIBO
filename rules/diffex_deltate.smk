@@ -80,15 +80,9 @@ rule deltatexlsx:
         python3 HRIBO/scripts/generate_excel_deltate.py -a {input.annotation} -g {input.genome} -i {input.deltate_ribo} -r {input.deltate_rna} -t {input.deltate_te} -o {output.xlsx_sorted}
         """
 
-
-if CONTRASTS != "":
-    cur_contrast = CONTRASTS.split(",")
-else:
-    cur_contrast=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
-
 rule pooldeltate:
     input:
-        deltate=expand("deltate/{contr}_sorted.xlsx", contr=cur_contrast)
+        deltate=expand("deltate/{contr}_sorted.xlsx", contr=CONTRASTS)
     output:
         "deltate/deltate_all.csv"
     conda:
