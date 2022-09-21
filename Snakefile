@@ -37,23 +37,24 @@ report: "report/workflow.rst"
 
 conditions=sorted(samples["condition"].unique(), key=lambda s: s.lower())
 
-if CONTRASTS != "":
-    CONTRASTS = CONTRASTS.split(",")
-else:
-    CONTRASTS=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
+if DIFFEXPRESS.lower() == "on":
+    if CONTRASTS != "":
+        CONTRASTS = CONTRASTS.split(",")
+    else:
+        CONTRASTS=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
 
 
-def getContrast(CONTRASTS):
-    return [("contrasts/"+((element.replace("[", '')).replace("]", '')).replace("'", '')) for element in CONTRASTS]
+    def getContrast(CONTRASTS):
+        return [("contrasts/"+((element.replace("[", '')).replace("]", '')).replace("'", '')) for element in CONTRASTS]
 
-def getContrastXtail(CONTRASTS):
-    return [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in CONTRASTS]
+    def getContrastXtail(CONTRASTS):
+        return [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in CONTRASTS]
 
-def getContrastRiborex(CONTRASTS):
-    return [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in CONTRASTS]
+    def getContrastRiborex(CONTRASTS):
+        return [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in CONTRASTS]
 
-def getContrastDeltaTE(CONTRASTS):
-    return [("deltate/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in CONTRASTS]
+    def getContrastDeltaTE(CONTRASTS):
+        return [("deltate/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in CONTRASTS]
 
 def get_wigfiles(wildcards):
     method=samples["method"]
