@@ -2,4 +2,4 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - biopython =1.73
+ - biopython =1.79
