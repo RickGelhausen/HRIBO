@@ -1,8 +1,9 @@
 
 rule riborex:
     input:
-        rawreads="readcounts/differential_expression_read_counts.csv",
-        contrastfile="contrasts/{contrast}"
+        ribo="diffex_input/riborex/{contrast}_ribo_readcount_table.tsv",
+        rna="diffex_input/riborex/{contrast}_rna_readcount_table.tsv",
+        cv="diffex_input/riborex/{contrast}_condition_vector.csv"
     output:
         table="riborex/{contrast}_deseq2.csv"
     conda:
@@ -11,7 +12,7 @@ rule riborex:
     shell:
         """
         mkdir -p riborex;
-        HRIBO/scripts/riborex.R -c {input.contrastfile} -t HRIBO/samples.tsv -r {input.rawreads} -x {output.table};
+        HRIBO/scripts/riborex.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table};
         """
 
 rule riborexxlsx:

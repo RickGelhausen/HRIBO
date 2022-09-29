@@ -375,7 +375,7 @@ def create_excel_sheets(args):
     if args.contrasts is None or "," not in args.contrasts:
         contrasts = sorted([f"{x}-{y}" for x,y in list(iter.combinations(conditions, 2))], key= lambda s: s.lower())
     else:
-        contrasts = args.contrasts.split(",")
+        contrasts = args.contrasts
 
     excel_sheet_dict = create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dict, wildcards, conditions, contrasts, te_header)
     excel_sheet_dict = create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dict, wildcards, conditions, contrasts, te_header)
@@ -393,7 +393,7 @@ def main():
     parser.add_argument("-d", "--deltate", action="store", dest="deltate_path", default="", help= "deltate csv file.")
     parser.add_argument("-o", "--xlsx", action="store", dest="output_path", required=True, help= "output xlsx file.")
     parser.add_argument("-t", "--total_mapped_reads", action="store", dest="total_mapped", required=True, help= "file containing the total mapped reads for all alignment files.")
-    parser.add_argument("-c", "--contrasts", action="store", dest="contrasts", default=None, help="file containing the contrasts for differential expression. If none provided, default sorting will be used.")
+    parser.add_argument("-c", "--contrasts", nargs="+", dest="contrasts", default=None, help="file containing the contrasts for differential expression. If none provided, default sorting will be used.")
     parser.add_argument("--mapped_reads_deepribo", action="store", dest="reads_deepribo", default="", help= "file containing the individual read counts for deepribo.")
     parser.add_argument("--mapped_reads_reparation", action="store", dest="reads_reparation", default="", help= "file containing the individual read counts for reparation.")
     args = parser.parse_args()

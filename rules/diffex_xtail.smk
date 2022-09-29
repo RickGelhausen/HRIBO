@@ -1,8 +1,9 @@
 
 rule xtail:
     input:
-        rawreads="readcounts/differential_expression_read_counts.csv",
-        contrastfile="contrasts/{contrast}"
+        ribo="diffex_input/xtail/{contrast}_ribo_readcount_table.tsv",
+        rna="diffex_input/xtail/{contrast}_rna_readcount_table.tsv",
+        cv="diffex_input/xtail/{contrast}_condition_vector.csv"
     output:
         table="xtail/{contrast}.csv",
         fcplot="xtail/fc_{contrast}.pdf",
@@ -13,7 +14,7 @@ rule xtail:
     shell:
         """
         mkdir -p xtail;
-        HRIBO/scripts/xtail_classic.R -c {input.contrastfile} -t HRIBO/samples.tsv -r {input.rawreads} -x {output.table} -f {output.fcplot} -p {output.rplot};
+        HRIBO/scripts/xtail_classic.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table} -f {output.fcplot} -p {output.rplot};
         """
 
 rule xtailxlsx:

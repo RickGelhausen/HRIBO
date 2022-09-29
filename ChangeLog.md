@@ -1,3 +1,7 @@
+### version 1.6.1 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 29.09.2022
+ * moved differential expression input creation to python to avoid compatability errors with new R versions.
+ * fixed bug that caused overview_excel to fail when using differential expression
+
 ### version 1.6.0 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 23.09.2022
  * fixed bug in metagene-profiling that caused negative strand not to be used correctly * fixed bug in metagene-profiling that caused negative strand not to be used correctly.
  * complete restructering of differential expression analysis

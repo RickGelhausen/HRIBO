@@ -4,12 +4,12 @@ library(optparse)
 library(plyr)
 
 option_list = list(
-  make_option(c("-r", "--raw_read_counts_csv_path"), type = "character", default = NULL,
-              help = "Path to read counts table", metavar = "character"),
-  make_option(c("-c", "--contrast"), type = "character", default = NULL,
+  make_option(c("-r", "--rpf_in"), type = "character", default = NULL,
+              help = "Path to RPF read table", metavar = "character"),
+  make_option(c("-m", "--mrna_in"), type = "character", default = NULL,
+              help = "Path to mRNA read table", metavar = "character"),
+  make_option(c("-c", "--condition_vector_in"), type = "character", default = NULL,
               help = "Contrast, pair of conditions ", metavar = "character"),
-  make_option(c("-t", "--sample_file_path"), type = "character", default = NULL,
-              help = "Path to sample.tsv", metavar = "character"),
   make_option(c("-x", "--xtail_result_path"), type = "character", default = "NULL",
               help = "Path for writing xtail result file", metavar = "character"),
   make_option(c("-f", "--xtail_fcplot_path"), type = "character", default = "NULL",
@@ -21,65 +21,20 @@ option_list = list(
 option_parser = OptionParser(option_list = option_list);
 options = parse_args(option_parser);
 
-if (is.null(options$raw_read_counts_csv_path)){
+if (is.null(options$rpf_in) || is.null(options$mrna_in) || is.null(options$condition_vector_in) || is.null(options$xtail_result_path) || is.null(options$xtail_fcplot_path) || is.null(options$xtail_rplot_path)){
   print_help(option_parser)
-  stop("Please supply arguments (-r, -t, -x), see --help \n", call.=FALSE)
+  stop("Please supply arguments (-r, -m, -c, -x -f -p), see --help \n", call.=FALSE)
 }
 
 library(xtail)
 
-# read table with raw read counts
-counts <- read.csv(options$raw_read_counts_csv_path, row.names = 1, check.names = FALSE, stringsAsFactors = FALSE)
+# read the tsv file, and convert to a data frame with the first column as rownames
+RNA <- read.table(options$mrna_in, sep="\t", header=TRUE, row.names=1)
+RIBO <- read.table(options$rpf_in, sep="\t", header=TRUE, row.names=1)
 
-# get sample sheet
-sampleSheet <- read.csv(file=options$sample_file_path, header=TRUE, sep="\t", stringsAsFactors=FALSE)
-sampleSheet <- sampleSheet[
-  order( sampleSheet[,1], sampleSheet[,2], sampleSheet[,3] ),
-]
-
-#create condition vector
-constraststring <- gsub("contrasts/", "", options$contrast)
-contrastconditions <- unlist(strsplit(constraststring, "-"))
-cond1 <- contrastconditions[1]
-cond2 <- contrastconditions[2]
-print(paste("contrastconditions: ", cond1, " vs ", cond2))
-
-  # split data frame into RIBO and RNA
-RIBO_c1 <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond1)]
-RIBO_c1 <- cbind(identifier = rownames(RIBO_c1), RIBO_c1)
-rownames(RIBO_c1) <- 1:nrow(RIBO_c1)
-RIBO_c2 <- counts[, (sampleSheet$method == "RIBO") & ( sampleSheet$condition == cond2)]
-RIBO_c2 <- cbind(identifier = rownames(RIBO_c2), RIBO_c2)
-rownames(RIBO_c2) <- 1:nrow(RIBO_c2)
-
-RIBO <- join(RIBO_c1, RIBO_c2, by = "identifier")
-rownames(RIBO) <- RIBO$identifier
-RIBO <- subset(RIBO, select = -c(identifier))
-
-
-RNA_c1 <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond1)]
-RNA_c1 <- cbind(identifier = rownames(RNA_c1), RNA_c1)
-rownames(RNA_c1) <- 1:nrow(RNA_c1)
-RNA_c2 <- counts[, (sampleSheet$method == "RNA")  & ( sampleSheet$condition == cond2)]
-RNA_c2 <- cbind(identifier = rownames(RNA_c2), RNA_c2)
-rownames(RNA_c2) <- 1:nrow(RNA_c2)
-
-RNA <- join(RNA_c1, RNA_c2, by = "identifier")
-rownames(RNA) <- RNA$identifier
-RNA <- subset(RNA, select = -c(identifier))
-
-
-countsheader <- colnames(counts)
-countsheader <- countsheader[grepl("RIBO", countsheader)]
-replicatescondition1 <- length(grep(paste("-",cond1,"-",sep=""), countsheader))
-replicatescondition2 <- length(grep(paste("-",cond2,"-",sep=""), countsheader))
-
-#numberofreplicates <- max(sampleSheet$replicate)
-#contrastconditionsvector <- rep(contrastconditions,each=numberofreplicates)
-conditionsvector1 <- rep(cond1,each=replicatescondition1)
-conditionsvector2 <- rep(cond2,each=replicatescondition2)
-contrastconditionsvector <- c(conditionsvector1, conditionsvector2)
-print(contrastconditionsvector)
+# read the conditions vector text file and split it into a list
+first_line <- readLines(options$condition_vector_in, n=1)
+contrastconditionsvector <- unlist(strsplit(first_line, split = ","))
 
 # run xtail analysis
 test.results <- xtail(RNA, RIBO, contrastconditionsvector)
