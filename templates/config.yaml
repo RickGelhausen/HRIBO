@@ -4,7 +4,7 @@ samples: "HRIBO/samples.tsv"
 alternativestartcodons: "GTG,TTG"
 # Differential expression: on / off
 differentialexpression: "on"
-# comma-seperated list of condition contrasts
+# comma-seperated list of condition contrasts: treated1_control1,treated2_control2...
 contrasts: ""
 # Deepribo predictions: on / off
 deepribo: "off"
