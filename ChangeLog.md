@@ -1,5 +1,6 @@
 ### version 1.6.2 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 04.10.2022
  * fixed bug where the new input tables were not correctly created depending on the input contrast.
+ * fixed bug with wrong condition vector labeling causing incorrect behavior in riborex log2FC calculation
 
 ### version 1.6.1 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 29.09.2022
  * moved differential expression input creation to python to avoid compatability errors with new R versions.

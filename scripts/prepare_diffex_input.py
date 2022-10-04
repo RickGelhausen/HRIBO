@@ -27,7 +27,7 @@ def create_readcount_tables(read_count_file, contrast, output_path):
     ribo_df.to_csv(output_path / f"{contrast}_ribo_readcount_table.tsv", sep="\t", index=False)
     rna_df.to_csv(output_path / f"{contrast}_rna_readcount_table.tsv", sep="\t", index=False)
 
-    condition_vector = [ col.split("-")[1] for col in ribo_cols[1:] ]
+    condition_vector = [ "control" if col.split("-")[1] == cond1 else "treated" for col in ribo_cols[1:] ]
 
     with open(output_path / f"{contrast}_condition_vector.csv", "w") as f:
         f.write(",".join(condition_vector) + "\n")
