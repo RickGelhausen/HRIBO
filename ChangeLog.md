@@ -1,3 +1,6 @@
+### version 1.6.2 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 04.10.2022
+ * fixed bug where the new input tables were not correctly created depending on the input contrast.
+
 ### version 1.6.1 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 29.09.2022
  * moved differential expression input creation to python to avoid compatability errors with new R versions.
  * fixed bug that caused overview_excel to fail when using differential expression

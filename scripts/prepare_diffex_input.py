@@ -13,8 +13,12 @@ def create_readcount_tables(read_count_file, contrast, output_path):
 
     read_count_df = pd.read_csv(read_count_file, sep=",")
 
-    ribo_cols = ["Identifier"]+[col for col in read_count_df.columns if col.split("-")[:2] == ["RIBO", cond1] or col.split("-")[:2] == ["RIBO", cond2]]
-    rna_cols = ["Identifier"]+[col for col in read_count_df.columns if col.split("-")[:2] == ["RNA", cond1] or col.split("-")[:2] == ["RNA", cond2]]
+    ribo_cols = ["Identifier"] \
+              + [col for col in read_count_df.columns if col.split("-")[:2] == ["RIBO", cond1]] \
+              + [col for col in read_count_df.columns if col.split("-")[:2] == ["RIBO", cond2]]
+    rna_cols = ["Identifier"] \
+             + [col for col in read_count_df.columns if col.split("-")[:2] == ["RNA", cond1]] \
+             + [col for col in read_count_df.columns if col.split("-")[:2] == ["RNA", cond2]]
 
     # create a read count table for each method
     ribo_df = read_count_df[ribo_cols]
