@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from calendar import c
 import pandas as pd
 from pathlib import Path
 import argparse
@@ -15,6 +16,7 @@ def split_bam_files(bam_folder, contrast):
     ribo_bam = []
     rna_bam = []
     contrasts = contrast.split("-")
+    contrasts = contrast[::-1]
     for contrast in contrasts:
         for file in files:
             file_prefix = file.stem
