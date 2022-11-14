@@ -1,10 +1,84 @@
+##########################
+# Biological information #
+##########################
+
 # Adapter sequence used
 adapter: ""
+
+# Path to the sample sheet
 samples: "HRIBO/samples.tsv"
-alternativestartcodons: "GTG,TTG"
+
+# Alternative start codons considered where applicable
+alternativeStartCodons: "GTG,TTG"
+
+#####################
+# Analysis settings #
+#####################
+
+# Differential Expression analysis
+##################################
+
 # Differential expression: on / off
-differentialexpression: "on"
+differentialExpression: "off"
+
 # comma-seperated list of condition contrasts: treated1_control1,treated2_control2...
 contrasts: ""
+
+# ORF predictions
+#################
+
 # Deepribo predictions: on / off
 deepribo: "off"
+
+# Metagene Profiling
+####################
+
+### Analysis
+# Window on which the metagene profiling is performed
+# Number of nucleotides upstream of each annotated ORF that will be considered
+positionsOutsideORF: 50
+# Number of nucleotides in each annotated ORF that will be considered
+positionsInORF: 250
+
+# methods to filter the input annotation before metagene profiling is performed (overlap, length and/or rpkm)
+filteringMethod: "overlap, length, rpkm"
+
+# Distance around each annotated genes that will be considered for removing overlapping genes
+# neighboringGenesDistance 0 only removes directly overlapping genes.
+neighboringGenesDistance: 50
+
+# Filter ORFs based on RPKM threshold
+rpkmThreshold: 10
+
+# Minimum length of considered ORFs. ORFs smaller than positionsInORF are filtered automatically.
+lengthCutoff: 250
+
+# Mapping methods to be considered (fiveprime, threeprime, centered, global)
+mappingMethods: "fiveprime, threeprime"
+
+# Read lengths to be considered. Comma seperated string allows intervals denoted by "-" symbol (e.g. 22,23,27,34-35)
+readLengths: "25-34"
+
+# Window normalization on/off
+# Normalizes individual read lengths based on total counts and window length
+windowNormalization: "off"
+
+# Normalization method (raw, mil)
+# Only applicable when windowNormalization is set to "off"
+normalizationMethod: "raw, mil"
+
+### Plotting
+# Plot output types. Supported (svg, pdf, png, jpg, interactive)
+outputTypes: "interactive, svg"
+
+# Interactive html files require more space as they require plotly.js integrated, online access or a local copy of plotly.js
+# integrated: integrates plotly.js into each plot (+-3.7mb per file)
+# online: references an online version of plotly.js (files can only be used with active internet connection)
+# local: references a local plotly.js script (requires a local copy of plotly.js to open the plots)
+includePlotlyJS: "integrated"
+
+# Custom list of colors to be used for the plots. Must be atleast as many as the number of read lengths considered.
+# If empty we try to match the number of read lengths trying to prioritize color-blind friendly colors.
+colorList: ""
+
+
