@@ -3,19 +3,23 @@ import re
 import pandas as pd
 import itertools as iter
 from snakemake.utils import validate, min_version
-min_version("5.5.1")
+from validate import validate_config
 
-ADAPTERS=config["adapter"]
-CODONS=config["alternativestartcodons"]
-DIFFEXPRESS=config["differentialexpression"]
-DEEPRIBO=config["deepribo"]
-CONTRASTS=config["contrasts"]
+min_version("7.18.2")
+
+validate_config(config)
+
+ADAPTERS=config["biologySettings"]["adapter"]
+CODONS=config["biologySettings"]["alternativeStartCodons"]
+DIFFEXPRESS=config["differentialExpressionSettings"]["differentialExpression"]
+CONTRASTS=config["differentialExpressionSettings"]["contrasts"]
+DEEPRIBO=config["predictionSettings"]["deepribo"]
 
 onstart:
    if not os.path.exists("logs"):
      os.makedirs("logs")
 
-samples = pd.read_csv(config["samples"], dtype=str, sep="\t")
+samples = pd.read_csv(config["biologySettings"]["samples"], dtype=str, sep="\t")
 samples.sort_values(by=["method", "condition", "replicate"], key=lambda col: col.str.lower() if col.dtype==str else col, inplace=True)
 samples.set_index(["method", "condition", "replicate"], drop=False, inplace=True)
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
@@ -35,34 +39,14 @@ if "RIBO" not in samples["method"].unique():
 
 report: "report/workflow.rst"
 
-conditions=sorted(samples["condition"].unique(), key=lambda s: s.lower())
 
-if DIFFEXPRESS.lower() == "on":
-    if CONTRASTS != "":
-        CONTRASTS = CONTRASTS.split(",")
-    else:
-        CONTRASTS=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
-
-
-    def getContrast(CONTRASTS):
-        return [("contrasts/"+((element.replace("[", '')).replace("]", '')).replace("'", '')) for element in CONTRASTS]
-
-    def getContrastXtail(CONTRASTS):
-        return [("xtail/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in CONTRASTS]
-
-    def getContrastRiborex(CONTRASTS):
-        return [("riborex/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in CONTRASTS]
-
-    def getContrastDeltaTE(CONTRASTS):
-        return [("deltate/" + ((element.replace("[", '')).replace("]", '')).replace("'", '') + "_significant.xlsx") for element in CONTRASTS]
-
-def get_wigfiles(wildcards):
+def get_wigfiles():
     method=samples["method"]
     condition=samples["condition"]
     replicate=samples["replicate"]
     wilds = zip(method, condition, replicate)
 
-    bigwigs = [["totalmapped", "uniquemapped", "global", "centered", "fiveprime", "threeprime"], ["raw", "mil", "min"], ["forward", "reverse"], list(wilds)]
+    bigwigs = [["global", "centered", "fiveprime", "threeprime"], ["raw", "mil", "min"], ["forward", "reverse"], list(wilds)]
     bigwigs = list(iter.product(*bigwigs))
 
     wigfiles = []
@@ -105,152 +89,56 @@ if DEEPRIBO.lower() == "on":
 else:
     include: "rules/conditionals.smk"
 
+hribo_output = []
+hribo_output.extend(expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]))
+hribo_output.extend(expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]))
+hribo_output.extend(expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]))
+hribo_output.extend(expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]))
+hribo_output.append("qc/multi/multiqc_report.html")
+hribo_output.append("tracks/potentialStopCodons.gff")
+hribo_output.append("tracks/potentialStartCodons.gff")
+hribo_output.append("tracks/potentialRibosomeBindingSite.gff")
+hribo_output.append("auxiliary/annotation_total.xlsx")
+hribo_output.append("auxiliary/annotation_unique.xlsx")
+hribo_output.append("auxiliary/total_read_counts.xlsx")
+hribo_output.append("auxiliary/unique_read_counts.xlsx")
+hribo_output.append("auxiliary/samples.xlsx")
+hribo_output.append("figures/heatmap_SpearmanCorr_readCounts.pdf")
+
+hribo_output.extend(get_wigfiles())
+
 if hasRIBO:
+    hribo_output.append("auxiliary/predictions_reparation.xlsx")
+
+    conditions=sorted(samples["condition"].unique(), key=lambda s: s.lower())
+
+    if DIFFEXPRESS.lower() == "on":
+        if CONTRASTS != "":
+            CONTRASTS = CONTRASTS.split(",")
+        else:
+            CONTRASTS=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
+
+        hribo_output.extend([("contrasts/"+((element.replace("[", "")).replace("]", "")).replace("'", "")) for element in CONTRASTS])
+        hribo_output.extend([("xtail/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_significant.xlsx") for element in CONTRASTS])
+        hribo_output.extend([("riborex/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_significant.xlsx") for element in CONTRASTS])
+        hribo_output.extend([("deltate/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_significant.xlsx") for element in CONTRASTS])
+
+    if DEEPRIBO.lower() == "on":
+        hribo_output.append("auxiliary/predictions_deepribo.xlsx")
+
+
     if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
-       rule all:
-          input:
-              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              get_wigfiles,
-              "qc/multi/multiqc_report.html",
-              "tracks/potentialStopCodons.gff",
-              "tracks/potentialStartCodons.gff",
-              "tracks/potentialAlternativeStartCodons.gff",
-              "tracks/potentialRibosomeBindingSite.gff",
-              "auxiliary/annotation_total.xlsx",
-              "auxiliary/annotation_unique.xlsx",
-              "auxiliary/total_read_counts.xlsx",
-              "auxiliary/unique_read_counts.xlsx",
-              "auxiliary/samples.xlsx",
-              "auxiliary/predictions_reparation.xlsx",
-              "figures/heatmap_SpearmanCorr_readCounts.pdf",
-              "auxiliary/predictions_deepribo.xlsx",
-              rules.createOverviewTableAll.output,
-              unpack(getContrast),
-              unpack(getContrastXtail),
-              unpack(getContrastRiborex),
-              unpack(getContrastDeltaTE),
-              "metageneprofiling/merged_offsets.json"
-
-
+        hribo_output.extend(rules.createOverviewTableAll.output)
     elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
-       rule all:
-          input:
-              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              get_wigfiles,
-              "qc/multi/multiqc_report.html",
-              "tracks/potentialStopCodons.gff",
-              "tracks/potentialStartCodons.gff",
-              "tracks/potentialAlternativeStartCodons.gff",
-              "tracks/potentialRibosomeBindingSite.gff",
-              "auxiliary/annotation_total.xlsx",
-              "auxiliary/annotation_unique.xlsx",
-              "auxiliary/total_read_counts.xlsx",
-              "auxiliary/unique_read_counts.xlsx",
-              "auxiliary/samples.xlsx",
-              "auxiliary/predictions_reparation.xlsx",
-              "figures/heatmap_SpearmanCorr_readCounts.pdf",
-              "auxiliary/predictions_deepribo.xlsx",
-              rules.createOverviewTablePredictions.output,
-              "metageneprofiling/merged_offsets.json"
-
+        hribo_output.extend(rules.createOverviewTablePredictions.output)
     elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
-       rule all:
-          input:
-              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              get_wigfiles,
-              "qc/multi/multiqc_report.html",
-              "tracks/potentialStopCodons.gff",
-              "tracks/potentialStartCodons.gff",
-              "tracks/potentialAlternativeStartCodons.gff",
-              "tracks/potentialRibosomeBindingSite.gff",
-              "auxiliary/annotation_total.xlsx",
-              "auxiliary/annotation_unique.xlsx",
-              "auxiliary/total_read_counts.xlsx",
-              "auxiliary/unique_read_counts.xlsx",
-              "auxiliary/samples.xlsx",
-              "auxiliary/predictions_reparation.xlsx",
-              "figures/heatmap_SpearmanCorr_readCounts.pdf",
-              rules.createOverviewTableDiffExpr.output,
-              unpack(getContrast),
-              unpack(getContrastXtail),
-              unpack(getContrastRiborex),
-              unpack(getContrastDeltaTE),
-              "metageneprofiling/merged_offsets.json"
+        hribo_output.extend(rules.createOverviewTableDiffExpr.output)
+    elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "off":
+        hribo_output.extend(rules.createOverviewTableReparation.output)
 
-    else:
-       rule all:
-          input:
-              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              get_wigfiles,
-              "qc/multi/multiqc_report.html",
-              "tracks/potentialStopCodons.gff",
-              "tracks/potentialStartCodons.gff",
-              "tracks/potentialAlternativeStartCodons.gff",
-              "tracks/potentialRibosomeBindingSite.gff",
-              "auxiliary/annotation_total.xlsx",
-              "auxiliary/annotation_unique.xlsx",
-              "auxiliary/total_read_counts.xlsx",
-              "auxiliary/unique_read_counts.xlsx",
-              "auxiliary/samples.xlsx",
-              "auxiliary/predictions_reparation.xlsx",
-              "figures/heatmap_SpearmanCorr_readCounts.pdf",
-              rules.createOverviewTableReparation.output,
-              "metageneprofiling/merged_offsets.json"
-else:
-     if DIFFEXPRESS.lower() == "on":
-       rule all:
-          input:
-              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              get_wigfiles,
-              "tracks/potentialStopCodons.gff",
-              "tracks/potentialStartCodons.gff",
-              "tracks/potentialAlternativeStartCodons.gff",
-              "tracks/potentialRibosomeBindingSite.gff",
-              "auxiliary/annotation_total.xlsx",
-              "auxiliary/annotation_unique.xlsx",
-              "auxiliary/total_read_counts.xlsx",
-              "auxiliary/unique_read_counts.xlsx",
-              "auxiliary/samples.xlsx",
-              "figures/heatmap_SpearmanCorr_readCounts.pdf",
-              unpack(getContrast),
-              unpack(getContrastXtail),
-              unpack(getContrastRiborex),
-              unpack(getContrastDeltaTE),
-              "metageneprofiling/merged_offsets.json"
-     else:
-       rule all:
-          input:
-              expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-              expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-              get_wigfiles,
-              "tracks/potentialStopCodons.gff",
-              "tracks/potentialStartCodons.gff",
-              "tracks/potentialAlternativeStartCodons.gff",
-              "tracks/potentialRibosomeBindingSite.gff",
-              "auxiliary/annotation_total.xlsx",
-              "auxiliary/annotation_unique.xlsx",
-              "auxiliary/total_read_counts.xlsx",
-              "auxiliary/unique_read_counts.xlsx",
-              "auxiliary/samples.xlsx",
-              "figures/heatmap_SpearmanCorr_readCounts.pdf",
-              "metageneprofiling/merged_offsets.json"
+rule all:
+    input:
+        hribo_output
 
 onsuccess:
     print("Done, no error")

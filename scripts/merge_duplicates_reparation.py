@@ -2,15 +2,12 @@
 '''This script takes input gff3 files and handles
 overlapping intervals, by merging duplicates.
 '''
-from operator import itemgetter
 import pandas as pd
 import re
 import argparse
-import numpy as np
 import os
 import csv
 import collections
-import sys
 
 def create_dictionary(inputDF):
     """

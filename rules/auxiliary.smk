@@ -109,6 +109,30 @@ rule createExcelUniqueAnnotationReadCount:
     shell:
         "mkdir -p auxiliary; HRIBO/scripts/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"
 
+rule createOverviewTableReparation:
+    input:
+        annotation="readcounts/independant_annotation.gff",
+        genome=rules.retrieveGenome.output,
+        totalreads="readcounts/bam_mapped_reads.txt",
+        reparation="readcounts/reparation_annotation.gff"
+    output:
+        "auxiliary/overview.xlsx"
+    conda:
+        "../envs/excel.yaml"
+    threads: 1
+    params:
+        contrasts=CONTRASTS
+    shell:
+        """
+        mkdir -p auxiliary;
+        if [ -z {params.contrasts} ]
+        then
+            HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        else
+            HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -c {params.contrasts} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+        fi
+        """
+
 rule createOverviewTablePredictions:
     input:
         annotation="readcounts/independant_annotation.gff",
@@ -131,30 +155,6 @@ rule createOverviewTablePredictions:
             HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         else
             HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -c {params.contrasts}  -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
-        fi
-        """
-
-rule createOverviewTableReparation:
-    input:
-        annotation="readcounts/independant_annotation.gff",
-        genome=rules.retrieveGenome.output,
-        totalreads="readcounts/bam_mapped_reads.txt",
-        reparation="readcounts/reparation_annotation.gff"
-    output:
-        "auxiliary/overview.xlsx"
-    conda:
-        "../envs/excel.yaml"
-    threads: 1
-    params:
-        contrasts=CONTRASTS
-    shell:
-        """
-        mkdir -p auxiliary;
-        if [ -z {params.contrasts} ]
-        then
-            HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
-        else
-            HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -c {params.contrasts} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         fi
         """
 
