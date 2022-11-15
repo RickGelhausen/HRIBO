@@ -1,29 +1,120 @@
 #!/usr/bin/env python
-# samtools view -b -F 4 data/TIS-TolC-2.bam > data/TIS-TolC-2_mapped.bam
-# samtools index data/TIS-TolC-2_mapped.bam
-# samtools faidx exp5genome.fa
-# time ./MetageneProfiling.py --in_bam_filepath ecoli/TIS-TolC-2.bam --in_gff_filepath ecoli/annotation.gff --out_plot_filepath ecoli/metagene
-import argparse
-import lib.library as hribo
 
+import argparse
+from pathlib import Path
+
+import lib.io as io
+import lib.misc as misc
+import lib.annotation as ann
+import lib.metagene as mg
+import lib.plotting as plotting
+
+from lib.alignment import IntervalReader
+
+def create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length_list, meta_dir, mapping_method, window_normalization, positions_out_ORF, positions_in_ORF, color_list):
+    """
+    Create metagene profiles for all chromosomes and strands for a given mapping and normalization method.
+    """
+
+    start_coverage_dict, stop_coverage_dict = misc.equalize_dictionary_keys(start_coverage_dict, stop_coverage_dict, positions_out_ORF, positions_in_ORF)
+
+    df_start_dict = misc.create_data_frame(start_coverage_dict, positions_out_ORF, positions_in_ORF, "start")
+    df_stop_dict = misc.create_data_frame(stop_coverage_dict, positions_out_ORF, positions_in_ORF, "stop")
+
+    window_size = positions_out_ORF + positions_in_ORF
+
+    fig_list = []
+    for chromosome in df_start_dict:
+        df_start = df_start_dict[chromosome]
+        df_stop = df_stop_dict[chromosome]
+
+        if window_normalization:
+            df_start = misc.normalize_df(df_start, window_size)
+            df_stop = misc.normalize_df(df_stop, window_size)
+
+        max_y = None
+        tmp_fig, max_y = plotting.plot_metagene_profiles(df_start, df_stop, read_length_list, f"<b>{chromosome}</b>", max_y=max_y, color_list=color_list)
+
+        fig_list.append((chromosome, mapping_method, tmp_fig))
+
+    io.create_excel_file(df_start_dict, meta_dir / f"{mapping_method}_readcounts_start.xlsx")
+    io.create_excel_file(df_stop_dict, meta_dir / f"{mapping_method}_readcounts_stop.xlsx")
+
+    return fig_list
 
 def main():
-
     # store commandline args
-    parser = argparse.ArgumentParser(description='HRIBOMetageneProfiling')
-    parser.add_argument("--in_bam_filepath", help='Input bam path', required=True)
-    parser.add_argument("--in_gff_filepath", help='Input gff path', required=True)
-    parser.add_argument("--in_readlengthstat_filepath", help='Input read length statistics json path', required=False)
-    parser.add_argument("--cpu_cores", help='Number of cpu cores to use', type=int, default=1)
-    parser.add_argument("--min_read_length", help='Minimal read length to consider', type=int, default=27)
-    parser.add_argument("--max_read_length", help='Maximal read length to consider', type=int, default=33)
-    parser.add_argument("--out_plot_filepath", help='Directory path to write output files, if not present the directory will be created', required=True)
-    parser.add_argument("--normalization", help='Toggles normalization by average read count per nucleotide', action='store_true')
-    parser.add_argument("--noise_reduction_analysis", help='Toggles noise reduction analysis', action='store_true')
-    parser.add_argument("--input_type", help='Input type, either TIS or TTS.', default="TIS")
-    args = parser.parse_args()
-    hribo.meta_geneprofiling_p(args.input_type, args.in_gff_filepath, args.in_bam_filepath, args.out_plot_filepath, args.cpu_cores, args.min_read_length, args.max_read_length, args.normalization, args.noise_reduction_analysis, args.in_readlengthstat_filepath)
+    parser = argparse.ArgumentParser(description="Perform metagene profiling analysis.", formatter_class=argparse.RawTextHelpFormatter)
 
+    parser.add_argument("-b", "--alignment_dir_path", action="store", dest="alignment_dir_path", type=Path, required=True\
+                                                    , help="The path to the alignment folder containing (.sam or .bam) files\
+                                                            in format <METHOD>-<CONDITION>-<REPLICATE>(.sam|.bam).")
+    parser.add_argument("-a", "--annotation_file_path", action="store", dest="annotation_file_path", type=Path, required=True\
+                                                      , help="The path to the output directory.")
+    parser.add_argument("-g", "--genome_file_path", action="store", dest="genome_file_path", type=Path, required=True\
+                                                  , help="The path to the genome file.")
+    parser.add_argument("-o", "--output_dir_path", action="store", dest="output_dir_path", type=Path, required=True\
+                                                 , help="The path to the output directory.")
+    parser.add_argument("-r", "--read_lengths", action="store", dest="read_lengths", type=str, default="25-34"\
+                                              , help="The read lengths to be considered for the metagene-profiling.")
+    parser.add_argument("-m", "--mapping_methods", nargs="+", action="store", dest="mapping_methods", default=["fiveprime,threeprime"]\
+                                                 , help="The mapping method used for the alignment.")
+    parser.add_argument("-n", "--normalization_method", nargs="+", action="store", dest="normalization_method", default=["raw"]\
+                                                      , help="The normalization method used for the read counts (raw, mil). Default: raw.")
+    parser.add_argument("--neighboring_genes_distance", action="store", dest="neighboring_genes_distance", type=int, default=50\
+                                            , help="The distance to check for overlapping genes. Default: 50.")
+    parser.add_argument("--filtering_methods", nargs="+", dest="filtering_methods", default=["overlap", "rpkm", "length"]\
+                                            , help="The filtering methods to be used for the annotation filtering. Default: overlap, rpkm, length.")
+    parser.add_argument("--rpkm_threshold", action="store", dest="rpkm_threshold", type=float, default=10.0\
+                                          , help="The RPKM threshold to filter genes. Default: 10.0.")
+    parser.add_argument("--color_list", nargs="+", dest="color_list", required=False\
+                                      , default=None, help="List of colors to use for the plots.")
+    parser.add_argument("--positions_out_ORF", action="store", dest="positions_out_ORF", type=int, default=50\
+                                             , help="The number of positions upstream of the start codon to include in the metagene vector. Default: 20.")
+    parser.add_argument("--positions_in_ORF", action="store", dest="positions_in_ORF", type=int, default=200\
+                                            , help="The number of positions downstream of the start codon to include in the metagene vector. Default: 100.")
+    parser.add_argument("--output_format", nargs="+", action="store", dest="output_format", default=["interactive", "svg"]\
+                                            , help="The output format of the plots (interactive, svg, pdf, jpg, png). Default: interactive, svg.")
+    parser.add_argument("--include_plotly_js", action="store", dest="include_plotly_js", type=str, default="integrated",\
+                                            help="The way to include the plotly.js library (integrated, local, online). Default: integrated.")
+    parser.add_argument("--window_normalization", action="store_true", dest="window_normalization", default=False\
+                                                , help="If true, normalize the individual read lengths by the total number of reads of this length and the window size. Default: False.")
+    args = parser.parse_args()
+
+    alignment_files = io.parse_alignment_files(args.alignment_dir_path)
+    genome_length_dict = io.parse_genome_lengths(args.genome_file_path)
+
+    mapping_methods = io.parse_mapping_methods(args.mapping_methods)
+
+    read_length_list = io.parse_read_lengths(args.read_lengths)
+    for alignment_file in alignment_files:
+        fig_list = []
+
+        ir = IntervalReader(alignment_file)
+        read_intervals_dict, total_counts_dict = ir.output()
+
+        if args.window_normalization:
+            meta_dir = args.output_dir_path / "metageneprofiling" / args.normalization_method / "norm" / alignment_file.stem
+        else:
+            meta_dir = args.output_dir_path / "metageneprofiling" / args.normalization_method / "raw" / alignment_file.stem
+        meta_dir.mkdir(parents=True, exist_ok=True)
+
+        for mapping_method in mapping_methods:
+            start_codon_dict, stop_codon_dict, _ = ann.retrieve_annotation_positions(args.annotation_file_path, read_intervals_dict, total_counts_dict, genome_length_dict, args.filtering_methods,\
+                                                                                     mapping_method, args.rpkm_threshold, args.neighboring_genes_distance, args.positions_out_ORF, args.positions_in_ORF)
+
+            start_coverage_dict = mg.metagene_mapping_start(start_codon_dict, read_intervals_dict, args.positions_out_ORF, args.positions_in_ORF, mapping_method)
+            stop_coverage_dict = mg.metagene_mapping_stop(stop_codon_dict, read_intervals_dict, args.positions_out_ORF, args.positions_in_ORF, mapping_method)
+
+            if args.normalization_method == "mil":
+                start_coverage_dict = misc.normalize_coverage(start_coverage_dict, total_counts_dict)
+                stop_coverage_dict = misc.normalize_coverage(stop_coverage_dict, total_counts_dict)
+
+            tmp = create_metagene_figures(start_coverage_dict, read_length_list, meta_dir, mapping_method, args.window_normalization,\
+                                                               args.positions_out_ORF, args.positions_in_ORF, args.color_list)
+            fig_list.extend(tmp)
+
+        io.write_plots_to_file(fig_list, args.output_format, args.include_plotly_js, alignment_file.stem, meta_dir)
 
 if __name__ == '__main__':
     main()

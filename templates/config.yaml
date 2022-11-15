@@ -55,7 +55,7 @@ metageneSettings:
   rpkmThreshold: 10
 
   # Minimum length of considered ORFs. ORFs smaller than positionsInORF are filtered automatically.
-  lengthCutoff: 250
+  lengthCutoff: 50
 
   # Mapping methods to be considered (fiveprime, threeprime, centered, global)
   mappingMethods: ["fiveprime", "threeprime"]
