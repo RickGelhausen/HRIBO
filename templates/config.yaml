@@ -63,17 +63,15 @@ metageneSettings:
   # Read lengths to be considered. Comma seperated string allows intervals denoted by "-" symbol (e.g. 22,23,27,34-35)
   readLengths: "25-34"
 
-  # Window normalization on/off
-  # Normalizes individual read lengths based on total counts and window length
-  windowNormalization: "off"
-
-  # Normalization method (raw, mil)
-  # Only applicable when windowNormalization is set to "off"
-  normalizationMethod: ["raw", "mil"]
+  # Normalization method (raw, mil, window)
+  # raw: no normalization, raw read counts
+  # cpm: counts per million normalization (CPM)
+  # window: normalized data by total counts and considered window length.
+  normalizationMethod: ["raw", "mil", "window"]
 
   ### Plotting
   # Plot output types. Supported (svg, pdf, png, jpg, interactive)
-  outputTypes: ["interactive", "svg"]
+  outputFormats: ["interactive", "svg"]
 
   # Interactive html files require more space as they require plotly.js integrated, online access or a local copy of plotly.js
   # integrated: integrates plotly.js into each plot (+-3.7mb per file)
@@ -83,6 +81,6 @@ metageneSettings:
 
   # Custom list of colors to be used for the plots. Must be atleast as many as the number of read lengths considered.
   # If empty we try to match the number of read lengths trying to prioritize color-blind friendly colors.
-  colorList: ""
+  colorList: []
 
 

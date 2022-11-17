@@ -2,6 +2,21 @@ import plotly as py
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+def prepare_colors_and_lines(color_list):
+    """
+    Prepare a list of colors and a list of different line types for the plot.
+    """
+
+    colors = []
+    lines = []
+
+    line_types = ["solid", "dot", "dash", "longdash", "dashdot", "longdashdot"]
+
+    for line in line_types:
+        colors.extend(color_list)
+        lines.extend([line] * len(color_list))
+
+    return colors, lines
 
 def plot_metagene_profiles(plot_df_start, plot_df_stop, read_length_list, title, max_y=None, color_list=None):
     """
@@ -22,18 +37,20 @@ def plot_metagene_profiles(plot_df_start, plot_df_stop, read_length_list, title,
 
     fig = make_subplots(rows=1, cols=2, subplot_titles=("Start codon profile", "Stop codon profile"), horizontal_spacing=0.05)
 
-    if color_list is None:
-        color_list = py.colors.DEFAULT_PLOTLY_COLORS[:len(labels)]
+    if color_list is []:
+        color_list = py.colors.DEFAULT_PLOTLY_COLORS
+
+    colors, lines = prepare_colors_and_lines(color_list)
 
     for i in range(len(labels)):
         fig.add_trace(go.Scatter(
             x=x_range_start,
             y=plot_df_start[labels[i]],
-            marker_color=color_list[i],
+            marker_color=colors[i],
             mode='lines',
             name=labels[i],
             legendgroup=group_labels[i],
-            # line_dash=out_line_type[i]
+            dash=lines[i]
         ),
         row=1, col=1
     )
@@ -51,12 +68,12 @@ def plot_metagene_profiles(plot_df_start, plot_df_stop, read_length_list, title,
         fig.add_trace(go.Scatter(
             x=x_range_stop,
             y=plot_df_stop[labels[i]],
-            marker_color=color_list[i],
+            marker_color=colors[i],
             mode='lines',
             name=labels[i],
             legendgroup=group_labels[i],
             showlegend=False,
-            # line_dash=out_line_type[i]
+            dash=lines[i]
         ),
         row=1, col=2
     )
@@ -75,6 +92,7 @@ def plot_metagene_profiles(plot_df_start, plot_df_stop, read_length_list, title,
         title_font={"size": 20},
         row=1, col=1
     )
+
     fig.update_xaxes(
         title_text="Distance to stop codon (nt)",
         title_font={"size": 20},

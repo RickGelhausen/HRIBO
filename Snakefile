@@ -1,5 +1,4 @@
 import os
-import re
 import pandas as pd
 import itertools as iter
 from snakemake.utils import validate, min_version
@@ -25,8 +24,7 @@ samples.set_index(["method", "condition", "replicate"], drop=False, inplace=True
 samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.levels])
 validate(samples, schema="schemas/samples.schema.yaml")
 
-samples_meta_start = samples.loc[(samples["method"] == "RIBO") | (samples["method"] == "TIS")]
-samples_meta_stop = samples.loc[(samples["method"] == "TTS")]
+samples_meta = samples.loc[(samples["method"] == "RIBO") | (samples["method"] == "TIS") | (samples["method"] == "TTS")]
 
 if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
     sys.exit("Differential Expression requested, but only one condition given.\n\
@@ -90,10 +88,7 @@ else:
     include: "rules/conditionals.smk"
 
 hribo_output = []
-hribo_output.extend(expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]))
-hribo_output.extend(expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]))
-hribo_output.extend(expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]))
-hribo_output.extend(expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]))
+hribo_output.extend(expand("metageneprofiling/{method}-{condition}-{replicate}", zip, method=samples_meta["method"], condition=samples_meta["condition"], replicate=samples_meta["replicate"]))
 hribo_output.append("qc/multi/multiqc_report.html")
 hribo_output.append("tracks/potentialStopCodons.gff")
 hribo_output.append("tracks/potentialStartCodons.gff")

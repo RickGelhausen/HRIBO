@@ -61,7 +61,7 @@ def normalize_coverage(metagene_coverage_dict, total_counts_dict):
 
     return metagene_coverage_dict
 
-def normalize_df(df, window_size):
+def window_normalize_df(df, window_size):
     """
     Normalize every read length column by the total read length number and the window size.
     """
