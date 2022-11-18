@@ -4,9 +4,9 @@ channels:
 dependencies:
  - numpy
  - pysam
- - regex
- - matplotlib
  - pandas
  - interlap
+ - plotly
+ - xlsxwriter
  - openpyxl
- - scipy
+ - python-kaleido

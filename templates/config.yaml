@@ -10,7 +10,7 @@ biologySettings:
   samples: "HRIBO/samples.tsv"
 
   # Alternative start codons considered where applicable
-  alternativeStartCodons: ["GTG, TTG"]
+  alternativeStartCodons: ["GTG", "TTG"]
 
 #####################
 # Analysis settings #
@@ -24,7 +24,7 @@ differentialExpressionSettings:
   differentialExpression: "off"
 
   # comma-seperated list of condition contrasts: treated1_control1,treated2_control2...
-  contrasts: ""
+  contrasts: []
 
 # ORF predictions
 #################
@@ -45,14 +45,14 @@ metageneSettings:
   positionsInORF: 250
 
   # methods to filter the input annotation before metagene profiling is performed (overlap, length and/or rpkm)
-  filteringMethod: ["overlap", "length", "rpkm"]
+  filteringMethods: ["overlap", "length", "rpkm"]
 
   # Distance around each annotated genes that will be considered for removing overlapping genes
   # neighboringGenesDistance 0 only removes directly overlapping genes.
   neighboringGenesDistance: 50
 
   # Filter ORFs based on RPKM threshold
-  rpkmThreshold: 10
+  rpkmThreshold: 10.0
 
   # Minimum length of considered ORFs. ORFs smaller than positionsInORF are filtered automatically.
   lengthCutoff: 50
@@ -60,14 +60,14 @@ metageneSettings:
   # Mapping methods to be considered (fiveprime, threeprime, centered, global)
   mappingMethods: ["fiveprime", "threeprime"]
 
-  # Read lengths to be considered. Comma seperated string allows intervals denoted by "-" symbol (e.g. 22,23,27,34-35)
+  # Read lengths to be considered. Comma seperated string allows intervals denoted by "-" symbol (e.g. "22,23,27,34-35")
   readLengths: "25-34"
 
   # Normalization method (raw, mil, window)
   # raw: no normalization, raw read counts
   # cpm: counts per million normalization (CPM)
   # window: normalized data by total counts and considered window length.
-  normalizationMethod: ["raw", "mil", "window"]
+  normalizationMethods: ["raw", "cpm", "window"]
 
   ### Plotting
   # Plot output types. Supported (svg, pdf, png, jpg, interactive)

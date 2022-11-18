@@ -14,7 +14,7 @@ rule xtail:
     shell:
         """
         mkdir -p xtail;
-        HRIBO/scripts/xtail_classic.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table} -f {output.fcplot} -p {output.rplot};
+        HRIBO/scripts/xtail.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table} -f {output.fcplot} -p {output.rplot};
         """
 
 rule xtailxlsx:

@@ -36,21 +36,18 @@ def plot_metagene_profiles(plot_df_start, plot_df_stop, read_length_list, title,
     group_labels = [f"{count}" for count in range(len(labels))]
 
     fig = make_subplots(rows=1, cols=2, subplot_titles=("Start codon profile", "Stop codon profile"), horizontal_spacing=0.05)
-
-    if color_list is []:
+    if color_list == []:
         color_list = py.colors.DEFAULT_PLOTLY_COLORS
 
     colors, lines = prepare_colors_and_lines(color_list)
-
     for i in range(len(labels)):
         fig.add_trace(go.Scatter(
             x=x_range_start,
             y=plot_df_start[labels[i]],
-            marker_color=colors[i],
             mode='lines',
             name=labels[i],
             legendgroup=group_labels[i],
-            dash=lines[i]
+            line=dict(color=colors[i], dash=lines[i])
         ),
         row=1, col=1
     )
@@ -68,12 +65,11 @@ def plot_metagene_profiles(plot_df_start, plot_df_stop, read_length_list, title,
         fig.add_trace(go.Scatter(
             x=x_range_stop,
             y=plot_df_stop[labels[i]],
-            marker_color=colors[i],
             mode='lines',
             name=labels[i],
             legendgroup=group_labels[i],
             showlegend=False,
-            dash=lines[i]
+            line=dict(color=colors[i], dash=lines[i])
         ),
         row=1, col=2
     )

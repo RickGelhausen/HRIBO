@@ -91,11 +91,12 @@ def main():
     read_intervals_dict, total_counts_dict = ir.output()
 
     for normalization_method in args.normalization_methods:
-        meta_dir = args.output_dir_path / alignment_file.stem / args.normalization_method
+        normalization_method = normalization_method.lower()
+        meta_dir = args.output_dir_path / alignment_file.stem / normalization_method
         meta_dir.mkdir(parents=True, exist_ok=True)
 
         for mapping_method in mapping_methods:
-            start_codon_dict, stop_codon_dict, _ = ann.retrieve_annotation_positions(args.annotation_file_path, read_intervals_dict, total_counts_dict, genome_length_dict, args.filtering_methods,\
+            start_codon_dict, stop_codon_dict = ann.retrieve_annotation_positions(args.annotation_file_path, read_intervals_dict, total_counts_dict, genome_length_dict, args.filtering_methods,\
                                                                                         mapping_method, args.rpkm_threshold, args.neighboring_genes_distance, args.positions_out_ORF, args.positions_in_ORF)
 
             start_coverage_dict = mg.metagene_mapping_start(start_codon_dict, read_intervals_dict, args.positions_out_ORF, args.positions_in_ORF, mapping_method)
@@ -105,7 +106,7 @@ def main():
                 start_coverage_dict = misc.normalize_coverage(start_coverage_dict, total_counts_dict)
                 stop_coverage_dict = misc.normalize_coverage(stop_coverage_dict, total_counts_dict)
 
-            tmp = create_metagene_figures(start_coverage_dict, read_length_list, meta_dir, mapping_method, args.normalization_method,\
+            tmp = create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length_list, meta_dir, mapping_method, normalization_method,\
                                                                 args.positions_out_ORF, args.positions_in_ORF, args.color_list)
             fig_list.extend(tmp)
 

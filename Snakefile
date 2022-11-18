@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 import itertools as iter
 from snakemake.utils import validate, min_version
@@ -6,13 +7,6 @@ from validate import validate_config
 
 min_version("7.18.2")
 
-validate_config(config)
-
-ADAPTERS=config["biologySettings"]["adapter"]
-CODONS=config["biologySettings"]["alternativeStartCodons"]
-DIFFEXPRESS=config["differentialExpressionSettings"]["differentialExpression"]
-CONTRASTS=config["differentialExpressionSettings"]["contrasts"]
-DEEPRIBO=config["predictionSettings"]["deepribo"]
 
 onstart:
    if not os.path.exists("logs"):
@@ -25,6 +19,15 @@ samples.index = samples.index.set_levels([i.astype(str) for i in samples.index.l
 validate(samples, schema="schemas/samples.schema.yaml")
 
 samples_meta = samples.loc[(samples["method"] == "RIBO") | (samples["method"] == "TIS") | (samples["method"] == "TTS")]
+conditions=sorted(samples["condition"].unique(), key=lambda s: s.lower())
+
+validate_config(config, conditions)
+
+ADAPTERS=config["biologySettings"]["adapter"]
+CODONS=config["biologySettings"]["alternativeStartCodons"]
+DIFFEXPRESS=config["differentialExpressionSettings"]["differentialExpression"]
+CONTRASTS=config["differentialExpressionSettings"]["contrasts"]
+DEEPRIBO=config["predictionSettings"]["deepribo"]
 
 if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
     sys.exit("Differential Expression requested, but only one condition given.\n\
@@ -99,21 +102,16 @@ hribo_output.append("auxiliary/total_read_counts.xlsx")
 hribo_output.append("auxiliary/unique_read_counts.xlsx")
 hribo_output.append("auxiliary/samples.xlsx")
 hribo_output.append("figures/heatmap_SpearmanCorr_readCounts.pdf")
-
 hribo_output.extend(get_wigfiles())
 
 if hasRIBO:
     hribo_output.append("auxiliary/predictions_reparation.xlsx")
 
-    conditions=sorted(samples["condition"].unique(), key=lambda s: s.lower())
-
     if DIFFEXPRESS.lower() == "on":
-        if CONTRASTS != "":
-            CONTRASTS = CONTRASTS.split(",")
-        else:
+        if CONTRASTS == []:
             CONTRASTS=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
 
-        hribo_output.extend([("contrasts/"+((element.replace("[", "")).replace("]", "")).replace("'", "")) for element in CONTRASTS])
+        hribo_output.extend([("contrasts/" +((element.replace("[", "")).replace("]", "")).replace("'", "")) for element in CONTRASTS])
         hribo_output.extend([("xtail/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_significant.xlsx") for element in CONTRASTS])
         hribo_output.extend([("riborex/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_significant.xlsx") for element in CONTRASTS])
         hribo_output.extend([("deltate/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_significant.xlsx") for element in CONTRASTS])

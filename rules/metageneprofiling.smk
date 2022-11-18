@@ -15,30 +15,35 @@ rule metageneProfiling:
         readlengths=config["metageneSettings"]["readLengths"],
         positionsInORF=config["metageneSettings"]["positionsInORF"],
         positionsOutORF=config["metageneSettings"]["positionsOutsideORF"],
-        filteringMethod=" ".join(config["metageneSettings"]["filteringMethod"]),
+        filteringMethods=config["metageneSettings"]["filteringMethods"],
         neighboringGenesDistance=config["metageneSettings"]["neighboringGenesDistance"],
         rpkmThreshold=config["metageneSettings"]["rpkmThreshold"],
         lengthCutoff=config["metageneSettings"]["lengthCutoff"],
-        mappingMethods=" ".join(config["metageneSettings"]["mappingMethods"]),
-        normalizationMethod=config["metageneSettings"]["normalizationMethod"],
-        outputFormats=" ".join(config["metageneSettings"]["outputFormats"]),
+        mappingMethods=config["metageneSettings"]["mappingMethods"],
+        normalizationMethods=config["metageneSettings"]["normalizationMethods"],
+        outputFormats=config["metageneSettings"]["outputFormats"],
         includePlotlyJS=config["metageneSettings"]["includePlotlyJS"],
-        colorList= [] if len(config["metageneSettings"]["colorList"]) == 0 else " ".join(config["metageneSettings"]["colorList"])
+        colorList= "nocolor" if len(config["metageneSettings"]["colorList"]) == 0 else config["metageneSettings"]["colorList"]
     shell:
         """
         mkdir -p metageneprofiling;
+        if [ {params.colorList} == nocolor ]; then
+            colorList="";
+        else
+            colorList="--color_list {params.colorList}";
+        fi;
         HRIBO/scripts/metagene_profiling.py -b {input.bam} -g {input.genome} -a {input.annotation} -o {output.meta} \
             --read_lengths {params.readlengths} \
-            --normalization_methods {params.normalizationMethod} \
+            --normalization_methods {params.normalizationMethods} \
             --mapping_methods {params.mappingMethods} \
             --positions_in_ORF {params.positionsInORF} \
             --positions_out_ORF {params.positionsOutORF} \
-            --filtering_method {params.filteringMethod} \
+            --filtering_method {params.filteringMethods} \
             --neighboring_genes_distance {params.neighboringGenesDistance} \
             --rpkm_threshold {params.rpkmThreshold} \
             --length_cutoff {params.lengthCutoff} \
-            --color_list {params.colorList} \
             --output_formats {params.outputFormats} \
-            --include_plotly_js {params.includePlotlyJS}
+            --include_plotly_js {params.includePlotlyJS} \
+            ${{colorList}};
         """
 
