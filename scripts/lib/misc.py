@@ -68,8 +68,7 @@ def window_normalize_df(df, window_size):
 
     columns = df.columns[1:].tolist()
     for column in columns:
-        print(f"{column} {df[column].sum()} {window_size}")
-        df.loc[:, column] = df[column] / (df[column].sum() / window_size)
+        df[column] = df[column].div( (df[column].sum() / window_size))
 
     return df
 

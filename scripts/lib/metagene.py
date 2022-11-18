@@ -108,10 +108,10 @@ def metagene_mapping_stop(stop_codon_dict, read_interval_dict, positions_out_ORF
                             coverage_mapping[chromosome][read_length] = np.zeros(window_length, dtype=np.int)
 
                         if mapping_method == "fiveprime":
-                            if read_interval[1] <= window_stop:
+                            if read_interval[0] >= window_start:
                                 coverage_mapping[chromosome][read_length][coverage_low_bound] += 1
                         elif mapping_method == "threeprime":
-                            if read_interval[0] >= window_start:
+                            if read_interval[1] <= window_stop:
                                 coverage_mapping[chromosome][read_length][coverage_high_bound] += 1
 
                         elif mapping_method == "centered":
@@ -137,10 +137,10 @@ def metagene_mapping_stop(stop_codon_dict, read_interval_dict, positions_out_ORF
                         coverage_high_bound = intersection[1] - window_start
 
                         if mapping_method == "fiveprime":
-                            if read_interval[0] >= window_start:
+                            if read_interval[1] <= window_stop:
                                 coverage_mapping[chromosome][read_length][coverage_high_bound] += 1
                         elif mapping_method == "threeprime":
-                            if read_interval[1] <= window_stop:
+                            if read_interval[0] >= window_start:
                                 coverage_mapping[chromosome][read_length][coverage_low_bound] += 1
 
                         elif mapping_method == "centered":

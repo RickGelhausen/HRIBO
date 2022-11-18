@@ -86,13 +86,14 @@ def main():
     mapping_methods = io.parse_mapping_methods(args.mapping_methods)
     read_length_list = io.parse_read_lengths(args.read_lengths)
 
-    fig_list = []
     ir = IntervalReader(alignment_file)
     read_intervals_dict, total_counts_dict = ir.output()
 
     for normalization_method in args.normalization_methods:
+        fig_list = []
+
         normalization_method = normalization_method.lower()
-        meta_dir = args.output_dir_path / alignment_file.stem / normalization_method
+        meta_dir = args.output_dir_path / normalization_method
         meta_dir.mkdir(parents=True, exist_ok=True)
 
         for mapping_method in mapping_methods:

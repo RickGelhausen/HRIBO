@@ -28,8 +28,8 @@ def plot_metagene_profiles(plot_df_start, plot_df_stop, read_length_list, title,
 
     labels = [label for label in plot_df_start.columns[1:].tolist() if int(label) in read_length_list]
     if max_y is None:
-        max_y_start = plot_df_start[plot_df_start.columns[1:]].max().max()
-        max_y_stop = plot_df_stop[plot_df_stop.columns[1:]].max().max()
+        max_y_start = plot_df_start[labels].max().max()
+        max_y_stop = plot_df_stop[labels].max().max()
         max_y = max(max_y_start, max_y_stop)
         max_y += max_y * 0.1
 
