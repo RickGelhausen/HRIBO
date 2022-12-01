@@ -4,9 +4,9 @@ rule contrastInput:
     run:
         if not os.path.exists("contrasts"):
             os.makedirs("contrasts")
-        for f in getContrast(wildcards):
+        for f in CONTRASTS:
             print(f)
-            open((f), 'a').close()
+            open(f"contrasts/{f}", 'a').close()
 
 rule prepareRiborexInput:
     input:

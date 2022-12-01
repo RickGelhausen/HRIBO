@@ -30,7 +30,7 @@ def create_readcount_tables(read_count_file, contrast, tool, output_path):
     ribo_df.to_csv(output_path / f"{contrast}_ribo_readcount_table.tsv", sep="\t", index=False)
     rna_df.to_csv(output_path / f"{contrast}_rna_readcount_table.tsv", sep="\t", index=False)
 
-    if tool == "xtail":
+    if tool == "riborex":
         condition_vector = [ "control" if col.split("-")[1] == cond1 else "treat" for col in ribo_cols[1:] ]
     else:
         condition_vector = [ "treated" if col.split("-")[1] == cond1 else "control" for col in ribo_cols[1:] ]

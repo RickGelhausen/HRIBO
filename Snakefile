@@ -90,6 +90,8 @@ if DEEPRIBO.lower() == "on":
 else:
     include: "rules/conditionals.smk"
 
+include: "rules/pca.smk"
+
 hribo_output = []
 hribo_output.extend(expand("metageneprofiling/{method}-{condition}-{replicate}", zip, method=samples_meta["method"], condition=samples_meta["condition"], replicate=samples_meta["replicate"]))
 hribo_output.append("qc/multi/multiqc_report.html")
@@ -102,6 +104,7 @@ hribo_output.append("auxiliary/total_read_counts.xlsx")
 hribo_output.append("auxiliary/unique_read_counts.xlsx")
 hribo_output.append("auxiliary/samples.xlsx")
 hribo_output.append("figures/heatmap_SpearmanCorr_readCounts.pdf")
+hribo_output.append("pca/PCA_3D.html")
 hribo_output.extend(get_wigfiles())
 
 if hasRIBO:
@@ -112,9 +115,9 @@ if hasRIBO:
             CONTRASTS=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
 
         hribo_output.extend([("contrasts/" +((element.replace("[", "")).replace("]", "")).replace("'", "")) for element in CONTRASTS])
-        hribo_output.extend([("xtail/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_significant.xlsx") for element in CONTRASTS])
-        hribo_output.extend([("riborex/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_significant.xlsx") for element in CONTRASTS])
-        hribo_output.extend([("deltate/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_significant.xlsx") for element in CONTRASTS])
+        hribo_output.extend([("xtail/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
+        hribo_output.extend([("riborex/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
+        hribo_output.extend([("deltate/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
 
     if DEEPRIBO.lower() == "on":
         hribo_output.append("auxiliary/predictions_deepribo.xlsx")
