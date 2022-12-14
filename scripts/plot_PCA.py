@@ -31,9 +31,9 @@ def plot_scatter_3D(table_df, percentage_variance):
         labels.append(group[0])
         pca_data.append([group[1]["PC1"], group[1]["PC2"], group[1]["PC3"]])
 
-    color_list = py.colors.DEFAULT_PLOTLY_COLORS
+    #color_list = py.colors.DEFAULT_PLOTLY_COLORS
     #color_list = ["rgb(0,0,0)", "rgb(183,183,183)", "rgb(250,128,114)", "rgb(238,238,0)", "rgb(65,105,225)", "rgb(189,252,201)"]
-
+    color_list = ["#004949","#ff6db6","#490092","#006ddb","#24ff24","#b66dff","#db6d00","#6db6ff","#b6dbff", "#920000","#924900","#ffff6d","#009292","#ffb6db"]
     group_labels = [f"{count}" for count in range(len(labels))]
 
     min_x = min([min(x[0]) for x in pca_data])
