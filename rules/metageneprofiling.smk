@@ -24,6 +24,7 @@ rule metageneProfiling:
         outputFormats=config["metageneSettings"]["outputFormats"],
         includePlotlyJS=config["metageneSettings"]["includePlotlyJS"],
         colorList= "nocolor" if len(config["metageneSettings"]["colorList"]) == 0 else config["metageneSettings"]["colorList"]
+    log: "logs/{method}-{condition}-{replicate}.log"
     shell:
         """
         mkdir -p metageneprofiling;
@@ -44,6 +45,6 @@ rule metageneProfiling:
             --length_cutoff {params.lengthCutoff} \
             --output_formats {params.outputFormats} \
             --include_plotly_js {params.includePlotlyJS} \
-            ${{colorList}};
+            ${{colorList}}; > {log}
         """
 
