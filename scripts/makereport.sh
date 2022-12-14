@@ -60,5 +60,6 @@ cp -r deltate/*.pdf "${report}/differential-expression/deltate"
 cp -r auxiliary/overview.xlsx "${report}"
 cp -r auxiliary/overview.gff "${report}/genome-browser/"
 cp -r metageneprofiling "${report}"
+cp -r pca "${report}/quality-control/"
 
 zip -r "${report}.zip" $report
