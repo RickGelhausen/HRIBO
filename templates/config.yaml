@@ -33,6 +33,13 @@ predictionSettings:
   # Deepribo predictions: on / off
   deepribo: "off"
 
+# Read Length Statistics
+########################
+
+readstatSettings:
+  # Read lengths to be considered. Comma seperated string allows intervals denoted by "-" symbol (e.g. "22,23,27,34-35")
+  readLenghts: "10-40"
+
 # Metagene Profiling
 ####################
 

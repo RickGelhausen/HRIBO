@@ -94,6 +94,18 @@ def validate_config(conf, unique_conditions):
                 if conf["predictionSettings"]["deepribo"].lower() not in ["on", "off"]:
                     raise ValueError("'deepribo' in 'predictionSettings' section in conf file must be either 'on' or 'off'.")
 
+    if "readstatSettings" not in conf:
+        raise ValueError("Missing 'readstatSettings' section in conf file.")
+    else:
+        if "readLength" not in conf["readstatSettings"]:
+            raise ValueError("Missing 'readLength' in 'readstatSettings' section in conf file.")
+        else:
+            if not isinstance(conf["readstatSettings"]["readLength"], str):
+                raise ValueError("'readLength' in 'readstatSettings' section in conf file must be a string.")
+            else:
+                if conf["readstatSettings"]["readLength"] == "":
+                    raise ValueError("'readLength' in 'readstatSettings' section in conf file must be a non-empty string.")
+
     if "metageneSettings" not in conf:
         raise ValueError("Missing 'metageneSettings' section in conf file.")
     else:
@@ -181,5 +193,54 @@ def validate_config(conf, unique_conditions):
                         if method.lower() not in ["threeprime", "fiveprime", "centered", "global"]:
                             raise ValueError("All elements in 'mappingMethods' in 'metageneSettings' section in conf file must be either 'threeprime', 'fiveprime', 'centered', and/or 'global'.")
 
+        if "readLength" not in conf["metageneSettings"]:
+            raise ValueError("Missing 'readLength' in 'metageneSettings' section in conf file.")
+        else:
+            if not isinstance(conf["metageneSettings"]["readLength"], str):
+                raise ValueError("'readLength' in 'metageneSettings' section in conf file must be a string.")
+            else:
+                if conf["metageneSettings"]["readLength"] == "":
+                    raise ValueError("'readLength' in 'metageneSettings' section in conf file must be a non-empty string.")
+
+        if "normalizationMethods" not in conf["metageneSettings"]:
+            raise ValueError("Missing 'normalizationMethods' in 'metageneSettings' section in conf file.")
+        else:
+            if not isinstance(conf["metageneSettings"]["normalizationMethods"], list):
+                raise ValueError("'normalizationMethods' in 'metageneSettings' section in conf file must be a list.")
+            else:
+                for method in conf["metageneSettings"]["normalizationMethods"]:
+                    if not isinstance(method, str):
+                        raise ValueError("All elements in 'normalizationMethods' in 'metageneSettings' section in conf file must be a string.")
+                    else:
+                        if method.lower() not in ["raw", "cpm", "window"]:
+                            raise ValueError("All elements in 'normalizationMethods' in 'metageneSettings' section in conf file must be either 'raw', 'cpm', and/or 'window'.")
+
+        if "outputFormats" not in conf["metageneSettings"]:
+            raise ValueError("Missing 'outputFormats' in 'metageneSettings' section in conf file.")
+        else:
+            if not isinstance(conf["metageneSettings"]["outputFormats"], list):
+                raise ValueError("'outputFormats' in 'metageneSettings' section in conf file must be a list.")
+            else:
+                for method in conf["metageneSettings"]["outputFormats"]:
+                    if not isinstance(method, str):
+                        raise ValueError("All elements in 'outputFormats' in 'metageneSettings' section in conf file must be a string.")
+                    else:
+                        if method.lower() not in ["interactive", "svg", "png", "pdf", "jpg"]:
+                            raise ValueError("All elements in 'outputFormats' in 'metageneSettings' section in conf file must be either 'interactive', 'svg', 'png', 'pdf', and/or 'jpg'.")
+
+        if "includePlotlyJS" not in conf["metageneSettings"]:
+            raise ValueError("Missing 'includePlotlyJS' in 'metageneSettings' section in conf file.")
+        else:
+            if not isinstance(conf["metageneSettings"]["includePlotlyJS"], str):
+                raise ValueError("'includePlotlyJS' in 'metageneSettings' section in conf file must be a string.")
+            else:
+                if conf["metageneSettings"]["includePlotlyJS"] not in ["integrated", "online", "local"]:
+                    raise ValueError("'includePlotlyJS' in 'metageneSettings' section in conf file must be either 'integrated', 'online', or 'local'.")
+
+        if "colorList" not in conf["metageneSettings"]:
+            raise ValueError("Missing 'colorList' in 'metageneSettings' section in conf file.")
+        else:
+            if not isinstance(conf["metageneSettings"]["colorList"], list):
+                raise ValueError("'colorList' in 'metageneSettings' section in conf file must be a list.")
 
     print("Config file validated! No errors found.")
