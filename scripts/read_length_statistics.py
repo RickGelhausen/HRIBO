@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 from pathlib import Path
 
@@ -103,7 +105,6 @@ def plot_length_fractions(dataframes, color_list):
 
         for file in files:
             data = cur_df[file]
-            print(data, data.sum())
             data = data / data.sum()
 
             fig.add_trace(go.Scatter(x=labels, y=data, name=file))
@@ -151,7 +152,6 @@ def create_html_output(figure_dict, output_path):
     """
     Plot the figures in an html file.
     """
-    output_file = output_path / "read_length_fractions.html"
 
     counter = 0
     html_string = INTRO_HTML + "\n"
@@ -171,7 +171,7 @@ def create_html_output(figure_dict, output_path):
 
 
     html_string += OUTRO_HTML
-    with open(output_file, "w") as f:
+    with open(output_path / "read_length_fractions.html", "w") as f:
         f.write(html_string)
 
 def main():
@@ -187,8 +187,8 @@ def main():
                                         default=None, help="List of colors to use for the plots. Default contains 7 colorblind-friendly colors.")
     args = parser.parse_args()
 
-    alignment_files = args.alignment_files
-    output_dir_path = Path(args.output_dir_path)
+    alignment_files = [Path(x) for x in args.alignment_files]
+    output_dir_path = args.output_dir_path
     output_dir_path.mkdir(parents=True, exist_ok=True)
     read_length_list = io.parse_read_lengths(args.read_lengths)
 

@@ -94,7 +94,7 @@ include: "rules/pca.smk"
 
 hribo_output = []
 hribo_output.extend(expand("metageneprofiling/{method}-{condition}-{replicate}", zip, method=samples_meta["method"], condition=samples_meta["condition"], replicate=samples_meta["replicate"]))
-hribo_output.extend("metageneprofiling/read_length_fractions.html")
+hribo_output.append("metageneprofiling/read_length_fractions.html")
 hribo_output.append("qc/multi/multiqc_report.html")
 hribo_output.append("tracks/potentialStopCodons.gff")
 hribo_output.append("tracks/potentialStartCodons.gff")

@@ -2,8 +2,8 @@ from pathlib import Path
 
 rule readLengthStatistics:
     input:
-        bamfiles=expand(maplink/{method}-{condition}-{replicate}.bam, method=config["methods"], condition=config["conditions"], replicate=config["replicates"]),
-        bamIndex=expand(bamindex/{method}-{condition}-{replicate}.bam.bai, method=config["methods"], condition=config["conditions"], replicate=config["replicates"])
+        bamfiles=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
+        bamIndex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
     output:
         plot="metageneprofiling/read_length_fractions.html",
         table="metageneprofiling/read_length_fractions.tsv",
@@ -17,7 +17,7 @@ rule readLengthStatistics:
     shell:
         """
         mkdir -p metageneprofiling;
-        HRIBO/scripts/read_length_statistics.py -b {input.bamfiles} -r {params.readlengths} -o metageneprofiling/ > {log}
+        HRIBO/scripts/read_length_statistics.py -a {input.bamfiles} -r {params.readlengths} -o metageneprofiling/ > {log}
         """
 
 rule metageneProfiling:
@@ -44,7 +44,7 @@ rule metageneProfiling:
         outputFormats=config["metageneSettings"]["outputFormats"],
         includePlotlyJS=config["metageneSettings"]["includePlotlyJS"],
         colorList= "nocolor" if len(config["metageneSettings"]["colorList"]) == 0 else config["metageneSettings"]["colorList"]
-    log: "logs/{method}-{condition}-{replicate}.log"
+    log: "logs/{method}-{condition}-{replicate}_metageneprofiling.log"
     shell:
         """
         mkdir -p metageneprofiling;

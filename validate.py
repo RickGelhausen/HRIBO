@@ -97,14 +97,14 @@ def validate_config(conf, unique_conditions):
     if "readstatSettings" not in conf:
         raise ValueError("Missing 'readstatSettings' section in conf file.")
     else:
-        if "readLength" not in conf["readstatSettings"]:
-            raise ValueError("Missing 'readLength' in 'readstatSettings' section in conf file.")
+        if "readLengths" not in conf["readstatSettings"]:
+            raise ValueError("Missing 'readLengths' in 'readstatSettings' section in conf file.")
         else:
-            if not isinstance(conf["readstatSettings"]["readLength"], str):
-                raise ValueError("'readLength' in 'readstatSettings' section in conf file must be a string.")
+            if not isinstance(conf["readstatSettings"]["readLengths"], str):
+                raise ValueError("'readLengths' in 'readstatSettings' section in conf file must be a string.")
             else:
-                if conf["readstatSettings"]["readLength"] == "":
-                    raise ValueError("'readLength' in 'readstatSettings' section in conf file must be a non-empty string.")
+                if conf["readstatSettings"]["readLengths"] == "":
+                    raise ValueError("'readLengths' in 'readstatSettings' section in conf file must be a non-empty string.")
 
     if "metageneSettings" not in conf:
         raise ValueError("Missing 'metageneSettings' section in conf file.")
@@ -193,14 +193,14 @@ def validate_config(conf, unique_conditions):
                         if method.lower() not in ["threeprime", "fiveprime", "centered", "global"]:
                             raise ValueError("All elements in 'mappingMethods' in 'metageneSettings' section in conf file must be either 'threeprime', 'fiveprime', 'centered', and/or 'global'.")
 
-        if "readLength" not in conf["metageneSettings"]:
-            raise ValueError("Missing 'readLength' in 'metageneSettings' section in conf file.")
+        if "readLengths" not in conf["metageneSettings"]:
+            raise ValueError("Missing 'readLengths' in 'metageneSettings' section in conf file.")
         else:
-            if not isinstance(conf["metageneSettings"]["readLength"], str):
-                raise ValueError("'readLength' in 'metageneSettings' section in conf file must be a string.")
+            if not isinstance(conf["metageneSettings"]["readLengths"], str):
+                raise ValueError("'readLengths' in 'metageneSettings' section in conf file must be a string.")
             else:
-                if conf["metageneSettings"]["readLength"] == "":
-                    raise ValueError("'readLength' in 'metageneSettings' section in conf file must be a non-empty string.")
+                if conf["metageneSettings"]["readLengths"] == "":
+                    raise ValueError("'readLengths' in 'metageneSettings' section in conf file must be a non-empty string.")
 
         if "normalizationMethods" not in conf["metageneSettings"]:
             raise ValueError("Missing 'normalizationMethods' in 'metageneSettings' section in conf file.")
