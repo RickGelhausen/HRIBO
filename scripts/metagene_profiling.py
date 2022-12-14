@@ -81,7 +81,7 @@ def main():
                                             help="The way to include the plotly.js library (integrated, local, online). Default: integrated.")
     args = parser.parse_args()
 
-    alignment_file = [Path(x) for x in args.alignment_file_path]
+    alignment_file = args.alignment_file_path
     genome_length_dict = io.parse_genome_lengths(args.genome_file_path)
     mapping_methods = io.parse_mapping_methods(args.mapping_methods)
     read_length_list = io.parse_read_lengths(args.read_lengths)
