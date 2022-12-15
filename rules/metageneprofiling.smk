@@ -2,12 +2,12 @@ from pathlib import Path
 
 rule readLengthStatistics:
     input:
-        bamfiles=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamIndex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
+        bamfiles=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples_meta["method"], condition=samples_meta["condition"], replicate=samples_meta["replicate"]),
+        bamIndex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples_meta["method"], condition=samples_meta["condition"], replicate=samples_meta["replicate"])
     output:
         plot="metageneprofiling/read_length_fractions.html",
-        table="metageneprofiling/read_length_fractions.tsv",
-        raw="metageneprofiling/read_length_counts.tsv"
+        table="metageneprofiling/read_length_fractions.xlsx",
+        raw="metageneprofiling/read_length_counts.xlsx"
     conda:
         "../envs/metageneprofiling.yaml"
     threads: 1

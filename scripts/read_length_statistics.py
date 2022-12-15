@@ -68,7 +68,7 @@ def create_dataframes_fractions(read_length_counts):
         for alignment_file in read_length_counts[chrom]:
 
             read_counts = [int(read_length_counts[chrom][alignment_file][x]) for x in sorted(read_length_counts[chrom][alignment_file])]
-            read_counts = [x / sum(read_counts) for x in read_counts]
+            read_counts = [x / sum(read_counts) if sum(read_counts) > 0 else 0 for x in read_counts]
             if chrom not in dataframes:
                 dataframes[chrom] = pd.DataFrame()
                 dataframes[chrom]["read_lengths"] = [str(x) for x in sorted(read_length_counts[chrom][alignment_file])]
@@ -95,7 +95,7 @@ def plot_length_fractions(dataframes, color_list):
     """
 
     figure_dict = {}
-    max_y = 0.4
+    #max_y = 0.4
 
     for chrom in dataframes:
         fig = go.Figure()
@@ -110,7 +110,7 @@ def plot_length_fractions(dataframes, color_list):
             fig.add_trace(go.Scatter(x=labels, y=data, name=file))
 
         fig.update_layout(title=f"{chrom}", yaxis_title="Fraction of mapped reads", xaxis_title="Read length (nt)", font=dict(family="Arial", size=24) )
-        fig.update_yaxes(range=[0, max_y])
+        #fig.update_yaxes(range=[0, max_y])
 
         fig.update_annotations(font_size=24)
 

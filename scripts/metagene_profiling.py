@@ -21,6 +21,7 @@ def create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length
     df_start_dict = misc.create_data_frame(start_coverage_dict, positions_out_ORF, positions_in_ORF, "start")
     df_stop_dict = misc.create_data_frame(stop_coverage_dict, positions_out_ORF, positions_in_ORF, "stop")
 
+
     window_size = positions_out_ORF + positions_in_ORF
 
     fig_list = []

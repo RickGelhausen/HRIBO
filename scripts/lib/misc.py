@@ -92,6 +92,11 @@ def create_data_frame(metagene_dict, positions_out_ORF, positions_in_ORF, state)
 
     return dataframe_dict
 
+def flatten_list(l):
+    """
+    Flatten a list of lists to a single list.
+    """
+    return [item for sublist in l for item in sublist]
 
 def equalize_dictionary_keys(start_dict, stop_dict, positions_out_ORF, positions_in_ORF):
     """
@@ -101,11 +106,32 @@ def equalize_dictionary_keys(start_dict, stop_dict, positions_out_ORF, positions
     metagene_area = np.full(positions_out_ORF + positions_in_ORF, 0)
 
     unique_keys = set(start_dict.keys()).union(set(stop_dict.keys()))
+
+    start_list = flatten_list([[int(x) for x in start_dict[key].keys()] for key in unique_keys if key in start_dict])
+    stop_list = flatten_list([[int(x) for x in stop_dict[key].keys()] for key in unique_keys if key in stop_dict])
+
+    overall_min = min(min(start_list), min(stop_list))
+    overall_max = max(max(start_list), max(stop_list))
+
     for key in unique_keys:
         if key not in start_dict:
-            start_dict[key] = metagene_area
+            start_dict[key] = {}
+            for read_length in range(overall_min, overall_max + 1):
+                start_dict[key][read_length] = metagene_area
+
+        else:
+            for read_length in range(overall_min, overall_max + 1):
+                if read_length not in start_dict[key]:
+                    start_dict[key][read_length] = metagene_area
 
         if key not in stop_dict:
-            stop_dict[key] = metagene_area
+            stop_dict[key] = {}
+            for read_length in range(overall_min, overall_max + 1):
+                start_dict[key][read_length] = metagene_area
+
+        else:
+            for read_length in range(overall_min, overall_max + 1):
+                if read_length not in stop_dict[key]:
+                    stop_dict[key][read_length] = metagene_area
 
     return start_dict, stop_dict
