@@ -2,7 +2,7 @@ rule generateDifferentialExpressionReadCounts:
     input:
         bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
         bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="tracks/updated_annotation.gff"
+        annotation={rules.unambigousAnnotation.output}
     output:
         "readcounts/differential_expression_read_counts.csv"
     conda:
