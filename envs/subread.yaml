@@ -2,5 +2,5 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - subread =1.6.3
- - pandas =0.24.2
+ - subread =2.0.1
+ - pandas =1.5.2

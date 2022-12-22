@@ -28,7 +28,7 @@ def metagene_mapping_start(start_codon_dict, read_interval_dict, positions_out_O
 
                         read_length = read_interval[2]
                         if read_length not in coverage_mapping[chromosome]:
-                            coverage_mapping[chromosome][read_length] = np.zeros(window_length, dtype=np.int)
+                            coverage_mapping[chromosome][read_length] = np.zeros(window_length, dtype=np.intp)
 
                         coverage_low_bound = intersection[0] - window_start
                         coverage_high_bound = intersection[1] - window_start
@@ -60,7 +60,7 @@ def metagene_mapping_start(start_codon_dict, read_interval_dict, positions_out_O
 
                         read_length = read_interval[2]
                         if read_length not in coverage_mapping[chromosome]:
-                            coverage_mapping[chromosome][read_length] = np.zeros(window_length, dtype=np.int)
+                            coverage_mapping[chromosome][read_length] = np.zeros(window_length, dtype=np.intp)
 
                         if mapping_method == "fiveprime":
                             if read_interval[1] <= window_stop:
@@ -105,7 +105,7 @@ def metagene_mapping_stop(stop_codon_dict, read_interval_dict, positions_out_ORF
 
                         read_length = read_interval[2]
                         if read_length not in coverage_mapping[chromosome]:
-                            coverage_mapping[chromosome][read_length] = np.zeros(window_length, dtype=np.int)
+                            coverage_mapping[chromosome][read_length] = np.zeros(window_length, dtype=np.intp)
 
                         if mapping_method == "fiveprime":
                             if read_interval[0] >= window_start:
@@ -131,7 +131,7 @@ def metagene_mapping_stop(stop_codon_dict, read_interval_dict, positions_out_ORF
 
                         read_length = read_interval[2]
                         if read_length not in coverage_mapping[chromosome]:
-                            coverage_mapping[chromosome][read_length] = np.zeros(window_length, dtype=np.int)
+                            coverage_mapping[chromosome][read_length] = np.zeros(window_length, dtype=np.intp)
 
                         coverage_low_bound = intersection[0] - window_start
                         coverage_high_bound = intersection[1] - window_start
