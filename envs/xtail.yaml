@@ -6,4 +6,4 @@ dependencies:
  - xtail =1.1.5
  - r-optparse =1.6.0
  - r-plyr =1.8.6
- - libgfortran-ng =7.2.0
+ - libgfortran-ng

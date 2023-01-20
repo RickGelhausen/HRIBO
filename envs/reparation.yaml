@@ -2,4 +2,4 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - reparation_blast=1.0.9=pl526_1
+ - reparation_blast=1.0.9
