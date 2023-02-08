@@ -106,7 +106,7 @@ def create_excel_file(args):
             transcript_sheet.append(nTuple(*result))
         elif feature.lower() == "pseudogene":
             pseudogene_sheet.append(nTuple(*result))
-        elif feature.lower() == "5'-utr":
+        elif feature.lower() in ["5'-utr", "five_prime_utr", "5utr", "five_utr", "5'utr"]:
             five_utr_sheet.append(nTuple(*result))
         else:
             misc_sheet.append(nTuple(*result))

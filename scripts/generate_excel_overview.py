@@ -16,6 +16,8 @@ FEATURE_MAP = { "ncrna" : "ncRNA", "trna" : "tRNA", "rrna" : "rRNA", "srna" : "s
                 "repeat_region" : "repeat_region", "start_codon" : "start_codons",\
                 "stop_codon" : "stop_codon", "3'-utr" : "3'-UTR", "5'-utr" : "5'-UTR"}
 
+ALIAS_MAP = {"5'utr" : "5'-utr", "five_prime_utr" : "5'-utr", "5utr" : "5'-utr", "3'utr" : "3'-utr", "three_prime_utr" : "3'-utr", "3utr" : "3'-utr"}
+
 def create_interlap(annotation_dict):
     """
     create an interlap object to easily check for overlap of prediction and annotation
@@ -72,6 +74,7 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
     nTuple = collections.namedtuple('Pandas', name_list)
     gffTuple = collections.namedtuple('Pandas', ["s1","s2","s3","s4","s5","s6","s7","s8","s9"])
 
+    feature_list = ["ncrna", "srna", "rrna", "trna", "start_codon", "stop_codon", "repeat_region", "3'-utr", "5'-utr"]
     for key in annotation_dict.keys():
         chromosome, mid, strand = key.split(":")
         start, stop = mid.split("-")
@@ -133,11 +136,17 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
         gff_result = [chromosome, "HRIBO", feature, start, stop, ".", strand, ".", attributes]
         gff_rows.append(gffTuple(*gff_result))
 
-        if feature.lower() in ["ncrna", "srna", "rrna", "trna", "start_codon", "stop_codon", "repeat_region", "3'-utr", "5'-utr"]:
+
+        if feature.lower() in feature_list:
             if FEATURE_MAP[feature.lower()] in sheet_row_dict:
                 sheet_row_dict[FEATURE_MAP[feature.lower()]].append(nTuple(*result))
             else:
                 sheet_row_dict[FEATURE_MAP[feature.lower()]] = [nTuple(*result)]
+        elif ALIAS_MAP[feature.lower()] in feature_list:
+            if FEATURE_MAP[ALIAS_MAP[feature.lower()]] in sheet_row_dict:
+                sheet_row_dict[FEATURE_MAP[ALIAS_MAP[feature.lower()]]].append(nTuple(*result))
+            else:
+                sheet_row_dict[FEATURE_MAP[ALIAS_MAP[feature.lower()]]] = [nTuple(*result)]
         else:
             if "misc" in sheet_row_dict:
                 sheet_row_dict["misc"].append(nTuple(*result))
