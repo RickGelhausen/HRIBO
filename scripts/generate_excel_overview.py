@@ -142,11 +142,12 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
                 sheet_row_dict[FEATURE_MAP[feature.lower()]].append(nTuple(*result))
             else:
                 sheet_row_dict[FEATURE_MAP[feature.lower()]] = [nTuple(*result)]
-        elif ALIAS_MAP[feature.lower()] in feature_list:
-            if FEATURE_MAP[ALIAS_MAP[feature.lower()]] in sheet_row_dict:
-                sheet_row_dict[FEATURE_MAP[ALIAS_MAP[feature.lower()]]].append(nTuple(*result))
-            else:
-                sheet_row_dict[FEATURE_MAP[ALIAS_MAP[feature.lower()]]] = [nTuple(*result)]
+        elif feature.lower() in ALIAS_MAP:
+            if ALIAS_MAP[feature.lower()] in feature_list:
+                if FEATURE_MAP[ALIAS_MAP[feature.lower()]] in sheet_row_dict:
+                    sheet_row_dict[FEATURE_MAP[ALIAS_MAP[feature.lower()]]].append(nTuple(*result))
+                else:
+                    sheet_row_dict[FEATURE_MAP[ALIAS_MAP[feature.lower()]]] = [nTuple(*result)]
         else:
             if "misc" in sheet_row_dict:
                 sheet_row_dict["misc"].append(nTuple(*result))

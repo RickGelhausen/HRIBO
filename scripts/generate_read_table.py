@@ -56,12 +56,13 @@ def parse_orfs(args):
                 read_dict["total"][idx] += value
             count_dict[feature.lower()] += 1
             count_dict["total"] += 1
-        elif alias_dict[feature.lower()] in read_dict:
-            for idx, value in enumerate(read_list):
-                read_dict[alias_dict[feature.lower()]][idx] += value
-                read_dict["total"][idx] += value
-            count_dict[alias_dict[feature.lower()]] += 1
-            count_dict["total"] += 1
+        elif feature.lower() in alias_dict:
+            if alias_dict[feature.lower()] in read_dict:
+                for idx, value in enumerate(read_list):
+                    read_dict[alias_dict[feature.lower()]][idx] += value
+                    read_dict["total"][idx] += value
+                count_dict[alias_dict[feature.lower()]] += 1
+                count_dict["total"] += 1
         else:
             print("feature not usable: " + feature)
 
