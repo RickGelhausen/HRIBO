@@ -33,6 +33,8 @@ def parse_orfs(args):
 
     decode = {"ncrna" : "ncRNA", "srna" : "sRNA", "5'-utr" : "5'-UTR", "cds" : "CDS", "rrna" : "rRNA", "trna" : "tRNA", "transcript" : "transcript", "pseudogene" : "pseudogene", "total" : "total"}
     feature_list = ["ncrna", "srna", "5'-utr", "cds", "rrna", "trna", "transcript", "pseudogene", "total"]
+
+    alias_dict = {"5'utr" : "5'-utr", "five_prime_utr" : "5'-utr", "5utr" : "5'-utr", "3'utr" : "3'-utr", "three_prime_utr" : "3'-utr", "3utr" : "3'-utr"}
     read_dict = collections.OrderedDict()
     count_dict = collections.OrderedDict()
 
@@ -54,6 +56,13 @@ def parse_orfs(args):
                 read_dict["total"][idx] += value
             count_dict[feature.lower()] += 1
             count_dict["total"] += 1
+        elif feature.lower() in alias_dict:
+            if alias_dict[feature.lower()] in read_dict:
+                for idx, value in enumerate(read_list):
+                    read_dict[alias_dict[feature.lower()]][idx] += value
+                    read_dict["total"][idx] += value
+                count_dict[alias_dict[feature.lower()]] += 1
+                count_dict["total"] += 1
         else:
             print("feature not usable: " + feature)
 
