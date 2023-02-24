@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import argparse
-from random import choice
 
 import os
 import pandas as pd
@@ -17,7 +16,10 @@ def call_featureCounts(args):
 
     bamfiles = sorted(args.bamfiles, key=lambda s: s.lower())
     annotation_df = pd.read_csv(args.annotation, sep="\t", header=None, comment="#")
-    features = list(annotation_df[2].unique())
+    if args.features == []:
+        features = list(annotation_df[2].unique())
+    else:
+        features = args.features
 
     identifier = "ID" if "ID=" in annotation_df[8][0] else "gene_id"
 
@@ -96,6 +98,7 @@ def main():
     parser.add_argument("--with_O", action="store_true", dest="assign_to_all", help= "Assign reads to all their overlapping meta-features.")
     parser.add_argument("--with_M", action="store_true", dest="assign_multi_mappers", help= "Multi-mapping reads will also be counted.")
     parser.add_argument("--fraction", action="store_true", dest="with_fraction", help= "Assign fractional counts to features.")
+    parser.add_argument("--use_features", nargs="+", dest="features", default=[], help= "The feature type to be used for counting. Default: All features (no gene or pseudgene)")
     parser.add_argument("-a", "--annotation", action="store", dest="annotation", required=True, help= "The annotation to be processed with featureCounts.")
     parser.add_argument("-t", "--threads", action="store", dest="threads", default=1, help= "Number of threads to be used.")
     parser.add_argument("-o", "--output", action="store", dest="output", required=True, help= "The output file.")

@@ -23,22 +23,31 @@ differentialExpressionSettings:
   # Differential expression: on / off
   differentialExpression: "off"
 
+  # Features used for counting reads for differential expression
+  features: ["CDS", "sRNA"]
+
   # comma-seperated list of condition contrasts: treated1_control1,treated2_control2...
   contrasts: []
+
+  # pvalue adjusted cutoff to be used to prefilter the result tables (default = 0.05)
+  padjCutoff: 0.05
+
+  # log2FC to be used to prefilter the result tables. Use positive values the cutoff is used as follows - upregulated: > log2fcCutoff, downregulated: < log2fcCutoff * -1)
+  log2fcCutoff: 1.0
 
 # ORF predictions
 #################
 
 predictionSettings:
   # Deepribo predictions: on / off
-  deepribo: "off"
+  deepribo: "on"
 
 # Read Length Statistics
 ########################
 
 readstatSettings:
   # Read lengths to be considered. Comma seperated string allows intervals denoted by "-" symbol (e.g. "22,23,27,34-35")
-  readLengths: "10-40"
+  readLengths: "10-80"
 
 # Metagene Profiling
 ####################
@@ -47,9 +56,9 @@ metageneSettings:
   ### Analysis
   # Window on which the metagene profiling is performed
   # Number of nucleotides upstream of each annotated ORF that will be considered
-  positionsOutsideORF: 50
+  positionsOutsideORF: 100
   # Number of nucleotides in each annotated ORF that will be considered
-  positionsInORF: 250
+  positionsInORF: 150
 
   # methods to filter the input annotation before metagene profiling is performed (overlap, length and/or rpkm)
   filteringMethods: ["overlap", "length", "rpkm"]

@@ -39,7 +39,8 @@ rule plotPCA:
         rld="pca/rld.tsv",
         pvar="pca/variance_percentages.tsv"
     output:
-        plot="pca/PCA_3D.html"
+        plot="pca/PCA_3D.html",
+        plot2="diffex_QC.html"
     threads: 1
     conda:
         "../envs/plotly.yaml"

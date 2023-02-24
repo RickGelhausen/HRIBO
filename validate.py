@@ -82,6 +82,40 @@ def validate_config(conf, unique_conditions):
                                     if not set(contrast.split("-")).issubset(unique_conditions):
                                         raise ValueError("All elements in 'contrasts' in 'differentialExpressionSettings' section in conf file must be in the format 'treated1-untreated1' and must be a valid condition.")
 
+        if "features" not in conf["differentialExpressionSettings"]:
+            raise ValueError("Missing 'features' in 'differentialExpressionSettings' section in conf file.")
+        else:
+            if not isinstance(conf["differentialExpressionSettings"]["features"], list):
+                raise ValueError("'features' in 'differentialExpressionSettings' section in conf file must be a list.")
+            else:
+                if len(conf["differentialExpressionSettings"]["features"]) != 0:
+                    for feature in conf["differentialExpressionSettings"]["features"]:
+                        if not isinstance(feature, str):
+                            raise ValueError("All elements in 'features' in 'differentialExpressionSettings' section in conf file must be a string.")
+                        else:
+                            if feature.lower() not in ["cds", "srna"]:
+                                print("WARNING: All elements in 'features' in 'differentialExpressionSettings' section in conf file are accepted but make sure they are valid and suitable for differential expression analysis. (suggested features: CDS, sRNA)")
+                else:
+                    raise ValueError("'features' in 'differentialExpressionSettings' section in conf file must contain atleast one feature (suggested: CDS)")
+
+        if "padjCutoff" not in conf["differentialExpressionSettings"]:
+            raise ValueError("Missing 'padjCutoff' in 'differentialExpressionSettings' section in conf file.")
+        else:
+            if not isinstance(conf["differentialExpressionSettings"]["padjCutoff"], float):
+                raise ValueError("'padjCutoff' in 'differentialExpressionSettings' section in conf file must be a float.")
+            else:
+                if conf["differentialExpressionSettings"]["padjCutoff"] <= 0 or conf["differentialExpressionSettings"]["padjCutoff"] >= 1:
+                    raise ValueError("'padjCutoff' in 'differentialExpressionSettings' section in conf file must be between 0 and 1.")
+
+        if "log2fcCutoff" not in conf["differentialExpressionSettings"]:
+            raise ValueError("Missing 'log2fcCutoff' in 'differentialExpressionSettings' section in conf file.")
+        else:
+            if not isinstance(conf["differentialExpressionSettings"]["log2fcCutoff"], float):
+                raise ValueError("'log2fcCutoff' in 'differentialExpressionSettings' section in conf file must be a float.")
+            else:
+                if conf["differentialExpressionSettings"]["log2fcCutoff"] < 0:
+                    raise ValueError("'log2fcCutoff' in 'differentialExpressionSettings' section in conf file must be greater than 0. (the cutoff will be adapted for downregulated genes!)")
+
     if "predictionSettings" not in conf:
         raise ValueError("Missing 'predictionSettings' section in conf file.")
     else:

@@ -25,9 +25,12 @@ rule riborexxlsx:
     conda:
         "../envs/excel.yaml"
     threads: 1
+    params:
+        padj_cutoff=config["differentialExpressionSettings"]["padjCutoff"],
+        log2fc_cutoff=config["differentialExpressionSettings"]["log2fcCutoff"]
     shell:
         """
-        python3 HRIBO/scripts/generate_excel_riborex.py -a {input.annotation} -g {input.genome} -i {input.riborex_out} -o {output.xlsx_sorted}
+        python3 HRIBO/scripts/generate_excel_riborex.py -a {input.annotation} -g {input.genome} -i {input.riborex_out} -o {output.xlsx_sorted} --padj_cutoff {params.padj_cutoff} --log2fc_cutoff {params.log2fc_cutoff}
         """
 
 rule poolriborex:
