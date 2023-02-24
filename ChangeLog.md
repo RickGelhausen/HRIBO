@@ -3,6 +3,7 @@
  * updated config file structure
  * added 3D PCA plots for quality control
  * added 2D PCA plots + hierarchical clustering of read counts for quality control
+ * fixed error that caused crashes when annotation had extra plasmids not present in genome file
  * updated manual
  * updated ReadTheDocs
 
