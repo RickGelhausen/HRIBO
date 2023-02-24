@@ -23,6 +23,24 @@ def validate_config(conf, unique_conditions):
                 if conf["biologySettings"]["adapter"].strip() == "":
                     print("WARNING: 'adapter' in 'biologySettings' section in conf file is empty. Skipping adapter trimming.")
 
+        if "genome" not in conf["biologySettings"]:
+            raise ValueError("Missing 'genome' in 'biologySettings' section in conf file.")
+        else:
+            if not isinstance(conf["biologySettings"]["genome"], str):
+                raise ValueError("'genome' in 'biologySettings' section in conf file must be a string.")
+            else:
+                if not os.path.isfile(conf["biologySettings"]["genome"]):
+                    raise ValueError("'genome' in 'biologySettings' section in conf file must be a valid file path.")
+
+        if "annotation" not in conf["biologySettings"]:
+            raise ValueError("Missing 'annotation' in 'biologySettings' section in conf file.")
+        else:
+            if not isinstance(conf["biologySettings"]["annotation"], str):
+                raise ValueError("'annotation' in 'biologySettings' section in conf file must be a string.")
+            else:
+                if not os.path.isfile(conf["biologySettings"]["annotation"]):
+                    raise ValueError("'annotation' in 'biologySettings' section in conf file must be a valid file path.")
+
         if "samples" not in conf["biologySettings"]:
             raise ValueError("Missing 'samples' section in conf file.")
         else:

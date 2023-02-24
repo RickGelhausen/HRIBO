@@ -1,20 +1,20 @@
 rule retrieveGenome:
     input:
-        "genome.fa"
+        genome=config["biologySettings"]["genome"]
     output:
-        report("genomes/genome.fa", caption="../report/genome.rst", category="Genome")
+        "genomes/genome.fa"
     threads: 1
     shell:
-        "mkdir -p genomes; mv genome.fa genomes/"
+        "mkdir -p genomes; cp {input.genome} genomes/genome.fa"
 
 rule retrieveAnnotation:
     input:
-        "annotation.gff"
+        annotation=config["biologySettings"]["annotation"]
     output:
-        report("annotation/annotation.gff", caption="../report/annotation.rst", category="Annotation")
+        "annotation/annotation.gff"
     threads: 1
     shell:
-        "mkdir -p annotation; mv annotation.gff annotation/"
+        "mkdir -p annotation; cp {input.annotation} annotation/annotation.gff"
 
 rule checkAnnotation:
     input:

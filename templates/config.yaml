@@ -6,6 +6,12 @@ biologySettings:
   # Adapter sequence used
   adapter: ""
 
+  # Path to the reference genome file
+  genome: "genome.fa"
+
+  # Path to the reference annotation file
+  annotation: "annotation.gff"
+
   # Path to the sample sheet
   samples: "HRIBO/samples.tsv"
 
