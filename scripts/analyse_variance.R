@@ -96,3 +96,10 @@ write_pca_info <- function (object, intgroup = "condition", ntop = 500){
 }
 
 write_pca_info(rld, intgroup = "sampletype")
+
+rld_mat = assay(rld)
+rld_cor = cor(rld_mat)
+
+write.table(rld_cor, file = paste(options$output_path, "rld_cor.tsv", sep=""), sep = "\t", quote = FALSE, row.names = TRUE, col.names = TRUE)
+
+

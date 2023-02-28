@@ -282,7 +282,7 @@ def main():
     fig_2D = plot_scatter_2D(table_df, percentage_variance)
     fig_3D = plot_scatter_3D(table_df, percentage_variance)
 
-    create_html_file(fig_cor, fig_2D, args.output_dir, f"_{args.file_suffix}")
+    create_html_file(fig_cor, fig_2D, args.output_dir, f"{args.file_suffix}")
     create_html_file_3D(fig_3D, args.output_dir)
 
 if __name__ == '__main__':
