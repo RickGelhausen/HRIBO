@@ -8,10 +8,17 @@ rule generateDifferentialExpressionReadCounts:
     conda:
         "../envs/subread.yaml"
     threads: 5
+    params:
+        features="None" if len(config["differentialExpressionSettings"]["features"]) == 0 else config["differentialExpressionSettings"]["features"]
     shell:
         """
+        if [ {params.features} == None ]; then
+            features="";
+        else
+            features="--use_features {params.features}";
+        fi;
         mkdir -p readcounts
-        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O --for_diff_expr -o {output} -t {threads} -a {input.annotation}
+        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O --for_diff_expr -o {output} -t {threads} -a {input.annotation} ${{features}}
         """
 
 rule generateReparationReadCounts:

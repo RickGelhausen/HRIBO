@@ -75,9 +75,12 @@ rule deltatexlsx:
     conda:
         "../envs/excel.yaml"
     threads: 1
+    params:
+        padj_cutoff=config["differentialExpressionSettings"]["padjCutoff"],
+        log2fc_cutoff=config["differentialExpressionSettings"]["log2fcCutoff"]
     shell:
         """
-        python3 HRIBO/scripts/generate_excel_deltate.py -a {input.annotation} -g {input.genome} -i {input.deltate_ribo} -r {input.deltate_rna} -t {input.deltate_te} -o {output.xlsx_sorted}
+        python3 HRIBO/scripts/generate_excel_deltate.py -a {input.annotation} -g {input.genome} -i {input.deltate_ribo} -r {input.deltate_rna} -t {input.deltate_te} -o {output.xlsx_sorted} --padj_cutoff {params.padj_cutoff} --log2fc_cutoff {params.log2fc_cutoff}
         """
 
 rule pooldeltate:

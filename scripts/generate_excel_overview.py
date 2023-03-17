@@ -107,7 +107,9 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
             else:
                 deltate_list += [None, None, None, None, None, None, None, None, None]
 
-        start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
+        start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = "", "", "", "", ""
+        if chromosome in genome_dict:
+            start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
 
         rpkm_list = []
         for idx, val in enumerate(read_list):

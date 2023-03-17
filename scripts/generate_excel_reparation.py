@@ -60,7 +60,9 @@ def create_excel_file(args):
         strand = getattr(row, "_6")
         attributes = getattr(row, "_8")
 
-        start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
+        start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = "", "", "", "", ""
+        if chromosome in genome_dict:
+            start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
         pred_value, name, product, note, evidence, locus_tag, old_locus_tag = eu.retrieve_column_information(attributes)
 
         length = stop - start + 1

@@ -105,7 +105,9 @@ def deltate_output(args):
         stop = int(stop)
         length = stop - start + 1
         codon_count = int(length / 3)
-        start_codon, stop_codon, nucleotide_seq, aa_seq, _ = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
+        start_codon, stop_codon, nucleotide_seq, aa_seq = "", "", "", ""
+        if chromosome in genome_dict:
+            start_codon, stop_codon, nucleotide_seq, aa_seq, _ = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
 
         result = [chromosome, start, stop, strand, locus_tag, old_locus_tag, unique_id, gene_name] \
                + ribo_list + rna_list + te_list \
@@ -115,9 +117,14 @@ def deltate_output(args):
 
     all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
     all_df = all_df.sort_values(by=["TE_padj", "Genome", "Start", "Stop", "Strand"])
-    significant_df = all_df[all_df["TE_padj"] <= 0.05]
-    dataframe_dict = {"all" : all_df, "significant" : significant_df}
+    rna_up_df = all_df[(all_df["RNA_log2FoldChange"] >= args.log2fc_cutoff) & (all_df["RNA_padj"] <= args.padj_cutoff)]
+    rna_down_df = all_df[(all_df["RNA_log2FoldChange"] <= args.log2fc_cutoff * -1) & (all_df["RNA_padj"] <= args.padj_cutoff)]
+    ribo_up_df = all_df[(all_df["RIBO_log2FoldChange"] >= args.log2fc_cutoff) & (all_df["RIBO_padj"] <= args.padj_cutoff)]
+    ribo_down_df = all_df[(all_df["RIBO_log2FoldChange"] <= args.log2fc_cutoff * -1) & (all_df["RIBO_padj"] <= args.padj_cutoff)]
+    te_up_df = all_df[(all_df["TE_log2FoldChange"] >= args.log2fc_cutoff) & (all_df["TE_padj"] <= args.padj_cutoff)]
+    te_down_df = all_df[(all_df["TE_log2FoldChange"] <= args.log2fc_cutoff * -1) & (all_df["TE_padj"] <= args.padj_cutoff)]
 
+    dataframe_dict = {"all" : all_df, "RNA_up" : rna_up_df, "RNA_down" : rna_down_df, "RIBO_up" : ribo_up_df, "RIBO_down" : ribo_down_df, "TE_up" : te_up_df, "TE_down" : te_down_df}
     eu.excel_writer(args.output, dataframe_dict, [])
 
 def main():
@@ -128,6 +135,8 @@ def main():
     parser.add_argument("-i", "--delta_ribo", action="store", dest="input_ribo", required=True, help= "input txt file for ribo")
     parser.add_argument("-r", "--delta_rna", action="store", dest="input_rna", required=True, help= "input txt file for rna")
     parser.add_argument("-t", "--delta_te", action="store", dest="input_te", required=True, help= "input txt file for te")
+    parser.add_argument("--padj_cutoff", action="store", dest="padj_cutoff", default=0.05, type=float, help= "The padj cutoff for the differential expression analysis. Default: 0.05")
+    parser.add_argument("--log2fc_cutoff", action="store", dest="log2fc_cutoff", default=1.0, type=float, help= "The log2fc cutoff for the differential expression analysis. Default: 1")
     parser.add_argument("-o", "--xlsx", action="store", dest="output", required=True, help= "output xlsx file")
     args = parser.parse_args()
 

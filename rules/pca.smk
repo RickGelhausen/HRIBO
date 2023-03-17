@@ -24,7 +24,8 @@ rule runDeseqPreprocessing:
         mv="pca/mean_vs_variance.pdf",
         norm="pca/normalized_counts.tsv",
         rld="pca/rld.tsv",
-        pvar="pca/variance_percentages.tsv"
+        pvar="pca/variance_percentages.tsv",
+        cor="pca/rld_cor.tsv"
     threads: 1
     conda:
         "../envs/deseq2.yaml"
@@ -33,18 +34,20 @@ rule runDeseqPreprocessing:
         mkdir -p pca;
         HRIBO/scripts/analyse_variance.R -r {input.rawreads} -m {input.meta} -o pca/;
         """
-
+        
 rule plotPCA:
     input:
         rld="pca/rld.tsv",
-        pvar="pca/variance_percentages.tsv"
+        pvar="pca/variance_percentages.tsv",
+        cor="pca/rld_cor.tsv"
     output:
-        plot="pca/PCA_3D.html"
+        plot="pca/PCA_3D.html",
+        plot2="pca/diffex_QC.html"
     threads: 1
     conda:
         "../envs/plotly.yaml"
     shell:
         """
         mkdir -p pca;
-        HRIBO/scripts/plot_PCA.py -r {input.rld} -p {input.pvar} -o pca/;
+        HRIBO/scripts/plot_PCA.py -r {input.rld} -p {input.pvar} -c {input.cor} -o pca/;
         """
