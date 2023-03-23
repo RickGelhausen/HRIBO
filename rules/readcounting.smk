@@ -12,7 +12,7 @@ rule generateDifferentialExpressionReadCounts:
         features="None" if len(config["differentialExpressionSettings"]["features"]) == 0 else config["differentialExpressionSettings"]["features"]
     shell:
         """
-        if [ {params.features} == None ]; then
+        if [ "{params.features}" == None ]; then
             features="";
         else
             features="--use_features {params.features}";

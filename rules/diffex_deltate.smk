@@ -59,7 +59,7 @@ rule deltate:
         touch {output.fcrna}
         touch {output.fcte}
         touch deltate/{params.contrast}/Result_figures.pdf
-        DTEG.R {input.ribo} {input.rna} {input.samples} 1 deltate/{params.contrast}/ || true
+        DTEG.R {input.ribo} {input.rna} {input.samples} 0 deltate/{params.contrast}/ || true
         cp deltate/{params.contrast}/Result_figures.pdf {output.fig}
         """
 
