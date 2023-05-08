@@ -1,4 +1,4 @@
-name: hribo
+name: hribo_env
 channels:
   - bioconda
   - conda-forge
