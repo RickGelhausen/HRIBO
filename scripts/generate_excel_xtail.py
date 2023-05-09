@@ -57,7 +57,9 @@ def xtail_output(args):
         stop = int(stop)
         length = stop - start + 1
         codon_count = int(length / 3)
-        start_codon, stop_codon, nucleotide_seq, aa_seq, _ = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
+        start_codon, stop_codon, nucleotide_seq, aa_seq = "", "", "", ""
+        if chromosome in genome_dict:
+            start_codon, stop_codon, nucleotide_seq, aa_seq, _ = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
 
         result = [chromosome, start, stop, strand, locus_tag, old_locus_tag, unique_id,\
                   gene_name, mRNA_log2FC, RPF_log2FC, log2FC_TE_v1, pvalue_v1, log2FC_TE_v2,\
@@ -68,8 +70,10 @@ def xtail_output(args):
 
     all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
     all_df = all_df.sort_values(by=["pvalue_adjusted", "Genome", "Start", "Stop", "Strand"])
-    significant_df = all_df[all_df["pvalue_adjusted"] <= 0.05]
-    dataframe_dict = {"all" : all_df, "significant" : significant_df}
+    te_up_df = all_df[(all_df["log2FC_TE_final"] >= args.log2fc_cutoff) & (all_df["pvalue_adjusted"] <= args.padj_cutoff)]
+    te_down_df = all_df[(all_df["log2FC_TE_final"] <= args.log2fc_cutoff * -1) & (all_df["pvalue_adjusted"] <= args.padj_cutoff)]
+
+    dataframe_dict = {"all" : all_df, "TE_up" : te_up_df, "TE_down" : te_down_df}
 
     eu.excel_writer(args.output, dataframe_dict, [])
 
@@ -80,6 +84,8 @@ def main():
     parser.add_argument("-g", "--genome", action="store", dest="genome", required=True, help= "reference genome")
     parser.add_argument("-i", "--input", action="store", dest="input_csv", required=True, help= "input csv file")
     parser.add_argument("-o", "--xlsx", action="store", dest="output", required=True, help= "output xlsx file")
+    parser.add_argument("--padj_cutoff", action="store", dest="padj_cutoff", default=0.05, type=float, help= "The padj cutoff for the differential expression analysis. Default: 0.05")
+    parser.add_argument("--log2fc_cutoff", action="store", dest="log2fc_cutoff", default=1.0, type=float, help= "The log2fc cutoff for the differential expression analysis. Default: 1")
     args = parser.parse_args()
 
     xtail_output(args)

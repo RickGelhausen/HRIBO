@@ -433,7 +433,7 @@ def generate_annotation_dict(annotation_path):
             sys.exit("error, invalid gff, wrongly formatted attribute fields.")
 
 
-        if feature.lower() == "cds":
+        if feature.lower() in ["cds", "srna", "rrna", "trna", "ncrna"]:
             locus_tag = ""
             if "locus_tag" in attribute_list:
                 locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
@@ -550,7 +550,7 @@ def annotation_to_dict(annotation_file):
 
     annotation_dict = {}
     for row in annotation_df.itertuples(index=False, name='Pandas'):
-        if getattr(row, "_2").lower() in ["cds", "rrna", "ncrna", "trna"]:
+        if getattr(row, "_2").lower() in ["cds", "srna", "rrna", "ncrna", "trna"]:
             chromosome = getattr(row, "_0")
             start = getattr(row, "_3")
             stop = getattr(row, "_4")

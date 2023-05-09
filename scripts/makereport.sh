@@ -5,7 +5,7 @@ idx=$1
 timestamp=$(date +"%y-%m-%d")
 echo "${timestamp}"
 
-report="${idx}report_HRIBO1.6.2_${timestamp}"
+report="${idx}report_HRIBO1.7.0_${timestamp}"
 
 mkdir -p $report
 mkdir -p "${report}/genome-browser/features/"
@@ -18,6 +18,7 @@ mkdir -p "${report}/genome-browser/coverage/fiveprime/mil"
 mkdir -p "${report}/genome-browser/coverage/threeprime/min"
 mkdir -p "${report}/genome-browser/coverage/threeprime/mil"
 mkdir -p "${report}/quality-control"
+mkdir -p "${report}/quality-control/pca"
 mkdir -p "${report}/ORF-predictions"
 mkdir -p "${report}/differential-expression/xtail/"
 mkdir -p "${report}/differential-expression/riborex/"
@@ -60,5 +61,9 @@ cp -r deltate/*.pdf "${report}/differential-expression/deltate"
 cp -r auxiliary/overview.xlsx "${report}"
 cp -r auxiliary/overview.gff "${report}/genome-browser/"
 cp -r metageneprofiling "${report}"
+cp -r pca/diffex-QC.html "${report}/quality-control/pca/"
+cp -r pca/normalized_counts.tsv "${report}/quality-control/pca/"
+cp -r pca/PCA_3D.html "${report}/quality-control/pca/"
+
 
 zip -r "${report}.zip" $report

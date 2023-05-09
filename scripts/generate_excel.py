@@ -69,7 +69,9 @@ def create_excel_file(args):
         strand = getattr(row, "_6")
         attributes = getattr(row, "_8")
 
-        start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
+        start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = "", "", "", "", ""
+        if chromosome in genome_dict:
+            start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
         pred_value, name, product, note, evidence, locus_tag, old_locus_tag = eu.retrieve_column_information(attributes)
 
         length = stop - start + 1
@@ -106,7 +108,7 @@ def create_excel_file(args):
             transcript_sheet.append(nTuple(*result))
         elif feature.lower() == "pseudogene":
             pseudogene_sheet.append(nTuple(*result))
-        elif feature.lower() == "5'-utr":
+        elif feature.lower() in ["5'-utr", "five_prime_utr", "5utr", "five_utr", "5'utr"]:
             five_utr_sheet.append(nTuple(*result))
         else:
             misc_sheet.append(nTuple(*result))

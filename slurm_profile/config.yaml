@@ -1,0 +1,74 @@
+slurm: True # Do not use --slurm in the snakemake command line argument
+default-resources:
+  - slurm_account=YOUR ACCOUNT # sacctmgr show user $USER accounts
+  - slurm_partition=base
+  - mem_mb=10000
+  - nodes=1
+  - runtime=60
+use-conda: True
+use-singularity: True
+singularity-args: " -c "
+jobs: 50
+jobscript: "slurm-jobscript.sh"
+latency-wait: 200
+keep-going: True
+set-threads:
+ - predictDeepRibo=10
+ - genomeSegemehlIndex=20
+ - map=20
+ - samuniq=20
+ - sammultitobam=20
+ - samtobam=20
+ - fastqcraw=8
+ - fastqctrimmed=8
+ - fastqcmulti=8
+ - fastqcunique=8
+ - featurescounts=8
+ - trnafeaturescounts=8
+ - norrnafeaturescounts=8
+ - rrnatotalfeaturescounts=8
+ - rrnauniquefeaturescounts=8
+ - generateDifferentialExpressionReadCounts=5
+ - generateReparationReadCounts=5
+ - generateDeepRiboReadCounts=5
+ - generateAnnotationIndependantReadCounts=5
+ - generateAnnotationTotalReadCounts=5
+ - generateAnnotationUniqueReadCounts=5
+ - reparation=12
+ - rrnafilter2=20
+ - trim=20
+ - bamindex=20
+ - totalmappedbamindex=20
+ - uniquemappedbamindex=20
+set-resources:
+ - predictDeepRibo:mem_mb=20000,runtime=240
+ - genomeSegemehlIndex:mem_mb=40000,runtime=120
+ - map:mem_mb=40000,runtime=240
+ - samuniq:mem_mb=40000,runtime=120
+ - sammultitobam:mem_mb=40000,runtime=120
+ - samtobam:mem_mb=40000,runtime=120
+ - normalizedmetageneprofiling:mem_mb=20000
+ - metageneprofiling:mem_mb=20000
+ - fastqcunique:mem_mb=30000
+ - fastqcmulti:mem_mb=40000
+ - fastqcraw:mem_mb=40000
+ - fastqctrimmed:mem_mb=40000
+ - featurescounts:mem_mb=40000
+ - trnafeaturescounts:mem_mb=30000
+ - norrnafeaturescounts:mem_mb=30000
+ - rrnatotalfeaturescounts:mem_mb=30000
+ - rrnauniquefeaturescounts:mem_mb=30000
+ - generateDifferentialExpressionReadCounts:mem_mb=30000
+ - generateReparationReadCounts:mem_mb=20000
+ - generateDeepRiboReadCounts:mem_mb=20000
+ - generateAnnotationIndependantReadCounts:mem_mb=20000
+ - generateAnnotationTotalReadCounts:mem_mb=20000
+ - generateAnnotationUniqueReadCounts:mem_mb=20000
+ - reparation:mem_mb=30000,runtime=240
+ - rrnafilter2:mem_mb=40000,runtime=120
+ - trim:mem_mb=40000
+ - bamindex:mem_mb=40000
+ - totalmappedbamindex:mem_mb=40000
+ - uniquemappedbamindex:mem_mb=40000
+ - bamcompare:mem_mb=20000
+

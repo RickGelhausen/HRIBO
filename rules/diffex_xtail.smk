@@ -14,7 +14,7 @@ rule xtail:
     shell:
         """
         mkdir -p xtail;
-        HRIBO/scripts/xtail_classic.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table} -f {output.fcplot} -p {output.rplot};
+        HRIBO/scripts/xtail.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table} -f {output.fcplot} -p {output.rplot};
         """
 
 rule xtailxlsx:
@@ -27,9 +27,12 @@ rule xtailxlsx:
     conda:
         "../envs/excel.yaml"
     threads: 1
+    params:
+        padj_cutoff=config["differentialExpressionSettings"]["padjCutoff"],
+        log2fc_cutoff=config["differentialExpressionSettings"]["log2fcCutoff"]
     shell:
         """
-        python3 HRIBO/scripts/generate_excel_xtail.py -a {input.annotation} -g {input.genome} -i {input.xtail_out} -o {output.xlsx_sorted}
+        python3 HRIBO/scripts/generate_excel_xtail.py -a {input.annotation} -g {input.genome} -i {input.xtail_out} -o {output.xlsx_sorted} --padj_cutoff {params.padj_cutoff} --log2fc_cutoff {params.log2fc_cutoff}
         """
 
 rule poolxtail:

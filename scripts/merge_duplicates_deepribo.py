@@ -3,11 +3,9 @@
 overlapping intervals, by removing duplicates and
 finding the longest non-overlapping interval.
 '''
-from operator import itemgetter
 import pandas as pd
 import re
 import argparse
-import numpy as np
 import os
 import csv
 import collections

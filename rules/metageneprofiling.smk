@@ -1,102 +1,70 @@
 from pathlib import Path
 
-rule normalizedmetageneprofilingTIS:
+rule readLengthStatistics:
+    input:
+        bamfiles=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples_meta["method"], condition=samples_meta["condition"], replicate=samples_meta["replicate"]),
+        bamIndex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples_meta["method"], condition=samples_meta["condition"], replicate=samples_meta["replicate"])
+    output:
+        plot="metageneprofiling/read_length_fractions.html",
+        table="metageneprofiling/read_length_fractions.xlsx",
+        raw="metageneprofiling/read_length_counts.xlsx"
+    conda:
+        "../envs/metageneprofiling.yaml"
+    threads: 1
+    log: "logs/read_length_statistics.log"
+    params:
+        readlengths=config["readstatSettings"]["readLengths"]
+    shell:
+        """
+        mkdir -p metageneprofiling;
+        HRIBO/scripts/read_length_statistics.py -a {input.bamfiles} -r {params.readlengths} -o metageneprofiling/ > {log}
+        """
+
+rule metageneProfiling:
     input:
         bam=rules.maplink.output,
-        genomeSize=rules.genomeSize.output,
-        readlengthstat="metageneprofiling/readlengthstats/{method}-{condition}-{replicate}.bam_read_length_distribution.json",
         bamIndex=rules.bamindex.output,
+        genome=rules.retrieveGenome.output,
         annotation=rules.checkAnnotation.output
     output:
-        meta=directory("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}")
+        meta=directory("metageneprofiling/{method}-{condition}-{replicate}")
     conda:
         "../envs/metageneprofiling.yaml"
     threads: 1
     params:
-        prefix=lambda wildcards, output: (Path(output[0]).stem)
+        readlengths=config["metageneSettings"]["readLengths"],
+        positionsInORF=config["metageneSettings"]["positionsInORF"],
+        positionsOutORF=config["metageneSettings"]["positionsOutsideORF"],
+        filteringMethods=config["metageneSettings"]["filteringMethods"],
+        neighboringGenesDistance=config["metageneSettings"]["neighboringGenesDistance"],
+        rpkmThreshold=config["metageneSettings"]["rpkmThreshold"],
+        lengthCutoff=config["metageneSettings"]["lengthCutoff"],
+        mappingMethods=config["metageneSettings"]["mappingMethods"],
+        normalizationMethods=config["metageneSettings"]["normalizationMethods"],
+        outputFormats=config["metageneSettings"]["outputFormats"],
+        includePlotlyJS=config["metageneSettings"]["includePlotlyJS"],
+        colorList= "nocolor" if len(config["metageneSettings"]["colorList"]) == 0 else config["metageneSettings"]["colorList"]
+    log: "logs/{method}-{condition}-{replicate}_metageneprofiling.log"
     shell:
-        "mkdir -p metageneprofiling/TIS/norm; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TIS/norm/{params.prefix} --normalization --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
-
-rule readlengthstat:
-    input:
-        bam=rules.maplink.output,
-        bamIndex=rules.bamindex.output
-    output:
-        "metageneprofiling/readlengthstats/{method}-{condition}-{replicate}.bam_read_length_distribution.json"
-    conda:
-        "../envs/metageneprofiling.yaml"
-    threads: 1
-    params:
-        prefix=lambda wildcards, output: (os.path.dirname(output[0]) + "/")
-    shell:
-        "mkdir -p metageneprofiling/readlengthstats; HRIBO/scripts/readlengthstat.py --in_bam_filepath {input.bam} --out_folder_filepath {params.prefix}"
-
-
-rule metageneprofilingTIS:
-    input:
-        bam=rules.maplink.output,
-        genomeSize=rules.genomeSize.output,
-        readlengthstat="metageneprofiling/readlengthstats/{method}-{condition}-{replicate}.bam_read_length_distribution.json",
-        bamIndex=rules.bamindex.output,
-        annotation=rules.checkAnnotation.output
-    output:
-        directory("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}")
-    conda:
-        "../envs/metageneprofiling.yaml"
-    threads: 1
-    params:
-        prefix=lambda wildcards, output: (Path(output[0]).stem)
-    shell:
-        "mkdir -p metageneprofiling/TIS/raw; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TIS/raw/{params.prefix} --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
-
-rule normalizedmetageneprofilingTTS:
-    input:
-        bam=rules.maplink.output,
-        genomeSize=rules.genomeSize.output,
-        readlengthstat="metageneprofiling/readlengthstats/{method}-{condition}-{replicate}.bam_read_length_distribution.json",
-        bamIndex=rules.bamindex.output,
-        annotation=rules.checkAnnotation.output
-    output:
-        meta=directory("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}")
-    conda:
-        "../envs/metageneprofiling.yaml"
-    threads: 1
-    params:
-        prefix=lambda wildcards, output: (Path(output[0]).stem),
-    shell:
-        "mkdir -p metageneprofiling/TTS/norm; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TTS/norm/{params.prefix} --normalization --input_type TTS --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
-
-
-rule metageneprofilingTTS:
-    input:
-        bam=rules.maplink.output,
-        genomeSize=rules.genomeSize.output,
-        readlengthstat="metageneprofiling/readlengthstats/{method}-{condition}-{replicate}.bam_read_length_distribution.json",
-        bamIndex=rules.bamindex.output,
-        annotation=rules.checkAnnotation.output
-    output:
-        directory("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}")
-    conda:
-        "../envs/metageneprofiling.yaml"
-    threads: 1
-    params:
-        prefix=lambda wildcards, output: (Path(output[0]).stem)
-    shell:
-        "mkdir -p metageneprofiling/TTS/raw; HRIBO/scripts/metageneprofiling.py --in_bam_filepath {input.bam} --in_gff_filepath {input.annotation} --out_plot_filepath metageneprofiling/TTS/raw/{params.prefix} --input_type TTS --in_readlengthstat_filepath {input.readlengthstat} --noise_reduction_analysis"
-
-rule merged_offsets:
-    input:
-        expand("metageneprofiling/TIS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-        expand("metageneprofiling/TIS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_start["method"], condition=samples_meta_start["condition"], replicate=samples_meta_start["replicate"]),
-        expand("metageneprofiling/TTS/raw/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-        expand("metageneprofiling/TTS/norm/{method}-{condition}-{replicate}", zip, method=samples_meta_stop["method"], condition=samples_meta_stop["condition"], replicate=samples_meta_stop["replicate"]),
-    output:
-        "metageneprofiling/merged_offsets.json"
-    conda:
-        "../envs/metageneprofiling.yaml"
-    threads: 1
-    params:
-        prefix=lambda wildcards, output: (os.path.dirname(output[0]) + "/")
-    shell:
-        "mkdir -p metageneprofiling/; HRIBO/scripts/merge_offsets.py --in_metagene_directorypath metageneprofiling --out_filepath metageneprofiling"
+        """
+        mkdir -p metageneprofiling;
+        if [ {params.colorList} == nocolor ]; then
+            colorList="";
+        else
+            colorList="--color_list {params.colorList}";
+        fi;
+        HRIBO/scripts/metagene_profiling.py -b {input.bam} -g {input.genome} -a {input.annotation} -o {output.meta} \
+            --read_lengths {params.readlengths} \
+            --normalization_methods {params.normalizationMethods} \
+            --mapping_methods {params.mappingMethods} \
+            --positions_in_ORF {params.positionsInORF} \
+            --positions_out_ORF {params.positionsOutORF} \
+            --filtering_method {params.filteringMethods} \
+            --neighboring_genes_distance {params.neighboringGenesDistance} \
+            --rpkm_threshold {params.rpkmThreshold} \
+            --length_cutoff {params.lengthCutoff} \
+            --output_formats {params.outputFormats} \
+            --include_plotly_js {params.includePlotlyJS} \
+            ${{colorList}}; > {log}
+        """
 

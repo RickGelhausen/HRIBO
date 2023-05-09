@@ -1,0 +1,8 @@
+channels:
+ - conda-forge
+ - bioconda
+dependencies:
+ - r-optparse =1.7.3
+ - r-plyr =1.8.8
+ - bioconductor-deseq2 =1.38.0
+ - r-ggplot2 =3.4.0

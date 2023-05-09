@@ -1,1 +1,0 @@
-This summary contains all predicted open reading frames with their: unique ID, coordinates, strand, length, RPKM values for all samples, evidence with which method and condition the ORF was detected, annotation for the locus
