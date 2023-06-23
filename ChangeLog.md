@@ -1,3 +1,6 @@
+### version 1.7.1 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 23.06.2023
+ * exchanged ftp server for swiss prot fasta download
+
 ### version 1.7.0 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 24.02.2023
  * improved Snakefile and added validation for config file
  * updated config file structure
