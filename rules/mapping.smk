@@ -11,30 +11,43 @@ rule genomeSegemehlIndex:
     shell:
         "mkdir -p genomeSegemehlIndex; echo \"Computing Segemehl index\"; segemehl.x --threads {threads} -x {output.index} -d {input.genome} 2> {log}"
 
+
+def get_fastq_files(wildcards):
+    output = dict()
+    row = samples[(samples['method'] == wildcards.method) & (samples['condition'] == wildcards.condition) & (samples['replicate'] == wildcards.replicate)]
+    if pd.isna(row['fastqFile2'].iloc[0]):
+        output["fastq"] = f"trimmed/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}.fastq"
+    else:
+        output["fastq1"] = f"trimmed/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}_q.fastq"
+        output["fastq2"] = f"trimmed/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}_p.fastq"
+    return output
+
 rule map:
     input:
+        unpack(get_fastq_files),
         genome=rules.retrieveGenome.output,
-        genomeSegemehlIndex="genomeSegemehlIndex/genome.idx",
-        fastq="trimmed/{method}-{condition}-{replicate}.fastq",
+        genomeSegemehlIndex="genomeSegemehlIndex/genome.idx"
     output:
         sammulti=temp("sammulti/{method}-{condition}-{replicate}.sam")
     conda:
         "../envs/segemehl.yaml"
     threads: 20
     params:
-        prefix=lambda wildcards, output: (os.path.dirname(output[0]))
+        prefix=lambda wildcards, output: (os.path.dirname(output[0])),
+        fastq=lambda wildcards, input: "-q %s" % (input.fastq) if len(input) == 3 else "-q %s -p %s" % (input.fastq1, input.fastq2)
     log:
         "logs/{method}-{condition}-{replicate}_segemehl.log"
     shell:
         """
-        mkdir -p sammulti; segemehl.x -e -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sammulti} 2> {log}
+        mkdir -p sammulti; segemehl.x -e -d {input.genome} -i {input.genomeSegemehlIndex} {params.fastq} --threads {threads} -o {output.sammulti} 2> {log}
         """
 
 rule samuniq:
     input:
         sammulti="sammulti/{method}-{condition}-{replicate}.sam"
     output:
-        sam=temp("sam/{method}-{condition}-{replicate}.rawsam")
+        sam=temp("sam/{method}-{condition}-{replicate}.rawsam"),
+        unmapped=temp("sammulti/{method}-{condition}-{replicate}.sam.unmapped")
     conda:
         "../envs/samtools.yaml"
     threads: 20
@@ -57,7 +70,6 @@ rule samuniq:
             exit 0
         fi
         """
-        #"mkdir -p sam; samtools view  -H <(cat {input.sammulti}) | grep '@HD' > {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@SQ' | sort -t$'\t' -k1,1 -k2,2V >> {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@RG' >> {output.sam}; samtools view -H <(cat {input.sammulti}) | grep '@PG' >> {output.sam}; cat {input.sammulti} |grep -v '^@' | grep -w 'NH:i:1' >> {output.sam}"
 
 rule samstrandswap:
     input:

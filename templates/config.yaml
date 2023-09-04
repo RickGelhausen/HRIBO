@@ -4,7 +4,15 @@
 
 biologySettings:
   # Adapter sequence used
-  adapter: ""
+  adapterS3: "" # 3'
+  adapterS5: "" # 5'
+
+  # Adapter paired-end (can be left empty when using only single end)
+  adapterP3R1: "" # 3' - Forward (part 1)
+  adapterP5R1: "" # 5' - Forward (part 1)
+
+  adapterP3R2: "" # 3' - Reverse (part 2)
+  adapterP5R2: "" # 5' - Reverse (part 2)
 
   # Path to the reference genome file
   genome: "genome.fa"

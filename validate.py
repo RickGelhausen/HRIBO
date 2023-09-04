@@ -4,6 +4,7 @@ Author: Rick Gelhausen
 """
 import os
 import re
+import pandas as pd
 
 def validate_config(conf, unique_conditions):
     """
@@ -14,14 +15,41 @@ def validate_config(conf, unique_conditions):
     if "biologySettings" not in conf:
         raise ValueError("Missing 'biologySettings' section in conf file.")
     else:
-        if "adapter" not in conf["biologySettings"]:
-            raise ValueError("Missing 'adapter' in 'biologySettings' section in conf file.")
+        if "adapterS3" not in conf["biologySettings"]:
+            raise ValueError("Missing 'adapterS3' in 'biologySettings' section in conf file.")
         else:
-            if not isinstance(conf["biologySettings"]["adapter"], str):
-                raise ValueError("'adapter' in 'biologySettings' section in conf file must be a string.")
-            else:
-                if conf["biologySettings"]["adapter"].strip() == "":
-                    print("WARNING: 'adapter' in 'biologySettings' section in conf file is empty. Skipping adapter trimming.")
+            if not isinstance(conf["biologySettings"]["adapterS3"], str):
+                raise ValueError("'adapterS3' in 'biologySettings' section in conf file must be a string.")
+
+        if "adapterS5" not in conf["biologySettings"]:
+            raise ValueError("Missing 'adapterS5' in 'biologySettings' section in conf file.")
+        else:
+            if not isinstance(conf["biologySettings"]["adapterS5"], str):
+                raise ValueError("'adapterS5' in 'biologySettings' section in conf file must be a string.")
+
+        if "adapterP3R1" not in conf["biologySettings"]:
+            raise ValueError("Missing 'adapterP3R1' in 'biologySettings' section in conf file.")
+        else:
+            if not isinstance(conf["biologySettings"]["adapterP3R1"], str):
+                raise ValueError("'adapterP3R1' in 'biologySettings' section in conf file must be a string.")
+
+        if "adapterP3R2" not in conf["biologySettings"]:
+            raise ValueError("Missing 'adapterP3R2' in 'biologySettings' section in conf file.")
+        else:
+            if not isinstance(conf["biologySettings"]["adapterP3R2"], str):
+                raise ValueError("'adapterP3R2' in 'biologySettings' section in conf file must be a string.")
+
+        if "adapterP5R1" not in conf["biologySettings"]:
+            raise ValueError("Missing 'adapterP5R1' in 'biologySettings' section in conf file.")
+        else:
+            if not isinstance(conf["biologySettings"]["adapterP5R1"], str):
+                raise ValueError("'adapterP5R1' in 'biologySettings' section in conf file must be a string.")
+
+        if "adapterP5R2" not in conf["biologySettings"]:
+            raise ValueError("Missing 'adapterP5R2' in 'biologySettings' section in conf file.")
+        else:
+            if not isinstance(conf["biologySettings"]["adapterP5R2"], str):
+                raise ValueError("'adapterP5R2' in 'biologySettings' section in conf file must be a string.")
 
         if "genome" not in conf["biologySettings"]:
             raise ValueError("Missing 'genome' in 'biologySettings' section in conf file.")
@@ -295,4 +323,61 @@ def validate_config(conf, unique_conditions):
             if not isinstance(conf["metageneSettings"]["colorList"], list):
                 raise ValueError("'colorList' in 'metageneSettings' section in conf file must be a list.")
 
-    print("Config file validated! No errors found.")
+    print("Config file validated! No errors found!")
+
+
+def validate_sample_sheet(samples):
+    """
+    Validate the contents of the sample sheet
+    """
+
+    # Check if the sample sheet is empty
+    if len(samples) == 0:
+        raise ValueError("Sample sheet is empty!")
+
+    # Check if the sample sheet contains the correct columns
+    required_columns = ["method", "condition", "replicate", "fastqFile", "fastqFile2"]
+    for column in required_columns:
+        if column not in samples.columns:
+            raise ValueError(f"Missing column {column} in sample sheet!")
+
+    # Check method
+    try:
+        if not samples["method"].astype(str).isin(["RIBO", "TIS", "TTS", "RNA"]).all():
+            raise ValueError("Column 'method' in sample sheet must contain either 'RIBO', 'TIS', 'TTS', or 'RNA'!")
+    except Exception as e:
+        raise ValueError(f"Error while validating 'method': {e}")
+
+    # Check condition
+    try:
+        if not samples["condition"].astype(str).str.isalnum().all():
+            raise ValueError("Column 'condition' in sample sheet must contain only alphanumeric characters!")
+    except Exception as e:
+        raise ValueError(f"Error while validating 'condition': {e}")
+
+    # Check replicate
+    try:
+        if samples["replicate"].astype(int).lt(1).any():
+            raise ValueError("Column 'replicate' in sample sheet must contain only positive integers!")
+    except Exception as e:
+        raise ValueError(f"Error while validating 'replicate': {e}")
+
+    # Check fastqFile
+    try:
+        if not samples["fastqFile"].astype(str).apply(os.path.isfile).all():
+            raise ValueError("Column 'fastqFile' in sample sheet must contain valid file paths!")
+    except Exception as e:
+        raise ValueError(f"Error while validating 'fastqFile': {e}")
+
+    # Check fastqFile2
+    try:
+        non_empty_values = samples["fastqFile2"].astype(str).str.strip().ne("").fillna(True)
+        non_na_values = samples["fastqFile2"].astype(str).apply(lambda x: not pd.isna(x))
+        valid_values = non_empty_values & non_na_values
+        if not valid_values.all():
+            if not samples.loc[valid_values, "fastqFile2"].apply(os.path.isfile).all():
+                raise ValueError(f"Column 'fastqFile2' in sample sheet must contain valid file paths or be NaN/empty! Current value: {samples['fastqFile2']}")
+    except Exception as e:
+        raise ValueError(f"Error while validating 'fastqFile2': {e}")
+
+    print("Sample sheet validated! No errors found!")

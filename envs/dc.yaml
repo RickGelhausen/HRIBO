@@ -1,5 +1,0 @@
-channels:
- - conda-forge
- - bioconda
-dependencies:
- - flash2 =2.2.00
