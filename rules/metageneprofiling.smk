@@ -2,8 +2,8 @@ from pathlib import Path
 
 rule readLengthStatistics:
     input:
-        bamfiles=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples_meta["method"], condition=samples_meta["condition"], replicate=samples_meta["replicate"]),
-        bamIndex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples_meta["method"], condition=samples_meta["condition"], replicate=samples_meta["replicate"])
+        bamfiles=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]),
+        bamIndex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"])
     output:
         plot="metageneprofiling/read_length_fractions.html",
         table="metageneprofiling/read_length_fractions.xlsx",
