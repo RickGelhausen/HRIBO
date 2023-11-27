@@ -50,6 +50,7 @@ def add_first_base_mapping(mappings, strand_swap, entry, increment, start, end, 
         if strand_swap:
             mappings["forward"][start] += increment
         else:
+
             mappings["reverse"][end-1] -= increment
 
 def add_last_base_mapping(mappings, strand_swap, entry, increment, start, end, clip_length):

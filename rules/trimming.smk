@@ -1,13 +1,16 @@
-def get_inputs(wildcards):
+def get_inputs_single(wildcards):
     row = samples[(samples['method'] == wildcards.method) & (samples['condition'] == wildcards.condition) & (samples['replicate'] == wildcards.replicate)]
     if pd.isna(row['fastqFile2'].iloc[0]):
         return row['fastqFile'].iloc[0]
-    else:
+
+def get_inputs_paired(wildcards):
+    row = samples[(samples['method'] == wildcards.method) & (samples['condition'] == wildcards.condition) & (samples['replicate'] == wildcards.replicate)]
+    if not pd.isna(row['fastqFile2'].iloc[0]):
         return [row['fastqFile'].iloc[0], row['fastqFile2'].iloc[0]]
 
 rule link_single:
     input:
-        get_inputs
+        get_inputs_single
     output:
         fastq="trimlink/{method}-{condition}-{replicate}.fastq.gz"
     params:
@@ -20,7 +23,7 @@ rule link_single:
 
 rule link_paired:
     input:
-        get_inputs
+        get_inputs_paired
     output:
         fastq1="trimlink/{method}-{condition}-{replicate}_q.fastq.gz",
         fastq2="trimlink/{method}-{condition}-{replicate}_p.fastq.gz"
@@ -59,8 +62,8 @@ rule trim_paired:
         fastq1="trimlink/{method}-{condition}-{replicate}_q.fastq.gz",
         fastq2="trimlink/{method}-{condition}-{replicate}_p.fastq.gz"
     output:
-        fastq1=temp("trimmed/{method}-{condition}-{replicate}_q.fastq"),
-        fastq2=temp("trimmed/{method}-{condition}-{replicate}_p.fastq")
+        fastq1=temp("trimmedpaired/{method}-{condition}-{replicate}_q.fastq"),
+        fastq2=temp("trimmedpaired/{method}-{condition}-{replicate}_p.fastq")
     params:
         adapter3q=lambda wildcards, output: ("" if not ADAPTERS_P3R1 else (" ".join([" -a %s" % adapter for adapter in ADAPTERS_P3R1.split(",")]))),
         adapter5q=lambda wildcards, output: ("" if not ADAPTERS_P5R1 else (" ".join([" -g %s" % adapter for adapter in ADAPTERS_P5R1.split(",")]))),
@@ -72,6 +75,4 @@ rule trim_paired:
         "../envs/cutadapt.yaml"
     threads: 20
     shell:
-        "mkdir -p trimmed; cutadapt -j {threads} {params.adapter3q} {params.adapter5q} {params.adapter3p} {params.adapter5p} {params.quality} {params.filtering} -o {output.fastq1} -p {output.fastq2} {input.fastq1} {input.fastq2}"
-
-ruleorder: trim_paired > trim_single
+        "mkdir -p trimmedpaired; cutadapt -j {threads} {params.adapter3q} {params.adapter5q} {params.adapter3p} {params.adapter5p} {params.quality} {params.filtering} -o {output.fastq1} -p {output.fastq2} {input.fastq1} {input.fastq2}"

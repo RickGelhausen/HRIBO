@@ -2,5 +2,5 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - samtools =1.9
- - gawk =4.2.1
+ - samtools =1.18
+ - bedtools =2.31.1

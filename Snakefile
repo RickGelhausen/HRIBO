@@ -19,6 +19,16 @@ samples.sort_values(by=["method", "condition", "replicate"], key=lambda col: col
 
 samples_metagene = samples.loc[(samples["method"] == "RIBO") | (samples["method"] == "TIS") | (samples["method"] == "TTS")]
 
+# Extract unique values
+unique_methods = "|".join(samples['method'].unique())
+unique_conditions = "|".join(samples['condition'].unique())
+unique_replicates = "|".join(samples['replicate'].astype(str).unique())
+
+# This is important to ensure paired end data can be suffixed with _q and _p
+wildcard_constraints:
+    method=f"({unique_methods})",
+    condition=f"({unique_conditions})",
+    replicate=f"({unique_replicates})"
 
 conditions=sorted(samples["condition"].unique(), key=lambda s: s.lower())
 validate_config(config, conditions)
@@ -35,6 +45,7 @@ CODONS=config["biologySettings"]["alternativeStartCodons"]
 DIFFEXPRESS=config["differentialExpressionSettings"]["differentialExpression"]
 CONTRASTS=config["differentialExpressionSettings"]["contrasts"]
 DEEPRIBO=config["predictionSettings"]["deepribo"]
+WORKFLOW=config["workflowSettings"]["workflow"]
 
 if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
     sys.exit("Differential Expression requested, but only one condition given.\n\
@@ -100,46 +111,71 @@ else:
 include: "rules/pca.smk"
 
 hribo_output = []
-hribo_output.extend(expand("metageneprofiling/{method}-{condition}-{replicate}", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]))
-hribo_output.append("metageneprofiling/read_length_fractions.html")
-hribo_output.append("qc/multi/multiqc_report.html")
-hribo_output.append("tracks/potentialStopCodons.gff")
-hribo_output.append("tracks/potentialStartCodons.gff")
-hribo_output.append("tracks/potentialRibosomeBindingSite.gff")
-hribo_output.append("tracks/potentialAlternativeStartCodons.gff")
-hribo_output.append("auxiliary/annotation_total.xlsx")
-hribo_output.append("auxiliary/annotation_unique.xlsx")
-hribo_output.append("auxiliary/total_read_counts.xlsx")
-hribo_output.append("auxiliary/unique_read_counts.xlsx")
-hribo_output.append("auxiliary/samples.xlsx")
-hribo_output.append("figures/heatmap_SpearmanCorr_readCounts.pdf")
-hribo_output.append("pca/PCA_3D.html")
-hribo_output.extend(get_wigfiles())
 
-if hasRIBO:
-    hribo_output.append("auxiliary/predictions_reparation.xlsx")
+if WORKFLOW == "full":
+    hribo_output.extend(expand("metageneprofiling/{method}-{condition}-{replicate}", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]))
+    hribo_output.append("metageneprofiling/read_length_fractions.html")
+    hribo_output.append("qc/multi/multiqc_report.html")
+    hribo_output.append("tracks/potentialStopCodons.gff")
+    hribo_output.append("tracks/potentialStartCodons.gff")
+    hribo_output.append("tracks/potentialRibosomeBindingSite.gff")
+    hribo_output.append("tracks/potentialAlternativeStartCodons.gff")
+    hribo_output.append("auxiliary/annotation_total.xlsx")
+    hribo_output.append("auxiliary/annotation_unique.xlsx")
+    hribo_output.append("auxiliary/total_read_counts.xlsx")
+    hribo_output.append("auxiliary/unique_read_counts.xlsx")
+    hribo_output.append("auxiliary/samples.xlsx")
+    hribo_output.append("figures/heatmap_SpearmanCorr_readCounts.pdf")
+    hribo_output.append("pca/PCA_3D.html")
+    hribo_output.extend(get_wigfiles())
 
-    if DIFFEXPRESS.lower() == "on":
-        if CONTRASTS == []:
-            CONTRASTS=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
+    if hasRIBO:
+        hribo_output.append("auxiliary/predictions_reparation.xlsx")
 
-        hribo_output.extend([("contrasts/" +((element.replace("[", "")).replace("]", "")).replace("'", "")) for element in CONTRASTS])
-        hribo_output.extend([("xtail/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
-        hribo_output.extend([("riborex/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
-        hribo_output.extend([("deltate/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
+        if DIFFEXPRESS.lower() == "on":
+            if CONTRASTS == []:
+                CONTRASTS=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
 
-    if DEEPRIBO.lower() == "on":
-        hribo_output.append("auxiliary/predictions_deepribo.xlsx")
+            hribo_output.extend([("contrasts/" +((element.replace("[", "")).replace("]", "")).replace("'", "")) for element in CONTRASTS])
+            hribo_output.extend([("xtail/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
+            hribo_output.extend([("riborex/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
+            hribo_output.extend([("deltate/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
+
+        if DEEPRIBO.lower() == "on":
+            hribo_output.append("auxiliary/predictions_deepribo.xlsx")
 
 
-    if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
-        hribo_output.extend(rules.createOverviewTableAll.output)
-    elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
-        hribo_output.extend(rules.createOverviewTablePredictions.output)
-    elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
-        hribo_output.extend(rules.createOverviewTableDiffExpr.output)
-    elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "off":
-        hribo_output.extend(rules.createOverviewTableReparation.output)
+        if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
+            hribo_output.extend(rules.createOverviewTableAll.output)
+        elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
+            hribo_output.extend(rules.createOverviewTablePredictions.output)
+        elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
+            hribo_output.extend(rules.createOverviewTableDiffExpr.output)
+        elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "off":
+            hribo_output.extend(rules.createOverviewTableReparation.output)
+
+elif WORKFLOW == "preprocessing":
+    hribo_output.append("qc/multi/multiqc_report.html")
+
+elif WORKFLOW == "trimming":
+    def get_trimming_files():
+        qc_files = []
+        for index, row in samples.iterrows():
+            if pd.isna(row['fastqFile2']):
+                qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw_fastqc.html".format(**row))
+                qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html".format(**row))
+            else:
+                qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw-q_fastqc.html".format(**row))
+                qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw-p_fastqc.html".format(**row))
+                qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_q_fastqc.html".format(**row))
+                qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_p_fastqc.html".format(**row))
+
+        return qc_files
+
+    hribo_output.extend(get_trimming_files())
+
+else:
+    sys.exit("Workflow not recognized. Please choose between 'full' and 'preprocessing'.")
 
 rule all:
     input:

@@ -52,8 +52,8 @@ rule fastqcraw_paired:
 
 rule fastqctrimmed_paired:
     input:
-        reads1="trimmed/{method}-{condition}-{replicate}_q.fastq",
-        reads2="trimmed/{method}-{condition}-{replicate}_p.fastq"
+        reads1="trimmedpaired/{method}-{condition}-{replicate}_q.fastq",
+        reads2="trimmedpaired/{method}-{condition}-{replicate}_p.fastq"
     output:
         html1="qc/2trimmed/{method}-{condition}-{replicate}-trimmed_q_fastqc.html",
         zip1="qc/2trimmed/{method}-{condition}-{replicate}-trimmed_q_fastqc.zip",
@@ -80,16 +80,11 @@ def get_qc_files():
     for index, row in samples.iterrows():
         if pd.isna(row['fastqFile2']):
             qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw_fastqc.html".format(**row))
-            qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html".format(**row))
-            qc_files.append("trimmed/{method}-{condition}-{replicate}.fastq".format(**row))
         else:
             qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw-q_fastqc.html".format(**row))
             qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw-p_fastqc.html".format(**row))
-            qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_q_fastqc.html".format(**row))
-            qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_p_fastqc.html".format(**row))
-            qc_files.append("trimmed/{method}-{condition}-{replicate}_q.fastq".format(**row))
-            qc_files.append("trimmed/{method}-{condition}-{replicate}_p.fastq".format(**row))
-
+        qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html".format(**row))
+        qc_files.append("trimmed/{method}-{condition}-{replicate}.fastq".format(**row))
     return qc_files
 
 rule multiqc:
@@ -112,4 +107,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/1raw qc/2trimmed qc/3mapped qc/4unique qc/5removedrRNA qc/all qc/trnainall qc/rrnainallaligned qc/rrnainuniquelyaligned qc/rrnainall trimmed  2> {log}"
+        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/1raw qc/2trimmed qc/3mapped qc/4unique qc/5removedrRNA qc/all qc/trnainall qc/rrnainallaligned qc/rrnainuniquelyaligned qc/rrnainall 2> {log}"
