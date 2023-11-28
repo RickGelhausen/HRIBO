@@ -113,4 +113,11 @@ metageneSettings:
   # If empty we try to match the number of read lengths trying to prioritize color-blind friendly colors.
   colorList: []
 
+#####################
+# Workflow Settings #
+#####################
 
+workflowSettings:
+  ###
+  # Use specific parts of the workflow. preprocessing (preprocessing) vs Full run (full)
+  workflow: "full"

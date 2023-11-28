@@ -323,6 +323,18 @@ def validate_config(conf, unique_conditions):
             if not isinstance(conf["metageneSettings"]["colorList"], list):
                 raise ValueError("'colorList' in 'metageneSettings' section in conf file must be a list.")
 
+    if "workflowSettings" not in conf:
+        raise ValueError("Missing 'workflowSettings' section in conf file.")
+    else:
+        if "workflow" not in conf["workflowSettings"]:
+            raise ValueError("Missing 'workflow' in 'workflowSettings' section in conf file.")
+        else:
+            if not isinstance(conf["workflowSettings"]["workflow"], str):
+                raise ValueError("'workflow' in 'workflowSettings' section in conf file must be a string.")
+            else:
+                if conf["workflowSettings"]["workflow"].lower() not in ["full", "preprocessing", "trimming"]:
+                    raise ValueError("'workflow' in 'workflowSettings' section in conf file must be either 'full' or 'preprocessing'.")
+
     print("Config file validated! No errors found!")
 
 

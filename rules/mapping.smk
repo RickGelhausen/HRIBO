@@ -12,63 +12,10 @@ rule genomeSegemehlIndex:
         "mkdir -p genomeSegemehlIndex; echo \"Computing Segemehl index\"; segemehl.x --threads {threads} -x {output.index} -d {input.genome} 2> {log}"
 
 
-rule map_paired:
-    input:
-        fastq1="trimmedpaired/{method}-{condition}-{replicate}_q.fastq",
-        fastq2="trimmedpaired/{method}-{condition}-{replicate}_p.fastq",
-        genome=rules.retrieveGenome.output,
-        genomeSegemehlIndex="genomeSegemehlIndex/genome.idx"
-    output:
-        sam="sampaired/{method}-{condition}-{replicate}.sam"
-    conda:
-        "../envs/segemehl.yaml"
-    threads: 20
-    params:
-        prefix=lambda wildcards, output: (os.path.dirname(output[0])),
-        fastq=lambda wildcards, input: "-q %s" % (input.fastq) if len(input) == 3 else "-q %s -p %s" % (input.fastq1, input.fastq2)
-    log:
-        "logs/{method}-{condition}-{replicate}_segemehl_paired.log"
-    shell:
-        """
-        mkdir -p sampaired; segemehl.x -e -d {input.genome} -i {input.genomeSegemehlIndex} {params.fastq} --threads {threads} -o {output.sam} 2> {log}
-        """
-
-rule filter_paired:
-    input:
-        sam="sampaired/{method}-{condition}-{replicate}.sam"
-    output:
-        bam=temp("bampairedfiltered/{method}-{condition}-{replicate}.bam"),
-        bamsorted="bampairedsorted/{method}-{condition}-{replicate}.sorted.bam"
-    threads: 20
-    conda:
-        "../envs/samtools.yaml"
-    shell:
-        """
-        mkdir -p bampairedfiltered
-        mkdir -p bampairedsorted
-        samtools view -b -f 0x2 -F 0x100 {input.sam} > {output.bam}
-        samtools sort -n {output.bam} -o {output.bamsorted}
-        """
-
-rule rebuild_fastq:
-    input:
-        bam="bampairedsorted/{method}-{condition}-{replicate}.sorted.bam"
-    output:
-        fastq1=temp("rebuild/{method}-{condition}-{replicate}_q.fastq"),
-        fastq2=temp("rebuild/{method}-{condition}-{replicate}_p.fastq")
-    conda:
-        "../envs/samtools.yaml"
-    threads: 20
-    shell:
-        """
-        mkdir -p rebuild
-        bedtools bamtofastq -i {input.bam} -fq {output.fastq1} -fq2 {output.fastq2}
-        """
-
 rule merge_fastq:
     input:
-        fastq1="rebuild/{method}-{condition}-{replicate}_q.fastq",
-        fastq2="rebuild/{method}-{condition}-{replicate}_p.fastq"
+        fastq1="trimmedpaired/{method}-{condition}-{replicate}_q.fastq",
+        fastq2="trimmedpaired/{method}-{condition}-{replicate}_p.fastq"
     output:
         fastq="trimmed/{method}-{condition}-{replicate}.fastq"
     conda:
