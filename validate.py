@@ -355,7 +355,7 @@ def validate_sample_sheet(samples):
 
     # Check method
     try:
-        if not samples["method"].astype(str).isin(["RIBO", "TIS", "TTS", "RNA"]).all():
+        if not samples["method"].astype(str).isin(["RIBO", "TIS", "TTS", "RNA", "RNATIS", "RNATTS"]).all():
             raise ValueError("Column 'method' in sample sheet must contain either 'RIBO', 'TIS', 'TTS', or 'RNA'!")
     except Exception as e:
         raise ValueError(f"Error while validating 'method': {e}")
