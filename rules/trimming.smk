@@ -102,3 +102,24 @@ rule merge_fastq:
         """
 
 ruleorder: trim_single > merge_fastq
+
+# rule merge_fastq:
+#     input:
+#         fastq1="trimmedpaired/{method}-{condition}-{replicate}_q.fastq",
+#         fastq2="trimmedpaired/{method}-{condition}-{replicate}_p.fastq"
+#     output:
+#         fastq="trimmed/{method}-{condition}-{replicate}.fastq"
+#     conda:
+#         "../envs/pear.yaml"
+#     threads: 20
+#     log:
+#         "logs/{method}-{condition}-{replicate}_pear.log"
+#     shell:
+#         """
+#         mkdir -p trimmed
+#         mkdir -p pear
+#         pear -n 10 -f {input.fastq1} -r {input.fastq2} -o pear/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}
+#         mv pear/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}.assembled.fastq {output.fastq}
+#         """
+
+# ruleorder: merge_fastq > trim_single

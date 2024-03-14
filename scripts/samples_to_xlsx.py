@@ -1,48 +1,43 @@
 #!/usr/bin/env python
+
+"""
+Script to transform the samples.tsv file into excel format
+"""
 import argparse
 import pandas as pd
 
 import excel_utils as eu
 
-def convert_to_xlsx(args):
+def convert_to_xlsx(samples_file, output_file):
     """
-    covert the .tsv file to xlsx
+    Convert the .tsv file to xlsx
+
+    :param samples_file: The samples.tsv file
+    :param output_file: The output xlsx file
     """
 
-    samples_df = pd.read_csv(args.samples, comment="#", sep="\t")
+    samples_df = pd.read_csv(samples_file, comment="#", sep="\t")
 
-    column_names = [name.capitalize() for name in list(samples_df.columns)]
+    samples_df['fastqFile'] = samples_df['fastqFile'].str.split("/").str[1]
+    if 'Fastqfile2' in samples_df.columns:
+        samples_df.loc[samples_df['Fastqfile2'].notna(), 'Fastqfile2'] = samples_df.loc[samples_df['Fastqfile2'].notna(), 'Fastqfile2'].str.split("/").str[1]
 
-    samples_sheet = []
-    for row in samples_df.itertuples(index=False, name='Pandas'):
-        method = getattr(row, "method")
-        condition = getattr(row, "condition")
-        replicate = getattr(row, "replicate")
-        fastq = getattr(row, "fastqFile")
-        fastq = fastq.split("/")[1]
-        ntup = [method, condition, replicate, fastq]
-
-        if len(samples_df.columns) == 5:
-            fastq2 = getattr(row, "fastqFile2")
-            fastq2 = fastq2.split("/")[1]
-            ntup.append(fastq2)
-
-        samples_sheet.append(ntup)
-
-    samples_df = pd.DataFrame.from_records(samples_sheet, columns=column_names)
 
     sheets = {"samples" : samples_df}
 
-    eu.excel_writer(args.output, sheets, [])
+    eu.excel_writer(output_file, sheets, [])
 
 def main():
-    # store commandline args
+    """
+    Main function
+    """
+
     parser = argparse.ArgumentParser(description='convert samples.tsv to xlsx')
-    parser.add_argument("-i", "--samples", action="store", dest="samples", required=True, help= "the samples tsv file.")
-    parser.add_argument("-o", "--xlsx", action="store", dest="output", required=True, help= "output xlsx file")
+    parser.add_argument("-i", "--samples", action="store", dest="samples", required=True, help= "The samples tsv file.")
+    parser.add_argument("-o", "--xlsx", action="store", dest="output_file_path", required=True, help= "The output xlsx file.")
     args = parser.parse_args()
 
-    convert_to_xlsx(args)
+    convert_to_xlsx(args.samples, args.output_file_path)
 
 if __name__ == '__main__':
     main()
