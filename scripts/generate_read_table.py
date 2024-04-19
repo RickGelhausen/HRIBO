@@ -63,8 +63,6 @@ def parse_orfs(args):
                     read_dict["total"][idx] += value
                 count_dict[alias_dict[feature.lower()]] += 1
                 count_dict["total"] += 1
-        else:
-            print("feature not usable: " + feature)
 
     for key, val in read_dict.items():
         result = ["sense", decode[key], count_dict[key]] + [float("%.2f" % v) for v in val]

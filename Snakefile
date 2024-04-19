@@ -6,7 +6,7 @@ from snakemake.utils import min_version
 from validate import validate_config, validate_sample_sheet
 
 min_version("8.10.7")
-configfile: "config.yaml"
+configfile: "HRIBO/config.yaml"
 
 onstart:
    if not os.path.exists("logs"):
