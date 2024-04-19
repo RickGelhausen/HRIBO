@@ -4,3 +4,4 @@ channels:
 dependencies:
  - python=3.7.12
  - reparation_blast=1.0.9
+ - blast =2.15.0

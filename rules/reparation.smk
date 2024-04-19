@@ -1,15 +1,17 @@
-from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
-FTP = FTPRemoteProvider()
 
 rule uniprotDBRetrieve:
     input:
-        FTP.remote("ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.fasta.gz",keep_local=True,allow_redirects=True)
+        storage.ftp("ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.fasta.gz")
     output:
         "uniprotDB/uniprot_sprot.fasta"
     threads: 1
-    run:
-        outputName = os.path.basename(input[0])
-        shell("mkdir -p uniprotDB; mv {input} uniprotDB/{outputName}; gunzip uniprotDB/{outputName}")
+    shell:
+        """
+        mkdir -p uniprotDB
+        mv {input} {output}.gz
+        gunzip {output}.gz
+        """
+
 
 rule reparation:
     input:
@@ -27,18 +29,24 @@ rule reparation:
     conda:
         "../envs/reparation.yaml"
     threads: 12
+    resources:
+        reparation_instances=1
     params:
         prefix=lambda wildcards, output: (os.path.dirname(output.orfs))
     log:
-        "logs/{condition, [a-zA-Z]+}-{replicate,\d+}_reparation.log"
+        r"logs/{condition, [a-zA-Z]+}-{replicate,\d+}_reparation.log"
     shell:
-        "mkdir -p reparation; if [ uniprotDB/uniprot_sprot.fasta.bak does not exist ]; then cp -p uniprotDB/uniprot_sprot.fasta uniprotDB/uniprot_sprot.fasta.bak; fi; mkdir -p {params.prefix}/tmp; reparation.pl -bam {input.bam} -g {input.genome} -gtf {input.gtf} -db {input.db} -out {params.prefix} -threads {threads}; if [ uniprotDB/uniprot_sprot.fasta does not exist ]; then cp -p uniprotDB/uniprot_sprot.fasta.bak uniprotDB/uniprot_sprot.fasta; fi;"
+        """
+        mkdir -p {params.prefix}
+        mkdir -p {params.prefix}/tmp
+        reparation.pl -bam {input.bam} -g {input.genome} -gtf {input.gtf} -db {input.db} -out {params.prefix} -threads {threads}
+        """
 
 rule reparationGFF:
     input:
         "reparation/{condition}-{replicate}/Predicted_ORFs.txt"
     output:
-        "reparation/{condition, [a-zA-Z0-9]+}-{replicate,\d+}.reparation.gff"
+        r"reparation/{condition, [a-zA-Z0-9]+}-{replicate,\d+}.reparation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1

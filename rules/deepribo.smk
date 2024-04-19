@@ -1,5 +1,3 @@
-from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
-HTTP = HTTPRemoteProvider()
 
 def read_parameters(filename, idx):
     try:
@@ -12,11 +10,11 @@ def read_parameters(filename, idx):
 
 rule deepriboGetModel:
     input:
-        HTTP.remote("github.com/Biobix/DeepRibo/blob/master/models/DeepRibo_model_v1.pt?raw=true", keep_local=True)
+        storage.http("https://github.com/Biobix/DeepRibo/blob/master/models/DeepRibo_model_v1.pt?raw=true")
     output:
         "deepribo/DeepRibo_model_v1.pt"
-    run:
-        shell("mkdir -p deepribo; mv {input} deepribo/DeepRibo_model_v1.pt")
+    shell:
+        "mkdir -p deepribo; mv {input} deepribo/DeepRibo_model_v1.pt"
 
 
 rule asiteOccupancy:
@@ -103,7 +101,7 @@ rule deepriboGFF:
     input:
         "deepribo/{condition}-{replicate}/predictions.csv"
     output:
-        "deepribo/{condition}-{replicate,\d+}.deepribo.gff"
+        r"deepribo/{condition}-{replicate,\d+}.deepribo.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
