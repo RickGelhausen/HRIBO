@@ -27,7 +27,7 @@ working as follows. Create a project directory and change into it:
 
 Retrieve the HRIBO from GitHub:
 
-         git clone git@github.com:gelhausr/HRIBO.git
+         git clone git@github.com:RickGelhausen/HRIBO.git
 
 The workflow requires a genome sequence (fasta), an annotation file (gtf) and the sequencing results files (fastq).
 We recommend retrieving both the genome and the annotation files from [Ensembl Genomes](http://ensemblgenomes.org/).
