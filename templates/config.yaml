@@ -40,7 +40,7 @@ differentialExpressionSettings:
   # Features used for counting reads for differential expression
   features: ["CDS", "sRNA"]
 
-  # comma-seperated list of condition contrasts: treated1_control1,treated2_control2...
+  # comma-seperated list of condition contrasts: treated1-control1,treated2-control2...
   contrasts: []
 
   # pvalue adjusted cutoff to be used to prefilter the result tables (default = 0.05)

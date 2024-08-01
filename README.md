@@ -2,8 +2,8 @@
 
 # High-throughput annotation by Ribo-seq
 
-[![GitHub](https://img.shields.io/github/tag/RickGelhausen/HRIBO.svg)](https://github.com/RickGelhausen/HRIBO) 
-[![Snakemake](https://img.shields.io/badge/snakemake-≥5.10.0-brightgreen.svg)](https://snakemake.bitbucket.io) 
+[![GitHub](https://img.shields.io/github/tag/RickGelhausen/HRIBO.svg)](https://github.com/RickGelhausen/HRIBO)
+[![Snakemake](https://img.shields.io/badge/snakemake-≥5.10.0-brightgreen.svg)](https://snakemake.bitbucket.io)
 [![Documentation Status](https://readthedocs.org/projects/hribo/badge/?version=latest)](http://hribo.readthedocs.io/?badge=latest)
 [![PyPI Latest Release](https://img.shields.io/pypi/v/hribo.svg)](https://pypi.org/project/hribo/)
 
@@ -13,8 +13,8 @@ For a detailed description of this workflow, the installation, usage and example
 
 HRIBO installs all dependencies via [conda](https://conda.io/docs/install/quick.html). Once you have conda installed simply type:
 
-         conda create -c bioconda -c conda-forge -n snakemake snakemake 
-         
+         conda create -c bioconda -c conda-forge -n snakemake snakemake
+
          source activate snakemake
 
 ### <u>Basic usage</u>
@@ -39,7 +39,7 @@ Please copy the template of the sample sheet and the config file into the HRIBO 
 
          cp HRIBO/templates/config.yaml HRIBO/
          cp HRIBO/templates/samples.tsv HRIBO/
-       
+
 Customize the config.yaml with the used adapter sequence and optionally with the path to a precomputed
 STAR genome index. For correct removal of reads mapping to ribosomal genes please specify the taxonomic group of
 the used organism (Eukarya, Bacteria, Archea).
@@ -57,16 +57,16 @@ Now you can start your workflow.
 
 Run Snakemake locally:
 
-         snakemake --use-conda -s HRIBO/Snakefile --configfile HRIBO/config.yaml --directory ${PWD} -j 20 --latency-wait 60 
-         
+         snakemake --use-conda -s HRIBO/Snakefile --directory ${PWD} -j 20 --latency-wait 60
+
 
 Run Snakemake on the cluster:
 
 Edit cluster.yaml according to your queuing system and cluster hardware. The following example works for Grid Engine:
 
-       snakemake --use-conda -s HRIBO/Snakefile --configfile HRIBO/config.yaml --directory ${PWD} -j 20 --cluster-config HRIBO/cluster.yaml --cluster "qsub -N {cluster.jobname} -cwd -q {cluster.qname} -pe {cluster.parallelenvironment} -l {cluster.memory} -o {cluster.logoutputdir} -e {cluster.erroroutputdir} -j {cluster.joinlogs} -M <email>" --latency-wait 60 
+       snakemake --use-conda -s HRIBO/Snakefile --directory ${PWD} -j 20 --cluster-config HRIBO/cluster.yaml --cluster "qsub -N {cluster.jobname} -cwd -q {cluster.qname} -pe {cluster.parallelenvironment} -l {cluster.memory} -o {cluster.logoutputdir} -e {cluster.erroroutputdir} -j {cluster.joinlogs} -M <email>" --latency-wait 60
 
 Once the workflow has finished you can request a automatically generated report.html file with the following command:
-         
+
        snakemake --report report.html
 
