@@ -86,7 +86,9 @@ def plot_scatter_2D(table_df, percentage_variance):
             mode="markers",
             marker=dict(color=color_list[i], size=12), #line=dict(color="rgb(0,0,0)", width=2)),
             name=labels[i],
-            legendgroup=group_labels[i]
+            legendgroup=group_labels[i],
+            text=group_by_names[i][1]["name"],
+            hoverinfo="text"
         ))
 
     fig.update_layout(
@@ -122,7 +124,6 @@ def plot_scatter_3D(table_df, percentage_variance):
     labels = []
     pca_data = []
     group_by_names = custom_sort(group_by_names)
-
     for group in group_by_names:
         labels.append(group[0])
         pca_data.append([group[1]["PC1"], group[1]["PC2"], group[1]["PC3"]])
@@ -155,7 +156,9 @@ def plot_scatter_3D(table_df, percentage_variance):
             mode="markers",
             marker=dict(color=color_list[i]), #line=dict(color="rgb(0,0,0)", width=2)),
             name=labels[i],
-            legendgroup=group_labels[i]
+            legendgroup=group_labels[i],
+            text=group_by_names[i][1]["name"],
+            hoverinfo="text"
         ))
 
         for j in range(len(pca_data[i][0])):

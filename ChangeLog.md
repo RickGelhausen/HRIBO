@@ -4,6 +4,7 @@
  * Updated to version 8.10.7 of snakemake
  * Changed FileProviders to Storage
  * Fixed bug with blastDB generation in reparation
+ * Added labels to the PCA plots
  * updated ReadTheDocs
 
 ### version 1.7.1 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 23.06.2023
