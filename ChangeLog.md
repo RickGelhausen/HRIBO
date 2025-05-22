@@ -1,4 +1,7 @@
-### version 1.8.0 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) Under construction
+### version 1.8.1 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 22.05.25
+ * fixed off-by-one error in rna filtering rule. 
+
+### version 1.8.0 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 19.04.24
  * Added full support for paired-end data and mixed data (paired-end samples mixed with single-end samples)
  * paired-end data is now correctly trimmed, but will still be converted to single-end data due to lack of paired-end bam support of many downstream tools
  * Updated to version 8.10.7 of snakemake
