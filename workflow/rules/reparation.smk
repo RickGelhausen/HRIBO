@@ -1,15 +1,22 @@
 
 rule uniprotDBRetrieve:
-    input:
-        storage.ftp("ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.fasta.gz")
     output:
         "uniprotDB/uniprot_sprot.fasta"
+    params:
+        url="https://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.fasta.gz"
+    conda:
+        "../envs/download.yaml"
     threads: 1
+    retries: 3
+    resources:
+        mem_mb=1000,
+        runtime=60
+    log:
+        "logs/uniprotDBRetrieve.log"
     shell:
         """
-        mkdir -p uniprotDB
-        mv {input} {output}.gz
-        gunzip {output}.gz
+        curl -sSL --fail --retry 3 --retry-delay 5 {params.url} -o {output}.gz 2> {log}
+        gunzip -f {output}.gz 2>> {log}
         """
 
 
@@ -30,7 +37,9 @@ rule reparation:
         "../envs/reparation.yaml"
     threads: 12
     resources:
-        reparation_instances=1
+        reparation_instances=1,
+        mem_mb=30000,
+        runtime=240
     params:
         prefix=lambda wildcards, output: (os.path.dirname(output.orfs))
     log:
@@ -51,7 +60,7 @@ rule reparationGFF:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; {SCRIPTS}/create_reparation_gff.py -c {wildcards.condition} -r {wildcards.replicate} -i {input} -o {output}"
+        "{SCRIPTS}/create_reparation_gff.py -c {wildcards.condition} -r {wildcards.replicate} -i {input} -o {output}"
 
 rule concatReparation:
     input:
@@ -62,4 +71,4 @@ rule concatReparation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; {SCRIPTS}/concatenate_gff.py {input} -o {output}"
+        "{SCRIPTS}/concatenate_gff.py {input} -o {output}"

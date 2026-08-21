@@ -7,7 +7,7 @@ rule mergeConditions:
         "../envs/bedtools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; cat {input.reparation} >> {output}.unsorted; bedtools sort -i {output}.unsorted > {output};"
+        "cat {input.reparation} >> {output}.unsorted; bedtools sort -i {output}.unsorted > {output};"
 
 rule mergeAll:
     input:
@@ -18,7 +18,7 @@ rule mergeAll:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; {SCRIPTS}/concatenate_gff.py {input.mergedGff} -o {output}"
+        "{SCRIPTS}/concatenate_gff.py {input.mergedGff} -o {output}"
 
 rule filterAll:
     input:
@@ -29,7 +29,7 @@ rule filterAll:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; {SCRIPTS}/merge_duplicates_reparation.py -i {input} -o {output}"
+        "{SCRIPTS}/merge_duplicates_reparation.py -i {input} -o {output}"
 
 rule reannotatedORFs:
     input:
@@ -41,7 +41,7 @@ rule reannotatedORFs:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; {SCRIPTS}/reannotate_orfs.py -a {input.annotation} -c {input.reparation} -o {output}"
+        "{SCRIPTS}/reannotate_orfs.py -a {input.annotation} -c {input.reparation} -o {output}"
 
 rule uniteAnnotation:
     input:
@@ -52,4 +52,4 @@ rule uniteAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; {SCRIPTS}/annotation_unite.py -a {input} -o {output}"
+        "{SCRIPTS}/annotation_unite.py -a {input} -o {output}"

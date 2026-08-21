@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import itertools as iter
 from pathlib import Path
@@ -61,6 +62,13 @@ CONTRASTS=config["differentialExpressionSettings"]["contrasts"]
 DEEPRIBO=config["predictionSettings"]["deepribo"]
 WORKFLOW=config["workflowSettings"]["workflow"]
 
+# Left empty in the config, every pairwise combination of conditions is compared.
+# This has to be resolved here, before the rule files are included: the diffex
+# rules expand CONTRASTS at include time, so populating it later would leave
+# their pooling rules with no inputs at all.
+if DIFFEXPRESS.lower() == "on" and not CONTRASTS:
+    CONTRASTS = ["-".join(pair) for pair in iter.combinations(conditions, 2)]
+
 hasRIBO=True
 if "RIBO" not in samples["method"].unique():
     hasRIBO=False
@@ -69,22 +77,8 @@ if "RIBO" not in samples["method"].unique():
 report: "report/workflow.rst"
 
 
-def get_wigfiles():
-    method=samples["method"]
-    condition=samples["condition"]
-    replicate=samples["replicate"]
-    wilds = zip(method, condition, replicate)
-
-    bigwigs = [["global", "centered", "fiveprime", "threeprime"], ["raw", "mil", "min"], ["forward", "reverse"], list(wilds)]
-    bigwigs = list(iter.product(*bigwigs))
-
-    wigfiles = []
-    for bw in bigwigs:
-        wigfiles.append("%stracks/%s/%s-%s-%s.%s.%s.%s.bw" %(bw[0], bw[1], bw[3][0], bw[3][1], bw[3][2], bw[1], bw[2], bw[0]))
-
-    return wigfiles
-
-
+# Shared helper functions and lookup tables
+include: "rules/common.smk"
 # Preprocessing
 include: "rules/preprocessing.smk"
 # Adaper removal and quality control
@@ -143,45 +137,20 @@ if WORKFLOW == "full":
         hribo_output.append("auxiliary/predictions_reparation.xlsx")
 
         if DIFFEXPRESS.lower() == "on":
-            if CONTRASTS == []:
-                CONTRASTS=[item for sublist in [[('-'.join(str(i) for i in x))] for x in list((iter.combinations(sorted(samples["condition"].unique(), key=lambda s: s.lower()),2)))]  for item in sublist]
-
-            hribo_output.extend([("contrasts/" +((element.replace("[", "")).replace("]", "")).replace("'", "")) for element in CONTRASTS])
-            hribo_output.extend([("xtail/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
-            hribo_output.extend([("riborex/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
-            hribo_output.extend([("deltate/" + ((element.replace("[", "")).replace("]", "")).replace("'", "") + "_sorted.xlsx") for element in CONTRASTS])
+            hribo_output.extend(f"contrasts/{contrast}" for contrast in CONTRASTS)
+            for tool in ("xtail", "riborex", "deltate"):
+                hribo_output.extend(f"{tool}/{contrast}_sorted.xlsx" for contrast in CONTRASTS)
 
         if DEEPRIBO.lower() == "on":
             hribo_output.append("auxiliary/predictions_deepribo.xlsx")
 
 
-        if DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "on":
-            hribo_output.extend(rules.createOverviewTableAll.output)
-        elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "on":
-            hribo_output.extend(rules.createOverviewTablePredictions.output)
-        elif DIFFEXPRESS.lower() == "on" and DEEPRIBO.lower() == "off":
-            hribo_output.extend(rules.createOverviewTableDiffExpr.output)
-        elif DIFFEXPRESS.lower() == "off" and DEEPRIBO.lower() == "off":
-            hribo_output.extend(rules.createOverviewTableReparation.output)
+        hribo_output.extend(rules.createOverviewTable.output)
 
 elif WORKFLOW == "preprocessing":
     hribo_output.append("qc/multi/multiqc_report.html")
 
 elif WORKFLOW == "trimming":
-    def get_trimming_files():
-        qc_files = []
-        for index, row in samples.iterrows():
-            if pd.isna(row['fastqFile2']):
-                qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw_fastqc.html".format(**row))
-                qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html".format(**row))
-            else:
-                qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw-q_fastqc.html".format(**row))
-                qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw-p_fastqc.html".format(**row))
-                qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_q_fastqc.html".format(**row))
-                qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_p_fastqc.html".format(**row))
-
-        return qc_files
-
     hribo_output.extend(get_trimming_files())
 
 else:

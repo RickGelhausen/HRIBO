@@ -10,8 +10,11 @@ rule fastqcraw_single:
     params:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.splitext(os.path.basename(input.fastq))[0])[0])
     threads: 8
+    resources:
+        mem_mb=40000,
+        runtime=60
     shell:
-        "mkdir -p qc/1raw; fastqc -o qc/1raw -t {threads} {input.fastq}; mv qc/1raw/{params.prefix}_fastqc.html {output.html}; mv qc/1raw/{params.prefix}_fastqc.zip {output.zip}"
+        "fastqc -o qc/1raw -t {threads} {input.fastq}; mv qc/1raw/{params.prefix}_fastqc.html {output.html}; mv qc/1raw/{params.prefix}_fastqc.zip {output.zip}"
 
 rule fastqctrimmed_single:
     input:
@@ -22,10 +25,13 @@ rule fastqctrimmed_single:
     conda:
         "../envs/fastqc.yaml"
     threads: 8
+    resources:
+        mem_mb=40000,
+        runtime=60
     params:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads))[0])
     shell:
-        "mkdir -p qc/2trimmed; fastqc -o qc/2trimmed -t {threads} {input}; mv qc/2trimmed/{params.prefix}_fastqc.html {output.html}; mv qc/2trimmed/{params.prefix}_fastqc.zip {output.zip}"
+        "fastqc -o qc/2trimmed -t {threads} {input}; mv qc/2trimmed/{params.prefix}_fastqc.html {output.html}; mv qc/2trimmed/{params.prefix}_fastqc.zip {output.zip}"
 
 
 rule fastqcraw_paired:
@@ -43,9 +49,11 @@ rule fastqcraw_paired:
         prefix1=lambda wildcards, input: (os.path.splitext(os.path.splitext(os.path.basename(input.fastq1))[0])[0]),
         prefix2=lambda wildcards, input: (os.path.splitext(os.path.splitext(os.path.basename(input.fastq2))[0])[0])
     threads: 8
+    resources:
+        mem_mb=40000,
+        runtime=60
     shell:
         """
-        mkdir -p qc/1raw
         fastqc -o qc/1raw -t {threads} {input.fastq1}; mv qc/1raw/{params.prefix1}_fastqc.html {output.html1}; mv qc/1raw/{params.prefix1}_fastqc.zip {output.zip1}
         fastqc -o qc/1raw -t {threads} {input.fastq2}; mv qc/1raw/{params.prefix2}_fastqc.html {output.html2}; mv qc/1raw/{params.prefix2}_fastqc.zip {output.zip2}
         """
@@ -62,30 +70,20 @@ rule fastqctrimmed_paired:
     conda:
         "../envs/fastqc.yaml"
     threads: 8
+    resources:
+        mem_mb=40000,
+        runtime=60
     params:
         prefix1=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads1))[0]),
         prefix2=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads2))[0])
     shell:
         """
-        mkdir -p qc/2trimmed;
         fastqc -o qc/2trimmed -t {threads} {input}; mv qc/2trimmed/{params.prefix1}_fastqc.html {output.html1}; mv qc/2trimmed/{params.prefix1}_fastqc.zip {output.zip1}
         fastqc -o qc/2trimmed -t {threads} {input}; mv qc/2trimmed/{params.prefix2}_fastqc.html {output.html2}; mv qc/2trimmed/{params.prefix2}_fastqc.zip {output.zip2}
         """
 
 ruleorder: fastqcraw_paired > fastqcraw_single
 ruleorder: fastqctrimmed_paired > fastqctrimmed_single
-
-def get_qc_files():
-    qc_files = []
-    for index, row in samples.iterrows():
-        if pd.isna(row['fastqFile2']):
-            qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw_fastqc.html".format(**row))
-        else:
-            qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw-q_fastqc.html".format(**row))
-            qc_files.append("qc/1raw/{method}-{condition}-{replicate}-raw-p_fastqc.html".format(**row))
-        qc_files.append("qc/2trimmed/{method}-{condition}-{replicate}-trimmed_fastqc.html".format(**row))
-        qc_files.append("trimmed/{method}-{condition}-{replicate}.fastq".format(**row))
-    return qc_files
 
 rule multiqc:
     input:
@@ -100,6 +98,10 @@ rule multiqc:
         expand("qc/rrnainall/{method}-{condition}-{replicate}.txt", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
     output:
         report("qc/multi/multiqc_report.html", caption="../report/multiqc.rst", category="Quality control")
+    threads: 1
+    resources:
+        mem_mb=16000,
+        runtime=60
     params:
         dir="qc/multi"
     log:

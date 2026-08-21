@@ -30,7 +30,6 @@ rule deltatePrepareInput:
         out_dir = lambda wildcards, output: os.path.dirname(output[0])
     shell:
         """
-        mkdir -p deltate;
         {SCRIPTS}/prepare_deltate_input.py -c {params.contrast} -r {input.rawreads} -b bam/ -o {params.out_dir}
         """
 
@@ -46,7 +45,7 @@ rule deltate:
         fcrna="deltate/{contrast}/fold_changes/deltaRNA.txt",
         fcte="deltate/{contrast}/fold_changes/deltaTE.txt",
         fig="deltate/{contrast}_figures.pdf"
-    singularity:
+    container:
         "docker://gelhausr/deltate:latest"
     threads: 1
     params:
@@ -54,7 +53,6 @@ rule deltate:
         contrast=lambda wildcards, input: input[0].split("/")[1]
     shell:
         """
-        mkdir -p deltate;
         touch {output.fcribo}
         touch {output.fcrna}
         touch {output.fcte}

@@ -8,7 +8,7 @@ rule rrnaannotation:
     threads: 1
     shell:
         """
-        mkdir -p annotation; awk -F'\\t' '$3 == "rRNA" || $3 == "tRNA"' {input.annotation} | awk -F'\\t' '{{print $1 FS $4-1 FS $5 FS "." FS "." FS $7}}' > {output.annotation}
+        awk -F'\\t' '$3 == "rRNA" || $3 == "tRNA"' {input.annotation} | awk -F'\\t' '{{print $1 FS $4-1 FS $5 FS "." FS "." FS $7}}' > {output.annotation}
         """
 
 rule rrnafilter2:
@@ -20,5 +20,8 @@ rule rrnafilter2:
     conda:
         "../envs/bedtools.yaml"
     threads: 20
+    resources:
+        mem_mb=40000,
+        runtime=120
     shell:
-        "mkdir -p norRNA; mkdir -p mapuniqnorrna; bedtools intersect -v -a {input.mapuniq} -b {input.annotation} > {output.bam}"
+        "bedtools intersect -v -a {input.mapuniq} -b {input.annotation} > {output.bam}"

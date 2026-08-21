@@ -11,7 +11,6 @@ rule riborex:
     threads: 1
     shell:
         """
-        mkdir -p riborex;
         {SCRIPTS}/riborex.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table};
         """
 

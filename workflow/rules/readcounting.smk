@@ -1,211 +1,76 @@
-rule generateDifferentialExpressionReadCounts:
+# Read counting
+#
+# Every featureCounts run goes through one rule; the runs differ only in which
+# alignments they count, which annotation they count against and a few extra
+# flags. Those differences live in READ_COUNT_SETS in common.smk, keyed by the
+# output basename, which is also the {countset} wildcard.
+
+wildcard_constraints:
+    countset="|".join(re.escape(name) for name in READ_COUNT_SETS),
+    mapped="|".join(re.escape(name) for name in READ_COUNT_ANNOTATIONS),
+    source="|".join(MAPPED_READ_SOURCES)
+
+
+rule readCounts:
     input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation={rules.unambigousAnnotation.output}
+        bam=readcount_bams,
+        bamindex=readcount_bam_indices,
+        annotation=readcount_annotation
     output:
-        "readcounts/differential_expression_read_counts.csv"
+        "readcounts/{countset}"
     conda:
         "../envs/subread.yaml"
     threads: 5
+    resources:
+        mem_mb=30000,
+        runtime=120
     params:
-        features="None" if len(config["differentialExpressionSettings"]["features"]) == 0 else config["differentialExpressionSettings"]["features"]
+        extra=readcount_flags
+    log:
+        "logs/readcounts_{countset}.log"
     shell:
         """
-        if [ "{params.features}" == None ]; then
-            features="";
-        else
-            features="--use_features {params.features}";
-        fi;
-        mkdir -p readcounts
-        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O --for_diff_expr -o {output} -t {threads} -a {input.annotation} ${{features}}
+        {SCRIPTS}/call_featurecounts.py \
+            -b {input.bam} \
+            -a {input.annotation} \
+            -s 1 --with_O {params.extra} \
+            -t {threads} \
+            -o {output} 2> {log}
         """
 
-rule generateReparationReadCounts:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="tracks/reparation_annotated.gff"
-    output:
-        "readcounts/reparation_read_counts.raw"
-    conda:
-        "../envs/subread.yaml"
-    threads: 5
-    shell:
-        """
-        mkdir -p readcounts
-        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
-        """
 
-rule generateDeepRiboReadCounts:
+rule mapReadsToAnnotation:
     input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation="tracks/deepribo_merged.gff"
+        reads=mapped_counts_reads,
+        annotation=mapped_counts_annotation
     output:
-        "readcounts/deepribo_read_counts.raw"
-    conda:
-        "../envs/subread.yaml"
-    threads: 5
-    shell:
-        """
-        mkdir -p readcounts
-        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
-        """
-
-rule generateAnnotationIndependantReadCounts:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation={rules.unambigousAnnotation.output}
-    output:
-        "readcounts/annotation_independant_read_counts.raw"
-    conda:
-        "../envs/subread.yaml"
-    threads: 5
-    shell:
-        """
-        mkdir -p readcounts
-        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
-        """
-
-rule generateAnnotationTotalReadCounts:
-    input:
-        bam=expand("bammulti/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("bammulti/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation={rules.unambigousAnnotation.output}
-    output:
-        "readcounts/annotation_total_reads.raw"
-    conda:
-        "../envs/subread.yaml"
-    threads: 5
-    shell:
-        """
-        mkdir -p readcounts
-        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O --with_M --fraction -o {output} -t {threads} -a {input.annotation}
-        """
-
-rule generateAnnotationUniqueReadCounts:
-    input:
-        bam=expand("rRNAbam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("rRNAbam/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        annotation={rules.unambigousAnnotation.output}
-    output:
-        "readcounts/annotation_unique_reads.raw"
-    conda:
-        "../envs/subread.yaml"
-    threads: 5
-    shell:
-        """
-        mkdir -p auxiliary
-        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O --fraction -o {output} -t {threads} -a {input.annotation}
-        """
-
-rule mapIndependantReads:
-    input:
-        reads="readcounts/annotation_independant_read_counts.raw",
-        annotation={rules.checkAnnotation.output}
-    output:
-        "readcounts/independant_annotation.gff"
+        "readcounts/{mapped}"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
+    resources:
+        mem_mb=8000,
+        runtime=60
+    log:
+        "logs/map_reads_to_annotation_{mapped}.log"
     shell:
-        """
-        mkdir -p readcounts; {SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
-        """
+        "{SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output} 2> {log}"
 
-rule mapReparationReads:
-    input:
-        reads="readcounts/reparation_read_counts.raw",
-        annotation="tracks/reparation_annotated.gff"
-    output:
-        "readcounts/reparation_annotation.gff"
-    conda:
-        "../envs/mergetools.yaml"
-    threads: 1
-    shell:
-        """
-        mkdir -p readcounts; {SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
-        """
 
-rule mapDeepRiboReads:
+rule mappedReadSummary:
     input:
-        reads="readcounts/deepribo_read_counts.raw",
-        annotation="tracks/deepribo_merged.gff"
+        bam=mapped_read_bams,
+        bamindex=mapped_read_bam_indices
     output:
-        "readcounts/deepribo_annotation.gff"
-    conda:
-        "../envs/mergetools.yaml"
-    threads: 1
-    shell:
-        """
-        mkdir -p readcounts; {SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
-        """
-
-rule mapTotalReads:
-    input:
-        reads="readcounts/annotation_total_reads.raw",
-        annotation="auxiliary/enriched_annotation.gff"
-    output:
-        "readcounts/total_annotation.gtf"
-    conda:
-        "../envs/mergetools.yaml"
-    threads: 1
-    shell:
-        """
-        mkdir -p readcounts; {SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
-        """
-
-rule mapUniqueReads:
-    input:
-        reads="readcounts/annotation_unique_reads.raw",
-        annotation="auxiliary/enriched_annotation.gff"
-    output:
-        "readcounts/unique_annotation.gtf"
-    conda:
-        "../envs/mergetools.yaml"
-    threads: 1
-    shell:
-        """
-        mkdir -p readcounts; {SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
-        """
-
-rule totalMappedReads:
-    input:
-        bam=expand("bammulti/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("bammulti/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        mapped="readcounts/total_mapped_reads.txt",
-        length="readcounts/total_average_read_lengths.txt"
+        mapped="readcounts/{source}_mapped_reads.txt",
+        length="readcounts/{source}_average_read_lengths.txt"
     conda:
         "../envs/pytools.yaml"
     threads: 1
+    resources:
+        mem_mb=8000,
+        runtime=60
+    log:
+        "logs/mapped_read_summary_{source}.log"
     shell:
-        "mkdir -p readcounts; {SCRIPTS}/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
-
-rule uniqueMappedReads:
-    input:
-        bam=expand("rRNAbam/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("rRNAbam/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        mapped="readcounts/unique_mapped_reads.txt",
-        length="readcounts/unique_average_read_lengths.txt"
-    conda:
-        "../envs/pytools.yaml"
-    threads: 1
-    shell:
-        "mkdir -p readcounts; {SCRIPTS}/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
-
-rule maplinkMappedReads:
-    input:
-        bam=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"]),
-        bamindex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples["method"], condition=samples["condition"], replicate=samples["replicate"])
-    output:
-        mapped="readcounts/bam_mapped_reads.txt",
-        length="readcounts/bam_average_read_lengths.txt"
-    conda:
-        "../envs/pytools.yaml"
-    threads: 1
-    shell:
-        "mkdir -p readcounts; {SCRIPTS}/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+        "{SCRIPTS}/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length} 2> {log}"

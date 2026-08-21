@@ -5,7 +5,7 @@ rule retrieveGenome:
         "genomes/genome.fa"
     threads: 1
     shell:
-        "mkdir -p genomes; cp {input.genome} genomes/genome.fa"
+        "cp {input.genome} genomes/genome.fa"
 
 rule retrieveAnnotation:
     input:
@@ -14,7 +14,7 @@ rule retrieveAnnotation:
         "annotation/annotation.gff"
     threads: 1
     shell:
-        "mkdir -p annotation; cp {input.annotation} annotation/annotation.gff"
+        "cp {input.annotation} annotation/annotation.gff"
 
 rule checkAnnotation:
     input:
@@ -23,4 +23,4 @@ rule checkAnnotation:
         "annotation/annotation_processed.gff"
     threads: 1
     shell:
-        "mkdir -p annotation; {SCRIPTS}/gtf2gff3.py -a {input} -o {output}"
+        "{SCRIPTS}/gtf2gff3.py -a {input} -o {output}"

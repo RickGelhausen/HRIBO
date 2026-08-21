@@ -16,6 +16,7 @@ Author: Rick Gelhausen
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from lib import checks
@@ -34,7 +35,7 @@ def validate_config(config, unique_conditions=None):
     from snakemake.utils import validate as schema_validate
 
     schema_validate(config, str(SCHEMA_DIR / "config.schema.yaml"))
-    print("Config file validated against schema.")
+    print("Config file validated against schema.", file=sys.stderr)
 
 
 def validate_sample_sheet(samples):
@@ -46,7 +47,7 @@ def validate_sample_sheet(samples):
     report = checks.check_sample_sheet(samples)
     report.raise_on_error("Sample sheet validation")
     _emit(report)
-    print("Sample sheet validated.")
+    print("Sample sheet validated.", file=sys.stderr)
 
 
 def validate_inputs(config, samples, verbose: bool = True) -> ValidationReport:
@@ -82,4 +83,5 @@ def _emit(report: ValidationReport) -> None:
     """Print warnings and informational findings; errors are raised separately."""
     for finding in report.sorted_findings():
         if finding.severity is not Severity.ERROR:
-            print(finding.to_text())
+            # stderr, so that machine-readable stdout (--summary, --list) stays clean
+            print(finding.to_text(), file=sys.stderr)

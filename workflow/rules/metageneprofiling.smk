@@ -11,12 +11,14 @@ rule readLengthStatistics:
     conda:
         "../envs/metageneprofiling.yaml"
     threads: 1
+    resources:
+        mem_mb=20000,
+        runtime=60
     log: "logs/read_length_statistics.log"
     params:
         readlengths=config["readstatSettings"]["readLengths"]
     shell:
         """
-        mkdir -p metageneprofiling;
         {SCRIPTS}/read_length_statistics.py -a {input.bamfiles} -r {params.readlengths} -o metageneprofiling/ > {log}
         """
 
@@ -31,6 +33,9 @@ rule metageneProfiling:
     conda:
         "../envs/metageneprofiling.yaml"
     threads: 1
+    resources:
+        mem_mb=20000,
+        runtime=120
     params:
         readlengths=config["metageneSettings"]["readLengths"],
         positionsInORF=config["metageneSettings"]["positionsInORF"],
@@ -47,7 +52,6 @@ rule metageneProfiling:
     log: "logs/{method}-{condition}-{replicate}_metageneprofiling.log"
     shell:
         """
-        mkdir -p metageneprofiling;
         if [ {params.colorList} == nocolor ]; then
             colorList="";
         else

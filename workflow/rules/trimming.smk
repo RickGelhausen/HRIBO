@@ -1,17 +1,30 @@
+def sample_row(wildcards):
+    """The single sample sheet row addressed by the wildcards."""
+    match = samples[
+        (samples["method"] == wildcards.method)
+        & (samples["condition"] == wildcards.condition)
+        & (samples["replicate"] == wildcards.replicate)
+    ]
+    if len(match) != 1:
+        raise ValueError(
+            f"Expected exactly one sample sheet row for "
+            f"{wildcards.method}-{wildcards.condition}-{wildcards.replicate}, found {len(match)}."
+        )
+    return match.iloc[0]
+
+
 def get_inputs_single(wildcards):
-    row = samples[(samples['method'] == wildcards.method) & (samples['condition'] == wildcards.condition) & (samples['replicate'] == wildcards.replicate)]
-    if pd.isna(row['fastqFile2'].iloc[0]):
-        return row['fastqFile'].iloc[0]
+    row = sample_row(wildcards)
+    if is_paired_end(row):
+        raise ValueError(f"{library_name(wildcards)} is paired-end; the single-end rule does not apply.")
+    return row["fastqFile"]
+
 
 def get_inputs_paired(wildcards):
-    row = samples[(samples['method'] == wildcards.method) & (samples['condition'] == wildcards.condition) & (samples['replicate'] == wildcards.replicate)]
-    if not pd.isna(row['fastqFile2'].iloc[0]):
-        return [row['fastqFile'].iloc[0], row['fastqFile2'].iloc[0]]
-
-def get_inputs_paired(wildcards):
-    row = samples[(samples['method'] == wildcards.method) & (samples['condition'] == wildcards.condition) & (samples['replicate'] == wildcards.replicate)]
-    if not pd.isna(row['fastqFile2'].iloc[0]):
-        return [row['fastqFile'].iloc[0], row['fastqFile2'].iloc[0]]
+    row = sample_row(wildcards)
+    if not is_paired_end(row):
+        raise ValueError(f"{library_name(wildcards)} is single-end; the paired-end rule does not apply.")
+    return [row["fastqFile"], row["fastqFile2"]]
 
 rule link_single:
     input:
@@ -24,7 +37,7 @@ rule link_single:
         outlink=lambda wildcards, output:(os.getcwd() + "/" + str(output.fastq))
     threads: 1
     shell:
-        "mkdir -p trimlink; ln -s {params.inlink} {params.outlink};"
+        "ln -s {params.inlink} {params.outlink};"
 
 rule link_paired:
     input:
@@ -41,7 +54,7 @@ rule link_paired:
         outlink2=lambda wildcards, output:(os.getcwd() + "/" + str(output.fastq2))
     threads: 1
     shell:
-        "mkdir -p trimlink; ln -s {params.inlink1} {params.outlink1}; ln -s {params.inlink2} {params.outlink2};"
+        "ln -s {params.inlink1} {params.outlink1}; ln -s {params.inlink2} {params.outlink2};"
 
 ruleorder: link_paired > link_single
 
@@ -59,8 +72,11 @@ rule trim_single:
     conda:
         "../envs/cutadapt.yaml"
     threads: 20
+    resources:
+        mem_mb=40000,
+        runtime=120
     shell:
-        "mkdir -p trimmed; cutadapt -j {threads} {params.adapter3} {params.adapter5} {params.quality} {params.filtering} -o {output.fastq} {input.fastq}"
+        "cutadapt -j {threads} {params.adapter3} {params.adapter5} {params.quality} {params.filtering} -o {output.fastq} {input.fastq}"
 
 rule trim_paired:
     input:
@@ -79,8 +95,11 @@ rule trim_paired:
     conda:
         "../envs/cutadapt.yaml"
     threads: 20
+    resources:
+        mem_mb=40000,
+        runtime=120
     shell:
-        "mkdir -p trimmedpaired; cutadapt -j {threads} {params.adapter3q} {params.adapter5q} {params.adapter3p} {params.adapter5p} {params.quality} {params.filtering} -o {output.fastq1} -p {output.fastq2} {input.fastq1} {input.fastq2}"
+        "cutadapt -j {threads} {params.adapter3q} {params.adapter5q} {params.adapter3p} {params.adapter5p} {params.quality} {params.filtering} -o {output.fastq1} -p {output.fastq2} {input.fastq1} {input.fastq2}"
 
 rule merge_fastq:
     input:
@@ -91,35 +110,16 @@ rule merge_fastq:
     conda:
         "../envs/pear.yaml"
     threads: 20
+    resources:
+        mem_mb=20000,
+        runtime=120
     log:
         "logs/{method}-{condition}-{replicate}_pear.log"
     shell:
         """
-        mkdir -p trimmed
         mkdir -p pear
         pear -n 10 -f {input.fastq1} -r {input.fastq2} -o pear/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}
         mv pear/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}.assembled.fastq {output.fastq}
         """
 
 ruleorder: trim_single > merge_fastq
-
-# rule merge_fastq:
-#     input:
-#         fastq1="trimmedpaired/{method}-{condition}-{replicate}_q.fastq",
-#         fastq2="trimmedpaired/{method}-{condition}-{replicate}_p.fastq"
-#     output:
-#         fastq="trimmed/{method}-{condition}-{replicate}.fastq"
-#     conda:
-#         "../envs/pear.yaml"
-#     threads: 20
-#     log:
-#         "logs/{method}-{condition}-{replicate}_pear.log"
-#     shell:
-#         """
-#         mkdir -p trimmed
-#         mkdir -p pear
-#         pear -n 10 -f {input.fastq1} -r {input.fastq2} -o pear/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}
-#         mv pear/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}.assembled.fastq {output.fastq}
-#         """
-
-# ruleorder: merge_fastq > trim_single

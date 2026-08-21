@@ -20,6 +20,38 @@
    report: directive and --report were broken
  * Added envs/bed.yaml, which was referenced but missing
  * Added a pytest suite (41 tests) covering the validation and metagene helpers
+ * Collapsed the duplicated rule layer: 159 rules in 2739 lines became 105 rules
+   in 2102 lines, with no change to any output path
+   - 38 near-identical coverage track rules became 2 generic ones
+   - 14 read counting rules became 3
+   - the 4 createOverviewTable* variants became 1
+ * Moved helper functions and lookup tables into workflow/rules/common.smk
+ * Fixed CONTRASTS being auto-populated after the diffex rule files were already
+   included, which left poolxtail, poolriborex, pooldeltate and contrastInput with
+   empty input lists whenever contrasts were not set explicitly in the config.
+   xtail_all.csv, riborex_all.csv and deltate_all.csv were pooled from no files at
+   all, so the differential expression columns of overview.xlsx were wrong in the
+   default configuration
+ * Replaced the FTP/HTTP storage plugin downloads with plain curl, removing the
+   snakemake-storage-plugin-ftp and -http requirements. Both rules also moved their
+   downloads out of the storage cache with mv, which broke re-runs
+ * Removed 78 of 85 redundant mkdir calls; the remaining 7 create directories that
+   are not output parents and are genuinely needed
+ * Removed dead code: the samstrandswap NOTSET branch that no sample sheet could
+   select, the segemehl params.fastq branch referencing undefined inputs, a
+   duplicated get_inputs_paired definition, and a commented-out copy of merge_fastq
+ * Input helpers now raise on a layout mismatch rather than returning None, which
+   previously produced a rule with no inputs
+ * Declared mem_mb and runtime on 39 rules, so cluster requirements live with the
+   rules instead of in the profile
+ * Rewrote the SLURM profile for Snakemake 9 (executor: slurm). It referenced
+   "slurm-jobscript.sh" while the file was named slurm_jobscript.sh, and 11 of its
+   set-threads/set-resources entries named rules that do not exist. The custom job
+   script is unsupported by the SLURM executor plugin, so its module loads moved
+   into slurm_run.sh
+ * Replaced the deprecated singularity: directive with container:
+ * Removed 7 scripts that no rule referenced
+ * Switched the JSON schemas to draft 2020-12 to match the installed validator
  * Bumped the minimum Snakemake version to 9.0.0 and updated the CLI usage
 
 ### version 1.8.1 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 22.05.25

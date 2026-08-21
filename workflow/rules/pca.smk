@@ -10,7 +10,6 @@ rule preparePCAinput:
         "../envs/pytools.yaml"
     shell:
         """
-        mkdir -p pca;
         sed -e '1s/-/_/g' {input.rawreads} > {output.rawreads};
         {SCRIPTS}/preparePCAinput.py -s {input.samples} -o {output.meta};
         """
@@ -31,7 +30,6 @@ rule runDeseqPreprocessing:
         "../envs/deseq2.yaml"
     shell:
         """
-        mkdir -p pca;
         {SCRIPTS}/analyse_variance.R -r {input.rawreads} -m {input.meta} -o pca/;
         """
         
@@ -48,6 +46,5 @@ rule plotPCA:
         "../envs/plotly.yaml"
     shell:
         """
-        mkdir -p pca;
         {SCRIPTS}/plot_PCA.py -r {input.rld} -p {input.pvar} -c {input.cor} -o pca/;
         """

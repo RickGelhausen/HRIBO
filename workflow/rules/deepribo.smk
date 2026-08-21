@@ -9,12 +9,21 @@ def read_parameters(filename, idx):
         return "failed"
 
 rule deepriboGetModel:
-    input:
-        storage.http("https://github.com/Biobix/DeepRibo/blob/master/models/DeepRibo_model_v1.pt?raw=true")
     output:
         "deepribo/DeepRibo_model_v1.pt"
+    params:
+        url="https://github.com/Biobix/DeepRibo/raw/master/models/DeepRibo_model_v1.pt"
+    conda:
+        "../envs/download.yaml"
+    threads: 1
+    retries: 3
+    resources:
+        mem_mb=1000,
+        runtime=30
+    log:
+        "logs/deepriboGetModel.log"
     shell:
-        "mkdir -p deepribo; mv {input} deepribo/DeepRibo_model_v1.pt"
+        "curl -sSL --fail --retry 3 --retry-delay 5 {params.url} -o {output} 2> {log}"
 
 
 rule asiteOccupancy:
@@ -28,7 +37,7 @@ rule asiteOccupancy:
         "../envs/pytools.yaml"
     threads: 1
     shell:
-        "mkdir -p coverage_deepribo; {SCRIPTS}/coverage_deepribo.py --alignment_file {input.bam} --output_file_prefix coverage_deepribo/{wildcards.condition}-{wildcards.replicate}"
+        "{SCRIPTS}/coverage_deepribo.py --alignment_file {input.bam} --output_file_prefix coverage_deepribo/{wildcards.condition}-{wildcards.replicate}"
 
 rule coverage:
     input:
@@ -42,7 +51,6 @@ rule coverage:
     threads: 1
     shell:
         """
-        mkdir -p coverage_deepribo
         bedtools genomecov -bg -ibam {input.bam} -strand + > {output.covfwd}
         bedtools genomecov -bg -ibam {input.bam} -strand - > {output.covrev}
         """
@@ -57,7 +65,7 @@ rule parseDeepRibo:
         annotation= rules.checkAnnotation.output
     output:
         "deepribo/{condition}-{replicate}/data_list.csv"
-    singularity:
+    container:
         "docker://gelhausr/deepribo:latest"
     threads: 1
     shell:
@@ -72,11 +80,11 @@ rule parameterEstimation:
         "deepribo/{condition}-{replicate}/data_list.csv"
     output:
         "deepribo/{condition}-{replicate}/parameters.txt"
-    singularity:
+    container:
         "docker://gelhausr/deepribo:latest"
     threads: 1
     shell:
-        "mkdir -p deepribo; Rscript {SCRIPTS}/parameter_estimation.R -f {input} -o {output}"
+        "Rscript {SCRIPTS}/parameter_estimation.R -f {input} -o {output}"
 
 rule predictDeepRibo:
     input:
@@ -85,15 +93,17 @@ rule predictDeepRibo:
         parameter= "deepribo/{condition}-{replicate}/parameters.txt"
     output:
         "deepribo/{condition}-{replicate}/predictions.csv"
-    singularity:
+    container:
         "docker://gelhausr/deepribo:latest"
     threads: 10
+    resources:
+        mem_mb=20000,
+        runtime=240
     params:
         rpkm= lambda wildcards, input: read_parameters(input[2], 0),
         cov= lambda wildcards, input: read_parameters(input[2], 1)
     shell:
         """
-        mkdir -p deepribo;
         DeepRibo.py predict deepribo/ --pred_data {wildcards.condition}-{wildcards.replicate}/ -r {params.rpkm} -c {params.cov} --model {input.model} --dest {output} --num_workers {threads}
         """
 
@@ -106,7 +116,7 @@ rule deepriboGFF:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; {SCRIPTS}/create_deepribo_gff.py -c {wildcards.condition} -r {wildcards.replicate} -i {input} -o {output}"
+        "{SCRIPTS}/create_deepribo_gff.py -c {wildcards.condition} -r {wildcards.replicate} -i {input} -o {output}"
 
 rule concatDeepRibo:
     input:
@@ -117,7 +127,7 @@ rule concatDeepRibo:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; {SCRIPTS}/concatenate_gff.py {input} -o {output}"
+        "{SCRIPTS}/concatenate_gff.py {input} -o {output}"
 
 rule allDeepRibo:
     input:
@@ -128,7 +138,7 @@ rule allDeepRibo:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; {SCRIPTS}/concatenate_gff.py {input.merged_gff} -o {output}"
+        "{SCRIPTS}/concatenate_gff.py {input.merged_gff} -o {output}"
 
 rule filterDeepRibo:
     input:
@@ -141,7 +151,7 @@ rule filterDeepRibo:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; {SCRIPTS}/merge_duplicates_deepribo.py -i {input.ingff} -o {output.merged} -a {input.annotation}"
+        "{SCRIPTS}/merge_duplicates_deepribo.py -i {input.ingff} -o {output.merged} -a {input.annotation}"
 
 
 rule createExcelSummaryDeepRibo:
@@ -155,7 +165,7 @@ rule createExcelSummaryDeepRibo:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; {SCRIPTS}/generate_excel_deepribo.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "{SCRIPTS}/generate_excel_deepribo.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule newAnnotationDeepRibo:
     input:
@@ -169,6 +179,5 @@ rule newAnnotationDeepRibo:
     threads: 1
     shell:
         """
-        mkdir -p tracks;
         {SCRIPTS}/concatenate_gff.py {input.deepribo_orfs} {input.reparation_orfs} {input.currentAnnotation} -o {output}
         """

@@ -6,10 +6,13 @@ rule genomeSegemehlIndex:
     conda:
         "../envs/segemehl.yaml"
     threads: 20
+    resources:
+        mem_mb=40000,
+        runtime=120
     log:
         "logs/genomeIndex.log"
     shell:
-        "mkdir -p genomeSegemehlIndex; echo \"Computing Segemehl index\"; segemehl.x --threads {threads} -x {output.index} -d {input.genome} 2> {log}"
+        "echo \"Computing Segemehl index\"; segemehl.x --threads {threads} -x {output.index} -d {input.genome} 2> {log}"
 
 
 
@@ -23,14 +26,16 @@ rule map:
     conda:
         "../envs/segemehl.yaml"
     threads: 20
+    resources:
+        mem_mb=40000,
+        runtime=240
     params:
-        prefix=lambda wildcards, output: (os.path.dirname(output[0])),
-        fastq=lambda wildcards, input: "-q %s" % (input.fastq) if len(input) == 3 else "-q %s -p %s" % (input.fastq1, input.fastq2)
+        prefix=lambda wildcards, output: (os.path.dirname(output[0]))
     log:
         "logs/{method}-{condition}-{replicate}_segemehl.log"
     shell:
         """
-        mkdir -p sammulti; segemehl.x -e -d {input.genome} -i {input.genomeSegemehlIndex} {params.fastq} --threads {threads} -o {output.sammulti} 2> {log}
+        segemehl.x -e -d {input.genome} -i {input.genomeSegemehlIndex} -q {input.fastq} --threads {threads} -o {output.sammulti} 2> {log}
         """
 
 rule samuniq:
@@ -42,10 +47,12 @@ rule samuniq:
     conda:
         "../envs/samtools.yaml"
     threads: 20
+    resources:
+        mem_mb=40000,
+        runtime=120
     shell:
         """
         set +e
-        mkdir -p sam
         awk '$2 != "4"' {input.sammulti} > {input.sammulti}.mapped
         samtools view -H <(cat {input.sammulti}) | grep '@HD' > {output.sam}
         samtools view -H <(cat {input.sammulti}) | grep '@SQ' | sort -t$'\t' -k1,1 -k2,2V >> {output.sam}
@@ -61,15 +68,20 @@ rule samuniq:
         fi
         """
 
+# The strand inverter is for protocols that sequence the antisense strand. No
+# method tag currently selects it, so this is a straight copy; the rule is kept
+# as the single place to reintroduce that behaviour.
 rule samstrandswap:
     input:
         sam="sam/{method}-{condition}-{replicate}.rawsam"
     output:
         sam=temp("sam/{method}-{condition}-{replicate}.sam")
     threads: 1
-    params:
-         method=lambda wildcards: wildcards.method
-    shell: "if [ \"{params.method}\" == \"NOTSET\" ]; then {SCRIPTS}/sam_strand_inverter.py --sam_in_filepath={input.sam} --sam_out_filepath={output.sam}; else cp {input.sam} {output.sam}; fi"
+    resources:
+        mem_mb=2000,
+        runtime=30
+    shell:
+        "cp {input.sam} {output.sam}"
 
 rule sammultitobam:
     input:
@@ -79,8 +91,11 @@ rule sammultitobam:
     conda:
         "../envs/samtools.yaml"
     threads: 20
+    resources:
+        mem_mb=40000,
+        runtime=120
     shell:
-        "mkdir -p bammulti; samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output} -O bam"
+        "samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output} -O bam"
 
 rule samtobam:
     input:
@@ -90,8 +105,11 @@ rule samtobam:
     conda:
         "../envs/samtools.yaml"
     threads: 20
+    resources:
+        mem_mb=40000,
+        runtime=120
     shell:
-        "mkdir -p rRNAbam; samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output} -O bam"
+        "samtools view -@ {threads} -bh {input.sam} | samtools sort -@ {threads} -o {output} -O bam"
 
 rule maplink:
     input:
@@ -103,4 +121,4 @@ rule maplink:
         outlink=lambda wildcards, output:(os.getcwd() + "/" + str(output))
     threads: 1
     shell:
-        "mkdir -p maplink; ln -s {params.inlink} {params.outlink}"
+        "ln -s {params.inlink} {params.outlink}"

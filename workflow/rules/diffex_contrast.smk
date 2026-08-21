@@ -21,7 +21,6 @@ rule prepareRiborexInput:
     threads: 1
     shell:
         """
-        mkdir -p diffex_input/riborex/;
         python3 {SCRIPTS}/prepare_diffex_input.py -r {input.rawreads} -c {wildcards.contrast}  -t riborex -o diffex_input/riborex/
         """
 
@@ -39,6 +38,5 @@ rule prepareXtailInput:
     threads: 1
     shell:
         """
-        mkdir -p diffex_input/xtail/;
         python3 {SCRIPTS}/prepare_diffex_input.py -r {input.rawreads} -c {wildcards.contrast} -t xtail -o diffex_input/xtail/
         """

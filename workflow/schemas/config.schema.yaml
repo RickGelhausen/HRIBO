@@ -1,4 +1,4 @@
-$schema: "http://json-schema.org/draft-07/schema#"
+$schema: "https://json-schema.org/draft/2020-12/schema"
 description: HRIBO workflow configuration
 
 type: object
@@ -11,7 +11,7 @@ required:
   - workflowSettings
 additionalProperties: true
 
-definitions:
+$defs:
   onOff:
     type: string
     pattern: "^([Oo][Nn]|[Oo][Ff][Ff])$"
@@ -47,12 +47,12 @@ properties:
       - alternativeStartCodons
     additionalProperties: false
     properties:
-      adapterS3: {$ref: "#/definitions/adapter"}
-      adapterS5: {$ref: "#/definitions/adapter"}
-      adapterP3R1: {$ref: "#/definitions/adapter"}
-      adapterP5R1: {$ref: "#/definitions/adapter"}
-      adapterP3R2: {$ref: "#/definitions/adapter"}
-      adapterP5R2: {$ref: "#/definitions/adapter"}
+      adapterS3: {$ref: "#/$defs/adapter"}
+      adapterS5: {$ref: "#/$defs/adapter"}
+      adapterP3R1: {$ref: "#/$defs/adapter"}
+      adapterP5R1: {$ref: "#/$defs/adapter"}
+      adapterP3R2: {$ref: "#/$defs/adapter"}
+      adapterP5R2: {$ref: "#/$defs/adapter"}
       genome:
         type: string
         minLength: 1
@@ -82,7 +82,7 @@ properties:
       - log2fcCutoff
     additionalProperties: false
     properties:
-      differentialExpression: {$ref: "#/definitions/onOff"}
+      differentialExpression: {$ref: "#/$defs/onOff"}
       features:
         type: array
         minItems: 1
@@ -114,14 +114,14 @@ properties:
     required: [deepribo]
     additionalProperties: false
     properties:
-      deepribo: {$ref: "#/definitions/onOff"}
+      deepribo: {$ref: "#/$defs/onOff"}
 
   readstatSettings:
     type: object
     required: [readLengths]
     additionalProperties: false
     properties:
-      readLengths: {$ref: "#/definitions/readLengthSpec"}
+      readLengths: {$ref: "#/$defs/readLengthSpec"}
 
   metageneSettings:
     type: object
@@ -168,7 +168,7 @@ properties:
         items:
           type: string
           enum: [fiveprime, threeprime, centered, global]
-      readLengths: {$ref: "#/definitions/readLengthSpec"}
+      readLengths: {$ref: "#/$defs/readLengthSpec"}
       normalizationMethods:
         type: array
         minItems: 1

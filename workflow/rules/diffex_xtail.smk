@@ -13,7 +13,6 @@ rule xtail:
     threads: 10
     shell:
         """
-        mkdir -p xtail;
         {SCRIPTS}/xtail.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table} -f {output.fcplot} -p {output.rplot};
         """
 

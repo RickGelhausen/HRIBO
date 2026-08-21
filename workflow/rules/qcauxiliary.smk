@@ -8,10 +8,13 @@ rule fastqcunique:
     conda:
         "../envs/fastqc.yaml"
     threads: 8
+    resources:
+        mem_mb=30000,
+        runtime=60
     params:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.sam))[0])
     shell:
-        "mkdir -p qc/4unique; fastqc -o qc/4unique -t {threads} -f sam_mapped {input.sam}; mv qc/4unique/{params.prefix}_fastqc.html {output.html}; mv qc/4unique/{params.prefix}_fastqc.zip {output.zip}"
+        "fastqc -o qc/4unique -t {threads} -f sam_mapped {input.sam}; mv qc/4unique/{params.prefix}_fastqc.html {output.html}; mv qc/4unique/{params.prefix}_fastqc.zip {output.zip}"
 
 rule fastqcmulti:
     input:
@@ -23,10 +26,13 @@ rule fastqcmulti:
     conda:
         "../envs/fastqc.yaml"
     threads: 8
+    resources:
+        mem_mb=40000,
+        runtime=60
     params:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.sam))[0])
     shell:
-        "mkdir -p qc/3mapped; fastqc -o qc/3mapped -t {threads} -f sam_mapped {input.sam}; mv qc/3mapped/{params.prefix}_fastqc.html {output.html}; mv qc/3mapped/{params.prefix}_fastqc.zip {output.zip}"
+        "fastqc -o qc/3mapped -t {threads} -f sam_mapped {input.sam}; mv qc/3mapped/{params.prefix}_fastqc.html {output.html}; mv qc/3mapped/{params.prefix}_fastqc.zip {output.zip}"
 
 rule fastqcrrnafilter:
     input:
@@ -38,10 +44,13 @@ rule fastqcrrnafilter:
     conda:
         "../envs/fastqc.yaml"
     threads: 8
+    resources:
+        mem_mb=30000,
+        runtime=60
     params:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads))[0])
     shell:
-        "mkdir -p qc/5removedrRNA; fastqc -o qc/5removedrRNA -t {threads} {input}; mv qc/5removedrRNA/{params.prefix}_fastqc.html {output.html}; mv qc/5removedrRNA/{params.prefix}_fastqc.zip {output.zip}"
+        "fastqc -o qc/5removedrRNA -t {threads} {input}; mv qc/5removedrRNA/{params.prefix}_fastqc.html {output.html}; mv qc/5removedrRNA/{params.prefix}_fastqc.zip {output.zip}"
 
 rule featurescounts:
     input:
@@ -52,9 +61,11 @@ rule featurescounts:
     conda:
         "../envs/subread.yaml"
     threads: 8
+    resources:
+        mem_mb=40000,
+        runtime=60
     shell:
         """
-        mkdir -p qc/all;
         column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
         if [[ " ${{column3[@]}} " =~ "gene" ]];
         then
@@ -73,9 +84,11 @@ rule trnafeaturescounts:
     conda:
         "../envs/subread.yaml"
     threads: 8
+    resources:
+        mem_mb=30000,
+        runtime=60
     shell:
         """
-        mkdir -p qc/trnainall;
         column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
         if [[ " ${{column3[@]}} " =~ "tRNA" ]];
         then
@@ -94,9 +107,11 @@ rule norrnafeaturescounts:
     conda:
         "../envs/subread.yaml"
     threads: 8
+    resources:
+        mem_mb=30000,
+        runtime=60
     shell:
         """
-        mkdir -p qc/rrnainall;
         column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
         if [[ " ${{column3[@]}} " =~ "rRNA" ]];
         then
@@ -115,9 +130,11 @@ rule rrnatotalfeaturescounts:
     conda:
         "../envs/subread.yaml"
     threads: 8
+    resources:
+        mem_mb=30000,
+        runtime=60
     shell:
         """
-        mkdir -p qc/rrnainallaligned;
         column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
         if [[ " ${{column3[@]}} " =~ "rRNA" ]];
         then
@@ -136,9 +153,11 @@ rule rrnauniquefeaturescounts:
     conda:
         "../envs/subread.yaml"
     threads: 8
+    resources:
+        mem_mb=30000,
+        runtime=60
     shell:
         """
-        mkdir -p qc/rrnainuniquelyaligned;
         column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
         if [[ " ${{column3[@]}} " =~ "rRNA" ]];
         then
@@ -157,4 +176,4 @@ rule coveragedepth:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p coverage; bedtools genomecov -ibam {input} -bg > {output}"
+        "bedtools genomecov -ibam {input} -bg > {output}"
