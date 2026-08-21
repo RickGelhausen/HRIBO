@@ -103,7 +103,12 @@ def equalize_dictionary_keys(start_dict, stop_dict, positions_out_ORF, positions
     Ensure that both dictionaries have the same set of keys.
     Create new keys for missing values and initialize them with list of 0s.
     """
-    metagene_area = np.full(positions_out_ORF + positions_in_ORF, 0)
+    window_length = positions_out_ORF + positions_in_ORF
+
+    def empty_window():
+        # A fresh array per read length: sharing one array would alias every
+        # filled-in read length to the same buffer.
+        return np.zeros(window_length, dtype=np.intp)
 
     unique_keys = set(start_dict.keys()).union(set(stop_dict.keys()))
 
@@ -114,24 +119,11 @@ def equalize_dictionary_keys(start_dict, stop_dict, positions_out_ORF, positions
     overall_max = max(max(start_list), max(stop_list))
 
     for key in unique_keys:
-        if key not in start_dict:
-            start_dict[key] = {}
+        for coverage_dict in (start_dict, stop_dict):
+            if key not in coverage_dict:
+                coverage_dict[key] = {}
             for read_length in range(overall_min, overall_max + 1):
-                start_dict[key][read_length] = metagene_area
-
-        else:
-            for read_length in range(overall_min, overall_max + 1):
-                if read_length not in start_dict[key]:
-                    start_dict[key][read_length] = metagene_area
-
-        if key not in stop_dict:
-            stop_dict[key] = {}
-            for read_length in range(overall_min, overall_max + 1):
-                start_dict[key][read_length] = metagene_area
-
-        else:
-            for read_length in range(overall_min, overall_max + 1):
-                if read_length not in stop_dict[key]:
-                    stop_dict[key][read_length] = metagene_area
+                if read_length not in coverage_dict[key]:
+                    coverage_dict[key][read_length] = empty_window()
 
     return start_dict, stop_dict

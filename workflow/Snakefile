@@ -15,14 +15,20 @@ configfile: "config/config.yaml"
 SCRIPTS = Path(workflow.basedir) / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from validate import validate_config, validate_sample_sheet
+from validate import validate_config, validate_inputs, validate_sample_sheet
 
 onstart:
    if not os.path.exists("logs"):
      os.makedirs("logs")
 
+# Preflight validation. Everything below runs before the DAG is built, so that
+# malformed input fails here with an explanation rather than inside a tool that
+# has no idea what HRIBO expects.
+validate_config(config)
+
 samples = pd.read_csv(config["biologySettings"]["samples"], dtype=str, sep="\t")
 validate_sample_sheet(samples)
+validate_inputs(config, samples)
 
 samples.sort_values(by=["method", "condition", "replicate"], key=lambda col: col.str.lower() if col.dtype==str else col, inplace=True)
 
@@ -40,7 +46,6 @@ wildcard_constraints:
     replicate=f"({unique_replicates})"
 
 conditions=sorted(samples["condition"].unique(), key=lambda s: s.lower())
-validate_config(config, conditions)
 
 ADAPTERS_S3=config["biologySettings"]["adapterS3"]
 ADAPTERS_S5=config["biologySettings"]["adapterS5"]
@@ -55,10 +60,6 @@ DIFFEXPRESS=config["differentialExpressionSettings"]["differentialExpression"]
 CONTRASTS=config["differentialExpressionSettings"]["contrasts"]
 DEEPRIBO=config["predictionSettings"]["deepribo"]
 WORKFLOW=config["workflowSettings"]["workflow"]
-
-if DIFFEXPRESS.lower() == "on" and len(samples["condition"].unique()) <= 1:
-    sys.exit("Differential Expression requested, but only one condition given.\n\
-            Please ensure, that you either provide multiple condtions or turn off differential expression in the config.yaml.")
 
 hasRIBO=True
 if "RIBO" not in samples["method"].unique():

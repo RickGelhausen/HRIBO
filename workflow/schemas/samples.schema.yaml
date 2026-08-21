@@ -1,22 +1,41 @@
-$schema: "http://json-schema.org/draft-04/schema#"
+$schema: "http://json-schema.org/draft-07/schema#"
+description: a single sequencing library in the HRIBO sample sheet
 
-description: an entry in the sample sheet
-properties:
-  method:
-    type: string
-    description: Used high troughput sequening methods, RIBO for Ribo-seq, RNA for RNA-seq
-  condition:
-    type: string
-    description: Condition A for first condition, B for second condition (e.g. a treatment, tissue, mutant)
-  replicate:
-    type: string
-    description: Identifier for replicate, (e.g. 1)
-  fastqFile:
-    type: string
-    description: Path to gzipped fastq file (e.g. fastq/1.fa.gz)
-
+type: object
 required:
   - method
   - condition
   - replicate
   - fastqFile
+
+properties:
+  method:
+    type: string
+    enum: [RIBO, TIS, TTS, RNA, RNATIS, RNATTS]
+    description: >
+      Library type. RIBO for ribosome profiling, RNA for the matching RNA-seq,
+      TIS/TTS for translation initiation and termination site profiling, and
+      RNATIS/RNATTS for their RNA-seq controls.
+
+  condition:
+    type: string
+    pattern: "^[A-Za-z0-9]+$"
+    description: >
+      Condition label, for example a treatment or a mutant. Alphanumeric only,
+      because it becomes part of both filenames and Snakemake wildcards, and
+      because "-" separates the two sides of a differential expression contrast.
+
+  replicate:
+    type: string
+    pattern: "^[0-9]+$"
+    description: Replicate number, starting at 1.
+
+  fastqFile:
+    type: string
+    minLength: 1
+    description: Path to the gzipped fastq file, relative to the working directory.
+
+  fastqFile2:
+    description: >
+      Path to the second read file for paired-end libraries. Leave empty for
+      single-end libraries.

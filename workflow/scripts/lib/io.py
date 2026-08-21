@@ -64,9 +64,9 @@ def parse_read_lengths(read_lengths):
             for i in range(i1, i2+1):
                 read_lengths.add(i)
         else:
-            read_lengths.add(part)
+            read_lengths.add(int(part))
 
-    return [int(i) for i in sorted(list(read_lengths))]
+    return sorted(read_lengths)
 
 def parse_genome_lengths(genome_file_path):
     """

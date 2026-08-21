@@ -1,0 +1,204 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+description: HRIBO workflow configuration
+
+type: object
+required:
+  - biologySettings
+  - differentialExpressionSettings
+  - predictionSettings
+  - readstatSettings
+  - metageneSettings
+  - workflowSettings
+additionalProperties: true
+
+definitions:
+  onOff:
+    type: string
+    pattern: "^([Oo][Nn]|[Oo][Ff][Ff])$"
+    description: either "on" or "off"
+
+  adapter:
+    type: string
+    pattern: "^$|^[ACGTUNRYSWKMBDHVacgtunryswkmbdhv]+(,[ACGTUNRYSWKMBDHVacgtunryswkmbdhv]+)*$"
+    description: empty, or a comma-separated list of nucleotide sequences
+
+  readLengthSpec:
+    type: string
+    minLength: 1
+    pattern: "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$"
+    description: >
+      Comma-separated read lengths, where a "-" denotes an inclusive interval,
+      for example "22,23,27,34-35" or "25-34".
+
+properties:
+
+  biologySettings:
+    type: object
+    required:
+      - adapterS3
+      - adapterS5
+      - adapterP3R1
+      - adapterP5R1
+      - adapterP3R2
+      - adapterP5R2
+      - genome
+      - annotation
+      - samples
+      - alternativeStartCodons
+    additionalProperties: false
+    properties:
+      adapterS3: {$ref: "#/definitions/adapter"}
+      adapterS5: {$ref: "#/definitions/adapter"}
+      adapterP3R1: {$ref: "#/definitions/adapter"}
+      adapterP5R1: {$ref: "#/definitions/adapter"}
+      adapterP3R2: {$ref: "#/definitions/adapter"}
+      adapterP5R2: {$ref: "#/definitions/adapter"}
+      genome:
+        type: string
+        minLength: 1
+        description: Path to the reference genome FASTA.
+      annotation:
+        type: string
+        minLength: 1
+        description: Path to the reference annotation in GFF3 or GTF format.
+      samples:
+        type: string
+        minLength: 1
+        description: Path to the tab-separated sample sheet.
+      alternativeStartCodons:
+        type: array
+        items:
+          type: string
+          pattern: "^[ATGCatgc]{3}$"
+        description: Three-letter alternative start codons, for example ["GTG", "TTG"].
+
+  differentialExpressionSettings:
+    type: object
+    required:
+      - differentialExpression
+      - features
+      - contrasts
+      - padjCutoff
+      - log2fcCutoff
+    additionalProperties: false
+    properties:
+      differentialExpression: {$ref: "#/definitions/onOff"}
+      features:
+        type: array
+        minItems: 1
+        items:
+          type: string
+          minLength: 1
+        description: Annotation feature types counted for differential expression.
+      contrasts:
+        type: array
+        items:
+          type: string
+          pattern: "^[A-Za-z0-9]+-[A-Za-z0-9]+$"
+        description: >
+          Condition contrasts as "treated-untreated". Left empty, every pairwise
+          combination of conditions is used.
+      padjCutoff:
+        type: number
+        exclusiveMinimum: 0
+        exclusiveMaximum: 1
+      log2fcCutoff:
+        type: number
+        minimum: 0
+        description: >
+          Applied as > log2fcCutoff for upregulated and < -log2fcCutoff for
+          downregulated features, so it is given as a positive number.
+
+  predictionSettings:
+    type: object
+    required: [deepribo]
+    additionalProperties: false
+    properties:
+      deepribo: {$ref: "#/definitions/onOff"}
+
+  readstatSettings:
+    type: object
+    required: [readLengths]
+    additionalProperties: false
+    properties:
+      readLengths: {$ref: "#/definitions/readLengthSpec"}
+
+  metageneSettings:
+    type: object
+    required:
+      - positionsOutsideORF
+      - positionsInORF
+      - filteringMethods
+      - neighboringGenesDistance
+      - rpkmThreshold
+      - lengthCutoff
+      - mappingMethods
+      - readLengths
+      - normalizationMethods
+      - outputFormats
+      - includePlotlyJS
+      - colorList
+    additionalProperties: false
+    properties:
+      positionsOutsideORF:
+        type: integer
+        minimum: 0
+      positionsInORF:
+        type: integer
+        minimum: 1
+      filteringMethods:
+        type: array
+        uniqueItems: true
+        items:
+          type: string
+          enum: [overlap, length, rpkm]
+      neighboringGenesDistance:
+        type: integer
+        minimum: 0
+      rpkmThreshold:
+        type: number
+        minimum: 0
+      lengthCutoff:
+        type: integer
+        minimum: 0
+      mappingMethods:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: string
+          enum: [fiveprime, threeprime, centered, global]
+      readLengths: {$ref: "#/definitions/readLengthSpec"}
+      normalizationMethods:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: string
+          enum: [raw, cpm, window]
+      outputFormats:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: string
+          enum: [interactive, svg, pdf, png, jpg]
+      includePlotlyJS:
+        type: string
+        enum: [integrated, online, local]
+      colorList:
+        type: array
+        items:
+          type: string
+        description: >
+          Optional plot colours. Left empty, a colour-blind friendly palette
+          sized to the number of read lengths is used.
+
+  workflowSettings:
+    type: object
+    required: [workflow]
+    additionalProperties: false
+    properties:
+      workflow:
+        type: string
+        enum: [full, preprocessing, trimming]

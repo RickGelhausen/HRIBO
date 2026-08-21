@@ -1,3 +1,27 @@
+### version 2.0.0-dev [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de)
+ * Moved to the standard Snakemake layout (workflow/ + config/), so the workflow is
+   relocatable and no longer has to be cloned into a directory named HRIBO
+ * Replaced the 73 hardcoded HRIBO/scripts/... shell paths with a SCRIPTS global
+ * Config is now read from config/config.yaml in the project directory rather than
+   from inside the clone
+ * Replaced the hand-written config validation with JSON schemas
+   (workflow/schemas/config.schema.yaml, samples.schema.yaml)
+ * Added preflight input validation that runs before the DAG is built, reporting
+   every problem at once with a suggested fix rather than failing later inside an
+   unrelated tool. Notably it detects genome/annotation sequence identifier
+   mismatches and explains the likely intended mapping
+ * Added checks for embedded ##FASTA sections, out-of-bounds features, missing CDS
+   or rRNA/tRNA features, unreadable or truncated fastq files, unusable
+   differential expression setups and impossible metagene windows
+ * Fixed parse_read_lengths rejecting the documented "22,23,27,34-35" syntax
+ * Fixed equalize_dictionary_keys dropping the stop profile for chromosomes seen
+   only on the start side, and aliasing all filled-in read lengths onto one array
+ * Restored the missing report/ directory; all 13 caption files were absent, so the
+   report: directive and --report were broken
+ * Added envs/bed.yaml, which was referenced but missing
+ * Added a pytest suite (41 tests) covering the validation and metagene helpers
+ * Bumped the minimum Snakemake version to 9.0.0 and updated the CLI usage
+
 ### version 1.8.1 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 22.05.25
  * fixed off-by-one error in rna filtering rule. 
 
