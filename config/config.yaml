@@ -139,9 +139,11 @@ tisAdvisorSettings:
   # range is still found.
   readLengths: "22-40"
 
-  # Read end the offsets are measured from (fiveprime or threeprime).
-  # fiveprime is correct for most protocols.
-  mappingMethod: "fiveprime"
+  # Read ends to evaluate. Both are analysed by default and the one whose offsets
+  # are most consistent across read lengths is recommended, since that is the end
+  # the protocol defines precisely. Which end that is varies by organism and
+  # nuclease treatment, so it is worth letting the data decide.
+  mappingMethods: ["fiveprime", "threeprime"]
 
 #####################
 # Workflow Settings #

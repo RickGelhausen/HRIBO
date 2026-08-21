@@ -13,6 +13,9 @@ from pathlib import Path
 import pysam
 
 PLANTED_OFFSET = 12
+# Used when anchoring on the 3' end: the 3' end sits this far downstream of the
+# start codon, so the 5' end is the one that spreads out by read length.
+PLANTED_THREE_PRIME_OFFSET = 15
 GOOD_LENGTHS = {28, 29, 30}
 ALL_LENGTHS = list(range(24, 36))
 CONTIGS = {"NC_000913.3": 60000, "pPlasmid1": 20000}
@@ -53,7 +56,13 @@ def write_genome(path):
                 fh.write(seq[i:i + 70] + "\n")
 
 
-def write_bam(path, periodic=True, signal=True, seed=0):
+def write_bam(path, periodic=True, signal=True, seed=0, anchor="fiveprime"):
+    """anchor: which read end is placed at a fixed distance from the start codon.
+
+    "fiveprime" mimics a protocol where the 5' end is precisely defined, so the 3'
+    end spreads out by read length. "threeprime" is the opposite, which is the
+    case in many bacteria where nuclease digestion trims the 3' end sharply.
+    """
     rng = random.Random(seed)
     header = {
         "HD": {"VN": "1.6", "SO": "coordinate"},
@@ -72,12 +81,20 @@ def write_bam(path, periodic=True, signal=True, seed=0):
             carries_signal = signal and read_length in GOOD_LENGTHS
 
             if carries_signal:
-                # initiation peak: 5' end PLANTED_OFFSET upstream of the start codon
+                # initiation peak, anchored on whichever end the protocol defines
                 for _ in range(rng.randint(14, 22)):
-                    if strand == "+":
-                        pos = cds_start - PLANTED_OFFSET
+                    if anchor == "fiveprime":
+                        # 5' end sits PLANTED_OFFSET upstream of the start codon
+                        if strand == "+":
+                            pos = cds_start - PLANTED_OFFSET
+                        else:
+                            pos = cds_end + PLANTED_OFFSET - read_length + 1
                     else:
-                        pos = cds_end + PLANTED_OFFSET - read_length + 1
+                        # 3' end sits PLANTED_THREE_PRIME_OFFSET downstream of it
+                        if strand == "+":
+                            pos = cds_start + PLANTED_THREE_PRIME_OFFSET - read_length + 1
+                        else:
+                            pos = cds_end - PLANTED_THREE_PRIME_OFFSET
                     records.append((name, pos, read_length, strand))
 
                 # elongation signal along the body

@@ -20,6 +20,22 @@
    report: directive and --report were broken
  * Added envs/bed.yaml, which was referenced but missing
  * Added a pytest suite (41 tests) covering the validation and metagene helpers
+ * The TIS advisor now evaluates both the 5' and the 3' read end and recommends
+   whichever the protocol defines more precisely, rather than analysing only the
+   end named in the config. Which end carries the cleaner signal is organism and
+   nuclease dependent, and ORFBounder accepts either
+ * The two ends are compared on the consistency of the estimated offset across
+   read lengths, not on peak height. For a read of fixed length the 5' and 3'
+   profiles are the same profile shifted, so they are equally sharp by
+   construction and peak height cannot separate them; a difference in pooled
+   sharpness mostly records how many read lengths each end's search pooled
+ * Both ends are reported side by side, so a large difference between them is
+   visible rather than hidden behind the winner
+ * A read length now joins the recommended set only if it improves the pooled peak
+   by at least 2%, which stops a length with no real signal being swept in on a
+   rounding difference
+ * tisAdvisorSettings.mappingMethod became mappingMethods, a list
+
  * Fixed the DeepRibo A-site occupancy track. The reverse-strand A-site was
    computed from `read.pos - read_length`, placing it roughly a full read length
    outside the alignment: for a 30 nt read at position 1000 the A-site landed at

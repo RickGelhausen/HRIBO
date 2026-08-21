@@ -109,3 +109,45 @@ def test_report_contains_a_pasteable_config(reference, tmp_path):
     html = (out / "tis_recommendation.html").read_text()
     assert "psiteOffsets" in html
     assert "readLengths" in html
+
+
+# --------------------------------------------------------------------------
+# Read end selection
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("anchor,expected", [("fiveprime", "fiveprime"),
+                                             ("threeprime", "threeprime")])
+def test_advisor_picks_the_anchored_read_end(reference, tmp_path, anchor, expected):
+    """Whichever end the protocol defines precisely should be recommended."""
+    bam = tmp_path / f"RIBO-{anchor}.bam"
+    sim.write_bam(bam, periodic=False, signal=True, seed=11, anchor=anchor)
+    payload = run_advisor(reference, bam, tmp_path / "out")
+
+    assert payload["chosen_read_end"] == expected
+    assert set(payload["evaluated_read_ends"]) == {"fiveprime", "threeprime"}
+
+
+def test_advisor_recovers_the_three_prime_offset(reference, tmp_path):
+    bam = tmp_path / "RIBO-3p.bam"
+    sim.write_bam(bam, periodic=False, signal=True, seed=12, anchor="threeprime")
+    payload = run_advisor(reference, bam, tmp_path / "out")
+
+    recommendation = payload["recommendation"]
+    assert recommendation["read_end"] == "threeprime"
+    assert set(recommendation["offsets"].values()) == {sim.PLANTED_THREE_PRIME_OFFSET}
+
+
+def test_both_read_ends_are_kept_in_the_output(reference, tmp_path):
+    """The losing end stays visible rather than being discarded."""
+    bam = tmp_path / "RIBO-A-1.bam"
+    sim.write_bam(bam, periodic=True, signal=True, seed=1)
+    out = tmp_path / "out"
+    payload = run_advisor(reference, bam, out)
+
+    assert set(payload["read_ends"]) == {"fiveprime", "threeprime"}
+    for info in payload["read_ends"].values():
+        assert info["read_lengths"], "per read length evidence missing for one end"
+
+    html = (out / "tis_recommendation.html").read_text()
+    assert "fiveprime" in html and "threeprime" in html

@@ -316,3 +316,142 @@ def test_real_peaks_are_detected(peak_multiple):
     assert detected / trials > 0.95, (
         f"only {detected}/{trials} peaks at {peak_multiple}x background were detected"
     )
+
+
+# --------------------------------------------------------------------------
+# Read ends
+#
+# Which end carries the cleaner signal is organism and protocol dependent, so
+# both are analysed. The key property: for a read of fixed length the 5' and 3'
+# positions are rigidly linked, so per read length the two profiles are shifted
+# copies and are equally sharp. What separates the ends is whether the offset
+# stays constant across read lengths.
+# --------------------------------------------------------------------------
+
+
+def anchored_library(anchor, lengths=(28, 29, 30), five_offset=12, three_offset=15):
+    """Profiles for both read ends of one library, with one end anchored.
+
+    The two ends are separate arrays built from the same reads, as the advisor
+    computes them. Anchoring the 5' end fixes the 5' peak and makes the 3' peak
+    move with read length, and vice versa.
+
+    make_profile(offset=x) puts its peak at coordinate -x, so a peak wanted at
+    coordinate c is requested as offset=-c.
+    """
+    five_profiles, three_profiles, totals = {}, {}, {}
+    for index, length in enumerate(range(26, 33)):
+        if length not in lengths:
+            five_profiles[length] = make_flat_profile(seed=300 + index)
+            three_profiles[length] = make_flat_profile(seed=400 + index)
+            totals[length] = 20_000
+            continue
+
+        if anchor == "fiveprime":
+            five_peak = -five_offset
+            three_peak = five_peak + length - 1
+        else:
+            three_peak = three_offset
+            five_peak = three_peak - length + 1
+
+        five_profiles[length] = make_profile(
+            offset=-five_peak, seed=index, periodic_amplitude=0.0
+        )
+        three_profiles[length] = make_profile(
+            offset=-three_peak, seed=50 + index, periodic_amplitude=0.0
+        )
+        totals[length] = 200_000
+
+    return five_profiles, three_profiles, totals
+
+
+def test_read_end_geometry_is_mirrored():
+    five = psite.READ_ENDS["fiveprime"]
+    three = psite.READ_ENDS["threeprime"]
+    assert five.offset_from_peak(-12) == 12
+    assert three.offset_from_peak(15) == 15
+    assert five.psite_shift(12) == 12
+    assert three.psite_shift(15) == -15
+
+
+def test_three_prime_offset_is_found_downstream():
+    """A 3' end peaks downstream of the start codon, unlike a 5' end."""
+    profile = make_profile(offset=-15, periodic_amplitude=0.0)  # peak at +15
+    estimate = psite.estimate_offset(profile, COORDINATES, psite.READ_ENDS["threeprime"])
+    assert estimate.offset == 15
+    assert estimate.is_significant
+
+
+def test_five_prime_search_window_ignores_a_downstream_peak():
+    profile = make_profile(offset=-15, periodic_amplitude=0.0)
+    estimate = psite.estimate_offset(profile, COORDINATES, psite.READ_ENDS["fiveprime"])
+    assert not estimate.is_significant
+
+
+@pytest.mark.parametrize("anchor", ["fiveprime", "threeprime"])
+def test_the_anchored_end_is_preferred(anchor):
+    five, three, totals = anchored_library(anchor)
+    best, comparisons = psite.compare_read_ends(
+        {"fiveprime": five, "threeprime": three}, COORDINATES, totals
+    )
+    assert best is not None
+    assert best.read_end == anchor, (
+        f"expected {anchor}; spreads were "
+        + ", ".join(f"{c.read_end}={c.offset_spread}" for c in comparisons)
+    )
+
+
+@pytest.mark.parametrize("anchor", ["fiveprime", "threeprime"])
+def test_the_anchored_end_has_the_tighter_offset_spread(anchor):
+    five, three, totals = anchored_library(anchor)
+    _, comparisons = psite.compare_read_ends(
+        {"fiveprime": five, "threeprime": three}, COORDINATES, totals
+    )
+    spreads = {c.read_end: c.offset_spread for c in comparisons}
+    assert spreads[anchor] == 0
+    other = "threeprime" if anchor == "fiveprime" else "fiveprime"
+    assert spreads[other] > 0
+
+
+def test_both_ends_are_reported_not_just_the_winner():
+    five, three, totals = anchored_library("fiveprime")
+    _, comparisons = psite.compare_read_ends(
+        {"fiveprime": five, "threeprime": three}, COORDINATES, totals
+    )
+    assert {c.read_end for c in comparisons} == {"fiveprime", "threeprime"}
+
+
+def test_no_recommendation_on_either_end_for_noise():
+    profiles = {length: make_flat_profile(seed=length) for length in range(26, 33)}
+    totals = {length: 50_000 for length in profiles}
+    best, comparisons = psite.compare_read_ends(
+        {"fiveprime": profiles, "threeprime": profiles}, COORDINATES, totals
+    )
+    assert best is None
+    assert all(not c.recommendation.has_recommendation for c in comparisons)
+
+
+def test_recommendation_records_its_read_end():
+    five, three, totals = anchored_library("threeprime")
+    best, _ = psite.compare_read_ends(
+        {"fiveprime": five, "threeprime": three}, COORDINATES, totals
+    )
+    assert best.recommendation.read_end == "threeprime"
+
+
+def test_end_choice_is_explained():
+    five, three, totals = anchored_library("fiveprime")
+    best, comparisons = psite.compare_read_ends(
+        {"fiveprime": five, "threeprime": three}, COORDINATES, totals
+    )
+    lines = psite.describe_end_choice(best, comparisons)
+    assert any("fiveprime" in line for line in lines)
+    assert any("threeprime" in line for line in lines)
+
+
+def test_marginal_read_length_is_not_added_to_the_combination():
+    """A length that barely moves the pooled peak must not be swept in."""
+    profiles, totals = build_library(good_lengths=(28, 29, 30), offset=12)
+    scores = psite.score_read_lengths(profiles, COORDINATES, totals)
+    recommendation = psite.recommend_read_lengths(scores, profiles, COORDINATES)
+    assert set(recommendation.read_lengths) <= {28, 29, 30}

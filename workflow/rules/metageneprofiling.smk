@@ -97,7 +97,7 @@ rule tisAdvisor:
     params:
         outdir=lambda wildcards, output: os.path.dirname(output.report_html),
         readlengths=config["tisAdvisorSettings"]["readLengths"],
-        mappingMethod=config["tisAdvisorSettings"]["mappingMethod"],
+        mappingMethods=config["tisAdvisorSettings"]["mappingMethods"],
         positionsInORF=config["metageneSettings"]["positionsInORF"],
         positionsOutORF=config["metageneSettings"]["positionsOutsideORF"],
         filteringMethods=config["metageneSettings"]["filteringMethods"],
@@ -114,7 +114,7 @@ rule tisAdvisor:
             -g {input.genome} \
             -o {params.outdir} \
             -r {params.readlengths} \
-            --mapping_method {params.mappingMethod} \
+            --mapping_methods {params.mappingMethods} \
             --positions_in_ORF {params.positionsInORF} \
             --positions_out_ORF {params.positionsOutORF} \
             --filtering_methods {params.filteringMethods} \

@@ -205,14 +205,21 @@ properties:
 
   tisAdvisorSettings:
     type: object
-    required: [tisAdvisor, readLengths, mappingMethod]
+    required: [tisAdvisor, readLengths, mappingMethods]
     additionalProperties: false
     properties:
       tisAdvisor: {$ref: "#/$defs/onOff"}
       readLengths: {$ref: "#/$defs/readLengthSpec"}
-      mappingMethod:
-        type: string
-        enum: [fiveprime, threeprime]
+      mappingMethods:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: string
+          enum: [fiveprime, threeprime]
+        description: >
+          Read ends to evaluate. Listing both lets the advisor pick whichever the
+          protocol defines more precisely.
 
   workflowSettings:
     type: object

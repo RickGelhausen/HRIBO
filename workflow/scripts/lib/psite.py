@@ -22,20 +22,76 @@ Author: Rick Gelhausen
 
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass, field
 
 import numpy as np
 
-# Offsets outside this range are not biologically plausible for a ribosome
-# footprint, and almost always indicate noise rather than an initiation peak.
-PLAUSIBLE_OFFSET_RANGE = (5, 20)
+@dataclass(frozen=True)
+class ReadEnd:
+    """The geometry of measuring offsets from one end of a read.
+
+    Which end carries the cleaner signal is organism and protocol dependent: in
+    many bacteria nuclease digestion defines the 3' end more sharply than the
+    5' end, while the reverse holds elsewhere. Both are therefore first class
+    here rather than one being assumed.
+
+    sign             +1 when the mapped end lies upstream of the P-site (5'),
+                     -1 when it lies downstream (3')
+    search_window    where the initiation peak is looked for, relative to the
+                     start codon. A 5' end peaks upstream of it, a 3' end
+                     downstream, roughly a read length away
+    plausible        offsets outside this range indicate noise rather than a
+                     genuine initiation peak
+    """
+
+    name: str
+    sign: int
+    search_window: tuple[int, int]
+    plausible: tuple[int, int]
+
+    def offset_from_peak(self, peak_position: int) -> int:
+        """Convert the peak's position into a positive distance to the P-site."""
+        return -self.sign * peak_position
+
+    def psite_shift(self, offset: int) -> int:
+        """How far to move a profile so that it is indexed by P-site position."""
+        return self.sign * offset
+
+    def is_plausible(self, offset: int) -> bool:
+        return self.plausible[0] <= offset <= self.plausible[1]
+
+
+READ_ENDS = {
+    # A ribosome with its P-site on the start codon puts the read's 5' end about
+    # 12 nt upstream of it.
+    "fiveprime": ReadEnd("fiveprime", 1, (-25, 5), (5, 20)),
+    # The same ribosome puts the read's 3' end downstream of the start codon, by
+    # the read length minus the 5' offset, so the plausible range is wider.
+    "threeprime": ReadEnd("threeprime", -1, (-5, 32), (5, 28)),
+}
+
+DEFAULT_READ_END = READ_ENDS["fiveprime"]
 
 # A read length carrying less than this share of the library is too sparse to
 # base an offset on, however clean its profile looks.
 MIN_ABUNDANCE_FRACTION = 0.005
 
-# Window, relative to the start codon, in which the initiation peak is sought.
-PEAK_SEARCH_WINDOW = (-25, 5)
+# A read length joins the recommended set only if it improves the pooled peak by
+# at least this much, relatively. Accepting any improvement at all lets a read
+# length with no real signal in on a rounding difference.
+MIN_RELATIVE_GAIN = 0.02
+
+# Two read ends whose pooled peaks are within this factor of each other are
+# treated as equally sharp. This is the normal case rather than the exception:
+# for a read of fixed length the 5' and 3' positions are rigidly linked, so the
+# two per-read-length profiles are shifted copies of one another and are equally
+# sharp by construction. Sharpness only separates the ends when one of them
+# fails outright.
+SHARPNESS_TIE_FACTOR = 1.25
+
+# Frame bias differences smaller than this are not meaningful.
+FRAME_TIE_MARGIN = 0.05
 
 # Region treated as background when judging how far the peak stands out. Taken
 # well upstream of the start codon, where little initiation signal is expected.
@@ -118,7 +174,8 @@ class PeakEstimate:
 def estimate_offset(
     profile: np.ndarray,
     coordinates: np.ndarray,
-    search_window: tuple[int, int] = PEAK_SEARCH_WINDOW,
+    read_end: ReadEnd = DEFAULT_READ_END,
+    search_window: tuple[int, int] | None = None,
 ) -> PeakEstimate:
     """Locate the initiation peak and describe how well it stands out.
 
@@ -128,6 +185,7 @@ def estimate_offset(
     """
     profile = np.asarray(profile, dtype=float)
     coordinates = np.asarray(coordinates)
+    search_window = search_window or read_end.search_window
 
     search = _window_slice(coordinates, *search_window)
     if not search.any() or profile[search].sum() == 0:
@@ -159,8 +217,8 @@ def estimate_offset(
     spread = max(background_sd, np.sqrt(max(background_mean, 0.0)), 1.0)
     z_score = float((peak_height - background_mean) / spread)
 
-    offset = -peak_position
-    if not (PLAUSIBLE_OFFSET_RANGE[0] <= offset <= PLAUSIBLE_OFFSET_RANGE[1]):
+    offset = read_end.offset_from_peak(peak_position)
+    if not read_end.is_plausible(offset):
         offset = None
 
     return PeakEstimate(offset, peak_height, background, background_sd, sharpness, z_score)
@@ -170,6 +228,7 @@ def frame_fractions(
     profile: np.ndarray,
     coordinates: np.ndarray,
     offset: int,
+    read_end: ReadEnd = DEFAULT_READ_END,
     body_length: int = 90,
 ) -> tuple[float, float, float]:
     """Share of P-sites falling in each reading frame inside the ORF body.
@@ -181,7 +240,7 @@ def frame_fractions(
     profile = np.asarray(profile, dtype=float)
     coordinates = np.asarray(coordinates)
 
-    psite_positions = coordinates + offset
+    psite_positions = coordinates + read_end.psite_shift(offset)
     body = (psite_positions >= 15) & (psite_positions < 15 + body_length)
     if not body.any():
         return (0.0, 0.0, 0.0)
@@ -198,7 +257,11 @@ def frame_fractions(
 
 
 def periodicity_score(
-    profile: np.ndarray, coordinates: np.ndarray, offset: int, body_length: int = 90
+    profile: np.ndarray,
+    coordinates: np.ndarray,
+    offset: int,
+    read_end: ReadEnd = DEFAULT_READ_END,
+    body_length: int = 90,
 ) -> float:
     """Strength of the 3-nt component of the elongation signal, in [0, 1].
 
@@ -209,7 +272,7 @@ def periodicity_score(
     profile = np.asarray(profile, dtype=float)
     coordinates = np.asarray(coordinates)
 
-    psite_positions = coordinates + offset
+    psite_positions = coordinates + read_end.psite_shift(offset)
     body = (psite_positions >= 15) & (psite_positions < 15 + body_length)
     values = profile[body]
     if values.size < 9 or values.sum() <= 0:
@@ -235,6 +298,7 @@ def score_read_lengths(
     start_profiles: dict[int, np.ndarray],
     coordinates: np.ndarray,
     read_totals: dict[int, int] | None = None,
+    read_end: ReadEnd = DEFAULT_READ_END,
 ) -> list[ReadLengthScore]:
     """Score every read length in a start-codon metagene profile."""
     if read_totals is None:
@@ -249,7 +313,7 @@ def score_read_lengths(
         total = int(read_totals.get(read_length, 0))
         abundance = total / library_total
 
-        estimate = estimate_offset(profile, coordinates)
+        estimate = estimate_offset(profile, coordinates, read_end)
 
         reasons: list[str] = []
         usable = True
@@ -264,13 +328,13 @@ def score_read_lengths(
             usable = False
             reasons.append(
                 "no initiation peak within "
-                f"{PLAUSIBLE_OFFSET_RANGE[0]}-{PLAUSIBLE_OFFSET_RANGE[1]} nt of the start codon"
+                f"{read_end.plausible[0]}-{read_end.plausible[1]} nt of the start codon"
             )
             fractions = (0.0, 0.0, 0.0)
             periodicity = 0.0
         else:
-            fractions = frame_fractions(profile, coordinates, estimate.offset)
-            periodicity = periodicity_score(profile, coordinates, estimate.offset)
+            fractions = frame_fractions(profile, coordinates, estimate.offset, read_end)
+            periodicity = periodicity_score(profile, coordinates, estimate.offset, read_end)
             if not estimate.is_significant:
                 usable = False
                 reasons.append(
@@ -311,6 +375,7 @@ class Recommendation:
 
     read_lengths: list[int]
     offsets: dict[int, int]
+    read_end: str
 
     sharpness: float
     frame_fractions: tuple[float, float, float]
@@ -348,12 +413,17 @@ def shift_profile(profile: np.ndarray, offset: int) -> np.ndarray:
 
 
 def pool_profiles(
-    profiles: dict[int, np.ndarray], offsets: dict[int, int], read_lengths: list[int]
+    profiles: dict[int, np.ndarray],
+    offsets: dict[int, int],
+    read_lengths: list[int],
+    read_end: ReadEnd = DEFAULT_READ_END,
 ) -> np.ndarray:
     """Sum the offset-corrected profiles of several read lengths."""
     pooled = None
     for read_length in read_lengths:
-        shifted = shift_profile(profiles[read_length], offsets[read_length])
+        shifted = shift_profile(
+            profiles[read_length], read_end.psite_shift(offsets[read_length])
+        )
         pooled = shifted if pooled is None else pooled + shifted
     if pooled is None:
         raise ValueError("pool_profiles requires at least one read length")
@@ -365,9 +435,10 @@ def _evaluate_combination(
     coordinates: np.ndarray,
     offsets: dict[int, int],
     read_lengths: list[int],
+    read_end: ReadEnd = DEFAULT_READ_END,
 ) -> tuple[float, tuple[float, float, float], float]:
     """Sharpness, frame fractions and periodicity of a pooled set of lengths."""
-    pooled = pool_profiles(profiles, offsets, read_lengths)
+    pooled = pool_profiles(profiles, offsets, read_lengths, read_end)
 
     # After offset correction the initiation peak sits at coordinate 0.
     at_start = pooled[coordinates == 0]
@@ -378,8 +449,9 @@ def _evaluate_combination(
     reference = background if background > 0 else float(pooled.mean())
     sharpness = float(peak / reference) if reference > 0 else 0.0
 
-    fractions = frame_fractions(pooled, coordinates, 0)
-    periodicity = periodicity_score(pooled, coordinates, 0)
+    # The pooled profile is already indexed by P-site, so no further shift.
+    fractions = frame_fractions(pooled, coordinates, 0, read_end)
+    periodicity = periodicity_score(pooled, coordinates, 0, read_end)
     return sharpness, fractions, periodicity
 
 
@@ -387,6 +459,7 @@ def recommend_read_lengths(
     scores: list[ReadLengthScore],
     start_profiles: dict[int, np.ndarray],
     coordinates: np.ndarray,
+    read_end: ReadEnd = DEFAULT_READ_END,
 ) -> Recommendation:
     """Choose the read lengths and offsets a TIS caller should be given.
 
@@ -399,14 +472,14 @@ def recommend_read_lengths(
     usable = sorted([s for s in scores if s.usable], key=lambda s: s.score, reverse=True)
 
     if not usable:
-        return _no_recommendation(scores)
+        return _no_recommendation(scores, read_end)
 
     offsets = {s.read_length: s.offset for s in usable}
     total_reads = sum(s.total_reads for s in scores) or 1
 
     selected = [usable[0].read_length]
     best_sharpness, best_fractions, best_periodicity = _evaluate_combination(
-        start_profiles, coordinates, offsets, selected
+        start_profiles, coordinates, offsets, selected, read_end
     )
 
     rationale = [
@@ -417,9 +490,9 @@ def recommend_read_lengths(
     for candidate in usable[1:]:
         trial = selected + [candidate.read_length]
         sharpness, fractions, periodicity = _evaluate_combination(
-            start_profiles, coordinates, offsets, trial
+            start_profiles, coordinates, offsets, trial, read_end
         )
-        if sharpness > best_sharpness:
+        if sharpness > best_sharpness * (1 + MIN_RELATIVE_GAIN):
             selected = trial
             best_sharpness, best_fractions, best_periodicity = sharpness, fractions, periodicity
             rationale.append(
@@ -428,8 +501,9 @@ def recommend_read_lengths(
             )
         else:
             rationale.append(
-                f"read length {candidate.read_length} was left out: it lowers the pooled "
-                f"peak from {best_sharpness:.1f}x to {sharpness:.1f}x"
+                f"read length {candidate.read_length} was left out: it moves the pooled "
+                f"peak from {best_sharpness:.1f}x to {sharpness:.1f}x, short of the "
+                f"{MIN_RELATIVE_GAIN:.0%} gain required to include it"
             )
 
     covered = sum(s.total_reads for s in scores if s.read_length in selected) / total_reads
@@ -438,6 +512,7 @@ def recommend_read_lengths(
     return Recommendation(
         read_lengths=sorted(selected),
         offsets={length: offsets[length] for length in selected},
+        read_end=read_end.name,
         sharpness=best_sharpness,
         frame_fractions=best_fractions,
         frame_bias=max(best_fractions) if any(best_fractions) else 0.0,
@@ -449,7 +524,9 @@ def recommend_read_lengths(
     )
 
 
-def _no_recommendation(scores: list[ReadLengthScore]) -> Recommendation:
+def _no_recommendation(
+    scores: list[ReadLengthScore], read_end: ReadEnd = DEFAULT_READ_END
+) -> Recommendation:
     """Explain why no read length is usable instead of inventing a setup."""
     warnings = [
         "No read length shows a usable translation initiation signal, so no TIS caller "
@@ -467,12 +544,12 @@ def _no_recommendation(scores: list[ReadLengthScore]) -> Recommendation:
             )
         warnings.append(
             "Common causes: the library is RNA-seq rather than Ribo-seq, the reads are "
-            "dominated by rRNA or tRNA, the annotation start codons are inaccurate, or "
-            "the protocol needs 3' rather than 5' mapping."
+            "dominated by rRNA or tRNA, or the annotation start codons are inaccurate."
         )
     return Recommendation(
         read_lengths=[],
         offsets={},
+        read_end=read_end.name,
         sharpness=0.0,
         frame_fractions=(0.0, 0.0, 0.0),
         frame_bias=0.0,
@@ -533,3 +610,161 @@ def _assess_confidence(
         )
 
     return confidence, warnings
+
+
+# --------------------------------------------------------------------------
+# Choosing between the read ends
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class EndComparison:
+    """The analysis for one read end, kept so both can be reported."""
+
+    read_end: str
+    scores: list[ReadLengthScore]
+    recommendation: Recommendation
+
+    @property
+    def offset_spread(self) -> int | None:
+        """How much the estimated offset varies across usable read lengths.
+
+        This, rather than sharpness, is what actually distinguishes the two ends.
+        A protocol that defines one end precisely produces the same offset at
+        every read length from that end, while the offset seen from the other end
+        drifts by one per nucleotide of read length. The end with the tighter
+        spread is the one the protocol pins down, and it is the end to use with a
+        caller that applies a single global offset.
+        """
+        offsets = [s.offset for s in self.scores if s.usable and s.offset is not None]
+        if len(offsets) < 2:
+            return None
+        return max(offsets) - min(offsets)
+
+    @property
+    def quality(self) -> float:
+        """A single number summarising this end, for reporting only.
+
+        The choice between ends is made by `prefer_read_end`, not by comparing
+        this value: a weighted sum saturates in high-signal data and then lets an
+        irrelevant term decide.
+        """
+        if not self.recommendation.has_recommendation:
+            return 0.0
+        sharpness = min(np.log10(max(self.recommendation.sharpness, 1.0)) / 2.0, 1.0)
+        frame = max(0.0, (self.recommendation.frame_bias - 1 / 3) / (1 - 1 / 3))
+        covered = min(self.recommendation.covered_fraction / 0.5, 1.0)
+        return float(0.6 * sharpness + 0.25 * frame + 0.15 * covered)
+
+
+def prefer_read_end(a: "EndComparison", b: "EndComparison") -> int:
+    """Order two read ends best first, as a cmp function.
+
+    Deliberately lexicographic rather than a weighted sum, and led by offset
+    spread rather than by sharpness. See the comment in the body for why
+    sharpness cannot carry this decision.
+    """
+    if a.recommendation.has_recommendation != b.recommendation.has_recommendation:
+        return -1 if a.recommendation.has_recommendation else 1
+    if not a.recommendation.has_recommendation:
+        return 0
+
+    # Offset spread leads, because it is the only criterion that reflects a real
+    # difference between the ends. Per read length the 5' and 3' profiles are
+    # shifted copies of each other and therefore equally sharp, so a difference
+    # in pooled sharpness mostly records how many read lengths each end's greedy
+    # search happened to pool, not which end is better.
+    spread_a, spread_b = a.offset_spread, b.offset_spread
+    if spread_a is not None and spread_b is not None and spread_a != spread_b:
+        return -1 if spread_a < spread_b else 1
+
+    frame_a, frame_b = a.recommendation.frame_bias, b.recommendation.frame_bias
+    if abs(frame_a - frame_b) > FRAME_TIE_MARGIN:
+        return -1 if frame_a > frame_b else 1
+
+    covered_a = a.recommendation.covered_fraction
+    covered_b = b.recommendation.covered_fraction
+    if covered_a != covered_b:
+        return -1 if covered_a > covered_b else 1
+
+    # Last resort only, for the reason given above.
+    sharp_a, sharp_b = a.recommendation.sharpness, b.recommendation.sharpness
+    if max(sharp_a, sharp_b) > min(sharp_a, sharp_b) * SHARPNESS_TIE_FACTOR:
+        return -1 if sharp_a > sharp_b else 1
+    return 0
+
+
+def compare_read_ends(
+    profiles_by_end: dict[str, dict[int, np.ndarray]],
+    coordinates: np.ndarray,
+    read_totals: dict[int, int] | None = None,
+) -> tuple[EndComparison | None, list[EndComparison]]:
+    """Score every read end and pick the one with the better initiation signal.
+
+    Which end is sharper is organism and protocol dependent, so both are analysed
+    and the loser is reported alongside the winner rather than discarded: seeing
+    that one end is dramatically better is itself informative about the library.
+
+    Returns (best, all_comparisons). `best` is None when no end yields a usable
+    recommendation.
+    """
+    comparisons = []
+    for name, profiles in profiles_by_end.items():
+        read_end = READ_ENDS[name]
+        if not profiles:
+            comparisons.append(
+                EndComparison(name, [], _no_recommendation([], read_end))
+            )
+            continue
+        scores = score_read_lengths(profiles, coordinates, read_totals, read_end)
+        recommendation = recommend_read_lengths(scores, profiles, coordinates, read_end)
+        comparisons.append(EndComparison(name, scores, recommendation))
+
+    comparisons.sort(key=functools.cmp_to_key(prefer_read_end))
+    best = comparisons[0] if comparisons and comparisons[0].recommendation.has_recommendation else None
+    return best, comparisons
+
+
+def describe_end_choice(best: EndComparison | None, comparisons: list[EndComparison]) -> list[str]:
+    """Explain, in words, why one read end was preferred over the other."""
+    if best is None:
+        return ["Neither read end produced a usable initiation signal."]
+
+    spread = best.offset_spread
+    if spread is not None:
+        lines = [
+            f"{best.read_end} mapping was chosen: its estimated offset is consistent "
+            f"across read lengths (varying by {spread} nt), which is the signature of "
+            "the end this protocol defines precisely."
+        ]
+    else:
+        lines = [
+            f"{best.read_end} mapping was chosen; too few read lengths are usable to "
+            "compare the two ends on offset consistency."
+        ]
+
+    for other in comparisons:
+        if other.read_end == best.read_end:
+            continue
+        if not other.recommendation.has_recommendation:
+            lines.append(
+                f"{other.read_end} mapping produced no usable read length, so it was not used."
+            )
+            continue
+
+        other_spread = other.offset_spread
+        if spread is not None and other_spread is not None and other_spread > spread:
+            lines.append(
+                f"Seen from the {other.read_end} end the offset drifts by {other_spread} nt "
+                "across read lengths, as expected when that end is the ragged one. Both "
+                "ends give equally sharp profiles per read length, since for a read of "
+                "fixed length they are the same profile shifted, so offset consistency "
+                "rather than peak height distinguishes them."
+            )
+        else:
+            lines.append(
+                f"{other.read_end} mapping is an equally defensible choice here "
+                f"({other.recommendation.sharpness:.1f}x background, "
+                f"{other.recommendation.frame_bias:.0%} in the dominant frame)."
+            )
+    return lines
