@@ -27,9 +27,17 @@
    DeepRibo a misplaced signal. The forward strand was 2 nt off, from mixing a
    1-based position into a 0-based bedgraph. Both strands now use DeepRibo's
    documented convention, a 12 nt offset from the 3' end of the read
+ * The A-site offset is now configurable as predictionSettings.deepriboASiteOffset.
+   DeepRibo's published value of 12 was derived from E. coli and does not
+   necessarily transfer to other organisms or digestion protocols. Note that it is
+   not interchangeable with the offset the TIS advisor reports: that one is
+   measured from the 5' end to the P-site, this one from the 3' end to the A-site,
+   and converting between them depends on read length
  * A-site strand detection now uses the reverse flag rather than testing
-   `flag == 0` / `flag == 16`, which silently dropped any read also carrying the
-   secondary, supplementary or duplicate bit
+   `flag == 0` / `flag == 16`. SAM FLAG is a bit field, so the equality test only
+   matches reads with no other bit set. In HRIBO's own pipeline the alignments
+   reaching this step carry only flags 0, 16 and 4, so this was fragility rather
+   than data loss; it matters for externally produced BAMs
  * A-site bedgraph output is now sorted, and an empty track fails immediately
    rather than letting DeepRibo fail later and obscurely
  * Fixed parameter_estimation.R writing every library's S-curve diagnostic to the

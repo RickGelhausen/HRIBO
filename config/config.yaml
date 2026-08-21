@@ -56,6 +56,20 @@ predictionSettings:
   # Deepribo predictions: on / off
   deepribo: "on"
 
+  # Distance in nucleotides from the 3' end of a read to the ribosomal A-site,
+  # used to build the A-site tracks DeepRibo reads.
+  #
+  # DeepRibo's published value of 12 was derived from E. coli; other organisms,
+  # ribosome preparations and nuclease digestion protocols shift the footprint,
+  # so check it rather than assuming it transfers.
+  #
+  # Note that this is NOT the offset the TIS advisor reports. The advisor measures
+  # the distance from the 5' end to the P-site, whereas this is measured from the
+  # 3' end and targets the A-site. For a read of length L with an advisor offset p,
+  # the equivalent value here is roughly L - p - 4, so it depends on read length
+  # and the two numbers are not interchangeable.
+  deepriboASiteOffset: 12
+
 # Read Length Statistics
 ########################
 

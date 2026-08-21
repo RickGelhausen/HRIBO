@@ -47,11 +47,17 @@ rule asiteOccupancy:
         mem_mb=8000,
         runtime=60
     params:
-        prefix=lambda wildcards, output: output.asitefwd[: -len("_asite_fwd.bedgraph")]
+        prefix=lambda wildcards, output: output.asitefwd[: -len("_asite_fwd.bedgraph")],
+        offset=config["predictionSettings"]["deepriboASiteOffset"]
     log:
         "logs/{condition}-{replicate}_asite_occupancy.log"
     shell:
-        "{SCRIPTS}/coverage_deepribo.py --alignment_file {input.bam} --output_file_prefix {params.prefix} 2> {log}"
+        """
+        {SCRIPTS}/coverage_deepribo.py \
+            --alignment_file {input.bam} \
+            --output_file_prefix {params.prefix} \
+            --offset {params.offset} 2> {log}
+        """
 
 rule coverage:
     input:

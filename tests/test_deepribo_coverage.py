@@ -202,3 +202,55 @@ def test_empty_result_fails_loudly(tmp_path, prefix):
 
     assert result.returncode != 0
     assert "empty A-site track" in result.stderr
+
+
+# --------------------------------------------------------------------------
+# Configurable offset
+#
+# DeepRibo's published 12 nt was derived from E. coli, so the offset has to be
+# adjustable for other organisms and digestion protocols.
+# --------------------------------------------------------------------------
+
+
+def run_script_with_offset(bam, prefix, offset):
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), "--alignment_file", str(bam),
+         "--output_file_prefix", str(prefix), "--offset", str(offset)],
+        capture_output=True, text=True,
+    )
+
+
+@pytest.mark.parametrize("offset", [0, 6, 12, 15, 18])
+def test_offset_shifts_both_strands_symmetrically(tmp_path, prefix, offset):
+    start, length = 1000, 30
+    bam = tmp_path / "both.bam"
+    write_bam(bam, [(start, length, False), (start, length, True)])
+    run_script_with_offset(bam, prefix, offset)
+
+    forward = read_bedgraph(f"{prefix}_asite_fwd.bedgraph")
+    reverse = read_bedgraph(f"{prefix}_asite_rev.bedgraph")
+
+    assert forward[0][1] == start + length - 1 - offset
+    assert reverse[0][1] == start + offset
+
+
+def test_default_offset_is_twelve(tmp_path, prefix):
+    """The DeepRibo published value stays the default."""
+    bam = tmp_path / "default.bam"
+    write_bam(bam, [(1000, 30, False)])
+    run_script(bam, prefix)
+    explicit_prefix = tmp_path / "explicit"
+    run_script_with_offset(bam, explicit_prefix, 12)
+
+    assert read_bedgraph(f"{prefix}_asite_fwd.bedgraph") == \
+           read_bedgraph(f"{explicit_prefix}_asite_fwd.bedgraph")
+
+
+def test_zero_offset_lands_on_the_three_prime_end(tmp_path, prefix):
+    start, length = 1000, 30
+    bam = tmp_path / "zero.bam"
+    write_bam(bam, [(start, length, False), (start, length, True)])
+    run_script_with_offset(bam, prefix, 0)
+
+    assert read_bedgraph(f"{prefix}_asite_fwd.bedgraph")[0][1] == start + length - 1
+    assert read_bedgraph(f"{prefix}_asite_rev.bedgraph")[0][1] == start
