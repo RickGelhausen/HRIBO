@@ -8,6 +8,7 @@ required:
   - predictionSettings
   - readstatSettings
   - metageneSettings
+  - tisAdvisorSettings
   - workflowSettings
 additionalProperties: true
 
@@ -193,6 +194,17 @@ properties:
         description: >
           Optional plot colours. Left empty, a colour-blind friendly palette
           sized to the number of read lengths is used.
+
+  tisAdvisorSettings:
+    type: object
+    required: [tisAdvisor, readLengths, mappingMethod]
+    additionalProperties: false
+    properties:
+      tisAdvisor: {$ref: "#/$defs/onOff"}
+      readLengths: {$ref: "#/$defs/readLengthSpec"}
+      mappingMethod:
+        type: string
+        enum: [fiveprime, threeprime]
 
   workflowSettings:
     type: object

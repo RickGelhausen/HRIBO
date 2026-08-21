@@ -20,6 +20,30 @@
    report: directive and --report were broken
  * Added envs/bed.yaml, which was referenced but missing
  * Added a pytest suite (41 tests) covering the validation and metagene helpers
+ * Rewrote the metagene figures. The previous version drew every read length as a
+   line on one pair of shared axes, cycling 10 colours and 6 dash patterns, which
+   with the default 10 read lengths is 20 overlapping traces. Replaced by a
+   read-length-against-position heatmap, small multiples per read length, a
+   reading frame composition chart and a read length distribution
+ * The heatmap encodes enrichment over each read length's own background, so a
+   sparse read length stays legible beside a deep one. Normalising each row by its
+   maximum, the obvious choice, inverts the figure: noise saturates and real peaks
+   wash out
+ * Added lib/theme.py, a single colour-vision-deficiency safe plotly theme; no
+   plotting code contains a literal colour any more
+ * Interactive reports now embed plotly.js once per page rather than once per
+   figure, which was adding several megabytes per plot
+ * Added a TIS caller advisor (workflow/scripts/tis_advisor.py) that estimates a
+   P-site offset per read length, scores each for usability, greedily searches
+   read length combinations, and emits an ORFBounder-ready config block alongside
+   an HTML report, a JSON document and a TSV of the evidence
+ * The advisor reports "no recommendation" with reasons rather than inventing a
+   setup when no read length carries a usable initiation signal, and grades
+   confidence by which evidence it rests on. Peak detection is a z-test against the
+   upstream background rather than a bare ratio: a ratio test accepts pure Poisson
+   noise, which routinely reaches 4x its own median
+ * New tisAdvisorSettings section in the config
+
  * Collapsed the duplicated rule layer: 159 rules in 2739 lines became 105 rules
    in 2102 lines, with no change to any output path
    - 38 near-identical coverage track rules became 2 generic ones

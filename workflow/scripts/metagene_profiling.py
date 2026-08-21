@@ -3,17 +3,20 @@
 import argparse
 from pathlib import Path
 
+import numpy as np
+
 import lib.io as io
 import lib.misc as misc
 import lib.annotation as ann
 import lib.metagene as mg
 import lib.plotting as plotting
+import lib.psite as psite
 
 from lib.alignment import IntervalReader
 
 def create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length_list, meta_dir, mapping_method, normalization_method, positions_out_ORF, positions_in_ORF, color_list):
     """
-    Create metagene profiles for all chromosomes and strands for a given mapping and normalization method.
+    Create metagene profiles for all chromosomes for a given mapping and normalization method.
     """
 
     start_coverage_dict, stop_coverage_dict = misc.equalize_dictionary_keys(start_coverage_dict, stop_coverage_dict, positions_out_ORF, positions_in_ORF)
@@ -21,8 +24,8 @@ def create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length
     df_start_dict = misc.create_data_frame(start_coverage_dict, positions_out_ORF, positions_in_ORF, "start")
     df_stop_dict = misc.create_data_frame(stop_coverage_dict, positions_out_ORF, positions_in_ORF, "stop")
 
-
     window_size = positions_out_ORF + positions_in_ORF
+    coordinates = np.arange(-positions_out_ORF, positions_in_ORF)
 
     fig_list = []
     for chromosome in df_start_dict:
@@ -33,10 +36,25 @@ def create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length
             df_start = misc.window_normalize_df(df_start, window_size)
             df_stop = misc.window_normalize_df(df_stop, window_size)
 
-        max_y = None
-        tmp_fig, max_y = plotting.plot_metagene_profiles(df_start, df_stop, read_length_list, f"<b>{chromosome}</b>", max_y=max_y, color_list=color_list)
+        # Estimate an offset per read length so the heatmap can mark it. Only
+        # offsets that pass the significance test are shown; a marker drawn from
+        # noise would be worse than no marker.
+        offsets = {}
+        for column in df_start.columns[1:]:
+            estimate = psite.estimate_offset(df_start[column].to_numpy(dtype=float), coordinates)
+            offsets[int(column)] = estimate.offset if estimate.is_significant else None
 
-        fig_list.append((chromosome, mapping_method, tmp_fig))
+        subtitle = f"{mapping_method} mapping, {normalization_method} normalisation"
+        fig = plotting.plot_metagene_heatmap(
+            df_start, df_stop, read_length_list, chromosome, subtitle, offsets
+        )
+        fig_list.append((chromosome, mapping_method, fig))
+
+        profiles = plotting.plot_read_length_profiles(
+            df_start, read_length_list, f"{chromosome}: start codon profiles", subtitle, offsets
+        )
+        if profiles is not None:
+            fig_list.append((f"{chromosome} (per read length)", mapping_method, profiles))
 
     io.create_excel_file(df_start_dict, meta_dir / f"{mapping_method}_readcounts_start.xlsx")
     io.create_excel_file(df_stop_dict, meta_dir / f"{mapping_method}_readcounts_stop.xlsx")

@@ -113,6 +113,22 @@ metageneSettings:
   # If empty we try to match the number of read lengths trying to prioritize color-blind friendly colors.
   colorList: []
 
+# TIS caller advice
+##################
+
+tisAdvisorSettings:
+  # Suggest read lengths and P-site offsets for a TIS caller (e.g. ORFBounder): on / off
+  tisAdvisor: "on"
+
+  # Read lengths examined when looking for an initiation signal. Keep this wider
+  # than the metagene readLengths so that a usable length outside the expected
+  # range is still found.
+  readLengths: "22-40"
+
+  # Read end the offsets are measured from (fiveprime or threeprime).
+  # fiveprime is correct for most protocols.
+  mappingMethod: "fiveprime"
+
 #####################
 # Workflow Settings #
 #####################

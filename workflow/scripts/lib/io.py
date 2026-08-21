@@ -4,37 +4,11 @@ Author: Rick Gelhausen
 """
 
 import sys
-import pandas as pd
 from pathlib import Path
 
-INTRO_HTML = \
-"""
-<!DOCTYPE html>
-<html>
-    <head>
-        <style>
-            h1 { text-align: center; font-size: 3.5em; }
-            h2 { text-align: center; font-size: 2em; }
-            h3 { text-align: center; font-size: 1.5em; }
-            h4 { text-align: left; font-size: 1.5em; }
-            .headerline { height: 2px; background-color: black; }
-            .seperator { height: 1px; width: 90%;}
-            .page { margin: 50px; text-align: center; }
-            .plotly-graph-div { margin: 0 auto; }
-            .toggleBtn { margin: 20px; }
-        </style>
-        <title>Metagene plots</title>
-    </head>
-    <body>
-        <div class="page">
-"""
+import pandas as pd
 
-OUTRO_HTML = \
-"""
-        </div>
-    </body>
-</html>
-"""
+from lib import theme
 
 def parse_alignment_files(alignment_dir_path):
     """
@@ -147,61 +121,48 @@ def write_plots_to_file(fig_list, output_format, include_plotly_js, alignment_fi
         create_interactive_html(fig_list, alignment_file_name, f"{meta_dir}/interactive_metagene_profiling.html", include_plotly_js)
 
 def create_interactive_html(fig_list, alignment_file_name, output_file, include_plotly_js):
+    """Render every figure into one standalone page.
+
+    plotly.js is emitted once for the whole page rather than once per figure,
+    which is what made the previous reports grow by several megabytes for each
+    additional plot.
     """
-    Takes a list of figures and creates an output HTML form.
-    """
 
-    in_header = []
-    html_string = INTRO_HTML + "\n"
-    html_string += f"<h1>{alignment_file_name}</h1>\n"
-    for idx, (chromosome, mapping_method, fig) in enumerate(fig_list):
-        if mapping_method == "global":
-            mapping_out = "Global Mapping"
-        elif mapping_method == "threeprime":
-            mapping_out = "3' Mapping"
-        elif mapping_method == "fiveprime":
-            mapping_out = "5' Mapping"
-        elif mapping_method == "centered":
-            mapping_out = "Centered Mapping"
-        else:
-            mapping_out = "Unknown"
+    mapping_labels = {
+        "global": "Global mapping",
+        "threeprime": "3' mapping",
+        "fiveprime": "5' mapping",
+        "centered": "Centered mapping",
+    }
 
-        if mapping_out not in in_header:
-            html_string += "<hr class=headerline>\n"
-            html_string += f"<h2>{mapping_out}</h2>\n"
-            in_header.append(mapping_out)
+    js_mode = {"integrated": True, "online": "cdn", "local": "directory"}.get(include_plotly_js, True)
 
-        if include_plotly_js == "integrated":
-            if idx == 0:
-                html_string += "<div class=plot>\n"
-                html_string += fig.to_html(full_html=False, default_height="600px", default_width="80%")
-                html_string += "</div>\n"
-            else:
-                html_string += "<div class=plot>\n"
-                html_string += fig.to_html(full_html=False, include_plotlyjs=False, default_height="600px", default_width="80%")
-                html_string += "</div>\n"
-        elif include_plotly_js == "online":
-            if idx == 0:
-                html_string += "<div class=plot>\n"
-                html_string += fig.to_html(full_html=False, include_plotlyjs="cdn", default_height="600px", default_width="80%")
-                html_string += "</div>\n"
-            else:
-                html_string += "<div class=plot>\n"
-                html_string += fig.to_html(full_html=False, include_plotlyjs=False, default_height="600px", default_width="80%")
-                html_string += "</div>\n"
-        elif include_plotly_js == "local":
-            if idx == 0:
-                html_string += "<div class=plot>\n"
-                html_string += fig.to_html(full_html=False, include_plotlyjs="directory", default_height="600px", default_width="80%")
-                html_string += "</div>\n"
-            else:
-                html_string += "<div class=plot>\n"
-                html_string += fig.to_html(full_html=False, include_plotlyjs=False, default_height="600px", default_width="80%")
-                html_string += "</div>\n"
+    parts = []
+    seen_headings = []
+    for index, (name, mapping_method, fig) in enumerate(fig_list):
+        heading = mapping_labels.get(mapping_method, mapping_method)
+        if heading not in seen_headings:
+            parts.append(f"<h2>{heading}</h2>")
+            seen_headings.append(heading)
 
+        parts.append(f"<h3>{name}</h3>")
+        parts.append('<div class="plot">')
+        parts.append(
+            fig.to_html(
+                full_html=False,
+                include_plotlyjs=(js_mode if index == 0 else False),
+                default_width="100%",
+                config={"displaylogo": False, "responsive": True},
+            )
+        )
+        parts.append("</div>")
 
-
-    html_string += OUTRO_HTML
-    with open(output_file, "w") as f:
-        f.write(html_string)
-
+    with open(output_file, "w") as handle:
+        handle.write(
+            theme.page(
+                f"Metagene profiling: {alignment_file_name}",
+                "Enrichment is shown relative to each read length's own background, "
+                "so that a sparse read length stays legible beside a deep one.",
+                "\n".join(parts),
+            )
+        )

@@ -60,6 +60,7 @@ CODONS=config["biologySettings"]["alternativeStartCodons"]
 DIFFEXPRESS=config["differentialExpressionSettings"]["differentialExpression"]
 CONTRASTS=config["differentialExpressionSettings"]["contrasts"]
 DEEPRIBO=config["predictionSettings"]["deepribo"]
+TISADVISOR=config["tisAdvisorSettings"]["tisAdvisor"]
 WORKFLOW=config["workflowSettings"]["workflow"]
 
 # Left empty in the config, every pairwise combination of conditions is compared.
@@ -119,6 +120,9 @@ hribo_output = []
 if WORKFLOW == "full":
     hribo_output.extend(expand("metageneprofiling/{method}-{condition}-{replicate}", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]))
     hribo_output.append("metageneprofiling/read_length_fractions.html")
+
+    if TISADVISOR.lower() == "on":
+        hribo_output.extend(expand("tis_advice/{method}-{condition}-{replicate}/tis_recommendation.html", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]))
     hribo_output.append("qc/multi/multiqc_report.html")
     hribo_output.append("tracks/potentialStopCodons.gff")
     hribo_output.append("tracks/potentialStartCodons.gff")
