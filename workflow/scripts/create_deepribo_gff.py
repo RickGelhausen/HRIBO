@@ -61,10 +61,15 @@ def to_gff3(args):
         source = "deepribo"
         feature = "CDS"
         score = pred
-        phase = "."
         attribute = "ID=" + chromosome + ":" + str(start) + "-" + str(stop) + ":" + strand \
                    + ";pred_value="+ str(pred)+";Method=deepribo" + ";Condition=" + args.condition + ";Replicate=" + args.replicate
 
+        # NOTE: `dist` is written into the phase column on purpose, not by mistake.
+        # merge_duplicates_deepribo.py reads column 8 back as the distance to the
+        # nearest annotated gene and rewrites it there. That makes this file
+        # technically invalid GFF3, where column 8 must be 0, 1, 2 or ".", but the
+        # convention is load bearing across both scripts: putting "." here breaks
+        # the merge step. Change both scripts together or not at all.
         rows.append(nTuple(seqName, source, feature, start, stop, score, strand, dist, attribute))
 
 

@@ -20,6 +20,27 @@
    report: directive and --report were broken
  * Added envs/bed.yaml, which was referenced but missing
  * Added a pytest suite (41 tests) covering the validation and metagene helpers
+ * Fixed the DeepRibo A-site occupancy track. The reverse-strand A-site was
+   computed from `read.pos - read_length`, placing it roughly a full read length
+   outside the alignment: for a 30 nt read at position 1000 the A-site landed at
+   982, 18 nt before the read even starts. Every reverse-strand gene therefore fed
+   DeepRibo a misplaced signal. The forward strand was 2 nt off, from mixing a
+   1-based position into a 0-based bedgraph. Both strands now use DeepRibo's
+   documented convention, a 12 nt offset from the 3' end of the read
+ * A-site strand detection now uses the reverse flag rather than testing
+   `flag == 0` / `flag == 16`, which silently dropped any read also carrying the
+   secondary, supplementary or duplicate bit
+ * A-site bedgraph output is now sorted, and an empty track fails immediately
+   rather than letting DeepRibo fail later and obscurely
+ * Fixed parameter_estimation.R writing every library's S-curve diagnostic to the
+   same relative path, so concurrent jobs overwrote each other. The destination is
+   now per library
+ * read_parameters now raises on a truncated parameters file instead of passing
+   "failed" to DeepRibo as an RPKM cutoff
+ * Added log directives and resource declarations to the DeepRibo rules, and
+   documented that create_deepribo_gff.py writes `dist` into the GFF phase column
+   deliberately, since merge_duplicates_deepribo.py reads it back from there
+
  * Rewrote the metagene figures. The previous version drew every read length as a
    line on one pair of shared axes, cycling 10 colours and 6 dash patterns, which
    with the default 10 read lengths is 20 overlapping traces. Replaced by a

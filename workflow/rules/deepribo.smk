@@ -1,12 +1,19 @@
 
 def read_parameters(filename, idx):
-    try:
-        line = ""
-        with open(filename, "r") as f:
-            line = f.readline()[:-1].split(",")
-        return line[idx]
-    except FileNotFoundError:
-        return "failed"
+    """One of the two cutoffs written by parameter_estimation.R.
+
+    Raises rather than returning a placeholder: passing something like "failed"
+    on to DeepRibo as -r/-c produces a far more confusing failure than stopping
+    here does.
+    """
+    with open(filename) as handle:
+        fields = handle.readline().strip().split(",")
+    if len(fields) < 2 or not all(field.strip() for field in fields[:2]):
+        raise ValueError(
+            f"{filename} does not contain the expected 'min_RPKM,min_coverage' pair "
+            f"(found {fields!r}). The S-curve estimation step probably failed."
+        )
+    return fields[idx].strip()
 
 rule deepriboGetModel:
     output:
@@ -36,8 +43,15 @@ rule asiteOccupancy:
     conda:
         "../envs/pytools.yaml"
     threads: 1
+    resources:
+        mem_mb=8000,
+        runtime=60
+    params:
+        prefix=lambda wildcards, output: output.asitefwd[: -len("_asite_fwd.bedgraph")]
+    log:
+        "logs/{condition}-{replicate}_asite_occupancy.log"
     shell:
-        "{SCRIPTS}/coverage_deepribo.py --alignment_file {input.bam} --output_file_prefix coverage_deepribo/{wildcards.condition}-{wildcards.replicate}"
+        "{SCRIPTS}/coverage_deepribo.py --alignment_file {input.bam} --output_file_prefix {params.prefix} 2> {log}"
 
 rule coverage:
     input:
@@ -49,10 +63,15 @@ rule coverage:
     conda:
         "../envs/bedtools.yaml"
     threads: 1
+    resources:
+        mem_mb=8000,
+        runtime=60
+    log:
+        "logs/{condition}-{replicate}_deepribo_coverage.log"
     shell:
         """
-        bedtools genomecov -bg -ibam {input.bam} -strand + > {output.covfwd}
-        bedtools genomecov -bg -ibam {input.bam} -strand - > {output.covrev}
+        bedtools genomecov -bg -ibam {input.bam} -strand + > {output.covfwd} 2> {log}
+        bedtools genomecov -bg -ibam {input.bam} -strand - > {output.covrev} 2>> {log}
         """
 
 rule parseDeepRibo:
@@ -68,11 +87,16 @@ rule parseDeepRibo:
     container:
         "docker://gelhausr/deepribo:latest"
     threads: 1
+    resources:
+        mem_mb=16000,
+        runtime=120
+    log:
+        "logs/{condition}-{replicate}_parse_deepribo.log"
     shell:
         """
         mkdir -p deepribo/{wildcards.condition}-{wildcards.replicate}/0/;
         mkdir -p deepribo/{wildcards.condition}-{wildcards.replicate}/1/;
-        DataParser.py {input.covS} {input.covAS} {input.asiteS} {input.asiteAS} {input.genome} deepribo/{wildcards.condition}-{wildcards.replicate} -g {input.annotation}
+        DataParser.py {input.covS} {input.covAS} {input.asiteS} {input.asiteAS} {input.genome} deepribo/{wildcards.condition}-{wildcards.replicate} -g {input.annotation} > {log} 2>&1
         """
 
 rule parameterEstimation:
@@ -83,8 +107,17 @@ rule parameterEstimation:
     container:
         "docker://gelhausr/deepribo:latest"
     threads: 1
+    resources:
+        mem_mb=8000,
+        runtime=60
+    params:
+        # A per-library prefix: the previous constant "figure" meant every
+        # library wrote its S-curve diagnostic to the same path.
+        dest=lambda wildcards, output: os.path.join(os.path.dirname(output[0]), "s_curve")
+    log:
+        "logs/{condition}-{replicate}_parameter_estimation.log"
     shell:
-        "Rscript {SCRIPTS}/parameter_estimation.R -f {input} -o {output}"
+        "Rscript {SCRIPTS}/parameter_estimation.R -f {input} -o {output} -d {params.dest} > {log} 2>&1"
 
 rule predictDeepRibo:
     input:
@@ -100,11 +133,13 @@ rule predictDeepRibo:
         mem_mb=20000,
         runtime=240
     params:
-        rpkm= lambda wildcards, input: read_parameters(input[2], 0),
-        cov= lambda wildcards, input: read_parameters(input[2], 1)
+        rpkm=lambda wildcards, input: read_parameters(input.parameter, 0),
+        cov=lambda wildcards, input: read_parameters(input.parameter, 1)
+    log:
+        "logs/{condition}-{replicate}_predict_deepribo.log"
     shell:
         """
-        DeepRibo.py predict deepribo/ --pred_data {wildcards.condition}-{wildcards.replicate}/ -r {params.rpkm} -c {params.cov} --model {input.model} --dest {output} --num_workers {threads}
+        DeepRibo.py predict deepribo/ --pred_data {wildcards.condition}-{wildcards.replicate}/ -r {params.rpkm} -c {params.cov} --model {input.model} --dest {output} --num_workers {threads} > {log} 2>&1
         """
 
 rule deepriboGFF:

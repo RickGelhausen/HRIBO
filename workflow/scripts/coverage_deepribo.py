@@ -1,98 +1,132 @@
 #!/usr/bin/env python
-import pysam
-import re
-import sys
+"""
+Write per-strand A-site occupancy bedgraph files for DeepRibo.
+
+DeepRibo maps each read to a single genomic position using "a 12 nt offset from
+the 3' end of the read". The 3' end is the rightmost aligned base on the forward
+strand and the leftmost aligned base on the reverse strand, and the offset moves
+into the read in both cases.
+
+Coordinates here are 0-based throughout, matching the bedgraph format that
+DataParser.py consumes alongside the bedtools genomecov output.
+
+Author: Rick Gelhausen
+"""
+
 import argparse
+import sys
+from collections import Counter
 
-class generateASiteOccupancy:
+import pysam
 
-    def __init__(self, alignment_file, prefix):
-        self.alignment_file = alignment_file # sam / bam format
+# Distance from the 3' end of a read to the ribosomal A-site, per DeepRibo.
+A_SITE_OFFSET = 12
 
-        self.a_site_s_dict = {}
-        self.a_site_as_dict = {}
 
-        self.asite_sense_out = prefix + "_asite_fwd.bedgraph"
-        self.asite_antisense_out = prefix + "_asite_rev.bedgraph"
+class ASiteOccupancy:
+    """Count A-site positions per strand from an alignment file."""
 
-        self._fill_dictionary()
+    def __init__(self, alignment_file, prefix, offset=A_SITE_OFFSET):
+        self.alignment_file = alignment_file
+        self.offset = offset
+        self.forward_out = f"{prefix}_asite_fwd.bedgraph"
+        self.reverse_out = f"{prefix}_asite_rev.bedgraph"
 
-    def _write_output(self):
+        self.forward = Counter()
+        self.reverse = Counter()
+        self.counted = 0
+        self.skipped = 0
+        self.out_of_bounds = 0
+
+    def a_site_position(self, reference_start, read_length, is_reverse):
+        """The A-site of one read, as a 0-based genomic coordinate.
+
+        forward: the 3' end is the rightmost base, so the offset moves left
+        reverse: the 3' end is the leftmost base, so the offset moves right
         """
-        writes the contents of dictionary to file
+        if is_reverse:
+            return reference_start + self.offset
+        return reference_start + read_length - 1 - self.offset
+
+    def run(self):
+        with pysam.AlignmentFile(self.alignment_file) as alignments:
+            lengths = dict(zip(alignments.references, alignments.lengths))
+            for read in alignments.fetch():
+                # Flags are a bit field: testing `flag == 0` or `flag == 16`, as
+                # the previous version did, silently drops every read that also
+                # carries the secondary, supplementary or duplicate bit.
+                if read.is_unmapped or read.is_secondary or read.is_supplementary or read.is_duplicate:
+                    self.skipped += 1
+                    continue
+
+                read_length = read.query_length or read.infer_query_length()
+                if not read_length:
+                    self.skipped += 1
+                    continue
+
+                position = self.a_site_position(
+                    read.reference_start, read_length, read.is_reverse
+                )
+
+                contig_length = lengths.get(read.reference_name)
+                if position < 0 or (contig_length is not None and position >= contig_length):
+                    self.out_of_bounds += 1
+                    continue
+
+                target = self.reverse if read.is_reverse else self.forward
+                target[(read.reference_name, position)] += 1
+                self.counted += 1
+
+        self._write(self.forward, self.forward_out)
+        self._write(self.reverse, self.reverse_out)
+
+    @staticmethod
+    def _write(counts, path):
+        """Write a bedgraph, sorted by contig and position.
+
+        Sorted output matters because the file sits beside the bedtools
+        genomecov coverage tracks, which are sorted, and because unsorted
+        bedgraph is invalid for most consumers.
         """
-        with open(self.asite_sense_out, "w") as of:
-            # go through every entry in the dictionary
-            for key, val in self.a_site_s_dict.items():
-                # write line to file
-                of.write("%s\t%s\t%s\t%s\n" % (key[0], key[1], key[2], val))
+        with open(path, "w") as handle:
+            for (contig, position), value in sorted(counts.items()):
+                handle.write(f"{contig}\t{position}\t{position + 1}\t{value}\n")
 
-        with open(self.asite_antisense_out, "w") as of:
-            # go through every entry in the dictionary
-            for key, val in self.a_site_as_dict.items():
-                # write line to file
-                of.write("%s\t%s\t%s\t%s\n" % (key[0], key[1], key[2], val))
-
-    def _a_site_occupancy_fwd(self, flag, region, stop):
-        """
-        calculate the a-site occupancy for the forward strand
-        """
-        a_site_start = stop - 12
-        a_site_stop = a_site_start + 1
-
-        entry = (region, a_site_start, a_site_stop)
-        if entry in self.a_site_s_dict:
-            self.a_site_s_dict[entry] += 1
-        else:
-            self.a_site_s_dict[entry] = 1
-
-    def _a_site_occupancy_rev(self, flag, region, stop):
-        """
-        calculate the a-site occupancy for the reverse strand
-        """
-        a_site_start = stop + 11
-        a_site_stop = a_site_start + 1
-
-        entry = (region, a_site_start, a_site_stop)
-        if entry in self.a_site_as_dict:
-            self.a_site_as_dict[entry] += 1
-        else:
-            self.a_site_as_dict[entry] = 1
-
-    def _fill_dictionary(self):
-        """
-        main function handling the different possible cases of calculating the coverage and a-site
-        """
-        # read bam or sam file
-        samfile = pysam.AlignmentFile(self.alignment_file)
-        for read in samfile.fetch():
-            # get required attributes
-            flag = int(read.flag) # flag: 0-forward-strand 4-unmapped 16-reverse-strand
-            reference_name = read.reference_name # identifier for the region
-            reference_pos = read.pos + 1 # 0- based leftmost mapping position (reference_pos)
-            read_length = len(read.query_sequence)
-
-            if flag == 0:
-                self._a_site_occupancy_fwd(flag, reference_name, reference_pos+read_length)
-            elif flag == 16:
-                self._a_site_occupancy_rev(flag, reference_name, reference_pos-read_length)
-            else:
-                continue
-
-        samfile.close()
-        self._write_output()
 
 def main():
-    # store commandline args
-    parser = argparse.ArgumentParser(description='get the occupancy of a site as bed files')
-    parser.add_argument("--alignment_file", action="store", dest="alignment_file", required=True
-                        , help="the alignment file to be used (sam/bam)")
-    parser.add_argument("--output_file_prefix", action="store", dest="output_prefix", required=True
-                        , help="the prefix for the output file.")
+    parser = argparse.ArgumentParser(
+        description="Write A-site occupancy bedgraph files for DeepRibo.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("--alignment_file", required=True,
+                        help="Alignment file to read (sam/bam).")
+    parser.add_argument("--output_file_prefix", dest="output_prefix", required=True,
+                        help="Prefix for the two output bedgraph files.")
+    parser.add_argument("--offset", type=int, default=A_SITE_OFFSET,
+                        help="Distance from the 3' end of a read to the A-site.")
     args = parser.parse_args()
 
-    gBG = generateASiteOccupancy(args.alignment_file, args.output_prefix)
-    print("DONE!")
+    occupancy = ASiteOccupancy(args.alignment_file, args.output_prefix, args.offset)
+    occupancy.run()
 
-if __name__ == '__main__':
+    print(
+        f"A-site positions written for {occupancy.counted} reads "
+        f"({len(occupancy.forward)} forward, {len(occupancy.reverse)} reverse positions).",
+        file=sys.stderr,
+    )
+    if occupancy.skipped:
+        print(f"Skipped {occupancy.skipped} unmapped or non-primary alignments.", file=sys.stderr)
+    if occupancy.out_of_bounds:
+        print(
+            f"Discarded {occupancy.out_of_bounds} A-site positions falling outside their contig.",
+            file=sys.stderr,
+        )
+    if occupancy.counted == 0:
+        sys.exit(
+            "No A-site positions were derived from "
+            f"{args.alignment_file}. DeepRibo cannot run on an empty A-site track."
+        )
+
+
+if __name__ == "__main__":
     main()
