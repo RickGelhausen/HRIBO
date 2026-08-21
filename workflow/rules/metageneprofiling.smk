@@ -17,7 +17,7 @@ rule readLengthStatistics:
     shell:
         """
         mkdir -p metageneprofiling;
-        HRIBO/scripts/read_length_statistics.py -a {input.bamfiles} -r {params.readlengths} -o metageneprofiling/ > {log}
+        {SCRIPTS}/read_length_statistics.py -a {input.bamfiles} -r {params.readlengths} -o metageneprofiling/ > {log}
         """
 
 rule metageneProfiling:
@@ -53,7 +53,7 @@ rule metageneProfiling:
         else
             colorList="--color_list {params.colorList}";
         fi;
-        HRIBO/scripts/metagene_profiling.py -b {input.bam} -g {input.genome} -a {input.annotation} -o {output.meta} \
+        {SCRIPTS}/metagene_profiling.py -b {input.bam} -g {input.genome} -a {input.annotation} -o {output.meta} \
             --read_lengths {params.readlengths} \
             --normalization_methods {params.normalizationMethods} \
             --mapping_methods {params.mappingMethods} \

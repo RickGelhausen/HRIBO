@@ -10,5 +10,5 @@ rule newAnnotationReparationOnly:
     shell:
         """
         mkdir -p tracks;
-        HRIBO/scripts/concatenate_gff.py {input.reparation_orfs} {input.currentAnnotation} -o {output}
+        {SCRIPTS}/concatenate_gff.py {input.reparation_orfs} {input.currentAnnotation} -o {output}
         """

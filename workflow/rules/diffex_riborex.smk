@@ -12,7 +12,7 @@ rule riborex:
     shell:
         """
         mkdir -p riborex;
-        HRIBO/scripts/riborex.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table};
+        {SCRIPTS}/riborex.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table};
         """
 
 rule riborexxlsx:
@@ -30,7 +30,7 @@ rule riborexxlsx:
         log2fc_cutoff=config["differentialExpressionSettings"]["log2fcCutoff"]
     shell:
         """
-        python3 HRIBO/scripts/generate_excel_riborex.py -a {input.annotation} -g {input.genome} -i {input.riborex_out} -o {output.xlsx_sorted} --padj_cutoff {params.padj_cutoff} --log2fc_cutoff {params.log2fc_cutoff}
+        python3 {SCRIPTS}/generate_excel_riborex.py -a {input.annotation} -g {input.genome} -i {input.riborex_out} -o {output.xlsx_sorted} --padj_cutoff {params.padj_cutoff} --log2fc_cutoff {params.log2fc_cutoff}
         """
 
 rule poolriborex:
@@ -43,5 +43,5 @@ rule poolriborex:
     threads: 1
     shell:
         """
-        python3 HRIBO/scripts/merge_differential_expression.py {input.riborex} -o {output} -t riborex
+        python3 {SCRIPTS}/merge_differential_expression.py {input.riborex} -o {output} -t riborex
         """

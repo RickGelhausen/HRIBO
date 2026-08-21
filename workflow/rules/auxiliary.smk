@@ -19,7 +19,7 @@ rule enrichAnnotation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; HRIBO/scripts/enrich_annotation.py -a {input.annotation} -o {output}"
+        "mkdir -p auxiliary; {SCRIPTS}/enrich_annotation.py -a {input.annotation} -o {output}"
 
 rule unambigousAnnotation:
     input:
@@ -37,14 +37,14 @@ rule unambigousAnnotation:
 
 rule samplesToExcel:
     input:
-        "HRIBO/samples.tsv"
+        config["biologySettings"]["samples"]
     output:
         "auxiliary/samples.xlsx"
     conda:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; HRIBO/scripts/samples_to_xlsx.py -i {input} -o {output}"
+        "mkdir -p auxiliary; {SCRIPTS}/samples_to_xlsx.py -i {input} -o {output}"
 
 rule createExcelTotalAnnotation:
     input:
@@ -57,7 +57,7 @@ rule createExcelTotalAnnotation:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; HRIBO/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; {SCRIPTS}/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule createExcelUniqueAnnotation:
     input:
@@ -70,7 +70,7 @@ rule createExcelUniqueAnnotation:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; HRIBO/scripts/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; {SCRIPTS}/generate_excel.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule createExcelSummary:
     input:
@@ -83,7 +83,7 @@ rule createExcelSummary:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; HRIBO/scripts/generate_excel_reparation.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; {SCRIPTS}/generate_excel_reparation.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule createExcelTotalAnnotationReadCount:
     input:
@@ -95,7 +95,7 @@ rule createExcelTotalAnnotationReadCount:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; HRIBO/scripts/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"
+        "mkdir -p auxiliary; {SCRIPTS}/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"
 
 rule createExcelUniqueAnnotationReadCount:
     input:
@@ -107,7 +107,7 @@ rule createExcelUniqueAnnotationReadCount:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; HRIBO/scripts/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"
+        "mkdir -p auxiliary; {SCRIPTS}/generate_read_table.py -r {input.reads} -t {input.total} -o {output}"
 
 rule createOverviewTableReparation:
     input:
@@ -127,9 +127,9 @@ rule createOverviewTableReparation:
         mkdir -p auxiliary;
         if [ -z {params.contrasts} ]
         then
-            HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+            {SCRIPTS}/generate_excel_overview.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         else
-            HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -c {params.contrasts} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+            {SCRIPTS}/generate_excel_overview.py -a {input.annotation} -c {params.contrasts} -g {input.genome} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         fi
         """
 
@@ -152,9 +152,9 @@ rule createOverviewTablePredictions:
         mkdir -p auxiliary;
         if [ -z {params.contrasts} ]
         then
-            HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+            {SCRIPTS}/generate_excel_overview.py -a {input.annotation} -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         else
-            HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -c {params.contrasts}  -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+            {SCRIPTS}/generate_excel_overview.py -a {input.annotation} -c {params.contrasts}  -g {input.genome} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         fi
         """
 
@@ -178,9 +178,9 @@ rule createOverviewTableDiffExpr:
         """
         if [ -z {params.contrasts} ]
         then
-            mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+            mkdir -p auxiliary; {SCRIPTS}/generate_excel_overview.py -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         else
-            mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -c {params.contrasts} -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
+            mkdir -p auxiliary; {SCRIPTS}/generate_excel_overview.py -c {params.contrasts} -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_reparation {input.reparation} -o {output}
         fi
         """
 
@@ -205,8 +205,8 @@ rule createOverviewTableAll:
         """
         if [ -z {params.contrasts} ]
         then
-            mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+            mkdir -p auxiliary; {SCRIPTS}/generate_excel_overview.py -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         else
-            mkdir -p auxiliary; HRIBO/scripts/generate_excel_overview.py -c {params.contrasts} -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
+            mkdir -p auxiliary; {SCRIPTS}/generate_excel_overview.py -c {params.contrasts} -a {input.annotation} -g {input.genome} --xtail {input.xtail} --deltate {input.deltate} --riborex {input.riborex} -t {input.totalreads} --mapped_reads_deepribo {input.deepribo} --mapped_reads_reparation {input.reparation} -o {output}
         fi
         """

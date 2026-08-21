@@ -51,7 +51,7 @@ rule reparationGFF:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/create_reparation_gff.py -c {wildcards.condition} -r {wildcards.replicate} -i {input} -o {output}"
+        "mkdir -p tracks; {SCRIPTS}/create_reparation_gff.py -c {wildcards.condition} -r {wildcards.replicate} -i {input} -o {output}"
 
 rule concatReparation:
     input:
@@ -62,4 +62,4 @@ rule concatReparation:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input} -o {output}"
+        "mkdir -p tracks; {SCRIPTS}/concatenate_gff.py {input} -o {output}"

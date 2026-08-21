@@ -18,7 +18,7 @@ rule generateDifferentialExpressionReadCounts:
             features="--use_features {params.features}";
         fi;
         mkdir -p readcounts
-        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O --for_diff_expr -o {output} -t {threads} -a {input.annotation} ${{features}}
+        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O --for_diff_expr -o {output} -t {threads} -a {input.annotation} ${{features}}
         """
 
 rule generateReparationReadCounts:
@@ -34,7 +34,7 @@ rule generateReparationReadCounts:
     shell:
         """
         mkdir -p readcounts
-        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
+        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
         """
 
 rule generateDeepRiboReadCounts:
@@ -50,7 +50,7 @@ rule generateDeepRiboReadCounts:
     shell:
         """
         mkdir -p readcounts
-        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
+        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
         """
 
 rule generateAnnotationIndependantReadCounts:
@@ -66,7 +66,7 @@ rule generateAnnotationIndependantReadCounts:
     shell:
         """
         mkdir -p readcounts
-        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
+        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O -o {output} -t {threads} -a {input.annotation}
         """
 
 rule generateAnnotationTotalReadCounts:
@@ -82,7 +82,7 @@ rule generateAnnotationTotalReadCounts:
     shell:
         """
         mkdir -p readcounts
-        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O --with_M --fraction -o {output} -t {threads} -a {input.annotation}
+        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O --with_M --fraction -o {output} -t {threads} -a {input.annotation}
         """
 
 rule generateAnnotationUniqueReadCounts:
@@ -98,7 +98,7 @@ rule generateAnnotationUniqueReadCounts:
     shell:
         """
         mkdir -p auxiliary
-        HRIBO/scripts/call_featurecounts.py -b {input.bam} -s 1 --with_O --fraction -o {output} -t {threads} -a {input.annotation}
+        {SCRIPTS}/call_featurecounts.py -b {input.bam} -s 1 --with_O --fraction -o {output} -t {threads} -a {input.annotation}
         """
 
 rule mapIndependantReads:
@@ -112,7 +112,7 @@ rule mapIndependantReads:
     threads: 1
     shell:
         """
-        mkdir -p readcounts; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        mkdir -p readcounts; {SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
         """
 
 rule mapReparationReads:
@@ -126,7 +126,7 @@ rule mapReparationReads:
     threads: 1
     shell:
         """
-        mkdir -p readcounts; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        mkdir -p readcounts; {SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
         """
 
 rule mapDeepRiboReads:
@@ -140,7 +140,7 @@ rule mapDeepRiboReads:
     threads: 1
     shell:
         """
-        mkdir -p readcounts; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        mkdir -p readcounts; {SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
         """
 
 rule mapTotalReads:
@@ -154,7 +154,7 @@ rule mapTotalReads:
     threads: 1
     shell:
         """
-        mkdir -p readcounts; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        mkdir -p readcounts; {SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
         """
 
 rule mapUniqueReads:
@@ -168,7 +168,7 @@ rule mapUniqueReads:
     threads: 1
     shell:
         """
-        mkdir -p readcounts; HRIBO/scripts/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
+        mkdir -p readcounts; {SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output}
         """
 
 rule totalMappedReads:
@@ -182,7 +182,7 @@ rule totalMappedReads:
         "../envs/pytools.yaml"
     threads: 1
     shell:
-        "mkdir -p readcounts; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+        "mkdir -p readcounts; {SCRIPTS}/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
 
 rule uniqueMappedReads:
     input:
@@ -195,7 +195,7 @@ rule uniqueMappedReads:
         "../envs/pytools.yaml"
     threads: 1
     shell:
-        "mkdir -p readcounts; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+        "mkdir -p readcounts; {SCRIPTS}/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
 
 rule maplinkMappedReads:
     input:
@@ -208,4 +208,4 @@ rule maplinkMappedReads:
         "../envs/pytools.yaml"
     threads: 1
     shell:
-        "mkdir -p readcounts; HRIBO/scripts/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"
+        "mkdir -p readcounts; {SCRIPTS}/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length}"

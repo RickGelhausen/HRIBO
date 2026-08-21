@@ -4,4 +4,4 @@ module load miniconda3/4.12.0
 
 conda activate snakemake
 
-snakemake --profile slurm_profile
+snakemake -s HRIBO/workflow/Snakefile --directory "${PWD}" --profile HRIBO/workflow/profiles/slurm

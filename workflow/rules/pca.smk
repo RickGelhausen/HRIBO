@@ -12,7 +12,7 @@ rule preparePCAinput:
         """
         mkdir -p pca;
         sed -e '1s/-/_/g' {input.rawreads} > {output.rawreads};
-        HRIBO/scripts/preparePCAinput.py -s {input.samples} -o {output.meta};
+        {SCRIPTS}/preparePCAinput.py -s {input.samples} -o {output.meta};
         """
 
 rule runDeseqPreprocessing:
@@ -32,7 +32,7 @@ rule runDeseqPreprocessing:
     shell:
         """
         mkdir -p pca;
-        HRIBO/scripts/analyse_variance.R -r {input.rawreads} -m {input.meta} -o pca/;
+        {SCRIPTS}/analyse_variance.R -r {input.rawreads} -m {input.meta} -o pca/;
         """
         
 rule plotPCA:
@@ -49,5 +49,5 @@ rule plotPCA:
     shell:
         """
         mkdir -p pca;
-        HRIBO/scripts/plot_PCA.py -r {input.rld} -p {input.pvar} -c {input.cor} -o pca/;
+        {SCRIPTS}/plot_PCA.py -r {input.rld} -p {input.pvar} -c {input.cor} -o pca/;
         """

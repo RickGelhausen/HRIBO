@@ -1,12 +1,21 @@
 import os
 import sys
-import pandas as pd
 import itertools as iter
-from snakemake.utils import min_version
-from validate import validate_config, validate_sample_sheet
+from pathlib import Path
 
-min_version("8.10.7")
-configfile: "HRIBO/config.yaml"
+import pandas as pd
+from snakemake.utils import min_version
+
+min_version("9.0.0")
+
+configfile: "config/config.yaml"
+
+# Absolute path to the bundled scripts, so the workflow can live anywhere on disk.
+# Referenced from shell directives as {SCRIPTS}/<script>.
+SCRIPTS = Path(workflow.basedir) / "scripts"
+sys.path.insert(0, str(SCRIPTS))
+
+from validate import validate_config, validate_sample_sheet
 
 onstart:
    if not os.path.exists("logs"):

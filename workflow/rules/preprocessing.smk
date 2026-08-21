@@ -23,4 +23,4 @@ rule checkAnnotation:
         "annotation/annotation_processed.gff"
     threads: 1
     shell:
-        "mkdir -p annotation; HRIBO/scripts/gtf2gff3.py -a {input} -o {output}"
+        "mkdir -p annotation; {SCRIPTS}/gtf2gff3.py -a {input} -o {output}"

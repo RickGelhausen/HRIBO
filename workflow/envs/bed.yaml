@@ -1,0 +1,6 @@
+channels:
+ - conda-forge
+ - bioconda
+dependencies:
+ - bedops =2.4.41
+ - ucsc-bedtobigbed =377

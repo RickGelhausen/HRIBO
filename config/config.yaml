@@ -21,7 +21,7 @@ biologySettings:
   annotation: "annotation.gff"
 
   # Path to the sample sheet
-  samples: "HRIBO/samples.tsv"
+  samples: "config/samples.tsv"
 
   # Alternative start codons considered where applicable
   alternativeStartCodons: ["GTG", "TTG"]

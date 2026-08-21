@@ -31,7 +31,7 @@ rule deltatePrepareInput:
     shell:
         """
         mkdir -p deltate;
-        HRIBO/scripts/prepare_deltate_input.py -c {params.contrast} -r {input.rawreads} -b bam/ -o {params.out_dir}
+        {SCRIPTS}/prepare_deltate_input.py -c {params.contrast} -r {input.rawreads} -b bam/ -o {params.out_dir}
         """
 
 rule deltate:
@@ -80,7 +80,7 @@ rule deltatexlsx:
         log2fc_cutoff=config["differentialExpressionSettings"]["log2fcCutoff"]
     shell:
         """
-        python3 HRIBO/scripts/generate_excel_deltate.py -a {input.annotation} -g {input.genome} -i {input.deltate_ribo} -r {input.deltate_rna} -t {input.deltate_te} -o {output.xlsx_sorted} --padj_cutoff {params.padj_cutoff} --log2fc_cutoff {params.log2fc_cutoff}
+        python3 {SCRIPTS}/generate_excel_deltate.py -a {input.annotation} -g {input.genome} -i {input.deltate_ribo} -r {input.deltate_rna} -t {input.deltate_te} -o {output.xlsx_sorted} --padj_cutoff {params.padj_cutoff} --log2fc_cutoff {params.log2fc_cutoff}
         """
 
 rule pooldeltate:
@@ -93,5 +93,5 @@ rule pooldeltate:
     threads: 1
     shell:
         """
-        python3 HRIBO/scripts/merge_differential_expression.py {input.deltate} -o {output} -t deltate
+        python3 {SCRIPTS}/merge_differential_expression.py {input.deltate} -o {output} -t deltate
         """

@@ -14,7 +14,7 @@ rule xtail:
     shell:
         """
         mkdir -p xtail;
-        HRIBO/scripts/xtail.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table} -f {output.fcplot} -p {output.rplot};
+        {SCRIPTS}/xtail.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table} -f {output.fcplot} -p {output.rplot};
         """
 
 rule xtailxlsx:
@@ -32,7 +32,7 @@ rule xtailxlsx:
         log2fc_cutoff=config["differentialExpressionSettings"]["log2fcCutoff"]
     shell:
         """
-        python3 HRIBO/scripts/generate_excel_xtail.py -a {input.annotation} -g {input.genome} -i {input.xtail_out} -o {output.xlsx_sorted} --padj_cutoff {params.padj_cutoff} --log2fc_cutoff {params.log2fc_cutoff}
+        python3 {SCRIPTS}/generate_excel_xtail.py -a {input.annotation} -g {input.genome} -i {input.xtail_out} -o {output.xlsx_sorted} --padj_cutoff {params.padj_cutoff} --log2fc_cutoff {params.log2fc_cutoff}
         """
 
 rule poolxtail:
@@ -45,5 +45,5 @@ rule poolxtail:
     threads: 1
     shell:
         """
-        python3 HRIBO/scripts/merge_differential_expression.py {input.xtail} -o {output} -t xtail
+        python3 {SCRIPTS}/merge_differential_expression.py {input.xtail} -o {output} -t xtail
         """

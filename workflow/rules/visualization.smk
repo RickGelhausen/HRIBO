@@ -32,7 +32,7 @@ rule reversecomplementGenome:
         "../envs/biopython.yaml"
     threads: 1
     shell:
-        "mkdir -p genomes; HRIBO/scripts/reverse_complement.py --input_fasta_filepath genomes/genome.fa --output_fasta_filepath genomes/genome.rev.fa"
+        "mkdir -p genomes; {SCRIPTS}/reverse_complement.py --input_fasta_filepath genomes/genome.fa --output_fasta_filepath genomes/genome.rev.fa"
 
 rule startCodonTrack:
     input:
@@ -44,7 +44,7 @@ rule startCodonTrack:
         "../envs/biopython.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/motif_to_gff.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string ATG --output_gff3_filepath {output}"
+        "mkdir -p tracks; {SCRIPTS}/motif_to_gff.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string ATG --output_gff3_filepath {output}"
 
 rule alternativeStartCodonTrack:
     input:
@@ -56,7 +56,7 @@ rule alternativeStartCodonTrack:
         "../envs/biopython.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/motif_to_gff.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string GTG,TTG,CTG --output_gff3_filepath {output}"
+        "mkdir -p tracks; {SCRIPTS}/motif_to_gff.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string GTG,TTG,CTG --output_gff3_filepath {output}"
 
 
 rule stopCodonTrack:
@@ -69,7 +69,7 @@ rule stopCodonTrack:
         "../envs/biopython.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/motif_to_gff.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string TAG,TGA,TAA --output_gff3_filepath {output}"
+        "mkdir -p tracks; {SCRIPTS}/motif_to_gff.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string TAG,TGA,TAA --output_gff3_filepath {output}"
 
 rule rbsTrack:
     input:
@@ -81,7 +81,7 @@ rule rbsTrack:
         "../envs/biopython.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/motif_to_gff.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string AAGG --output_gff3_filepath {output}"
+        "mkdir -p tracks; {SCRIPTS}/motif_to_gff.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string AAGG --output_gff3_filepath {output}"
 
 
 rule bamindex:
@@ -146,7 +146,7 @@ rule totalmappedwig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p totalmappedtracks; mkdir -p totalmappedtracks/raw; mkdir -p totalmappedtracks/mil; mkdir -p totalmappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path totalmappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
+        "mkdir -p totalmappedtracks; mkdir -p totalmappedtracks/raw; mkdir -p totalmappedtracks/mil; mkdir -p totalmappedtracks/min; {SCRIPTS}/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path totalmappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
 
 rule uniquemappedwig:
     input:
@@ -168,7 +168,7 @@ rule uniquemappedwig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p uniquemappedtracks; mkdir -p uniquemappedtracks/raw; mkdir -p uniquemappedtracks/mil; mkdir -p uniquemappedtracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path uniquemappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
+        "mkdir -p uniquemappedtracks; mkdir -p uniquemappedtracks/raw; mkdir -p uniquemappedtracks/mil; mkdir -p uniquemappedtracks/min; {SCRIPTS}/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path uniquemappedtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
 
 rule totalmappedwigtobigwigrawforward:
     input:
@@ -334,7 +334,7 @@ rule globalwig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p globaltracks; mkdir -p globaltracks/raw; mkdir -p globaltracks/mil; mkdir -p globaltracks/min; HRIBO/scripts/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path globaltracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
+        "mkdir -p globaltracks; mkdir -p globaltracks/raw; mkdir -p globaltracks/mil; mkdir -p globaltracks/min; {SCRIPTS}/mapping.py --mapping_style global --bam_path {input.bam} --wiggle_file_path globaltracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
 
 rule globalwigtobigwigrawforward:
     input:
@@ -428,7 +428,7 @@ rule centeredwig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p centeredtracks; mkdir -p centeredtracks/raw; mkdir -p centeredtracks/mil; mkdir -p centeredtracks/min; HRIBO/scripts/mapping.py --mapping_style centered --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
+        "mkdir -p centeredtracks; mkdir -p centeredtracks/raw; mkdir -p centeredtracks/mil; mkdir -p centeredtracks/min; {SCRIPTS}/mapping.py --mapping_style centered --bam_path {input.bam} --wiggle_file_path centeredtracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
 rule centeredwigtobigwigrawforward:
     input:
         fwd="centeredtracks/raw/{method}-{condition}-{replicate}.raw.forward.wig",
@@ -521,7 +521,7 @@ rule fiveprimewig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p fiveprimetracks; mkdir -p fiveprimetracks/raw; mkdir -p fiveprimetracks/mil; mkdir -p fiveprimetracks/min; HRIBO/scripts/mapping.py --mapping_style first_base_only --bam_path {input.bam} --wiggle_file_path fiveprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
+        "mkdir -p fiveprimetracks; mkdir -p fiveprimetracks/raw; mkdir -p fiveprimetracks/mil; mkdir -p fiveprimetracks/min; {SCRIPTS}/mapping.py --mapping_style first_base_only --bam_path {input.bam} --wiggle_file_path fiveprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
 
 rule fiveprimewigtobigwigrawforward:
     input:
@@ -615,7 +615,7 @@ rule threeprimewig:
         prefix=lambda wildcards, output: (Path(output[0]).stem).strip('.raw.forward.wig'),
         prefixpath=lambda wildcards, output: (os.path.dirname(output.fwd))
     shell:
-        "mkdir -p threeprimetracks; mkdir -p threeprimetracks/raw; mkdir -p threeprimetracks/mil; mkdir -p threeprimetracks/min; HRIBO/scripts/mapping.py --mapping_style last_base_only --bam_path {input.bam} --wiggle_file_path threeprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
+        "mkdir -p threeprimetracks; mkdir -p threeprimetracks/raw; mkdir -p threeprimetracks/mil; mkdir -p threeprimetracks/min; {SCRIPTS}/mapping.py --mapping_style last_base_only --bam_path {input.bam} --wiggle_file_path threeprimetracks/ --no_of_aligned_reads_file_path {input.stats} --library_name {params.prefix};"
 
 rule threeprimewigtobigwigrawforward:
     input:

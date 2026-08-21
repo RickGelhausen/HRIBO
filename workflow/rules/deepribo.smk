@@ -28,7 +28,7 @@ rule asiteOccupancy:
         "../envs/pytools.yaml"
     threads: 1
     shell:
-        "mkdir -p coverage_deepribo; HRIBO/scripts/coverage_deepribo.py --alignment_file {input.bam} --output_file_prefix coverage_deepribo/{wildcards.condition}-{wildcards.replicate}"
+        "mkdir -p coverage_deepribo; {SCRIPTS}/coverage_deepribo.py --alignment_file {input.bam} --output_file_prefix coverage_deepribo/{wildcards.condition}-{wildcards.replicate}"
 
 rule coverage:
     input:
@@ -76,7 +76,7 @@ rule parameterEstimation:
         "docker://gelhausr/deepribo:latest"
     threads: 1
     shell:
-        "mkdir -p deepribo; Rscript HRIBO/scripts/parameter_estimation.R -f {input} -o {output}"
+        "mkdir -p deepribo; Rscript {SCRIPTS}/parameter_estimation.R -f {input} -o {output}"
 
 rule predictDeepRibo:
     input:
@@ -106,7 +106,7 @@ rule deepriboGFF:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/create_deepribo_gff.py -c {wildcards.condition} -r {wildcards.replicate} -i {input} -o {output}"
+        "mkdir -p tracks; {SCRIPTS}/create_deepribo_gff.py -c {wildcards.condition} -r {wildcards.replicate} -i {input} -o {output}"
 
 rule concatDeepRibo:
     input:
@@ -117,7 +117,7 @@ rule concatDeepRibo:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input} -o {output}"
+        "mkdir -p tracks; {SCRIPTS}/concatenate_gff.py {input} -o {output}"
 
 rule allDeepRibo:
     input:
@@ -128,7 +128,7 @@ rule allDeepRibo:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/concatenate_gff.py {input.merged_gff} -o {output}"
+        "mkdir -p tracks; {SCRIPTS}/concatenate_gff.py {input.merged_gff} -o {output}"
 
 rule filterDeepRibo:
     input:
@@ -141,7 +141,7 @@ rule filterDeepRibo:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "mkdir -p tracks; HRIBO/scripts/merge_duplicates_deepribo.py -i {input.ingff} -o {output.merged} -a {input.annotation}"
+        "mkdir -p tracks; {SCRIPTS}/merge_duplicates_deepribo.py -i {input.ingff} -o {output.merged} -a {input.annotation}"
 
 
 rule createExcelSummaryDeepRibo:
@@ -155,7 +155,7 @@ rule createExcelSummaryDeepRibo:
         "../envs/excel.yaml"
     threads: 1
     shell:
-        "mkdir -p auxiliary; HRIBO/scripts/generate_excel_deepribo.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
+        "mkdir -p auxiliary; {SCRIPTS}/generate_excel_deepribo.py -t {input.total} -r {input.reads} -g {input.genome} -o {output}"
 
 rule newAnnotationDeepRibo:
     input:
@@ -170,5 +170,5 @@ rule newAnnotationDeepRibo:
     shell:
         """
         mkdir -p tracks;
-        HRIBO/scripts/concatenate_gff.py {input.deepribo_orfs} {input.reparation_orfs} {input.currentAnnotation} -o {output}
+        {SCRIPTS}/concatenate_gff.py {input.deepribo_orfs} {input.reparation_orfs} {input.currentAnnotation} -o {output}
         """
