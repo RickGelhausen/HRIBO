@@ -12,7 +12,8 @@ import excel_utils as eu
 
 COLUMNS = (
     eu.identity_columns()
-    + [("Pred_probability", "pred_value")]
+    # Named as in the overview table.
+    + [("Reparation_probability", "pred_value")]
     + eu.LOCUS_COLUMNS
     + eu.MEASURE_COLUMNS
     + [("Evidence", "evidence")]

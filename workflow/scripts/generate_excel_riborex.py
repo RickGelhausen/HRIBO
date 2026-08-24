@@ -12,13 +12,16 @@ import pandas as pd
 import excel_utils as eu
 
 # riborex writes DESeq2 results, so the columns are DESeq2's.
+# Header names follow the workflow-wide convention (log2FC, log2FC_SE,
+# pvalue_adjusted); the second element of each pair is DESeq2's own column name
+# in the input file.
 STATISTICS = [
     ("baseMean", "baseMean"),
-    ("log2FoldChange", "log2FoldChange"),
-    ("lfcSE", "lfcSE"),
+    ("log2FC", "log2FoldChange"),
+    ("log2FC_SE", "lfcSE"),
     ("stat", "stat"),
     ("pvalue", "pvalue"),
-    ("padj", "padj"),
+    ("pvalue_adjusted", "padj"),
 ]
 
 # R's write.csv emits row names as an unnamed first column, which pandas reaches
@@ -35,7 +38,7 @@ def riborex_output(args):
         diff_expr_df, annotation_dict, genome_dict, STATISTICS, IDENTIFIER_FIELD
     )
     dataframe_dict = eu.split_up_down(
-        all_df, "log2FoldChange", "padj", args.log2fc_cutoff, args.padj_cutoff
+        all_df, "log2FC", "pvalue_adjusted", args.log2fc_cutoff, args.padj_cutoff
     )
 
     eu.excel_writer(args.output, dataframe_dict, [])

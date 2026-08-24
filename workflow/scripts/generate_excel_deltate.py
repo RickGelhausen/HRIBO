@@ -14,17 +14,29 @@ import pandas as pd
 import excel_utils as eu
 
 # The RIBO and RNA tables carry no Wald statistic; only the TE table does.
+# These are DESeq2's own column names as they appear in the input files.
 RIBO_RNA_COLUMNS = ["baseMean", "log2FoldChange", "lfcSE", "pvalue", "padj"]
 TE_COLUMNS = ["baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj"]
 
+# DESeq2's spelling -> the workflow-wide header name.
+HEADER_NAMES = {
+    "log2FoldChange": "log2FC",
+    "lfcSE": "log2FC_SE",
+    "padj": "pvalue_adjusted",
+}
+
+
+def header_name(prefix, column):
+    return f"{prefix}_{HEADER_NAMES.get(column, column)}"
+
 # Each split is (sheet name, fold change column, adjusted p-value column).
 SPLITS = [
-    ("RNA_up", "RNA_log2FoldChange", "RNA_padj", 1),
-    ("RNA_down", "RNA_log2FoldChange", "RNA_padj", -1),
-    ("RIBO_up", "RIBO_log2FoldChange", "RIBO_padj", 1),
-    ("RIBO_down", "RIBO_log2FoldChange", "RIBO_padj", -1),
-    ("TE_up", "TE_log2FoldChange", "TE_padj", 1),
-    ("TE_down", "TE_log2FoldChange", "TE_padj", -1),
+    ("RNA_up", "RNA_log2FC", "RNA_pvalue_adjusted", 1),
+    ("RNA_down", "RNA_log2FC", "RNA_pvalue_adjusted", -1),
+    ("RIBO_up", "RIBO_log2FC", "RIBO_pvalue_adjusted", 1),
+    ("RIBO_down", "RIBO_log2FC", "RIBO_pvalue_adjusted", -1),
+    ("TE_up", "TE_log2FC", "TE_pvalue_adjusted", 1),
+    ("TE_down", "TE_log2FC", "TE_pvalue_adjusted", -1),
 ]
 
 
@@ -65,10 +77,10 @@ def deltate_output(args):
     combined_dict = create_combined_dict(ribo_df, rna_df, te_df)
 
     header = (
-        ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Identifier", "Name"]
-        + [f"RIBO_{column}" for column in RIBO_RNA_COLUMNS]
-        + [f"RNA_{column}" for column in RIBO_RNA_COLUMNS]
-        + [f"TE_{column}" for column in TE_COLUMNS]
+        eu.DIFFEX_IDENTITY_HEADER
+        + [header_name("RIBO", column) for column in RIBO_RNA_COLUMNS]
+        + [header_name("RNA", column) for column in RIBO_RNA_COLUMNS]
+        + [header_name("TE", column) for column in TE_COLUMNS]
         + ["Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
     )
 
@@ -97,13 +109,13 @@ def deltate_output(args):
         statistics = [value for row in rows for value in list(row)[1:]]
 
         records.append(
-            [chromosome, start, stop, strand, locus_tag, old_locus_tag, unique_id, gene_name]
+            [unique_id, chromosome, start, stop, strand, locus_tag, old_locus_tag, gene_name]
             + statistics
             + [length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq]
         )
 
     all_df = pd.DataFrame.from_records(records, columns=header)
-    all_df = all_df.sort_values(by=["TE_padj", "Genome", "Start", "Stop", "Strand"])
+    all_df = all_df.sort_values(by=["TE_pvalue_adjusted", "Genome", "Start", "Stop", "Strand"])
 
     dataframe_dict = {"all": all_df}
     for sheet, log2fc_column, padj_column, direction in SPLITS:

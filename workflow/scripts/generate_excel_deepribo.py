@@ -11,14 +11,13 @@ import argparse
 import excel_utils as eu
 
 COLUMNS = (
-    # "identifer" is misspelled in the shipped output and kept that way, since
-    # changing it would rename a column in everyone's existing spreadsheets.
-    eu.identity_columns(identifier_header="identifer")
+    eu.identity_columns()
     + [
-        ("Pred_value", "pred_value"),
-        # DeepRibo puts its prediction rank in the score column and the novel
-        # rank in the phase column.
-        ("Pred_rank", "score"),
+        # Named as in the overview table, so the same quantity has one name
+        # across the workbooks. DeepRibo puts its prediction rank in the score
+        # column and the novel rank in the phase column.
+        ("Deepribo_score", "pred_value"),
+        ("Deepribo_rank", "score"),
         ("Novel_rank", "phase"),
     ]
     + eu.LOCUS_COLUMNS

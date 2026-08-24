@@ -157,7 +157,7 @@ def which_annotation(args):
             has_gene_id = True
 
         if has_gene_id and has_id:
-            print("Mixed gff file, found gene_id and ID identifers. File should be either gff2 or gff3!")
+            print("Mixed gff file, found gene_id and ID identifiers. File should be either gff2 or gff3!")
             sys.exit("First occurence of ambiguity: " + row)
 
     return has_gene_id, has_id

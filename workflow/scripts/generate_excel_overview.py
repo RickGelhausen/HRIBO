@@ -62,7 +62,7 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
     gff_rows = []
 
     header = ["Identifier", "Genome", "Start", "Stop", "Strand", "Feature", "Locus_tag", "Old_locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon"] +\
-             ["15nt upstream", "Nucleotide_seq", "Aminoacid_seq"] +\
+             ["Upstream_15nt", "Nucleotide_seq", "Aminoacid_seq"] +\
              [f"{cond}_TE" for cond in te_header] +\
              [f"{card}_rpkm" for card in wildcards] +\
              [f"xtail_{contrast}_{item}" for contrast in contrasts for item in ["TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted"]] +\
@@ -204,7 +204,7 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
     gff_file_rows = []
 
     header = ["Identifier", "Genome", "Start", "Stop", "Strand", "Locus_tag", "Overlapping_genes", "Old_locus_tag", "Name", "Gene_name", "Length", "Codon_count", "Start_codon", "Stop_codon"] +\
-             ["15nt upstream", "Nucleotide_seq", "Aminoacid_seq"] +\
+             ["Upstream_15nt", "Nucleotide_seq", "Aminoacid_seq"] +\
              [f"{cond}_TE" for cond in te_header] +\
              [f"{card}_rpkm" for card in wildcards] +\
              ["Evidence_reparation", "Reparation_probability", "Evidence_deepribo", "Deepribo_rank", "Deepribo_score"] +\

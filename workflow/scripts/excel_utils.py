@@ -664,7 +664,7 @@ MEASURE_COLUMNS = [("te_list", "te_list"), ("rpkm_list", "rpkm_list")]
 SEQUENCE_COLUMNS = [
     ("Start_codon", "start_codon"),
     ("Stop_codon", "stop_codon"),
-    ("15nt upstream", "nt_window"),
+    ("Upstream_15nt", "nt_window"),
     ("Nucleotide_seq", "nucleotide_seq"),
     ("Aminoacid_seq", "aa_seq"),
 ]
@@ -696,6 +696,14 @@ def resolve_location(unique_id, annotation_dict):
     sys.exit("Error... ID is not novel and not in the annotation!")
 
 
+# The same leading block as the feature tables, so a reader moving between
+# workbooks finds the identifying columns in the same place.
+DIFFEX_IDENTITY_HEADER = [
+    "Identifier", "Genome", "Start", "Stop", "Strand",
+    "Locus_tag", "Old_locus_tag", "Name",
+]
+
+
 def build_diffex_table(frame, annotation_dict, genome_dict, statistics, identifier_field):
     """One differential expression sheet.
 
@@ -704,7 +712,7 @@ def build_diffex_table(frame, annotation_dict, genome_dict, statistics, identifi
     which differs because the tools' CSVs are written by different code.
     """
     header = (
-        ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Identifier", "Name"]
+        DIFFEX_IDENTITY_HEADER
         + [name for name, _ in statistics]
         + ["Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
     )
@@ -728,7 +736,7 @@ def build_diffex_table(frame, annotation_dict, genome_dict, statistics, identifi
             )
 
         records.append(
-            [chromosome, start, stop, strand, locus_tag, old_locus_tag, unique_id, gene_name]
+            [unique_id, chromosome, start, stop, strand, locus_tag, old_locus_tag, gene_name]
             + [getattr(row, field) for _, field in statistics]
             + [length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq]
         )

@@ -26,7 +26,7 @@ def parse_orfs(args):
     # read gff file
     main_sheet = []
 
-    header = ["Orientation","Class", "Feature count"] + wildcards
+    header = ["Orientation", "Class", "Feature_count"] + wildcards
     prefix_columns = len(read_df.columns) - len(wildcards)
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)

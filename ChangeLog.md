@@ -20,6 +20,21 @@
    report: directive and --report were broken
  * Added envs/bed.yaml, which was referenced but missing
  * Added a pytest suite (41 tests) covering the validation and metagene helpers
+ * Standardised the spreadsheet column headers across every workbook. Same
+   information, one naming convention:
+   - fixed the misspelled "identifer" header in the DeepRibo table
+   - "15nt upstream" -> "Upstream_15nt" and "Feature count" -> "Feature_count",
+     so no header contains a space
+   - the differential expression tables now lead with Identifier, matching the
+     column order of the prediction and annotation tables
+   - log2FoldChange -> log2FC, lfcSE -> log2FC_SE and padj -> pvalue_adjusted in
+     the riborex and deltaTE tables, which is what xtail and the overview table
+     already called them
+   - Pred_probability -> Reparation_probability, and Pred_value / Pred_rank ->
+     Deepribo_score / Deepribo_rank, matching the overview table
+   Verified that every data value is unchanged; only headers were renamed and the
+   Identifier column moved
+
  * Deduplicated the excel generating scripts. generate_excel.py,
    generate_excel_reparation.py and generate_excel_deepribo.py shared roughly 90%
    of their bodies, differing only in which columns they emit; they now declare a
