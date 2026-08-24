@@ -13,6 +13,37 @@ class OrderedCounter(Counter, OrderedDict):
     pass
 
 
+def parse_attributes(attributes):
+    """Parse a GFF/GTF attribute column into {lowercased key: value}.
+
+    The nine near-identical copies this replaces all split on both ";" and "=",
+    lowercased every key, and aborted on an odd number of fields. That behaviour
+    is kept, including the abort, because a malformed attribute column silently
+    shifting every key onto the wrong value is worse than stopping.
+
+    Keys are lowercased, values are not. The first occurrence of a repeated key
+    wins, matching the list.index() lookups that were used before.
+    """
+    attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
+
+    if len(attribute_list) % 2 != 0:
+        print(attributes)
+        sys.exit("Attributes section of gtf/gff is wrongly formatted!")
+
+    parsed = {}
+    for index in range(0, len(attribute_list), 2):
+        parsed.setdefault(attribute_list[index].lower(), attribute_list[index + 1])
+    return parsed
+
+
+def first_attribute(parsed, *keys, default=""):
+    """The value of the first key present, in the order given."""
+    for key in keys:
+        if key in parsed:
+            return parsed[key]
+    return default
+
+
 def get_te_header(wildcards):
     """
     generate the correct TE_header based on the available data
@@ -74,50 +105,20 @@ def retrieve_column_information(attributes):
     [pred_value, name, product, note, evidence, locus_tag, old_locus_tag]
     """
 
-    attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
-
     if "ORF_type=;" in attributes:
-        attribute_list.remove("ORF_type")
+        attributes = attributes.replace("ORF_type=;", "")
 
-    if len(attribute_list) % 2 == 0:
-        for i in range(len(attribute_list)):
-            if i % 2 == 0:
-                attribute_list[i] = attribute_list[i].lower()
-    else:
-        print(attributes)
-        sys.exit("Attributes section of gtf/gff is wrongly formatted!")
+    parsed = parse_attributes(attributes)
 
-    pred_value = ""
-    if "pred_value" in attribute_list:
-        pred_value = attribute_list[attribute_list.index("pred_value")+1]
-    elif "prob" in attribute_list:
-        pred_value = attribute_list[attribute_list.index("prob")+1]
-
-    locus_tag = ""
-    if "locus_tag" in attribute_list:
-        locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-
-    old_locus_tag = ""
-    if "old_locus_tag" in attribute_list:
-        old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
-
-    name = ""
-    if "name" in attribute_list:
-        name = attribute_list[attribute_list.index("name")+1]
-
-    product = ""
-    if "product" in attribute_list:
-        product = attribute_list[attribute_list.index("product")+1]
-
-    note = ""
-    if "note" in attribute_list:
-        note = attribute_list[attribute_list.index("note")+1]
-
-    evidence = ""
-    if "evidence" in attribute_list:
-        evidence = attribute_list[attribute_list.index("evidence")+1]
-
-    return [pred_value, name, product, note, evidence, locus_tag, old_locus_tag]
+    return [
+        first_attribute(parsed, "pred_value", "prob"),
+        first_attribute(parsed, "name"),
+        first_attribute(parsed, "product"),
+        first_attribute(parsed, "note"),
+        first_attribute(parsed, "evidence"),
+        first_attribute(parsed, "locus_tag"),
+        first_attribute(parsed, "old_locus_tag"),
+    ]
 
 def get_genome_information(genome, start, stop, strand):
     """
@@ -252,254 +253,206 @@ def calculate_te(read_list, wildcards, conditions):
 
     return te_list
 
-def generate_riborex_dict(riborex_path):
-    """
-    create a dictionary containing all important riborex input
-    {geneID : (log2fc, pvalue, pvalue_adj)}
-    """
+# Which columns each differential expression tool contributes to the overview
+# table. The tools differ only in these names, not in how the file is read.
+DIFFEX_COLUMNS = {
+    "riborex": ("log2FoldChange", "pvalue", "padj"),
+    "xtail": ("log2FC_TE_final", "pvalue_final", "pvalue_adjust"),
+    "deltate": (
+        "RIBO_log2FoldChange", "RIBO_pvalue", "RIBO_padj",
+        "RNA_log2FoldChange", "RNA_pvalue", "RNA_padj",
+        "TE_log2FoldChange", "TE_pvalue", "TE_padj",
+    ),
+}
 
-    riborex_df = pd.read_csv(riborex_path, sep=",", comment="#")
-    riborex_dict = {}
 
-    for row in riborex_df.itertuples(index=False, name='Pandas'):
+def generate_diffex_dict(path, tool):
+    """{(gene_id, contrast): (values...)} for one differential expression tool.
+
+    The contrast column is written as "contrast_<name>" upstream, so only the
+    part after the underscore is kept.
+    """
+    frame = pd.read_csv(path, sep=",", comment="#")
+    columns = DIFFEX_COLUMNS[tool]
+
+    result = {}
+    for row in frame.itertuples(index=False, name="Pandas"):
         gene_id = getattr(row, "gene_id")
-        log2fc = getattr(row, "log2FoldChange")
-        pvalue = getattr(row, "pvalue")
-        pvalue_adj = getattr(row, "padj")
         contrast = getattr(row, "contrast").split("_")[1]
+        result[(gene_id, contrast)] = tuple(getattr(row, column) for column in columns)
 
-        riborex_dict[(gene_id, contrast)] = (log2fc, pvalue, pvalue_adj)
+    return result
 
-    return riborex_dict
+
+def generate_riborex_dict(riborex_path):
+    return generate_diffex_dict(riborex_path, "riborex")
 
 
 def generate_xtail_dict(xtail_path):
-    """
-    create a dictionary containing all important xtail input
-    {geneID : (log2fc, pvalue, pvalue_adj)}
-    """
+    return generate_diffex_dict(xtail_path, "xtail")
 
-    xtail_df = pd.read_csv(xtail_path, sep=",", comment="#")
-    xtail_dict = {}
-
-    for row in xtail_df.itertuples(index=False, name='Pandas'):
-        gene_id = getattr(row, "gene_id")
-        log2fc = getattr(row, "log2FC_TE_final")
-        pvalue = getattr(row, "pvalue_final")
-        pvalue_adj = getattr(row, "pvalue_adjust")
-        contrast = getattr(row, "contrast").split("_")[1]
-
-        xtail_dict[(gene_id, contrast)] = (log2fc, pvalue, pvalue_adj)
-
-    return xtail_dict
 
 def generate_deltate_dict(deltate_path):
-    """
-    create a dictionary containing all important deltate input
-    {geneID : (log2fc, pvalue, pvalue_adj)}
-    """
+    return generate_diffex_dict(deltate_path, "deltate")
 
-    deltate_df = pd.read_csv(deltate_path, sep=",", comment="#")
-    deltate_dict = {}
 
-    for row in deltate_df.itertuples(index=False, name='Pandas'):
-        gene_id = getattr(row, "gene_id")
-        ribo_log2fc = getattr(row, "RIBO_log2FoldChange")
-        ribo_pvalue = getattr(row, "RIBO_pvalue")
-        ribo_pvalue_adj = getattr(row, "RIBO_padj")
-        rna_log2fc = getattr(row, "RNA_log2FoldChange")
-        rna_pvalue = getattr(row, "RNA_pvalue")
-        rna_pvalue_adj = getattr(row, "RNA_padj")
-        te_log2fc = getattr(row, "TE_log2FoldChange")
-        te_pvalue = getattr(row, "TE_pvalue")
-        te_pvalue_adj = getattr(row, "TE_padj")
-        contrast = getattr(row, "contrast").split("_")[1]
+def _prediction_rows(path):
+    """Yield (identifier, row, parsed attributes, read counts) for a prediction GFF."""
+    frame = pd.read_csv(path, header=None, sep="\t", comment="#")
+    prefix_columns = 9
 
-        deltate_dict[(gene_id, contrast)] = (ribo_log2fc, ribo_pvalue, ribo_pvalue_adj, rna_log2fc, rna_pvalue, rna_pvalue_adj, te_log2fc, te_pvalue, te_pvalue_adj)
+    for row in frame.itertuples(index=False, name="Pandas"):
+        chromosome = getattr(row, "_0")
+        start = getattr(row, "_3")
+        stop = getattr(row, "_4")
+        strand = getattr(row, "_6")
+        parsed = parse_attributes(getattr(row, "_8"))
+        read_list = [getattr(row, "_%s" % x) for x in range(prefix_columns, len(row))]
 
-    return deltate_dict
+        identifier = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+        yield identifier, row, parsed, read_list
+
 
 def generate_reparation_dict(reparation_path):
     """
     create a dictionary containing all important reparation input
     """
+    return {
+        identifier: (
+            first_attribute(parsed, "prob"),
+            first_attribute(parsed, "evidence"),
+            read_list,
+        )
+        for identifier, row, parsed, read_list in _prediction_rows(reparation_path)
+    }
 
-    reparation_df = pd.read_csv(reparation_path, header=None, sep="\t", comment="#")
-    prefix_columns = 9
-
-    reparation_dict = {}
-    for row in reparation_df.itertuples(index=False, name='Pandas'):
-        chromosome = getattr(row, "_0")
-        start = getattr(row, "_3")
-        stop = getattr(row, "_4")
-        strand = getattr(row, "_6")
-        attribute_list = [x.strip(" ") for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
-
-        if len(attribute_list) % 2 == 0:
-            for i in range(len(attribute_list)):
-                if i % 2 == 0:
-                    attribute_list[i] = attribute_list[i].lower()
-        else:
-            print(attribute_list)
-            sys.exit("error, invalid gff, wrongly formatted attribute fields.")
-
-        proba = ""
-        if "prob" in attribute_list:
-            proba = attribute_list[attribute_list.index("prob")+1]
-
-        evidence = ""
-        if "evidence" in attribute_list:
-            evidence = attribute_list[attribute_list.index("evidence")+1]
-
-        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
-
-        ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-        reparation_dict[ID] = (proba, evidence, read_list)
-
-    return reparation_dict
 
 def generate_deepribo_dict(deepribo_path):
     """
     create a dictionary containing all important deepribo input
     """
-
-    deepribo_df = pd.read_csv(deepribo_path, header=None, sep="\t", comment="#")
-    prefix_columns = 9
-
     deepribo_dict = {}
-    for row in deepribo_df.itertuples(index=False, name='Pandas'):
-        chromosome = getattr(row, "_0")
-        start = getattr(row, "_3")
-        stop = getattr(row, "_4")
-        pred_rank = getattr(row, "_5")
-        strand = getattr(row, "_6")
-        attribute_list = [x.strip(" ") for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
-
-        if len(attribute_list) % 2 == 0:
-            for i in range(len(attribute_list)):
-                if i % 2 == 0:
-                    attribute_list[i] = attribute_list[i].lower()
-        else:
-            print(attribute_list)
-            sys.exit("error, invalid gff, wrongly formatted attribute fields.")
-
-        pred_value = ""
-        if "pred_value" in attribute_list:
-            pred_value = attribute_list[attribute_list.index("pred_value")+1]
-
-        if pred_value == "":# or float(pred_value) < 0:
+    for identifier, row, parsed, read_list in _prediction_rows(deepribo_path):
+        pred_value = first_attribute(parsed, "pred_value")
+        # Entries without a prediction value carry no DeepRibo result to report.
+        if pred_value == "":
             continue
 
-        evidence = ""
-        if "evidence" in attribute_list:
-            evidence = attribute_list[attribute_list.index("evidence")+1]
-
-        read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]
-
-        ID = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-        deepribo_dict[ID] = (pred_rank, pred_value, evidence, read_list)
+        deepribo_dict[identifier] = (
+            getattr(row, "_5"),
+            pred_value,
+            first_attribute(parsed, "evidence"),
+            read_list,
+        )
 
     return deepribo_dict
+
+
+def _read_annotation_entries(annotation_path, keep_feature, default):
+    """Split an annotation into feature entries and their gene-level parents.
+
+    `keep_feature` selects which features become entries; everything tagged gene
+    or pseudogene is collected separately so that a missing locus tag can fall
+    back to the gene's.
+
+    `default` is what a missing attribute becomes. It differs between callers --
+    "" for the CDS view and None for the non-CDS view -- and that difference is
+    load bearing: the fallback below tests against "", so with None defaults a
+    missing locus tag is never filled in from the gene. Preserved as it was.
+    """
+    frame = pd.read_csv(annotation_path, sep="\t", comment="#", header=None)
+
+    entries = {}
+    genes = {}
+    for row in frame.itertuples(index=False, name="Pandas"):
+        chromosome = getattr(row, "_0")
+        feature = getattr(row, "_2")
+        start = getattr(row, "_3")
+        stop = getattr(row, "_4")
+        strand = getattr(row, "_6")
+        parsed = parse_attributes(getattr(row, "_8"))
+        read_list = [getattr(row, "_%s" % x) for x in range(9, len(row))]
+
+        key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
+
+        if keep_feature(feature):
+            entries[key] = {
+                "feature": feature,
+                "gene_id": first_attribute(parsed, "gene_id", "id", default=default),
+                "locus_tag": first_attribute(parsed, "locus_tag", default=default),
+                "old_locus_tag": first_attribute(parsed, "old_locus_tag", default=default),
+                "name": first_attribute(parsed, "name", "gene_name", default=default),
+                "product": first_attribute(parsed, "product", default=default),
+                "note": first_attribute(parsed, "note", default=default),
+                "read_list": read_list,
+            }
+        elif feature.lower() in ["gene", "pseudogene"]:
+            genes[key] = (
+                first_attribute(parsed, "name", "gene_name"),
+                first_attribute(parsed, "locus_tag", "gene_id"),
+                first_attribute(parsed, "old_locus_tag"),
+            )
+
+    return entries, genes
+
+
+def _apply_gene_fallback(entry, genes, key):
+    """Fill a missing locus tag from the gene feature at the same coordinates."""
+    gene_name = ""
+    locus_tag = entry["locus_tag"]
+    old_locus_tag = entry["old_locus_tag"]
+
+    if key in genes:
+        gene_name, gene_locus_tag, gene_old_locus_tag = genes[key]
+        if locus_tag == "":
+            locus_tag = gene_locus_tag
+        if old_locus_tag == "":
+            old_locus_tag = gene_old_locus_tag
+
+    return gene_name, locus_tag, old_locus_tag
+
 
 def generate_annotation_dict(annotation_path):
     """
     create dictionary from annotation.
     key : (gene_id, locus_tag, name, gene_name)
     """
+    coding = ["cds", "srna", "rrna", "trna", "ncrna"]
+    entries, genes = _read_annotation_entries(
+        annotation_path, lambda feature: feature.lower() in coding, default=""
+    )
 
-    annotation_df = pd.read_csv(annotation_path, sep="\t", comment="#", header=None)
     annotation_meta_dict = {}
-
-    gene_dict = {}
-    cds_dict = {}
-
-    for row in annotation_df.itertuples(index=False, name='Pandas'):
-        chromosome = getattr(row, "_0")
-        feature = getattr(row, "_2")
-        start = getattr(row, "_3")
-        stop = getattr(row, "_4")
-        strand = getattr(row, "_6")
-        attributes = getattr(row, "_8")
-        read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
-
-        attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
-
-        if len(attribute_list) % 2 == 0:
-            for i in range(len(attribute_list)):
-                if i % 2 == 0:
-                    attribute_list[i] = attribute_list[i].lower()
-        else:
-            print(attribute_list)
-            sys.exit("error, invalid gff, wrongly formatted attribute fields.")
-
-
-        if feature.lower() in ["cds", "srna", "rrna", "trna", "ncrna"]:
-            locus_tag = ""
-            if "locus_tag" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-
-            old_locus_tag = ""
-            if "old_locus_tag" in attribute_list:
-                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
-
-            name = ""
-            if "name" in attribute_list:
-                name = attribute_list[attribute_list.index("name")+1]
-            elif "gene_name" in attribute_list:
-                name = attribute_list[attribute_list.index("gene_name")+1]
-
-            gene_id = ""
-            if "gene_id" in attribute_list:
-                gene_id = attribute_list[attribute_list.index("gene_id")+1]
-            elif "id" in attribute_list:
-                gene_id = attribute_list[attribute_list.index("id")+1]
-
-            product = ""
-            if "product" in attribute_list:
-                product = attribute_list[attribute_list.index("product")+1]
-
-            note = ""
-            if "note" in attribute_list:
-                note = attribute_list[attribute_list.index("note")+1]
-
-            new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            cds_dict[new_key] = (gene_id, locus_tag, name, old_locus_tag, product, note, read_list)
-        elif feature.lower() in ["gene","pseudogene"]:
-            gene_name = ""
-            if "name" in attribute_list:
-                gene_name = attribute_list[attribute_list.index("name")+1]
-            elif "gene_name" in attribute_list:
-                gene_name = attribute_list[attribute_list.index("gene_name")+1]
-
-            locus_tag = ""
-            if "locus_tag" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-            elif "gene_id" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("gene_id")+1]
-
-            old_locus_tag = ""
-            if "old_locus_tag" in attribute_list:
-                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
-
-            new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            gene_dict[new_key] = (gene_name, locus_tag, old_locus_tag)
-
-
-    for key in cds_dict.keys():
-        gene_name = ""
-        gene_id, locus_tag, name, old_locus_tag, product, note, read_list = cds_dict[key]
-
-        if key in gene_dict:
-            gene_name, gene_locus_tag, gene_old_locus_tag = gene_dict[key]
-
-            if locus_tag == "":
-                locus_tag = gene_locus_tag
-            if old_locus_tag == "":
-                old_locus_tag = gene_old_locus_tag
-
-        annotation_meta_dict[key] = (gene_id, locus_tag, name, gene_name, old_locus_tag, product, note, read_list)
+    for key, entry in entries.items():
+        gene_name, locus_tag, old_locus_tag = _apply_gene_fallback(entry, genes, key)
+        annotation_meta_dict[key] = (
+            entry["gene_id"], locus_tag, entry["name"], gene_name,
+            old_locus_tag, entry["product"], entry["note"], entry["read_list"],
+        )
 
     return annotation_meta_dict
+
+
+def generate_non_cds_dict(annotation_path):
+    """
+    create dictionary from annotation ignoring cds.
+    key : (gene_id, locus_tag, name, gene_name)
+    """
+    excluded = ["cds", "gene", "pseudogene", "exon"]
+    entries, genes = _read_annotation_entries(
+        annotation_path, lambda feature: feature.lower() not in excluded, default=None
+    )
+
+    annotation_meta_dict = {}
+    for key, entry in entries.items():
+        gene_name, locus_tag, old_locus_tag = _apply_gene_fallback(entry, genes, key)
+        annotation_meta_dict[key] = (
+            entry["feature"], entry["gene_id"], locus_tag, entry["name"], gene_name,
+            old_locus_tag, entry["product"], entry["note"], entry["read_list"],
+        )
+
+    return annotation_meta_dict
+
 
 def annotation_to_dict(annotation_file):
     """
@@ -509,182 +462,294 @@ def annotation_to_dict(annotation_file):
 
     annotation_df = pd.read_csv(annotation_file, sep="\t", comment="#", header=None)
 
+    # Gene and pseudogene features carry the locus tags; the CDS-like features
+    # that follow reference them through their Parent attribute.
     parent_dict = {}
-    for row in annotation_df.itertuples(index=False, name='Pandas'):
-        if getattr(row, "_2").lower() in ["gene","pseudogene"]:
-            chromosome = getattr(row, "_0")
-            start = getattr(row, "_3")
-            stop = getattr(row, "_4")
-            strand = getattr(row, "_6")
-            attributes = getattr(row, "_8")
+    for row in annotation_df.itertuples(index=False, name="Pandas"):
+        if getattr(row, "_2").lower() not in ["gene", "pseudogene"]:
+            continue
 
-            attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
+        parsed = parse_attributes(getattr(row, "_8"))
+        if "id" not in parsed:
+            continue
 
-            if len(attribute_list) % 2 == 0:
-                for i in range(len(attribute_list)):
-                    if i % 2 == 0:
-                        attribute_list[i] = attribute_list[i].lower()
-            else:
-                print(attribute_list)
-                sys.exit("error, invalid gff, wrongly formatted attribute fields.")
-
-            id = ""
-            if "id" in attribute_list:
-                id = attribute_list[attribute_list.index("id") + 1]
-            else:
-                continue
-
-            locus_tag = ""
-            if "locus_tag" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("locus_tag") + 1]
-
-            old_locus_tag = ""
-            if "old_locus_tag" in attribute_list:
-                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag") + 1]
-
-            name = ""
-            if "gene" in attribute_list:
-                name = attribute_list[attribute_list.index("gene") + 1]
-
-            parent_dict[id] = (locus_tag, old_locus_tag, name)
+        parent_dict[parsed["id"]] = (
+            first_attribute(parsed, "locus_tag"),
+            first_attribute(parsed, "old_locus_tag"),
+            first_attribute(parsed, "gene"),
+        )
 
     annotation_dict = {}
-    for row in annotation_df.itertuples(index=False, name='Pandas'):
-        if getattr(row, "_2").lower() in ["cds", "srna", "rrna", "ncrna", "trna"]:
-            chromosome = getattr(row, "_0")
-            start = getattr(row, "_3")
-            stop = getattr(row, "_4")
-            strand = getattr(row, "_6")
-            attributes = getattr(row, "_8")
+    for row in annotation_df.itertuples(index=False, name="Pandas"):
+        if getattr(row, "_2").lower() not in ["cds", "srna", "rrna", "ncrna", "trna"]:
+            continue
 
-            attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
-
-            if len(attribute_list) % 2 == 0:
-                for i in range(len(attribute_list)):
-                    if i % 2 == 0:
-                        attribute_list[i] = attribute_list[i].lower()
-            else:
-                print(attribute_list)
-                sys.exit("error, invalid gff, wrongly formatted attribute fields.")
-
-            parent = ""
-            if "parent" in attribute_list:
-                parent = attribute_list[attribute_list.index("parent") + 1]
-
-            id = f"{chromosome}:{start}-{stop}:{strand}"
-            if parent == "" or parent not in parent_dict:
-                name = ""
-            else:
-                name = parent_dict[parent][2]
-
-            if name == "":
-                if "name" in attribute_list:
-                    name = attribute_list[attribute_list.index("name") + 1]
-
-            if parent == "" or parent not in parent_dict:
-                annotation_dict[id] = (chromosome, start, stop, strand, name, "", "")
-            else:
-                annotation_dict[id] = (chromosome, start, stop, strand, name, parent_dict[parent][0], parent_dict[parent][1])
-
-    return annotation_dict
-
-def generate_non_cds_dict(annotation_path):
-    """
-    create dictionary from annotation ignoring cds.
-    key : (gene_id, locus_tag, name, gene_name)
-    """
-
-    gene_dict = {}
-    non_cds_dict = {}
-
-    annotation_meta_dict = {}
-    annotation_df = pd.read_csv(annotation_path, sep="\t", comment="#", header=None)
-
-    for row in annotation_df.itertuples(index=False, name='Pandas'):
         chromosome = getattr(row, "_0")
-        feature = getattr(row, "_2")
         start = getattr(row, "_3")
         stop = getattr(row, "_4")
         strand = getattr(row, "_6")
-        attributes = getattr(row, "_8")
-        read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
+        parsed = parse_attributes(getattr(row, "_8"))
 
-        attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
+        parent = first_attribute(parsed, "parent")
+        identifier = f"{chromosome}:{start}-{stop}:{strand}"
 
-        if len(attribute_list) % 2 == 0:
-            for i in range(len(attribute_list)):
-                if i % 2 == 0:
-                    attribute_list[i] = attribute_list[i].lower()
+        if parent == "" or parent not in parent_dict:
+            # Without a resolvable parent the feature keeps only its own name.
+            name = first_attribute(parsed, "name")
+            annotation_dict[identifier] = (chromosome, start, stop, strand, name, "", "")
         else:
-            print(attribute_list)
-            sys.exit("error, invalid gff, wrongly formatted attribute fields.")
+            locus_tag, old_locus_tag, name = parent_dict[parent]
+            if name == "":
+                name = first_attribute(parsed, "name")
+            annotation_dict[identifier] = (
+                chromosome, start, stop, strand, name, locus_tag, old_locus_tag
+            )
+
+    return annotation_dict
 
 
-        if feature.lower() not in ["cds", "gene", "pseudogene", "exon"]:
-            locus_tag = None
-            if "locus_tag" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
 
-            old_locus_tag = None
-            if "old_locus_tag" in attribute_list:
-                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
-
-            name = None
-            if "name" in attribute_list:
-                name = attribute_list[attribute_list.index("name")+1]
-            elif "gene_name" in attribute_list:
-                name = attribute_list[attribute_list.index("gene_name")+1]
-
-            gene_id = None
-            if "gene_id" in attribute_list:
-                gene_id = attribute_list[attribute_list.index("gene_id")+1]
-            elif "id" in attribute_list:
-                gene_id = attribute_list[attribute_list.index("id")+1]
-
-            product = None
-            if "product" in attribute_list:
-                product = attribute_list[attribute_list.index("product")+1]
-
-            note = None
-            if "note" in attribute_list:
-                note = attribute_list[attribute_list.index("note")+1]
-
-            key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            non_cds_dict[key] = (feature, gene_id, locus_tag, old_locus_tag, name, product, note, read_list)
-
-        elif feature.lower() in ["gene","pseudogene"]:
-            gene_name = ""
-            if "name" in attribute_list:
-                gene_name = attribute_list[attribute_list.index("name")+1]
-            elif "gene_name" in attribute_list:
-                gene_name = attribute_list[attribute_list.index("gene_name")+1]
-
-            locus_tag = ""
-            if "locus_tag" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-            elif "gene_id" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("gene_id")+1]
-
-            old_locus_tag = ""
-            if "old_locus_tag" in attribute_list:
-                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
-
-            new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            gene_dict[new_key] = (gene_name, locus_tag, old_locus_tag)
+# --------------------------------------------------------------------------
+# Shared table building
+#
+# generate_excel.py, generate_excel_reparation.py and generate_excel_deepribo.py
+# differed only in which columns they emit; everything below the column list --
+# loading the genome, the mapped read totals, the RPKM and translational
+# efficiency arithmetic -- was copied between them.
+# --------------------------------------------------------------------------
 
 
-    for key in non_cds_dict.keys():
-        gene_name = ""
-        feature, gene_id, locus_tag, old_locus_tag, name, product, note, read_list = non_cds_dict[key]
+class TableContext:
+    """Everything the per-row work needs that does not change between rows."""
 
-        if key in gene_dict:
-            gene_name, gene_locus_tag, gene_old_locus_tag = gene_dict[key]
+    def __init__(self, genome_path, total_mapped_path):
+        self.genome = {}
+        for entry in SeqIO.parse(genome_path, "fasta"):
+            self.genome[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
 
-            if locus_tag == "":
-                locus_tag = gene_locus_tag
-            if old_locus_tag == "":
-                old_locus_tag = gene_old_locus_tag
+        self.total_mapped = {}
+        wildcards = []
+        with open(total_mapped_path) as handle:
+            for line in handle:
+                wildcard, chromosome, value = line.strip().split("\t")
+                self.total_mapped[(wildcard, chromosome)] = int(value)
+                wildcards.append(wildcard)
 
-        annotation_meta_dict[key] = (feature, gene_id, locus_tag, name, gene_name, old_locus_tag, product, note, read_list)
+        self.wildcards = get_unique(wildcards)
+        self.te_header = get_te_header(self.wildcards)
+        self.conditions = get_unique([card.split("-")[1] for card in self.wildcards])
 
-    return annotation_meta_dict
+    def rpkm_columns(self):
+        return ["%s_rpkm" % card for card in self.wildcards]
+
+    def te_columns(self):
+        return ["%s_TE" % condition for condition in self.te_header]
+
+
+class Row:
+    """One annotation row, with everything the column definitions may need."""
+
+    def __init__(self, raw, context, prefix_columns):
+        self.raw = raw
+        self.chromosome = getattr(raw, "_0")
+        self.source = getattr(raw, "_1")
+        self.feature = getattr(raw, "_2")
+        self.start = getattr(raw, "_3")
+        self.stop = getattr(raw, "_4")
+        self.score = getattr(raw, "_5")
+        self.strand = getattr(raw, "_6")
+        self.phase = getattr(raw, "_7")
+        self.attributes = getattr(raw, "_8")
+
+        self.identifier = "%s:%s-%s:%s" % (
+            self.chromosome, self.start, self.stop, self.strand
+        )
+        self.length = self.stop - self.start + 1
+        self.codon_count = int(self.length / 3)
+
+        (self.pred_value, self.name, self.product, self.note,
+         self.evidence, self.locus_tag, self.old_locus_tag) = retrieve_column_information(
+            self.attributes
+        )
+
+        self.start_codon, self.stop_codon, self.nucleotide_seq, self.aa_seq, self.nt_window = (
+            "", "", "", "", ""
+        )
+        if self.chromosome in context.genome:
+            (self.start_codon, self.stop_codon, self.nucleotide_seq,
+             self.aa_seq, self.nt_window) = get_genome_information(
+                context.genome[self.chromosome], self.start - 1, self.stop - 1, self.strand
+            )
+
+        self.read_list = [
+            getattr(raw, "_%s" % x) for x in range(prefix_columns, len(raw))
+        ]
+        self.rpkm_list = []
+        for index, value in enumerate(self.read_list):
+            key = (context.wildcards[index], self.chromosome)
+            if key not in context.total_mapped:
+                self.rpkm_list.append(0)
+            else:
+                self.rpkm_list.append(
+                    calculate_rpkm(context.total_mapped[key], value, self.length)
+                )
+
+        self.te_list = calculate_te(self.rpkm_list, context.wildcards, context.conditions)
+
+
+def build_annotation_table(reads_path, context, columns, source=None):
+    """Build one DataFrame from a read-count annotation.
+
+    `columns` is a list of (header, accessor) pairs. An accessor is either an
+    attribute name on Row, or a callable taking the Row. Two names are expanded
+    in place into one column per library: "te_list" and "rpkm_list".
+
+    `source` overrides the Source column when a script writes a fixed value
+    rather than passing the file's own second column through.
+    """
+    read_df = pd.read_csv(reads_path, comment="#", header=None, sep="\t")
+    prefix_columns = len(read_df.columns) - len(context.wildcards)
+
+    header = []
+    for name, _ in columns:
+        if name == "te_list":
+            header.extend(context.te_columns())
+        elif name == "rpkm_list":
+            header.extend(context.rpkm_columns())
+        else:
+            header.append(name)
+
+    records = []
+    for raw in read_df.itertuples(index=False, name="Pandas"):
+        row = Row(raw, context, prefix_columns)
+        if source is not None:
+            row.source = source
+
+        values = []
+        for name, accessor in columns:
+            value = accessor(row) if callable(accessor) else getattr(row, accessor)
+            if name in ("te_list", "rpkm_list"):
+                values.extend(value)
+            else:
+                values.append(value)
+        records.append((row, values))
+
+    frame = pd.DataFrame.from_records([values for _, values in records], columns=header)
+    return frame, [row for row, _ in records]
+
+
+# Columns every one of the three tables shares, in the order they appear.
+def identity_columns(identifier_header="Identifier"):
+    return [
+        (identifier_header, "identifier"),
+        ("Genome", "chromosome"),
+        ("Source", "source"),
+        ("Feature", "feature"),
+        ("Start", "start"),
+        ("Stop", "stop"),
+        ("Strand", "strand"),
+    ]
+
+
+LOCUS_COLUMNS = [
+    ("Locus_tag", "locus_tag"),
+    ("Old_locus_tag", "old_locus_tag"),
+    ("Name", "name"),
+    ("Length", "length"),
+    ("Codon_count", "codon_count"),
+]
+
+MEASURE_COLUMNS = [("te_list", "te_list"), ("rpkm_list", "rpkm_list")]
+
+SEQUENCE_COLUMNS = [
+    ("Start_codon", "start_codon"),
+    ("Stop_codon", "stop_codon"),
+    ("15nt upstream", "nt_window"),
+    ("Nucleotide_seq", "nucleotide_seq"),
+    ("Aminoacid_seq", "aa_seq"),
+]
+
+
+# --------------------------------------------------------------------------
+# Differential expression tables
+#
+# generate_excel_riborex.py, generate_excel_xtail.py and generate_excel_deltate.py
+# shared everything except which statistics columns they carry and which of
+# those drives the sorting and the up/down split.
+# --------------------------------------------------------------------------
+
+
+def resolve_location(unique_id, annotation_dict):
+    """Coordinates and names for one feature identifier.
+
+    Identifiers absent from the annotation are predicted ORFs, whose coordinates
+    are encoded in the identifier itself as <genome>:<start>-<stop>:<strand>.
+    """
+    if unique_id in annotation_dict:
+        return annotation_dict[unique_id]
+
+    if ":" in str(unique_id) and "-" in str(unique_id):
+        chromosome, section, strand = unique_id.split(":")
+        start, stop = section.split("-")
+        return chromosome, start, stop, strand, "", "", ""
+
+    sys.exit("Error... ID is not novel and not in the annotation!")
+
+
+def build_diffex_table(frame, annotation_dict, genome_dict, statistics, identifier_field):
+    """One differential expression sheet.
+
+    `statistics` is a list of (header, field) pairs naming the tool's own
+    columns; `identifier_field` is the attribute holding the feature identifier,
+    which differs because the tools' CSVs are written by different code.
+    """
+    header = (
+        ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Identifier", "Name"]
+        + [name for name, _ in statistics]
+        + ["Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
+    )
+
+    records = []
+    for row in frame.itertuples(index=False, name="Pandas"):
+        unique_id = getattr(row, identifier_field)
+        chromosome, start, stop, strand, gene_name, locus_tag, old_locus_tag = resolve_location(
+            unique_id, annotation_dict
+        )
+
+        start = int(start)
+        stop = int(stop)
+        length = stop - start + 1
+        codon_count = int(length / 3)
+
+        start_codon, stop_codon, nucleotide_seq, aa_seq = "", "", "", ""
+        if chromosome in genome_dict:
+            start_codon, stop_codon, nucleotide_seq, aa_seq, _ = get_genome_information(
+                genome_dict[chromosome], start - 1, stop - 1, strand
+            )
+
+        records.append(
+            [chromosome, start, stop, strand, locus_tag, old_locus_tag, unique_id, gene_name]
+            + [getattr(row, field) for _, field in statistics]
+            + [length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq]
+        )
+
+    return pd.DataFrame.from_records(records, columns=header)
+
+
+def split_up_down(all_df, log2fc_column, padj_column, log2fc_cutoff, padj_cutoff):
+    """Sort, then split into the significantly up- and down-regulated sheets."""
+    all_df = all_df.sort_values(by=[padj_column, "Genome", "Start", "Stop", "Strand"])
+    significant = all_df[padj_column] <= padj_cutoff
+    return {
+        "all": all_df,
+        "TE_up": all_df[(all_df[log2fc_column] >= log2fc_cutoff) & significant],
+        "TE_down": all_df[(all_df[log2fc_column] <= log2fc_cutoff * -1) & significant],
+    }
+
+
+def read_genome_dict(genome_path):
+    """{sequence id: (forward, complement)} for the sequence lookups."""
+    return {
+        str(entry.id): (str(entry.seq), str(entry.seq.complement()))
+        for entry in SeqIO.parse(genome_path, "fasta")
+    }

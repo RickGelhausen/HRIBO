@@ -20,6 +20,19 @@
    report: directive and --report were broken
  * Added envs/bed.yaml, which was referenced but missing
  * Added a pytest suite (41 tests) covering the validation and metagene helpers
+ * Deduplicated the excel generating scripts. generate_excel.py,
+   generate_excel_reparation.py and generate_excel_deepribo.py shared roughly 90%
+   of their bodies, differing only in which columns they emit; they now declare a
+   column list against one shared table builder and shrank from 363 to 185 lines
+   combined. The riborex, xtail and deltaTE tables likewise share one builder
+ * Collapsed the duplication inside excel_utils: the GFF attribute parsing block
+   appeared seven times and is now one function, the three differential
+   expression readers became one parameterised by column names, the two
+   prediction readers share their row parsing, and generate_annotation_dict and
+   generate_non_cds_dict share theirs
+ * All of this is verified by golden-output tests: every workbook is byte
+   identical to what the previous implementation produced
+
  * The TIS advisor now evaluates both the 5' and the 3' read end and recommends
    whichever the protocol defines more precisely, rather than analysing only the
    end named in the config. Which end carries the cleaner signal is organism and

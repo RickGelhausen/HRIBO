@@ -1,85 +1,64 @@
 #!/usr/bin/env python
+"""Turn the riborex differential expression results into a spreadsheet.
+
+Only the statistics columns and the cutoff columns are specific to riborex; the
+rest is shared with the xtail and deltaTE tables in excel_utils.
+"""
+
 import argparse
-import sys
+
 import pandas as pd
-import collections
 
 import excel_utils as eu
 
-from Bio import SeqIO
+# riborex writes DESeq2 results, so the columns are DESeq2's.
+STATISTICS = [
+    ("baseMean", "baseMean"),
+    ("log2FoldChange", "log2FoldChange"),
+    ("lfcSE", "lfcSE"),
+    ("stat", "stat"),
+    ("pvalue", "pvalue"),
+    ("padj", "padj"),
+]
+
+# R's write.csv emits row names as an unnamed first column, which pandas reaches
+# as _0.
+IDENTIFIER_FIELD = "_0"
+
 
 def riborex_output(args):
-    # read the genome file
-    genome_file = SeqIO.parse(args.genome, "fasta")
-    genome_dict = dict()
-    for entry in genome_file:
-        genome_dict[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
-
+    genome_dict = eu.read_genome_dict(args.genome)
     annotation_dict = eu.annotation_to_dict(args.annotation_file)
-
     diff_expr_df = pd.read_csv(args.input_csv, sep=",", comment="#")
 
-    all_sheet = []
-    header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Identifier", "Name", \
-              "baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj", \
-              "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
+    all_df = eu.build_diffex_table(
+        diff_expr_df, annotation_dict, genome_dict, STATISTICS, IDENTIFIER_FIELD
+    )
+    dataframe_dict = eu.split_up_down(
+        all_df, "log2FoldChange", "padj", args.log2fc_cutoff, args.padj_cutoff
+    )
 
-    name_list = [f"s{x}" for x in range(len(header))]
-    nTuple = collections.namedtuple('Pandas', name_list)
-
-    for row in diff_expr_df.itertuples(index=False, name='Pandas'):
-        unique_id = getattr(row, "_0")
-
-        if unique_id in annotation_dict:
-            chromosome, start, stop, strand, gene_name, locus_tag, old_locus_tag = annotation_dict[unique_id]
-        else:
-            if ":" in unique_id and "-" in unique_id:
-                chromosome, sec, strand = unique_id.split(":")
-                start, stop = sec.split("-")
-                gene_name = ""
-                locus_tag, old_locus_tag = "", ""
-            else:
-                sys.exit("Error... ID is not novel and not in the annotation!")
-
-        baseMean = getattr(row, "baseMean")
-        log2FoldChange = getattr(row, "log2FoldChange")
-        lfcSE = getattr(row, "lfcSE")
-        stat = getattr(row, "stat")
-        pvalue = getattr(row, "pvalue")
-        padj = getattr(row, "padj")
-
-        start = int(start)
-        stop = int(stop)
-        length = stop - start + 1
-        codon_count = int(length / 3)
-        start_codon, stop_codon, nucleotide_seq, aa_seq = "", "", "", ""
-        if chromosome in genome_dict:
-            start_codon, stop_codon, nucleotide_seq, aa_seq, _ = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
-
-        result = [chromosome, start, stop, strand, locus_tag, old_locus_tag, unique_id, gene_name, baseMean, log2FoldChange, lfcSE, stat, pvalue, padj, length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq]
-
-        all_sheet.append(nTuple(*result))
-
-    all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
-    all_df = all_df.sort_values(by=["padj", "Genome", "Start", "Stop", "Strand"])
-    te_up_df = all_df[(all_df["log2FoldChange"] >= args.log2fc_cutoff) & (all_df["padj"] <= args.padj_cutoff)]
-    te_down_df = all_df[(all_df["log2FoldChange"] <= args.log2fc_cutoff * -1) & (all_df["padj"] <= args.padj_cutoff)]
-
-    dataframe_dict = {"all" : all_df, "TE_up" : te_up_df, "TE_down" : te_down_df}
     eu.excel_writer(args.output, dataframe_dict, [])
 
+
 def main():
-    # store commandline args
-    parser = argparse.ArgumentParser(description='create excel files from riborex output')
-    parser.add_argument("-a", "--annotation", action="store", dest="annotation_file", required=True, help= "annotation file")
-    parser.add_argument("-g", "--genome", action="store", dest="genome", required=True, help= "reference genome")
-    parser.add_argument("-i", "--input", action="store", dest="input_csv", required=True, help= "input csv file")
-    parser.add_argument("-o", "--xlsx", action="store", dest="output", required=True, help= "output xlsx file")
-    parser.add_argument("--padj_cutoff", action="store", dest="padj_cutoff", default=0.05, type=float, help= "The padj cutoff for the differential expression analysis. Default: 0.05")
-    parser.add_argument("--log2fc_cutoff", action="store", dest="log2fc_cutoff", default=1.0, type=float, help= "The log2fc cutoff for the differential expression analysis. Default: 1")
+    parser = argparse.ArgumentParser(description="create excel files from riborex output")
+    parser.add_argument("-a", "--annotation", action="store", dest="annotation_file",
+                        required=True, help="annotation file")
+    parser.add_argument("-g", "--genome", action="store", dest="genome", required=True,
+                        help="reference genome")
+    parser.add_argument("-i", "--input", action="store", dest="input_csv", required=True,
+                        help="input csv file")
+    parser.add_argument("-o", "--xlsx", action="store", dest="output", required=True,
+                        help="output xlsx file")
+    parser.add_argument("--padj_cutoff", action="store", dest="padj_cutoff", default=0.05,
+                        type=float, help="padj cutoff for the differential expression analysis")
+    parser.add_argument("--log2fc_cutoff", action="store", dest="log2fc_cutoff", default=1.0,
+                        type=float, help="log2fc cutoff for the differential expression analysis")
     args = parser.parse_args()
 
     riborex_output(args)
+
 
 if __name__ == '__main__':
     main()

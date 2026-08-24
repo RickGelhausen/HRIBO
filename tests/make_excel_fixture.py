@@ -173,6 +173,32 @@ def write_deltate(path, prefix, seed=23):
             handle.write(identifier + "\t" + "\t".join(values) + "\n")
 
 
+
+def write_pooled_diffex(path, tool, contrasts=("B-A",)):
+    """The pooled <tool>_all.csv the overview table reads.
+
+    Different schema from the per-contrast files: keyed by an explicit gene_id
+    column with a contrast column written as "contrast_<name>".
+    """
+    columns = {
+        "riborex": ["log2FoldChange", "pvalue", "padj"],
+        "xtail": ["log2FC_TE_final", "pvalue_final", "pvalue_adjust"],
+        "deltate": [
+            "RIBO_log2FoldChange", "RIBO_pvalue", "RIBO_padj",
+            "RNA_log2FoldChange", "RNA_pvalue", "RNA_padj",
+            "TE_log2FoldChange", "TE_pvalue", "TE_padj",
+        ],
+    }[tool]
+
+    rng = random.Random(31 + len(tool))
+    with open(path, "w") as handle:
+        handle.write("gene_id," + ",".join(columns) + ",contrast\n")
+        for contrast in contrasts:
+            for identifier, index in _diffex_ids():
+                values = [f"{rng.uniform(-4, 4):.4f}" for _ in columns]
+                handle.write(f"{identifier}," + ",".join(values) + f",contrast_{contrast}\n")
+
+
 def build(directory):
     """Write every input the excel scripts need. Returns the directory."""
     directory = Path(directory)
@@ -194,6 +220,10 @@ def build(directory):
 
     write_riborex(directory / "riborex_all.csv")
     write_xtail(directory / "xtail_all.csv")
+    write_pooled_diffex(directory / "riborex_pooled.csv", "riborex")
+    write_pooled_diffex(directory / "xtail_pooled.csv", "xtail")
+    write_pooled_diffex(directory / "deltate_pooled.csv", "deltate")
+
     write_deltate(directory / "deltaRibo.txt", "RIBO", seed=23)
     write_deltate(directory / "deltaRNA.txt", "RNA", seed=24)
     write_deltate(directory / "deltaTE.txt", "TE", seed=25)

@@ -56,6 +56,17 @@ def command(name, inputs, output):
                     "-i", str(inputs / "deltaRibo.txt"),
                     "-r", str(inputs / "deltaRNA.txt"),
                     "-t", str(inputs / "deltaTE.txt")],
+        # The overview pulls in most of excel_utils, including the annotation,
+        # prediction and pooled differential expression readers that nothing
+        # else exercises.
+        "overview": ["generate_excel_overview.py", *genome, *totals,
+                     "-a", str(inputs / "total_annotation.gtf"),
+                     "--mapped_reads_reparation", str(inputs / "reparation_annotation.gff"),
+                     "--mapped_reads_deepribo", str(inputs / "deepribo_annotation.gff"),
+                     "--riborex", str(inputs / "riborex_pooled.csv"),
+                     "--xtail", str(inputs / "xtail_pooled.csv"),
+                     "--deltate", str(inputs / "deltate_pooled.csv"),
+                     "-c", "B-A"],
     }
     script, *rest = commands[name]
     return [sys.executable, str(SCRIPTS / script), *rest, "-o", str(output)]
@@ -72,7 +83,7 @@ def run(name, inputs, tmp_path):
 
 
 SCRIPT_NAMES = ["annotation", "reparation", "deepribo", "readtable",
-                "riborex", "xtail", "deltate"]
+                "riborex", "xtail", "deltate", "overview"]
 
 
 @pytest.mark.parametrize("name", SCRIPT_NAMES)

@@ -1,146 +1,144 @@
 #!/usr/bin/env python
+"""Turn the deltaTE differential expression results into a spreadsheet.
+
+deltaTE reports three separate DESeq2 tables -- ribosome occupancy, RNA
+abundance and their ratio -- which are joined here on the feature identifier.
+The genome lookup and identifier resolution are shared with the riborex and
+xtail tables in excel_utils.
+"""
+
 import argparse
-import sys
+
 import pandas as pd
-import collections
 
 import excel_utils as eu
 
-from Bio import SeqIO
+# The RIBO and RNA tables carry no Wald statistic; only the TE table does.
+RIBO_RNA_COLUMNS = ["baseMean", "log2FoldChange", "lfcSE", "pvalue", "padj"]
+TE_COLUMNS = ["baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj"]
 
-def create_combined_dict(ribo_df, rna_df, te_df):
+# Each split is (sheet name, fold change column, adjusted p-value column).
+SPLITS = [
+    ("RNA_up", "RNA_log2FoldChange", "RNA_padj", 1),
+    ("RNA_down", "RNA_log2FoldChange", "RNA_padj", -1),
+    ("RIBO_up", "RIBO_log2FoldChange", "RIBO_padj", 1),
+    ("RIBO_down", "RIBO_log2FoldChange", "RIBO_padj", -1),
+    ("TE_up", "TE_log2FoldChange", "TE_padj", 1),
+    ("TE_down", "TE_log2FoldChange", "TE_padj", -1),
+]
+
+
+def read_deltate_table(path, columns):
+    """One deltaTE table, keyed by feature identifier.
+
+    The files are tab separated with row names and a header one field shorter
+    than the data rows, which is what makes pandas take the first column as the
+    index. An empty file means deltaTE produced nothing, usually for lack of
+    replicates, and is handled as an empty table rather than an error.
     """
-    Merge into one dataframe
-    """
-
-    result_dict = {}
-    for row in ribo_df.itertuples(index=False):
-        identifier = getattr(row, "Identifier")
-        if identifier in result_dict:
-            _, tmp_rna, tmp_te = result_dict[identifier]
-            result_dict[identifier] = [row, tmp_rna, tmp_te]
-        else:
-            result_dict[identifier] = [row, None, None]
-
-    for row in rna_df.itertuples(index=False):
-        identifier = getattr(row, "Identifier")
-        if identifier in result_dict:
-            tmp_ribo, _, tmp_te = result_dict[identifier]
-            result_dict[identifier] = [tmp_ribo, row, tmp_te]
-        else:
-            result_dict[identifier] = [None, row, None]
-
-    for row in te_df.itertuples(index=False):
-        identifier = getattr(row, "Identifier")
-        if identifier in result_dict:
-            tmp_ribo, tmp_rna, _ = result_dict[identifier]
-            result_dict[identifier] = [tmp_ribo, tmp_rna, row]
-        else:
-            result_dict[identifier] = [None, None, row]
-
-    return result_dict
-
-def deltate_output(args):
-    # read the genome file
-    genome_file = SeqIO.parse(args.genome, "fasta")
-    genome_dict = dict()
-    for entry in genome_file:
-        genome_dict[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
-
-    annotation_dict = eu.annotation_to_dict(args.annotation_file)
-
     try:
-        ribo_expr_df = pd.read_csv(args.input_ribo, sep="\t", comment="#")
-        ribo_expr_df.index.name = "Identifier"
-        ribo_expr_df = ribo_expr_df.reset_index(level=["Identifier"])
-
-        rna_expr_df = pd.read_csv(args.input_rna, sep="\t", comment="#")
-        rna_expr_df.index.name = "Identifier"
-        rna_expr_df = rna_expr_df.reset_index(level=["Identifier"])
-
-        te_expr_df = pd.read_csv(args.input_te, sep="\t", comment="#")
-        te_expr_df.index.name = "Identifier"
-        te_expr_df = te_expr_df.reset_index(level=["Identifier"])
+        frame = pd.read_csv(path, sep="\t", comment="#")
+        frame.index.name = "Identifier"
+        return frame.reset_index(level=["Identifier"])
     except pd.errors.EmptyDataError:
         print("Warning deltaTE output is empty. Likely this is due to lacking replicates.")
+        return pd.DataFrame(columns=["Identifier"] + columns)
 
-        columns_ribo_rna = ["Identifier", "baseMean", "log2FoldChange", "lfcSE", "pvalue", "padj"]
-        columns_te = ["Identifier", "baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj"]
-        ribo_expr_df = pd.DataFrame(columns=columns_ribo_rna)
-        rna_expr_df = pd.DataFrame(columns=columns_ribo_rna)
-        te_expr_df = pd.DataFrame(columns=columns_te)
 
-    combined_dict = create_combined_dict(ribo_expr_df, rna_expr_df, te_expr_df)
+def create_combined_dict(ribo_df, rna_df, te_df):
+    """{identifier: [ribo row, rna row, te row]}, with None where a table lacks it."""
+    combined = {}
+    for position, frame in enumerate((ribo_df, rna_df, te_df)):
+        for row in frame.itertuples(index=False):
+            identifier = getattr(row, "Identifier")
+            combined.setdefault(identifier, [None, None, None])[position] = row
+    return combined
 
-    all_sheet = []
-    header = ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Identifier", "Name", \
-              "RIBO_baseMean", "RIBO_log2FoldChange", "RIBO_lfcSE", "RIBO_pvalue", "RIBO_padj", \
-              "RNA_baseMean", "RNA_log2FoldChange", "RNA_lfcSE", "RNA_pvalue", "RNA_padj", \
-              "TE_baseMean", "TE_log2FoldChange", "TE_lfcSE", "TE_stat", "TE_pvalue", "TE_padj", \
-              "Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
-    name_list = [f"s{x}" for x in range(len(header))]
 
-    nTuple = collections.namedtuple('Pandas', name_list)
+def deltate_output(args):
+    genome_dict = eu.read_genome_dict(args.genome)
+    annotation_dict = eu.annotation_to_dict(args.annotation_file)
 
+    ribo_df = read_deltate_table(args.input_ribo, RIBO_RNA_COLUMNS)
+    rna_df = read_deltate_table(args.input_rna, RIBO_RNA_COLUMNS)
+    te_df = read_deltate_table(args.input_te, TE_COLUMNS)
+    combined_dict = create_combined_dict(ribo_df, rna_df, te_df)
+
+    header = (
+        ["Genome", "Start", "Stop", "Strand", "Locus_tag", "Old_locus_tag", "Identifier", "Name"]
+        + [f"RIBO_{column}" for column in RIBO_RNA_COLUMNS]
+        + [f"RNA_{column}" for column in RIBO_RNA_COLUMNS]
+        + [f"TE_{column}" for column in TE_COLUMNS]
+        + ["Length", "Codon_count", "Start_codon", "Stop_codon", "Nucleotide_seq", "Aminoacid_seq"]
+    )
+
+    records = []
     for unique_id, rows in combined_dict.items():
-        if unique_id in annotation_dict:
-            chromosome, start, stop, strand, gene_name, locus_tag, old_locus_tag = annotation_dict[unique_id]
-        else:
-            if ":" in unique_id and "-" in unique_id:
-                chromosome, sec, strand = unique_id.split(":")
-                start, stop = sec.split("-")
-                gene_name = ""
-                locus_tag, old_locus_tag = "", ""
-            else:
-                sys.exit("Error... ID is not novel and not in the annotation!")
-
+        # A feature missing from any of the three tables cannot be reported.
         if None in rows:
             continue
 
-        ribo_list = list(rows[0])[1:]
-        rna_list = list(rows[1])[1:]
-        te_list = list(rows[2])[1:]
+        chromosome, start, stop, strand, gene_name, locus_tag, old_locus_tag = eu.resolve_location(
+            unique_id, annotation_dict
+        )
 
         start = int(start)
         stop = int(stop)
         length = stop - start + 1
         codon_count = int(length / 3)
+
         start_codon, stop_codon, nucleotide_seq, aa_seq = "", "", "", ""
         if chromosome in genome_dict:
-            start_codon, stop_codon, nucleotide_seq, aa_seq, _ = eu.get_genome_information(genome_dict[chromosome], start-1, stop-1, strand)
+            start_codon, stop_codon, nucleotide_seq, aa_seq, _ = eu.get_genome_information(
+                genome_dict[chromosome], start - 1, stop - 1, strand
+            )
 
-        result = [chromosome, start, stop, strand, locus_tag, old_locus_tag, unique_id, gene_name] \
-               + ribo_list + rna_list + te_list \
-               + [length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq]
+        # Drop the leading Identifier field from each table's row.
+        statistics = [value for row in rows for value in list(row)[1:]]
 
-        all_sheet.append(nTuple(*result))
+        records.append(
+            [chromosome, start, stop, strand, locus_tag, old_locus_tag, unique_id, gene_name]
+            + statistics
+            + [length, codon_count, start_codon, stop_codon, nucleotide_seq, aa_seq]
+        )
 
-    all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
+    all_df = pd.DataFrame.from_records(records, columns=header)
     all_df = all_df.sort_values(by=["TE_padj", "Genome", "Start", "Stop", "Strand"])
-    rna_up_df = all_df[(all_df["RNA_log2FoldChange"] >= args.log2fc_cutoff) & (all_df["RNA_padj"] <= args.padj_cutoff)]
-    rna_down_df = all_df[(all_df["RNA_log2FoldChange"] <= args.log2fc_cutoff * -1) & (all_df["RNA_padj"] <= args.padj_cutoff)]
-    ribo_up_df = all_df[(all_df["RIBO_log2FoldChange"] >= args.log2fc_cutoff) & (all_df["RIBO_padj"] <= args.padj_cutoff)]
-    ribo_down_df = all_df[(all_df["RIBO_log2FoldChange"] <= args.log2fc_cutoff * -1) & (all_df["RIBO_padj"] <= args.padj_cutoff)]
-    te_up_df = all_df[(all_df["TE_log2FoldChange"] >= args.log2fc_cutoff) & (all_df["TE_padj"] <= args.padj_cutoff)]
-    te_down_df = all_df[(all_df["TE_log2FoldChange"] <= args.log2fc_cutoff * -1) & (all_df["TE_padj"] <= args.padj_cutoff)]
 
-    dataframe_dict = {"all" : all_df, "RNA_up" : rna_up_df, "RNA_down" : rna_down_df, "RIBO_up" : ribo_up_df, "RIBO_down" : ribo_down_df, "TE_up" : te_up_df, "TE_down" : te_down_df}
+    dataframe_dict = {"all": all_df}
+    for sheet, log2fc_column, padj_column, direction in SPLITS:
+        significant = all_df[padj_column] <= args.padj_cutoff
+        if direction > 0:
+            selected = all_df[log2fc_column] >= args.log2fc_cutoff
+        else:
+            selected = all_df[log2fc_column] <= args.log2fc_cutoff * -1
+        dataframe_dict[sheet] = all_df[selected & significant]
+
     eu.excel_writer(args.output, dataframe_dict, [])
 
+
 def main():
-    # store commandline args
-    parser = argparse.ArgumentParser(description='create excel files from riborex output')
-    parser.add_argument("-a", "--annotation", action="store", dest="annotation_file", required=True, help= "annotation file")
-    parser.add_argument("-g", "--genome", action="store", dest="genome", required=True, help= "reference genome")
-    parser.add_argument("-i", "--delta_ribo", action="store", dest="input_ribo", required=True, help= "input txt file for ribo")
-    parser.add_argument("-r", "--delta_rna", action="store", dest="input_rna", required=True, help= "input txt file for rna")
-    parser.add_argument("-t", "--delta_te", action="store", dest="input_te", required=True, help= "input txt file for te")
-    parser.add_argument("--padj_cutoff", action="store", dest="padj_cutoff", default=0.05, type=float, help= "The padj cutoff for the differential expression analysis. Default: 0.05")
-    parser.add_argument("--log2fc_cutoff", action="store", dest="log2fc_cutoff", default=1.0, type=float, help= "The log2fc cutoff for the differential expression analysis. Default: 1")
-    parser.add_argument("-o", "--xlsx", action="store", dest="output", required=True, help= "output xlsx file")
+    parser = argparse.ArgumentParser(description="create excel files from deltaTE output")
+    parser.add_argument("-a", "--annotation", action="store", dest="annotation_file",
+                        required=True, help="annotation file")
+    parser.add_argument("-g", "--genome", action="store", dest="genome", required=True,
+                        help="reference genome")
+    parser.add_argument("-i", "--delta_ribo", action="store", dest="input_ribo", required=True,
+                        help="input txt file for ribo")
+    parser.add_argument("-r", "--delta_rna", action="store", dest="input_rna", required=True,
+                        help="input txt file for rna")
+    parser.add_argument("-t", "--delta_te", action="store", dest="input_te", required=True,
+                        help="input txt file for te")
+    parser.add_argument("--padj_cutoff", action="store", dest="padj_cutoff", default=0.05,
+                        type=float, help="padj cutoff for the differential expression analysis")
+    parser.add_argument("--log2fc_cutoff", action="store", dest="log2fc_cutoff", default=1.0,
+                        type=float, help="log2fc cutoff for the differential expression analysis")
+    parser.add_argument("-o", "--xlsx", action="store", dest="output", required=True,
+                        help="output xlsx file")
     args = parser.parse_args()
 
     deltate_output(args)
+
 
 if __name__ == '__main__':
     main()
