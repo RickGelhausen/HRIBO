@@ -20,6 +20,28 @@
    report: directive and --report were broken
  * Added envs/bed.yaml, which was referenced but missing
  * Added a pytest suite (41 tests) covering the validation and metagene helpers
+ * Audited the remaining scripts. Fixes:
+   - samples_to_xlsx.py shortened the fastq paths with str[1], the second path
+     component, so an absolute path became "data" and a bare file name became
+     NaN; and it tested for a column named "Fastqfile2" while the sample sheet
+     calls it "fastqFile2", so the second read file was never shortened at all
+   - call_featurecounts.py ignored the featureCounts exit code and reused the
+     same temporary file for every feature, so a failed run silently re-read the
+     previous feature's counts. It also chose the annotation identifier from the
+     first row alone, which picks the wrong attribute when the file opens with a
+     region or source feature. Temporary files are now cleaned up
+   - motif_to_gff.py emitted a stray colon in the forward-strand identifiers
+     (ID=chr:1-3:+:) while the reverse strand had none
+   - create_reparation_gff.py compared the strand with "is" against a string
+     literal, which Python warns about and which is not guaranteed to work
+   - mapping.py parsed --clip_length and then passed a hardcoded 11 instead
+   - enrich_annotation.py had two bare except clauses that would have swallowed
+     unrelated errors
+   - preparePCAinput.py printed the whole sample sheet twice as leftover debug
+     output
+ * read_length_statistics.py now uses the shared plot theme and page shell rather
+   than its own inline HTML and size-24 fonts, so it matches the metagene figures
+
  * Added golden-output tests for the seven annotation-transforming scripts, which
    had none, and consolidated their GFF attribute parsing into gff_utils.py.
    Twelve hand-written copies became three; the remaining three parse differently

@@ -12,7 +12,9 @@ def call_featureCounts(args):
     """
     set up commandline call for featureCounts, process the featureCounts output
     """
-    open(args.output, "w").close()
+    # Truncate any output from a previous run before appending to it below.
+    with open(args.output, "w"):
+        pass
 
     bamfiles = sorted(args.bamfiles, key=lambda s: s.lower())
     annotation_df = pd.read_csv(args.annotation, sep="\t", header=None, comment="#")
@@ -21,7 +23,11 @@ def call_featureCounts(args):
     else:
         features = args.features
 
-    identifier = "ID" if "ID=" in annotation_df[8][0] else "gene_id"
+    # Decided from the whole attribute column rather than its first row: a
+    # leading region or source feature without an ID= sent every later lookup to
+    # the wrong attribute.
+    attribute_column = annotation_df[8].astype(str)
+    identifier = "ID" if attribute_column.str.contains("ID=").any() else "gene_id"
 
     tmp_file = os.path.splitext(args.output)[0] + ".tmp"
     commandline_parameters = f" -a {args.annotation} -F GTF -g {identifier} -s {args.strandness} -T {args.threads} -o {tmp_file}"
@@ -47,7 +53,18 @@ def call_featureCounts(args):
         subprocess_call = shlex.split(commandline_call, posix=False)
 
         print(commandline_call)
-        subprocess.call(subprocess_call)
+
+        # A stale temporary file from the previous feature would otherwise be
+        # read back as though it belonged to this one.
+        for leftover in (tmp_file, tmp_file + ".summary"):
+            if os.path.exists(leftover):
+                os.remove(leftover)
+
+        returncode = subprocess.call(subprocess_call)
+        if returncode != 0:
+            sys.exit(
+                f"featureCounts failed for feature '{feature}' with exit code {returncode}."
+            )
 
         try:
             tmp_df = pd.read_csv(tmp_file, skiprows=[1], header=None, sep="\t", comment="#")
@@ -89,6 +106,11 @@ def call_featureCounts(args):
         df.drop_duplicates(subset=["Identifier"], keep="first", inplace=True)
         with open(args.output, "w") as f:
             df.to_csv(f, sep=",", index=False, quoting=csv.QUOTE_NONE)
+
+    # featureCounts leaves its per-feature table and summary behind.
+    for leftover in (tmp_file, tmp_file + ".summary"):
+        if os.path.exists(leftover):
+            os.remove(leftover)
 
 def main():
     # store commandline args

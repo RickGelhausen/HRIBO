@@ -21,7 +21,7 @@ def create_parent_dictionary(annotation_df):
             attribute_list = [x for x in re.split('[;=]', attributes)]
             try:
                 idx = attribute_list[next(i for i,v in enumerate(attribute_list) if v.lower() == "id") + 1]
-            except:
+            except (StopIteration, IndexError):
                 print("Missing ID in row!")
                 print(row)
                 sys.exit()
@@ -95,7 +95,7 @@ def enrich_children(annotation_df):
             if "name" not in attributes.lower():
                 try:
                     name = "Name=%s;" % parent_dict[parent][next(i for i,v in enumerate(parent_dict[parent]) if v.lower() == "name")+1]
-                except:
+                except (StopIteration, IndexError):
                     name = ""
 
             new_rows.append(nTuple(reference_name, source, feature, start, stop, score, strand, phase, attributes + ";" + locus_tag + old_locus_tag + name))

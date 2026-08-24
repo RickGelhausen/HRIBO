@@ -18,9 +18,15 @@ def convert_to_xlsx(samples_file, output_file):
 
     samples_df = pd.read_csv(samples_file, comment="#", sep="\t")
 
-    samples_df['fastqFile'] = samples_df['fastqFile'].str.split("/").str[1]
-    if 'Fastqfile2' in samples_df.columns:
-        samples_df.loc[samples_df['Fastqfile2'].notna(), 'Fastqfile2'] = samples_df.loc[samples_df['Fastqfile2'].notna(), 'Fastqfile2'].str.split("/").str[1]
+    # Show the file name rather than the whole path. str[-1] rather than str[1]:
+    # the latter picked the second path component, so an absolute path became
+    # "data" and a bare file name became NaN.
+    for column in ("fastqFile", "fastqFile2"):
+        if column in samples_df.columns:
+            present = samples_df[column].notna()
+            samples_df.loc[present, column] = (
+                samples_df.loc[present, column].str.split("/").str[-1]
+            )
 
 
     sheets = {"samples" : samples_df}

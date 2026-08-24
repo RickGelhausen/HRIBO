@@ -23,7 +23,7 @@ def main():
     #min_no_of_aligned_reads_file = open(args.min_no_of_aligned_reads_file_path,"r")
     #min_no_of_aligned_reads = int(min_no_of_aligned_reads_file.read())
     #mappings = {}
-    hribo.compute_wig(args.bam_path, args.wiggle_file_path, args.library_name, genome_read_dict, genome_min_read_dict, True, args.mapping_style, 11, False, False)
+    hribo.compute_wig(args.bam_path, args.wiggle_file_path, args.library_name, genome_read_dict, genome_min_read_dict, True, args.mapping_style, args.clip_length, False, False)
 
 
 if __name__ == '__main__':

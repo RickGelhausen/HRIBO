@@ -6,6 +6,8 @@ from pathlib import Path
 import pandas as pd
 import plotly.graph_objects as go
 
+import lib.theme as theme
+
 
 from lib.alignment import LengthCounter
 import lib.io as io
@@ -90,89 +92,73 @@ def create_excel_output(dataframes, output_file):
     io.excel_writer(output_file, out_df)
 
 def plot_length_fractions(dataframes, color_list):
-    """
-    For each chromosome create a plotly plot with the fractional distribution of read lengths in each alignment file.
-    """
+    """One read length distribution per sequence, all libraries overlaid.
 
+    Line rather than area: the question is which read lengths a library is
+    enriched for, and overlaying a handful of libraries answers it directly.
+    """
     figure_dict = {}
-    #max_y = 0.4
 
     for chrom in dataframes:
         fig = go.Figure()
         cur_df = dataframes[chrom]
         labels = cur_df["read_lengths"]
-        files = cur_df.columns[1:]
 
-        for file in files:
+        for index, file in enumerate(cur_df.columns[1:]):
             data = cur_df[file]
             data = data / data.sum()
+            fig.add_trace(
+                go.Scatter(
+                    x=labels,
+                    y=data,
+                    name=file,
+                    mode="lines",
+                    line=dict(color=theme.series_color(index), width=2),
+                    hovertemplate=f"{file}<br>read length %{{x}} nt<br>%{{y:.1%}} of reads<extra></extra>",
+                )
+            )
 
-            fig.add_trace(go.Scatter(x=labels, y=data, name=file))
+        fig.update_xaxes(title_text="Read length (nt)", type="category")
+        fig.update_yaxes(title_text="Fraction of mapped reads", tickformat=".0%")
 
-        fig.update_layout(title=f"{chrom}", yaxis_title="Fraction of mapped reads", xaxis_title="Read length (nt)", font=dict(family="Arial", size=24) )
-        #fig.update_yaxes(range=[0, max_y])
-
-        fig.update_annotations(font_size=24)
-
+        theme.apply(
+            fig,
+            chrom,
+            "Share of mapped reads at each length, per library",
+        )
+        fig.update_layout(
+            height=460,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        )
         figure_dict[chrom] = fig
 
     return figure_dict
 
 
-INTRO_HTML = \
-"""
-<!DOCTYPE html>
-<html>
-    <head>
-        <style>
-            h1 { text-align: center; font-size: 3.5em; }
-            h2 { text-align: center; font-size: 2em; }
-            h3 { text-align: center; font-size: 1.5em; }
-            h4 { text-align: left; font-size: 1.5em; }
-            .headerline { height: 2px; background-color: black; }
-            .seperator { height: 1px; width: 90%;}
-            .page { margin: 50px 200px 50px 200px; text-align: center; }
-            .stranddiv { display: none; overflow: hidden; width: 100%; height: 100%; }
-            .toggleBtn { margin: 20px; }
-        </style>
-        <title>Mapped read fraction plots</title>
-    </head>
-    <body>
-        <div class="page">
-"""
-
-OUTRO_HTML = \
-"""
-        </div>
-    </body>
-</html>
-"""
-
 def create_html_output(figure_dict, output_path):
-    """
-    Plot the figures in an html file.
-    """
+    """Render every figure into one page, with plotly.js included once."""
+    parts = []
+    for index, chrom in enumerate(figure_dict):
+        parts.append('<div class="plot">')
+        parts.append(
+            figure_dict[chrom].to_html(
+                full_html=False,
+                include_plotlyjs=(index == 0),
+                default_width="100%",
+                config={"displaylogo": False, "responsive": True},
+            )
+        )
+        parts.append("</div>")
 
-    counter = 0
-    html_string = INTRO_HTML + "\n"
-    html_string += f"<h1>Read fraction plots</h1>\n"
-    for chrom in figure_dict:
-        fig = figure_dict[chrom]
-
-        if counter == 0:
-            html_string += fig.to_html(full_html=False, default_height="800px", default_width="100%")
-            html_string += f"<div class=\"seperator\"></div>\n"
-        else:
-            html_string += fig.to_html(full_html=False, default_height="800px", default_width="100%", include_plotlyjs=False)
-            if counter != len(figure_dict.keys()) - 1:
-                html_string += f"<div class=\"seperator\"></div>\n"
-
-        counter += 1
-
-
-    html_string += OUTRO_HTML
     with open(output_path / "read_length_fractions.html", "w") as f:
-        f.write(html_string)
+        f.write(
+            theme.page(
+                "Read length distribution",
+                "Fraction of mapped reads at each read length, for every library.",
+                "\n".join(parts),
+            )
+        )
+
 
 def main():
     # store commandline args

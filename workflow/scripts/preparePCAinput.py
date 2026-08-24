@@ -12,9 +12,7 @@ def main():
 
 
     samples = pd.read_csv(args.sample_sheet, dtype=str, sep="\t")
-    print(samples)
     samples = samples.sort_values(by=["method", "condition", "replicate"], ascending=True, key=lambda x: x if np.issubdtype(x.dtype, np.number) else x.str.lower())
-    print(samples)
     out_string = "\tsampletype\texpr\n"
     for line in samples.itertuples():
         out_string += f"{line.method}_{line.condition}_{line.replicate}\t{line.method}_{line.condition}\t{line.condition}\n"

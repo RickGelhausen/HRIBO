@@ -35,10 +35,10 @@ def createNTuple(args, row):
     chromosome, rest = ORF_locus.split(":")
     start, stop = rest.split("-")
     # modify coordinates to include stop codon
-    if strand is '+':
+    if strand == '+':
        start = str(int(start)) # due to bug in reparation
        stop = str(int(stop) + 3)
-    if strand is '-':
+    if strand == '-':
        start = str(int(start) - 3)
        stop = str(int(stop)) # due to bug in reparation
 
