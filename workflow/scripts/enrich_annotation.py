@@ -52,15 +52,24 @@ def enrich_children(annotation_df):
         if "parent=" in attributes.lower():
             attribute_list = [x for x in re.split('[;=]', attributes)]
 
-            has_parent = True
-            while has_parent:
+            # Walk up the Parent chain (CDS -> mRNA -> gene) to the last
+            # resolvable ancestor. The lookup used to run before the membership
+            # check below, so a Parent naming a feature that is not in the file
+            # raised a KeyError and took the whole workflow down with it.
+            parent = ""
+            current = attribute_list
+            while True:
                 try:
-                    parent = attribute_list[next(i for i,v in enumerate(attribute_list) if v.lower() == "parent")+1]
+                    position = next(
+                        i for i, v in enumerate(current) if v.lower() == "parent"
+                    )
                 except StopIteration:
-                    has_parent = False
+                    break
 
-                attribute_list = parent_dict[parent]
-
+                parent = current[position + 1]
+                if parent not in parent_dict:
+                    break
+                current = parent_dict[parent]
 
             if parent not in parent_dict:
                 print("Warning! Missing parent!")

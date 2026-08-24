@@ -6,6 +6,8 @@ import pandas as pd
 from collections import Counter, OrderedDict
 
 
+import gff_utils
+
 from Bio.Seq import Seq
 from Bio import SeqIO
 
@@ -13,35 +15,10 @@ class OrderedCounter(Counter, OrderedDict):
     pass
 
 
-def parse_attributes(attributes):
-    """Parse a GFF/GTF attribute column into {lowercased key: value}.
-
-    The nine near-identical copies this replaces all split on both ";" and "=",
-    lowercased every key, and aborted on an odd number of fields. That behaviour
-    is kept, including the abort, because a malformed attribute column silently
-    shifting every key onto the wrong value is worse than stopping.
-
-    Keys are lowercased, values are not. The first occurrence of a repeated key
-    wins, matching the list.index() lookups that were used before.
-    """
-    attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
-
-    if len(attribute_list) % 2 != 0:
-        print(attributes)
-        sys.exit("Attributes section of gtf/gff is wrongly formatted!")
-
-    parsed = {}
-    for index in range(0, len(attribute_list), 2):
-        parsed.setdefault(attribute_list[index].lower(), attribute_list[index + 1])
-    return parsed
-
-
-def first_attribute(parsed, *keys, default=""):
-    """The value of the first key present, in the order given."""
-    for key in keys:
-        if key in parsed:
-            return parsed[key]
-    return default
+# The attribute parsing lives in gff_utils, which is dependency free so that the
+# scripts running in the mergetools environment can share it.
+parse_attributes = gff_utils.parse_attributes
+first_attribute = gff_utils.first_attribute
 
 
 def get_te_header(wildcards):

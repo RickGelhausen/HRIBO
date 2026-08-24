@@ -3,11 +3,12 @@
 overlapping intervals, by merging duplicates.
 '''
 import pandas as pd
-import re
 import argparse
 import os
 import csv
 import collections
+
+import gff_utils
 
 def create_dictionary(inputDF):
     """
@@ -17,10 +18,9 @@ def create_dictionary(inputDF):
 
     geneDict = dict()
     for row in inputDF.itertuples(index=False, name='Pandas'):
-        attributes = re.split('[;=]', getattr(row, "_8"))
-        if "ID" in attributes:
-            geneID = attributes[attributes.index("ID")+1]
-                # save the row into the dictionary and ensure gene_id is written in lowercase
+        parsed = gff_utils.parse_attributes(getattr(row, "_8"))
+        if "id" in parsed:
+            geneID = parsed["id"]
             if geneID in geneDict:
                 geneDict[geneID].append(nTuple(*row))
             else:
@@ -46,26 +46,28 @@ def handle_overlap(args):
         orftype = set()
         cur_highest_proba = 0
         for row in geneDict[key]:
-            attributes = re.split('[;=]', getattr(row, "s8"))
-            if "Condition" in attributes and "Method" in attributes and "Replicate" in attributes:
-                condition = attributes[attributes.index("Condition")+1]
-                method = attributes[attributes.index("Method")+1]
-                replicate = attributes[attributes.index("Replicate")+1]
-                evidence.add(method + "-" + condition + "-" + replicate)
-            elif "Condition" in attributes and "Method" in attributes:
-                condition = attributes[attributes.index("Condition")+1]
-                method = attributes[attributes.index("Method")+1]
-                evidence.add(method + "-" + condition)
+            parsed = gff_utils.parse_attributes(getattr(row, "s8"))
 
-            if "ORF_type" in attributes:
-                orftype.add(attributes[attributes.index("ORF_type")+1])
-            if "Prob" in attributes:
-                cur_proba = float(attributes[attributes.index("Prob")+1])
+            # A replicate identifies the evidence precisely; without one, the
+            # method and condition are the best that can be said.
+            if {"condition", "method", "replicate"} <= parsed.keys():
+                evidence.add(
+                    parsed["method"] + "-" + parsed["condition"] + "-" + parsed["replicate"]
+                )
+            elif {"condition", "method"} <= parsed.keys():
+                evidence.add(parsed["method"] + "-" + parsed["condition"])
+
+            if "orf_type" in parsed:
+                orftype.add(parsed["orf_type"])
+            if "prob" in parsed:
+                cur_proba = float(parsed["prob"])
 
             if cur_proba > cur_highest_proba:
                 cur_highest_proba = cur_proba
 
-        attribute = "ID="+key+";Name="+key+";ORF_type="+",".join(orftype)+";Evidence="+" ".join(evidence)+";Prob=" + str(cur_highest_proba)
+        # sorted(): joining a set directly makes the output depend on the process
+        # hash seed, so the same input produced a different file on every run.
+        attribute = "ID="+key+";Name="+key+";ORF_type="+",".join(sorted(orftype))+";Evidence="+" ".join(sorted(evidence))+";Prob=" + str(cur_highest_proba)
 
         rows.append(nTuple(getattr(sampleRow, "s0"),"reparation", getattr(sampleRow, "s2"), getattr(sampleRow, "s3"), \
                            getattr(sampleRow, "s4"), getattr(sampleRow, "s5"),getattr(sampleRow, "s6"), \

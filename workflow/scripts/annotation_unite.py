@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import argparse
-import re
 import os, sys
 import pandas as pd
 import collections
 import csv
+
+import gff_utils
 
 def unite_annotation(args):
     """
@@ -24,13 +25,13 @@ def unite_annotation(args):
         phase = getattr(row, "_7")
         attribute = getattr(row, "_8")
 
-        attribute_list = [x.strip(" ") for x in re.split('[;=]', attribute) if x != ""]
-        id = ""
-        if "ID" in attribute_list:
-            id = attribute_list[attribute_list.index("ID")+1]
-        else:
+        # split/format rather than a dict, so key order and case survive the
+        # round trip. Empty values survive too, which the old pairwise rebuild
+        # could not do.
+        pairs = gff_utils.split_attributes(attribute)
+        if "id" not in gff_utils.parse_attributes(attribute):
             print("missing ID! Check your annotation.")
-        attribute = "".join(["%s=%s;" % (attribute_list[i], attribute_list[i+1]) for i in range(0, len(attribute_list), 2)])
+        attribute = gff_utils.format_attributes(pairs)
 
         rows_unite.append(nTuple(reference_name, source, feature, start, stop, score, strand, phase, attribute))
 

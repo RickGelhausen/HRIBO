@@ -20,6 +20,28 @@
    report: directive and --report were broken
  * Added envs/bed.yaml, which was referenced but missing
  * Added a pytest suite (41 tests) covering the validation and metagene helpers
+ * Added golden-output tests for the seven annotation-transforming scripts, which
+   had none, and consolidated their GFF attribute parsing into gff_utils.py.
+   Twelve hand-written copies became three; the remaining three parse differently
+   on purpose
+ * Fixed reannotate_orfs.py crashing on "ORF_type=;". Reparation emits an empty
+   ORF type routinely, and splitting the attributes on both ";" and "=" while
+   dropping empty fields left an odd number of items, so rebuilding them pairwise
+   ran off the end of the list. That took down the whole workflow at
+   reannotatedORFs
+ * Fixed enrich_annotation.py raising KeyError on a Parent attribute naming a
+   feature absent from the file. It looked the parent up before checking that it
+   existed. This one is on the critical path too: every read counting rule depends
+   on auxiliary/enriched_annotation.gff
+ * Fixed the merged prediction tracks being non-deterministic. The Evidence field
+   was joined from a set, and Python randomises string hashing per process, so the
+   same input produced a different file on every run
+ * Fixed merge_duplicates_deepribo.py filling old_locus_tag from the "locus_tag"
+   attribute, so the merged track and everything downstream carried the current
+   locus tag where the old one belonged. Also fixed old_locus_tag being read
+   without ever being assigned when a feature had no resolvable parent, which
+   silently carried the previous row's value
+
  * Standardised the spreadsheet column headers across every workbook. Same
    information, one naming convention:
    - fixed the misspelled "identifer" header in the DeepRibo table

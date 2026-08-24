@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 import argparse
-import re
 import os
 import pandas as pd
 import csv
 import collections
 import sys
+
+import gff_utils
 
 
 def generate_annotation_dict(args):
@@ -28,58 +29,24 @@ def generate_annotation_dict(args):
         attributes = getattr(row, "_8")
         read_list = [getattr(row, "_%s" %x) for x in range(9,len(row))]
 
-        attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes) if x != ""]
+        parsed = gff_utils.parse_attributes(attributes)
 
-        if len(attribute_list) % 2 == 0:
-            for i in range(len(attribute_list)):
-                if i % 2 == 0:
-                    attribute_list[i] = attribute_list[i].lower()
-        else:
-            print(attribute_list)
-            sys.exit("error, invalid gff, wrongly formatted attribute fields.")
+        new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
 
         if feature.lower() == "cds":
-            locus_tag = ""
-            if "locus_tag" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-
-            old_locus_tag = ""
-            if "old_locus_tag" in attribute_list:
-                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
-
-            name = ""
-            if "name" in attribute_list:
-                name = attribute_list[attribute_list.index("name")+1]
-            elif "gene_name" in attribute_list:
-                name = attribute_list[attribute_list.index("gene_name")+1]
-
-            gene_id = ""
-            if "gene_id" in attribute_list:
-                gene_id = attribute_list[attribute_list.index("gene_id")+1]
-            elif "id" in attribute_list:
-                gene_id = attribute_list[attribute_list.index("id")+1]
-
-            new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            cds_dict[new_key] = (gene_id, locus_tag, name, read_list, old_locus_tag)
-        elif feature.lower() in ["gene","pseudogene"]:
-            gene_name = ""
-            if "name" in attribute_list:
-                gene_name = attribute_list[attribute_list.index("name")+1]
-            elif "gene_name" in attribute_list:
-                gene_name = attribute_list[attribute_list.index("gene_name")+1]
-
-            locus_tag = ""
-            if "locus_tag" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-            elif "gene_id" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("gene_id")+1]
-
-            old_locus_tag = ""
-            if "old_locus_tag" in attribute_list:
-                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
-
-            new_key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-            gene_dict[new_key] = (gene_name, locus_tag, old_locus_tag)
+            cds_dict[new_key] = (
+                gff_utils.first_attribute(parsed, "gene_id", "id"),
+                gff_utils.first_attribute(parsed, "locus_tag"),
+                gff_utils.first_attribute(parsed, "name", "gene_name"),
+                read_list,
+                gff_utils.first_attribute(parsed, "old_locus_tag"),
+            )
+        elif feature.lower() in ["gene", "pseudogene"]:
+            gene_dict[new_key] = (
+                gff_utils.first_attribute(parsed, "name", "gene_name"),
+                gff_utils.first_attribute(parsed, "locus_tag", "gene_id"),
+                gff_utils.first_attribute(parsed, "old_locus_tag"),
+            )
 
     for key in cds_dict.keys():
         gene_name = ""
@@ -119,16 +86,13 @@ def reannotate_ORFs(args):
             gene_name = annotation_dict[key][4]
             old_locus_tag = annotation_dict[key][5]
 
-            attribute_list = [x.strip(" ") for x in re.split('[;=]', getattr(row, "_8")) if x != ""]
+            pairs = gff_utils.split_attributes(getattr(row, "_8"))
 
-            if gene_name != "":
-                attribute_list[attribute_list.index("Name")+1] = gene_name
-                attributes = ";".join(["%s=%s" % (attribute_list[i], attribute_list[i+1]) for i in range(0,len(attribute_list),2)]) +";"
-            elif name != "":
-                attribute_list[attribute_list.index("Name")+1] = name
-                attributes = ";".join(["%s=%s" % (attribute_list[i], attribute_list[i+1]) for i in range(0,len(attribute_list),2)]) +";"
-            else:
-                attributes = ";".join(["%s=%s" % (attribute_list[i], attribute_list[i+1]) for i in range(0,len(attribute_list),2)]) +";"
+            # Prefer the gene feature's name, falling back to the feature's own.
+            replacement = gene_name or name
+            if replacement != "":
+                pairs = gff_utils.replace_attribute(pairs, "Name", replacement)
+            attributes = gff_utils.format_attributes(pairs)
 
             if locus_tag != "":
                 attributes += "locus_tag=%s;" % locus_tag

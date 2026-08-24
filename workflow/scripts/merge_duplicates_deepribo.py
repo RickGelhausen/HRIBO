@@ -4,12 +4,13 @@ overlapping intervals, by removing duplicates and
 finding the longest non-overlapping interval.
 '''
 import pandas as pd
-import re
 import argparse
 import os
 import csv
 import collections
 import sys
+
+import gff_utils
 
 def generate_dictionary(args):
     """
@@ -44,36 +45,13 @@ def create_gene_dict(annotation_df):
         feature = getattr(row, "_2")
         attributes = getattr(row, "_8")
         if feature == "gene":
-            if ";" in attributes and "=" in attributes:
-                attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
-            else:
-                attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes) if x != ""]
+            parsed = gff_utils.parse_attributes(attributes)
 
-            if len(attribute_list) % 2 == 0:
-                for i in range(len(attribute_list)):
-                    if i % 2 == 0:
-                        attribute_list[i] = attribute_list[i].lower()
-            else:
-                print(attributes)
-                sys.exit("Attributes section of gtf/gff is wrongly formatted!")
-
-            key = ""
-            if "id" in attribute_list:
-                key = attribute_list[attribute_list.index("id")+1]
-
-            gene = ""
-            if "gene" in attribute_list:
-                gene = attribute_list[attribute_list.index("gene")+1]
-
-            locus_tag = ""
-            if "locus_tag" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-
-            old_locus_tag = ""
-            if "old_locus_tag" in attribute_list:
-                old_locus_tag = attribute_list[attribute_list.index("old_locus_tag")+1]
-
-            gene_dict[key] = (gene, locus_tag, old_locus_tag)
+            gene_dict[gff_utils.first_attribute(parsed, "id")] = (
+                gff_utils.first_attribute(parsed, "gene"),
+                gff_utils.first_attribute(parsed, "locus_tag"),
+                gff_utils.first_attribute(parsed, "old_locus_tag"),
+            )
     return gene_dict
 
 
@@ -94,58 +72,33 @@ def generate_annotation_dict(args):
         if feature not in ["CDS", "cds"]:
             continue
 
-        if ";" in attributes and "=" in attributes:
-            attribute_list = [x for x in re.split('[;=]', attributes) if x != ""]
-        else:
-            attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attributes) if x != ""]
-
-        if len(attribute_list) % 2 == 0:
-            for i in range(len(attribute_list)):
-                if i % 2 == 0:
-                    attribute_list[i] = attribute_list[i].lower()
-        else:
-            print(attributes)
-            sys.exit("Attributes section of gtf/gff is wrongly formatted!")
+        parsed = gff_utils.parse_attributes(attributes)
 
         key = "%s:%s-%s:%s" % (reference_name, start, stop, strand)
 
-        parent = ""
-        if "parent" in attribute_list:
-            parent = attribute_list[attribute_list.index("parent")+1]
+        parent = gff_utils.first_attribute(parsed, "parent")
+
+        # The feature's own attributes, used where the gene feature has none.
+        own_name = gff_utils.first_attribute(parsed, "name", "gene", default=key)
+        own_locus_tag = gff_utils.first_attribute(parsed, "locus_tag")
+        # Previously read the "locus_tag" attribute here, so old_locus_tag was
+        # filled with the current locus tag instead of the old one.
+        own_old_locus_tag = gff_utils.first_attribute(parsed, "old_locus_tag")
 
         if parent in parent_dict:
             name, locus_tag, old_locus_tag = parent_dict[parent]
-
             if name == "":
-                name = "%s:%s-%s:%s" % (reference_name, start, stop, strand)
-                if "name" in attribute_list:
-                    name = attribute_list[attribute_list.index("name")+1]
-                elif "gene" in attribute_list:
-                    name = attribute_list[attribute_list.index("gene")+1]
-
+                name = own_name
             if locus_tag == "":
-                locus_tag = "na"
-                if "locus_tag" in attribute_list:
-                    locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-
+                locus_tag = own_locus_tag or "na"
             if old_locus_tag == "":
-                if "old_locus_tag" in attribute_list:
-                    old_locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-
+                old_locus_tag = own_old_locus_tag
         else:
-            name = "%s:%s-%s:%s" % (reference_name, start, stop, strand)
-            if "name" in attribute_list:
-                name = attribute_list[attribute_list.index("name")+1]
-            elif "gene" in attribute_list:
-                name = attribute_list[attribute_list.index("gene")+1]
-
-            locus_tag = ""
-            if "locus_tag" in attribute_list:
-                locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
-
-            if old_locus_tag == "":
-                if "old_locus_tag" in attribute_list:
-                    old_locus_tag = attribute_list[attribute_list.index("locus_tag")+1]
+            # old_locus_tag was never initialised on this branch, so it either
+            # raised or silently carried over the previous row's value.
+            name = own_name
+            locus_tag = own_locus_tag
+            old_locus_tag = own_old_locus_tag
 
         annotation_dict[key] = (name, locus_tag, old_locus_tag)
 
@@ -167,32 +120,19 @@ def generate_output_gff(args, overlap_dict):
         cur_rank = 999999
         cur_pred_value = -10000.0
         for pred, dist, attribute in value:
-            if ";" in attribute and "=" in attribute:
-                attribute_list = [x.strip(" ") for x in re.split('[;=]', attribute) if x != ""]
-            else:
-                attribute_list = [x.replace("\"", "") for x in re.split('[; ]', attribute) if x != ""]
-
-            if len(attribute_list) % 2 == 0:
-                for i in range(len(attribute_list)):
-                    if i % 2 == 0:
-                        attribute_list[i] = attribute_list[i].lower()
-            else:
-                print(attribute)
-                sys.exit("Attributes section of gtf/gff is wrongly formatted!")
+            # Handles both the GFF3 and the GTF2 attribute forms.
+            parsed = gff_utils.parse_attributes(attribute)
 
             pred_value = pred
             if pred_value >= cur_pred_value:
                 cur_pred_value = pred_value
 
-            if "condition" in attribute_list and "method" in attribute_list and "replicate" in attribute_list:
-                condition = attribute_list[attribute_list.index("condition")+1]
-                #method = attribute_list[attribute_list.index("method")+1]
-                replicate = attribute_list[attribute_list.index("replicate")+1]
-                evidence.add(condition + "-" + replicate)
-            elif "condition" in attribute_list and "method" in attribute_list:
-                condition = attribute_list[attribute_list.index("condition")+1]
-                method = attribute_list[attribute_list.index("method")+1]
-                evidence.add(method + "-" + condition)
+            # A replicate identifies the evidence precisely; without one, the
+            # method and condition are the best that can be said.
+            if {"condition", "method", "replicate"} <= parsed.keys():
+                evidence.add(parsed["condition"] + "-" + parsed["replicate"])
+            elif {"condition", "method"} <= parsed.keys():
+                evidence.add(parsed["method"] + "-" + parsed["condition"])
 
             if key in annotation_dict:
                 name, locus_tag, old_locus_tag = annotation_dict[key]
@@ -206,7 +146,9 @@ def generate_output_gff(args, overlap_dict):
             if old_locus_tag != "":
                 new_attributes += "old_locus_tag=%s;" % (old_locus_tag)
 
-            new_attributes += "Pred_value=%s;Evidence=%s;" % (cur_pred_value, " ".join(evidence))
+            # sorted(): see merge_duplicates_reparation.py; an unsorted set join makes
+            # the output vary between runs.
+            new_attributes += "Pred_value=%s;Evidence=%s;" % (cur_pred_value, " ".join(sorted(evidence)))
 
         if cur_pred_value >= 0:
             rows_plus.append(nTuple(reference_name, "deepribo", "CDS", start, stop, cur_pred_value, strand, dist, new_attributes))
