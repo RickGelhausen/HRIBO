@@ -161,7 +161,7 @@ def excel_writer(output_path, data_frames, wildcards):
                 max_len = max(( series.astype(str).str.len().max(), len(str(series.name)) )) + 1
             #print("Sheet: %s | col: %s | max_len: %s" % (sheetname, col, max_len))
             worksheet.set_column(idx, idx, max_len)
-    writer.save()
+    writer.close()
 
 def te(ribo_count, rna_count):
     """
