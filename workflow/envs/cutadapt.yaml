@@ -2,4 +2,6 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - cutadapt =4.4
+ # Adapter trimming. A version change here can change which reads survive
+ # trimming, and so every downstream count; see ChangeLog.
+ - cutadapt =5.2

@@ -723,7 +723,9 @@ def build_diffex_table(frame, annotation_dict, genome_dict, statistics, identifi
 
 def split_up_down(all_df, log2fc_column, padj_column, log2fc_cutoff, padj_cutoff):
     """Sort, then split into the significantly up- and down-regulated sheets."""
-    all_df = all_df.sort_values(by=[padj_column, "Genome", "Start", "Stop", "Strand"])
+    all_df = all_df.sort_values(
+        by=[padj_column, "Genome", "Start", "Stop", "Strand"], kind="stable"
+    )
     significant = all_df[padj_column] <= padj_cutoff
     return {
         "all": all_df,

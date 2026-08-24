@@ -12,7 +12,14 @@ def main():
 
 
     samples = pd.read_csv(args.sample_sheet, dtype=str, sep="\t")
-    samples = samples.sort_values(by=["method", "condition", "replicate"], ascending=True, key=lambda x: x if np.issubdtype(x.dtype, np.number) else x.str.lower())
+    # (method, condition, replicate) is unique per library, so ties cannot occur,
+    # but the sort is made stable for consistency with the rest of the scripts.
+    samples = samples.sort_values(
+        by=["method", "condition", "replicate"],
+        ascending=True,
+        kind="stable",
+        key=lambda x: x if np.issubdtype(x.dtype, np.number) else x.str.lower(),
+    )
     out_string = "\tsampletype\texpr\n"
     for line in samples.itertuples():
         out_string += f"{line.method}_{line.condition}_{line.replicate}\t{line.method}_{line.condition}\t{line.condition}\n"

@@ -173,7 +173,14 @@ def main():
     else:
         orf_dict = generate_dictionary(args)
         newDF, plusDF = generate_output_gff(args, orf_dict)
-        newDF = newDF.sort_values(by=["score"], ascending=False)
+        # Ranks are assigned from this order below, so it has to be reproducible.
+        # pandas sorts with an unstable quicksort by default, which ordered rows
+        # of equal score differently depending on the pandas and numpy build.
+        newDF = newDF.sort_values(
+            by=["score", "seqName", "start", "stop", "strand"],
+            ascending=[False, True, True, True, True],
+            kind="stable",
+        )
         newDF = newDF.reset_index()
         dist_list = list(newDF["phase"])
 

@@ -2,11 +2,15 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - numpy
- - pysam
- - pandas
- - interlap
- - plotly
- - xlsxwriter
- - openpyxl
- - python-kaleido
+ - numpy =2.5.2
+ - pandas =2.3.3
+ - pysam =0.24.0
+ - interlap =0.2.7
+ - plotly =6.9.0
+ - xlsxwriter =3.2.9
+ - openpyxl =3.1.5
+ # kaleido is deliberately held at 0.2.x: version 1 dropped the bundled Chrome
+ # and looks for a browser already installed on the machine, which is not a
+ # safe assumption on a compute node. 0.2.1 renders SVG/PDF/PNG unaided and
+ # still works with plotly 6, albeit with a deprecation warning.
+ - python-kaleido =0.2.1

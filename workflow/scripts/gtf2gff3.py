@@ -174,7 +174,7 @@ def main():
         copyfile(args.annotation, args.output)
     elif is_gff2:
         annotation_df = create_gff3_annotation(args)
-        annotation_df = annotation_df.sort_values(by=["seqName", "start", "stop"])
+        annotation_df = annotation_df.sort_values(by=["seqName", "start", "stop", "strand"], kind="stable")
         with open(args.output, "w") as f:
             f.write("##gff-version 3\n")
         with open(args.output, "a") as f:

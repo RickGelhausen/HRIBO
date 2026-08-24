@@ -2,4 +2,4 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- -  gawk =5.0.1
+ - gawk =5.4.1

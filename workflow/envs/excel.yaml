@@ -2,9 +2,8 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - xlsxwriter =3.0.3
- - openpyxl =3.0.9
- - openssl =3.0.0
- - pandas =1.4.1
- - biopython =1.79
+ - pandas =2.3.3
+ - biopython =1.88
+ - xlsxwriter =3.2.9
+ - openpyxl =3.1.5
  - interlap =0.2.7

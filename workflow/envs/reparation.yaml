@@ -2,6 +2,9 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - python=3.7.12
- - reparation_blast=1.0.9
- - blast =2.15.0
+ # reparation_blast 1.0.9 pins biopython 1.77 and pysam 0.16, which is what
+ # holds this environment on Python 3.7. blast carries no constraint from it,
+ # so that is the one component that can be kept current.
+ - python =3.7.12
+ - reparation_blast =1.0.9
+ - blast =2.17.0

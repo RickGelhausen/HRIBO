@@ -2,4 +2,5 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
+ # 0.3.4 is the newest release on bioconda; this pin is already current.
  - segemehl =0.3.4

@@ -93,7 +93,11 @@ def main():
     args = parser.parse_args()
 
     gff3df = to_gff3(args)
-    gff3df = gff3df.sort_values(by=["score"])
+    # Explicit tie-breakers and a stable sort: sorting on score alone left rows
+    # of equal score in an order that varied with the pandas build.
+    gff3df = gff3df.sort_values(
+        by=["score", "seqName", "start", "stop", "strand"], kind="stable"
+    )
     gff3df.to_csv(args.outputGFF, sep="\t", header=False, index=False, quoting=csv.QUOTE_NONE)
 
 if __name__ == '__main__':

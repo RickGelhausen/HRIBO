@@ -120,7 +120,7 @@ def main():
         f.write("##gff-version 3\n")
     with open(args.outputGFF, "a") as f:
         df = reannotate_ORFs(args)
-        df.sort_values(by=[0,3,4], inplace=True)
+        df.sort_values(by=[0, 3, 4, 6], inplace=True, kind="stable")
         df.to_csv(f, header=None, sep="\t", index=False, quoting=csv.QUOTE_NONE)
 
 if __name__ == '__main__':

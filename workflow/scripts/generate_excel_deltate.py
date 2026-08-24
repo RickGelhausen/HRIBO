@@ -115,7 +115,9 @@ def deltate_output(args):
         )
 
     all_df = pd.DataFrame.from_records(records, columns=header)
-    all_df = all_df.sort_values(by=["TE_pvalue_adjusted", "Genome", "Start", "Stop", "Strand"])
+    all_df = all_df.sort_values(
+        by=["TE_pvalue_adjusted", "Genome", "Start", "Stop", "Strand"], kind="stable"
+    )
 
     dataframe_dict = {"all": all_df}
     for sheet, log2fc_column, padj_column, direction in SPLITS:

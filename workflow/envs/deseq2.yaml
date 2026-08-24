@@ -2,7 +2,10 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - r-optparse =1.7.4
+ - bioconductor-deseq2 =1.50.2
+ - r-optparse =1.8.2
  - r-plyr =1.8.9
- - bioconductor-deseq2 =1.42.0
- - r-ggplot2 =3.5.0
+ # Held at the newest 3.x rather than 4.0: ggplot2 4.0 is a major release and
+ # scripts/analyse_variance.R could not be exercised here, so the bump stops
+ # short of a breaking one.
+ - r-ggplot2 =3.5.2

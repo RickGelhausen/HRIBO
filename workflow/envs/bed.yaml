@@ -2,5 +2,5 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- - bedops =2.4.41
- - ucsc-bedtobigbed =377
+ - bedops =2.4.42
+ - ucsc-bedtobigbed =482

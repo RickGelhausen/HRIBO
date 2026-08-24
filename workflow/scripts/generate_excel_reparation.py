@@ -24,7 +24,7 @@ COLUMNS = (
 def create_excel_file(args):
     context = eu.TableContext(args.genome, args.total_mapped)
     cds_df, _ = eu.build_annotation_table(args.reads, context, COLUMNS, source="reparation")
-    cds_df = cds_df.sort_values(by=["Genome", "Start", "Stop"])
+    cds_df = cds_df.sort_values(by=["Genome", "Start", "Stop", "Strand"], kind="stable")
 
     eu.excel_writer(args.output_path, {"CDS": cds_df}, context.wildcards)
 

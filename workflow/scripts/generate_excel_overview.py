@@ -169,7 +169,7 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
         cur_df = pd.DataFrame.from_records(tmp_rows, columns=[header[x] for x in range(len(header))])
 
         cur_df = cur_df.astype({"Start" : "int32", "Stop" : "int32"})
-        cur_df = cur_df.sort_values(by=["Genome", "Start", "Stop"])
+        cur_df = cur_df.sort_values(by=["Genome", "Start", "Stop", "Strand"], kind="stable")
 
         excel_sheet_dict[key] = cur_df
 
@@ -332,14 +332,14 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
     all_df = pd.DataFrame.from_records(all_sheet, columns=[header[x] for x in range(len(header))])
 
     all_df = all_df.astype({"Start" : "int32", "Stop" : "int32"})
-    all_df = all_df.sort_values(by=["Genome", "Start", "Stop"])
+    all_df = all_df.sort_values(by=["Genome", "Start", "Stop", "Strand"], kind="stable")
 
     all_df.to_csv(args.output_path.replace(".xlsx", ".tsv"), sep="\t", index=False, quoting=csv.QUOTE_NONE)
 
     annotated_df = pd.DataFrame.from_records(annotated_sheet, columns=[header[x] for x in range(len(header))])
 
     annotated_df = annotated_df.astype({"Start" : "int32", "Stop" : "int32"})
-    annotated_df = annotated_df.sort_values(by=["Genome", "Start", "Stop"])
+    annotated_df = annotated_df.sort_values(by=["Genome", "Start", "Stop", "Strand"], kind="stable")
 
     excel_sheet_dict["all"] = all_df
     excel_sheet_dict["annotated"] = annotated_df

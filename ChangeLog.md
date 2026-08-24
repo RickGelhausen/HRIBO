@@ -20,6 +20,35 @@
    report: directive and --report were broken
  * Added envs/bed.yaml, which was referenced but missing
  * Added a pytest suite (41 tests) covering the validation and metagene helpers
+ * Updated the conda environments. Versions were determined from the package
+   indexes rather than by solving environments locally, and every Python pin is a
+   version the test suite was actually run against
+   - pandas 0.23.4/1.4.1/1.5.2 -> 2.3.3, numpy -> 2.5.2, pysam 0.19.1 -> 0.24.0,
+     biopython 1.79 -> 1.88, plotly 5.11.0 -> 6.9.0, xlsxwriter 3.0.3 -> 3.2.9,
+     openpyxl 3.0.9 -> 3.1.5. The suite passes on pandas 2.2.1/numpy 1.26,
+     pandas 2.3.3/numpy 2.5.2 and pandas 3.0.5/numpy 2.5.2
+   - samtools 1.9/1.18 -> 1.24, bedtools 2.27.1/2.30.0 -> 2.31.1,
+     cutadapt 4.4 -> 5.2, multiqc 1.18 -> 1.35, deeptools 3.2.0 -> 3.5.6,
+     subread 2.0.1 -> 2.1.1, the UCSC tools 377 -> 482, bedops 2.4.41 -> 2.4.42,
+     gawk 5.0.1 -> 5.4.1, curl 8.5.0 -> 8.21.0, blast 2.15.0 -> 2.17.0,
+     pear pinned at 0.9.11, bioconductor-deseq2 1.42.0 -> 1.50.2
+   - python-kaleido is deliberately held at 0.2.1: version 1 removed the bundled
+     Chrome and requires a browser on the machine, which would break SVG and PDF
+     export on a compute node. Verified that plotly 6.9.0 still exports with it
+   - xtail moves from R 3.5.1 to its R 4.0 build, the newest that exists
+   - riborex cannot be updated at all: both bioconda builds require
+     r-base >=3.4.1,<3.4.2, so R 3.4.1 is the only version it installs against
+   - reparation stays on Python 3.7 because reparation_blast pins biopython 1.77
+     and pysam 0.16; only its blast dependency could be moved
+   - segemehl 0.3.4 and fastqc 0.12.1 were already current
+   - removed the unused imagemagick, normalization and xtailcounts environments
+   - replaced the 184-line frozen environment.yaml export with a readable spec
+ * Made every DataFrame sort deterministic. pandas sorts with an unstable
+   quicksort by default, so rows with an equal sort key came out in a different
+   order depending on the pandas and numpy build; merge_duplicates_deepribo.py
+   assigns prediction ranks from that order. Ties are now broken explicitly and
+   all sorts use kind="stable"
+
  * Audited the remaining scripts. Fixes:
    - samples_to_xlsx.py shortened the fastq paths with str[1], the second path
      component, so an absolute path became "data" and a bare file name became
