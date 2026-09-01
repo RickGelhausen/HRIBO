@@ -18,6 +18,23 @@ FEATURE_MAP = { "ncrna" : "ncRNA", "trna" : "tRNA", "rrna" : "rRNA", "srna" : "s
 
 ALIAS_MAP = {"5'utr" : "5'-utr", "five_prime_utr" : "5'-utr", "5utr" : "5'-utr", "3'utr" : "3'-utr", "three_prime_utr" : "3'-utr", "3utr" : "3'-utr"}
 
+
+def resolve_contrasts(conditions, requested_contrasts):
+    """Return requested contrasts, or deterministically infer all condition pairs.
+
+    ``argparse`` represents ``-c B-A C-A`` as ``["B-A", "C-A"]``.  An
+    explicitly supplied list is already the workflow's source of truth, including
+    its orientation and order, so it must not be replaced by inferred pairs.
+    """
+    if requested_contrasts is not None:
+        return list(requested_contrasts)
+
+    return sorted(
+        [f"{left}-{right}" for left, right in iter.combinations(conditions, 2)],
+        key=lambda value: value.lower(),
+    )
+
+
 def create_interlap(annotation_dict):
     """
     create an interlap object to easily check for overlap of prediction and annotation
@@ -246,7 +263,7 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
             reparation_probability, reparation_evidence, read_list = reparation_dict[key]
             evidence_list = []
             for e in reparation_evidence.split(" "):
-                if not "reparation" in e:
+                if "reparation" not in e:
                     evidence_list.append("reparation-"+e)
                 else:
                     evidence_list.append(e)
@@ -256,7 +273,7 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
             deepribo_rank, deepribo_score, deepribo_evidence, read_list = deepribo_dict[key]
             evidence_list = []
             for e in deepribo_evidence.split(" "):
-                if not "deepribo" in e:
+                if "deepribo" not in e:
                     evidence_list.append("deepribo-"+e)
                 else:
                     evidence_list.append(e)
@@ -384,10 +401,7 @@ def create_excel_sheets(args):
 
     conditions = eu.get_unique(conditions)
 
-    if args.contrasts is None or "," not in args.contrasts:
-        contrasts = sorted([f"{x}-{y}" for x,y in list(iter.combinations(conditions, 2))], key= lambda s: s.lower())
-    else:
-        contrasts = args.contrasts
+    contrasts = resolve_contrasts(conditions, args.contrasts)
 
     excel_sheet_dict = create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dict, wildcards, conditions, contrasts, te_header)
     excel_sheet_dict = create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dict, wildcards, conditions, contrasts, te_header)
@@ -405,7 +419,17 @@ def main():
     parser.add_argument("-d", "--deltate", action="store", dest="deltate_path", default="", help= "deltate csv file.")
     parser.add_argument("-o", "--xlsx", action="store", dest="output_path", required=True, help= "output xlsx file.")
     parser.add_argument("-t", "--total_mapped_reads", action="store", dest="total_mapped", required=True, help= "file containing the total mapped reads for all alignment files.")
-    parser.add_argument("-c", "--contrasts", nargs="+", dest="contrasts", default=None, help="file containing the contrasts for differential expression. If none provided, default sorting will be used.")
+    parser.add_argument(
+        "-c",
+        "--contrasts",
+        nargs="+",
+        dest="contrasts",
+        default=None,
+        help=(
+            "Differential-expression contrasts, for example '-c B-A C-A'. "
+            "If omitted, every pairwise condition combination is used."
+        ),
+    )
     parser.add_argument("--mapped_reads_deepribo", action="store", dest="reads_deepribo", default="", help= "file containing the individual read counts for deepribo.")
     parser.add_argument("--mapped_reads_reparation", action="store", dest="reads_reparation", default="", help= "file containing the individual read counts for reparation.")
     args = parser.parse_args()

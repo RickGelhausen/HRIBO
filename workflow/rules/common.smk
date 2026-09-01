@@ -62,13 +62,34 @@ TRACK_SOURCES = {
 TRACK_NORMALIZATIONS = ["raw", "mil", "min"]
 TRACK_STRANDS = ["forward", "reverse"]
 
-# Track flavours built by the default workflow.
+# Track flavours built by the 'tracks' stage.
 DEFAULT_TRACK_MAPPINGS = ["global", "centered", "fiveprime", "threeprime"]
 
 
 def library_name(wildcards):
     """The <method>-<condition>-<replicate> stem shared by every per-library file."""
     return f"{wildcards.method}-{wildcards.condition}-{wildcards.replicate}"
+
+
+def _library_files(directory, suffix):
+    """One path per library, as `<directory>/<library name><suffix>`."""
+    return [
+        f"{directory}/{method}-{condition}-{replicate}{suffix}"
+        for method, condition, replicate in zip(
+            samples["method"], samples["condition"], samples["replicate"]
+        )
+    ]
+
+
+def get_mapping_files():
+    """Targets of the 'mapping' stage: the final alignments and their indices.
+
+    maplink/ holds the uniquely mapping reads left after rRNA and tRNA removal,
+    which is what every downstream analysis is computed from. The intermediate
+    bammulti/ and rRNAbam/ alignments are not requested here; ask for those
+    files explicitly if you need them.
+    """
+    return _library_files("maplink", ".bam") + _library_files("maplink", ".bam.bai")
 
 
 def track_bam(wildcards):
@@ -88,7 +109,7 @@ def track_mapping_style(wildcards):
 
 
 def get_wigfiles():
-    """Every bigwig requested by the default workflow."""
+    """Targets of the 'tracks' stage: one bigwig per library, flavour and strand."""
     return [
         f"{mapping}tracks/{norm}/{method}-{condition}-{replicate}.{norm}.{strand}.{mapping}.bw"
         for mapping in DEFAULT_TRACK_MAPPINGS
@@ -146,7 +167,7 @@ def get_qc_files():
 
 
 def get_trimming_files():
-    """Targets of the 'trimming' workflow: raw and trimmed FastQC reports only."""
+    """Targets of the 'trimming' stage: raw and trimmed FastQC reports only."""
     return get_raw_qc_files() + get_trimmed_qc_files()
 
 
@@ -191,15 +212,6 @@ READ_COUNT_SETS = {
         "rRNAbam", "auxiliary/unambigous_annotation.gff", "--fraction"
     ),
 }
-
-
-def _library_files(bam_dir, suffix):
-    return [
-        f"{bam_dir}/{method}-{condition}-{replicate}{suffix}"
-        for method, condition, replicate in zip(
-            samples["method"], samples["condition"], samples["replicate"]
-        )
-    ]
 
 
 def readcount_bams(wildcards):
@@ -291,9 +303,9 @@ def overview_sources():
         "totalreads": "readcounts/bam_mapped_reads.txt",
         "reparation": "readcounts/reparation_annotation.gff",
     }
-    if DEEPRIBO.lower() == "on":
+    if DEEPRIBO:
         sources["deepribo"] = "readcounts/deepribo_annotation.gff"
-    if DIFFEXPRESS.lower() == "on":
+    if DIFFEXPRESS:
         sources["xtail"] = "xtail/xtail_all.csv"
         sources["riborex"] = "riborex/riborex_all.csv"
         sources["deltate"] = "deltate/deltate_all.csv"

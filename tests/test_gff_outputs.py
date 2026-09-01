@@ -9,6 +9,7 @@ Regenerate intentional changes with:
 """
 
 import subprocess
+import shutil
 import sys
 from pathlib import Path
 
@@ -68,6 +69,14 @@ def test_output_matches_golden(name, inputs, tmp_path):
     assert actual == expected, f"{name}.gff no longer matches tests/golden_gff/{name}.gff"
 
 
+def test_deepribo_plus_output_matches_golden(inputs, tmp_path):
+    main_output = run("deepribo_merged", inputs, tmp_path)
+    plus_output = main_output.with_name(f"{main_output.stem}_plus.gff")
+    assert plus_output.read_text() == (
+        GOLDEN / "deepribo_merged_plus.gff"
+    ).read_text()
+
+
 @pytest.mark.parametrize("name", SCRIPT_NAMES)
 def test_output_is_not_empty(name, inputs, tmp_path):
     output = run(name, inputs, tmp_path)
@@ -85,8 +94,23 @@ def test_output_has_nine_columns(name, inputs, tmp_path):
         assert len(fields) == 9, f"{name}.gff line {number} has {len(fields)} columns, not 9"
 
 
+@pytest.mark.skipif(shutil.which("gt") is None, reason="GenomeTools is unavailable")
+def test_prediction_aggregates_are_strict_gff3(inputs, tmp_path):
+    outputs = [run("reparation_merged", inputs, tmp_path)]
+    deepribo = run("deepribo_merged", inputs, tmp_path)
+    outputs.extend([deepribo, deepribo.with_name(f"{deepribo.stem}_plus.gff")])
+
+    for output in outputs:
+        result = subprocess.run(
+            [shutil.which("gt"), "gff3validator", str(output)],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, f"{output.name} is invalid GFF3:\n{result.stderr}"
+
+
 def test_reannotate_handles_empty_orf_type(inputs, tmp_path):
-    """Reparation writes "ORF_type=;" when it has no type for an ORF.
+    """Reparation can write ``orf_type=;`` when it has no type for an ORF.
 
     Splitting the attributes on both ";" and "=" and dropping empty fields left
     an odd number of items, and rebuilding them pairwise then ran off the end of

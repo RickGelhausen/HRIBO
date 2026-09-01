@@ -33,6 +33,10 @@ def main():
                 sys.exit(f"{name} failed:\n{result.stderr}")
             shutil.copy(output, GOLDEN / f"{name}.gff")
             print(f"updated tests/golden_gff/{name}.gff")
+            if name == "deepribo_merged":
+                plus_output = output.with_name(f"{output.stem}_plus.gff")
+                shutil.copy(plus_output, GOLDEN / "deepribo_merged_plus.gff")
+                print("updated tests/golden_gff/deepribo_merged_plus.gff")
 
 
 if __name__ == "__main__":

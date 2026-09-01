@@ -1,26 +1,29 @@
 rule retrieveGenome:
     input:
-        genome=config["biologySettings"]["genome"]
+        genome=config["biologySettings"]["genome"],
+        stager=str(SCRIPTS / "stage_input.py")
     output:
-        "genomes/genome.fa"
+        genome="genomes/genome.fa"
     threads: 1
     shell:
-        "cp {input.genome} genomes/genome.fa"
+        "python3 {input.stager:q} text {input.genome:q} {output.genome:q}"
 
 rule retrieveAnnotation:
     input:
-        annotation=config["biologySettings"]["annotation"]
+        annotation=config["biologySettings"]["annotation"],
+        stager=str(SCRIPTS / "stage_input.py")
     output:
-        "annotation/annotation.gff"
+        annotation="annotation/annotation.gff"
     threads: 1
     shell:
-        "cp {input.annotation} annotation/annotation.gff"
+        "python3 {input.stager:q} text {input.annotation:q} {output.annotation:q}"
 
 rule checkAnnotation:
     input:
-        rules.retrieveAnnotation.output
+        annotation=rules.retrieveAnnotation.output,
+        converter=str(SCRIPTS / "gtf2gff3.py")
     output:
-        "annotation/annotation_processed.gff"
+        annotation="annotation/annotation_processed.gff"
     threads: 1
     shell:
-        "{SCRIPTS}/gtf2gff3.py -a {input} -o {output}"
+        "python3 {input.converter:q} -a {input.annotation:q} -o {output.annotation:q}"

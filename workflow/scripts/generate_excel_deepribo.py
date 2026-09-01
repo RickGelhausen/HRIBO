@@ -15,10 +15,11 @@ COLUMNS = (
     + [
         # Named as in the overview table, so the same quantity has one name
         # across the workbooks. DeepRibo puts its prediction rank in the score
-        # column and the novel rank in the phase column.
+        # column. Novel rank is prediction metadata stored in a lowercase GFF3
+        # attribute; excel_utils still reads legacy phase-based files.
         ("Deepribo_score", "pred_value"),
         ("Deepribo_rank", "score"),
-        ("Novel_rank", "phase"),
+        ("Novel_rank", "novel_rank"),
     ]
     + eu.LOCUS_COLUMNS
     + eu.MEASURE_COLUMNS

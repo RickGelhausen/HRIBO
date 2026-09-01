@@ -71,6 +71,7 @@ def _attributes(index, feature, with_prediction=None):
     elif with_prediction == "deepribo":
         parts.append(f"pred_value={1.0 + (index % 40) / 10:.2f}")
         parts.append("evidence=deepribo")
+        parts.append(f"novel_rank={index % 5}")
     return ";".join(parts) + ";"
 
 
@@ -86,7 +87,7 @@ def write_read_counts(path, source, with_prediction=None, features=None):
             if features is not None and feature not in features:
                 continue
             score = f"{index}" if with_prediction == "deepribo" else "."
-            phase = f"{index % 5}" if with_prediction == "deepribo" else "0"
+            phase = "0"
             counts = [str(rng.randint(0, 5000)) for _ in WILDCARDS]
             row = [
                 contig, source, feature, str(start), str(stop), score, strand, phase,

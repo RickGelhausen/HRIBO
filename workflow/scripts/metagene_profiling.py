@@ -51,7 +51,12 @@ def create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length
         fig_list.append((chromosome, mapping_method, fig))
 
         profiles = plotting.plot_read_length_profiles(
-            df_start, read_length_list, f"{chromosome}: start codon profiles", subtitle, offsets
+            df_start,
+            read_length_list,
+            f"{chromosome}: start codon profiles",
+            subtitle,
+            offsets,
+            color_list=color_list,
         )
         if profiles is not None:
             fig_list.append((f"{chromosome} (per read length)", mapping_method, profiles))
@@ -94,7 +99,8 @@ def main():
                                              , help="The number of positions upstream of the start codon to include in the metagene vector. Default: 20.")
     parser.add_argument("--positions_in_ORF", action="store", dest="positions_in_ORF", type=int, default=200\
                                             , help="The number of positions downstream of the start codon to include in the metagene vector. Default: 100.")
-    parser.add_argument("--output_formats", nargs="+", action="store", dest="output_formats", default=["interactive", "svg"]\
+    parser.add_argument("--output_formats", nargs="+", action="store", dest="output_formats", default=["interactive", "svg"],
+                                            choices=["interactive", "svg", "pdf", "jpg", "png"]\
                                             , help="The output format of the plots (interactive, svg, pdf, jpg, png). Default: interactive, svg.")
     parser.add_argument("--include_plotly_js", action="store", dest="include_plotly_js", type=str, default="integrated",\
                                             help="The way to include the plotly.js library (integrated, local, online). Default: integrated.")
@@ -116,8 +122,19 @@ def main():
         meta_dir.mkdir(parents=True, exist_ok=True)
 
         for mapping_method in mapping_methods:
-            start_codon_dict, stop_codon_dict = ann.retrieve_annotation_positions(args.annotation_file_path, read_intervals_dict, total_counts_dict, genome_length_dict, args.filtering_methods,\
-                                                                                        mapping_method, args.rpkm_threshold, args.neighboring_genes_distance, args.positions_out_ORF, args.positions_in_ORF)
+            start_codon_dict, stop_codon_dict = ann.retrieve_annotation_positions(
+                args.annotation_file_path,
+                read_intervals_dict,
+                total_counts_dict,
+                genome_length_dict,
+                args.filtering_methods,
+                mapping_method,
+                args.rpkm_threshold,
+                args.neighboring_genes_distance,
+                args.positions_out_ORF,
+                args.positions_in_ORF,
+                args.length_cutoff,
+            )
 
             start_coverage_dict = mg.metagene_mapping_start(start_codon_dict, read_intervals_dict, args.positions_out_ORF, args.positions_in_ORF, mapping_method)
             stop_coverage_dict = mg.metagene_mapping_stop(stop_codon_dict, read_intervals_dict, args.positions_out_ORF, args.positions_in_ORF, mapping_method)

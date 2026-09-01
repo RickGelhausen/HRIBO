@@ -105,17 +105,13 @@ def write_plots_to_file(fig_list, output_format, include_plotly_js, alignment_fi
     Write plots to requested file formats
     """
 
-    if "png" in output_format:
-        for chromosome, mapping_method, fig in fig_list:
-            fig.write_image(f"{meta_dir}/{chromosome}_{mapping_method}.png", width=fig_width, height=fig_height)
-
-    if "jpg" in output_format:
-        for chromosome, mapping_method, fig in fig_list:
-            fig.write_image(f"{meta_dir}/{chromosome}_{mapping_method}.jpg", width=fig_width, height=fig_height)
-
-    if "svg" in output_format:
-        for chromosome, mapping_method, fig in fig_list:
-            fig.write_image(f"{meta_dir}/{chromosome}_{mapping_method}.svg", width=fig_width, height=fig_height)
+    for image_format in ("png", "jpg", "svg", "pdf"):
+        if image_format in output_format:
+            for chromosome, mapping_method, fig in fig_list:
+                output_path = Path(meta_dir) / f"{chromosome}_{mapping_method}.{image_format}"
+                fig.write_image(
+                    str(output_path), width=fig_width, height=fig_height
+                )
 
     if "interactive" in output_format:
         create_interactive_html(fig_list, alignment_file_name, f"{meta_dir}/interactive_metagene_profiling.html", include_plotly_js)

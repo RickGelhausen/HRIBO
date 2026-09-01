@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 import argparse
-import os
-import pandas as pd
 import csv
 import collections
-import sys
+import io
+import os
+import tempfile
+from pathlib import Path
+
+import pandas as pd
 
 import gff_utils
 
@@ -73,39 +76,85 @@ def reannotate_ORFs(args):
     annotation_dict = generate_annotation_dict(args)
     # read combined gff
     rows = []
-    combined_df = pd.read_csv(args.combinedGFF, comment="#", header=None, sep="\t")
+    try:
+        combined_df = pd.read_csv(
+            args.combinedGFF, comment="#", header=None, sep="\t"
+        )
+    except pd.errors.EmptyDataError:
+        # Zero predictions are a valid result. The caller still writes the GFF3
+        # header, giving downstream steps an explicit empty annotation.
+        return pd.DataFrame(columns=range(9))
     for row in combined_df.itertuples(index=False, name='Pandas'):
         chromosome = str(getattr(row, "_0"))
-        start = str(getattr(row, "_3"))
-        stop = str(getattr(row, "_4"))
+        start = int(getattr(row, "_3"))
+        stop = int(getattr(row, "_4"))
         strand = str(getattr(row, "_6"))
         key = "%s:%s-%s:%s" % (chromosome, start, stop, strand)
-        try:
+        pairs = gff_utils.normalize_gff3_attribute_keys(
+            gff_utils.split_attributes(getattr(row, "_8"))
+        )
+        if key in annotation_dict:
             locus_tag = annotation_dict[key][1]
             name = annotation_dict[key][2]
             gene_name = annotation_dict[key][4]
             old_locus_tag = annotation_dict[key][5]
 
-            pairs = gff_utils.split_attributes(getattr(row, "_8"))
-
             # Prefer the gene feature's name, falling back to the feature's own.
             replacement = gene_name or name
             if replacement != "":
                 pairs = gff_utils.replace_attribute(pairs, "Name", replacement)
-            attributes = gff_utils.format_attributes(pairs)
-
             if locus_tag != "":
-                attributes += "locus_tag=%s;" % locus_tag
+                pairs = gff_utils.replace_attribute(pairs, "locus_tag", locus_tag)
             if old_locus_tag != "":
-                attributes += "old_locus_tag=%s;" % old_locus_tag
+                pairs = gff_utils.replace_attribute(
+                    pairs, "old_locus_tag", old_locus_tag
+                )
 
-            rows.append(nTuple(getattr(row, "_0"), getattr(row, "_1"), getattr(row, "_2"), start, stop, \
-                               getattr(row, "_5"), strand, getattr(row, "_7"), attributes))
-
-        except KeyError:
-            rows.append(row)
+        attributes = gff_utils.format_attributes(pairs)
+        feature = getattr(row, "_2")
+        phase = "0" if str(feature).lower() == "cds" else getattr(row, "_7")
+        rows.append(
+            nTuple(
+                getattr(row, "_0"),
+                getattr(row, "_1"),
+                feature,
+                start,
+                stop,
+                getattr(row, "_5"),
+                strand,
+                phase,
+                attributes,
+            )
+        )
 
     return pd.DataFrame.from_records(rows, columns=[0,1,2,3,4,5,6,7,8])
+
+
+def render_gff(dataframe):
+    output = io.StringIO()
+    output.write("##gff-version 3\n")
+    dataframe.to_csv(
+        output, header=None, sep="\t", index=False, quoting=csv.QUOTE_NONE
+    )
+    return output.getvalue()
+
+
+def atomic_write(path, content):
+    output = Path(path)
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=output.parent, prefix=f".{output.name}.", suffix=".tmp", text=True
+    )
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
+            handle.write(content)
+        os.chmod(temporary_name, 0o644)
+        os.replace(temporary_name, output)
+    except BaseException:
+        try:
+            os.unlink(temporary_name)
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def main():
@@ -116,12 +165,9 @@ def main():
     parser.add_argument("-o", "--output", action="store", dest="outputGFF", required=True, help= "The reannotated output file")
     args = parser.parse_args()
 
-    with open(args.outputGFF, "w") as f:
-        f.write("##gff-version 3\n")
-    with open(args.outputGFF, "a") as f:
-        df = reannotate_ORFs(args)
-        df.sort_values(by=[0, 3, 4, 6], inplace=True, kind="stable")
-        df.to_csv(f, header=None, sep="\t", index=False, quoting=csv.QUOTE_NONE)
+    dataframe = reannotate_ORFs(args)
+    dataframe.sort_values(by=[0, 3, 4, 6], inplace=True, kind="stable")
+    atomic_write(args.outputGFF, render_gff(dataframe))
 
 if __name__ == '__main__':
     main()

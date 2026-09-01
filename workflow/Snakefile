@@ -16,6 +16,7 @@ configfile: "config/config.yaml"
 SCRIPTS = Path(workflow.basedir) / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
+from lib.stages import RIBO_LIKE_METHODS, resolve_stages
 from validate import validate_config, validate_inputs, validate_sample_sheet
 
 onstart:
@@ -47,6 +48,11 @@ wildcard_constraints:
     replicate=f"({unique_replicates})"
 
 conditions=sorted(samples["condition"].unique(), key=lambda s: s.lower())
+diffex_conditions=sorted(
+    set(samples.loc[samples["method"] == "RIBO", "condition"])
+    & set(samples.loc[samples["method"] == "RNA", "condition"]),
+    key=lambda s: s.lower(),
+)
 
 ADAPTERS_S3=config["biologySettings"]["adapterS3"]
 ADAPTERS_S5=config["biologySettings"]["adapterS5"]
@@ -57,23 +63,33 @@ ADAPTERS_P3R2=config["biologySettings"]["adapterP3R2"]
 ADAPTERS_P5R2=config["biologySettings"]["adapterP5R2"]
 
 CODONS=config["biologySettings"]["alternativeStartCodons"]
-DIFFEXPRESS=config["differentialExpressionSettings"]["differentialExpression"]
 CONTRASTS=config["differentialExpressionSettings"]["contrasts"]
-DEEPRIBO=config["predictionSettings"]["deepribo"]
-TISADVISOR=config["tisAdvisorSettings"]["tisAdvisor"]
-WORKFLOW=config["workflowSettings"]["workflow"]
-
-# Left empty in the config, every pairwise combination of conditions is compared.
-# This has to be resolved here, before the rule files are included: the diffex
-# rules expand CONTRASTS at include time, so populating it later would leave
-# their pooling rules with no inputs at all.
-if DIFFEXPRESS.lower() == "on" and not CONTRASTS:
-    CONTRASTS = ["-".join(pair) for pair in iter.combinations(conditions, 2)]
+DEEPRIBO=config["predictionSettings"]["deepribo"].lower() == "on"
 
 hasRIBO=True
 if "RIBO" not in samples["method"].unique():
     hasRIBO=False
     print("No Ribo-seq libraries were detected. No prediction tools for this setup are currently implemented. If you have pure Ribo-seq libraries, please use the method tag RIBO. Continuing...")
+
+hasRiboLike = bool(RIBO_LIKE_METHODS & set(samples["method"].unique()))
+
+# Which parts of the pipeline this run should produce. Everything a selected
+# stage depends on is still built, so this only decides where the run stops.
+STAGES = resolve_stages(
+    config,
+    has_ribo=hasRIBO,
+    has_ribo_like=hasRiboLike,
+)
+DIFFEXPRESS = "differential_expression" in STAGES
+
+print("Requested stages: " + ", ".join(STAGES), file=sys.stderr)
+
+# Left empty in the config, every pairwise combination of conditions is compared.
+# This has to be resolved here, before the rule files are included: the diffex
+# rules expand CONTRASTS at include time, so populating it later would leave
+# their pooling rules with no inputs at all.
+if DIFFEXPRESS and not CONTRASTS:
+    CONTRASTS = ["-".join(pair) for pair in iter.combinations(diffex_conditions, 2)]
 
 report: "report/workflow.rst"
 
@@ -101,13 +117,13 @@ include: "rules/qcauxiliary.smk"
 include: "rules/qc.smk"
 #readcounts
 include: "rules/readcounting.smk"
-if DIFFEXPRESS.lower() == "on":
+if DIFFEXPRESS:
     include: "rules/diffex_contrast.smk"
     include: "rules/diffex_xtail.smk"
     include: "rules/diffex_riborex.smk"
     include: "rules/diffex_deltate.smk"
 
-if DEEPRIBO.lower() == "on":
+if DEEPRIBO:
     #deepribo
     include: "rules/deepribo.smk"
 else:
@@ -115,50 +131,60 @@ else:
 
 include: "rules/pca.smk"
 
+# The targets of every stage. Anything a stage needs on the way there is pulled
+# in by Snakemake itself, so each entry lists only what the stage is asked for.
 hribo_output = []
 
-if WORKFLOW == "full":
-    hribo_output.extend(expand("metageneprofiling/{method}-{condition}-{replicate}", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]))
-    hribo_output.append("metageneprofiling/read_length_fractions.html")
+if "trimming" in STAGES:
+    hribo_output.extend(get_trimming_files())
 
-    if TISADVISOR.lower() == "on":
-        hribo_output.extend(expand("tis_advice/{method}-{condition}-{replicate}/tis_recommendation.html", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]))
+if "mapping" in STAGES:
+    hribo_output.extend(get_mapping_files())
+
+if "qc" in STAGES:
     hribo_output.append("qc/multi/multiqc_report.html")
+
+if "tracks" in STAGES:
+    hribo_output.extend(get_wigfiles())
+
+if "genome_tracks" in STAGES:
     hribo_output.append("tracks/potentialStopCodons.gff")
     hribo_output.append("tracks/potentialStartCodons.gff")
     hribo_output.append("tracks/potentialRibosomeBindingSite.gff")
     hribo_output.append("tracks/potentialAlternativeStartCodons.gff")
+
+if "readcounts" in STAGES:
     hribo_output.append("auxiliary/annotation_total.xlsx")
     hribo_output.append("auxiliary/annotation_unique.xlsx")
     hribo_output.append("auxiliary/total_read_counts.xlsx")
     hribo_output.append("auxiliary/unique_read_counts.xlsx")
     hribo_output.append("auxiliary/samples.xlsx")
+
+if "metagene" in STAGES:
+    hribo_output.extend(expand("metageneprofiling/{method}-{condition}-{replicate}", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]))
+    hribo_output.append("metageneprofiling/read_length_fractions.html")
+
+if "tis_advisor" in STAGES:
+    hribo_output.extend(expand("tis_advice/{method}-{condition}-{replicate}/tis_recommendation.html", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]))
+
+if "correlation" in STAGES:
     hribo_output.append("figures/heatmap_SpearmanCorr_readCounts.pdf")
+
+if "pca" in STAGES:
     hribo_output.append("pca/PCA_3D.html")
-    hribo_output.extend(get_wigfiles())
 
-    if hasRIBO:
-        hribo_output.append("auxiliary/predictions_reparation.xlsx")
+if "predictions" in STAGES:
+    hribo_output.append("auxiliary/predictions_reparation.xlsx")
+    if DEEPRIBO:
+        hribo_output.append("auxiliary/predictions_deepribo.xlsx")
 
-        if DIFFEXPRESS.lower() == "on":
-            hribo_output.extend(f"contrasts/{contrast}" for contrast in CONTRASTS)
-            for tool in ("xtail", "riborex", "deltate"):
-                hribo_output.extend(f"{tool}/{contrast}_sorted.xlsx" for contrast in CONTRASTS)
+if "differential_expression" in STAGES:
+    hribo_output.extend(f"contrasts/{contrast}" for contrast in CONTRASTS)
+    for tool in ("xtail", "riborex", "deltate"):
+        hribo_output.extend(f"{tool}/{contrast}_sorted.xlsx" for contrast in CONTRASTS)
 
-        if DEEPRIBO.lower() == "on":
-            hribo_output.append("auxiliary/predictions_deepribo.xlsx")
-
-
-        hribo_output.extend(rules.createOverviewTable.output)
-
-elif WORKFLOW == "preprocessing":
-    hribo_output.append("qc/multi/multiqc_report.html")
-
-elif WORKFLOW == "trimming":
-    hribo_output.extend(get_trimming_files())
-
-else:
-    sys.exit("Workflow not recognized. Please choose between 'full' and 'preprocessing'.")
+if "overview" in STAGES:
+    hribo_output.extend(rules.createOverviewTable.output)
 
 rule all:
     input:

@@ -74,12 +74,34 @@ rule fastqctrimmed_paired:
         mem_mb=40000,
         runtime=60
     params:
-        prefix1=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads1))[0]),
-        prefix2=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads2))[0])
+        outdir="qc/2trimmed",
+        html1=lambda wildcards, input: os.path.join(
+            "qc/2trimmed",
+            f"{os.path.splitext(os.path.basename(input.reads1))[0]}_fastqc.html",
+        ),
+        zip1=lambda wildcards, input: os.path.join(
+            "qc/2trimmed",
+            f"{os.path.splitext(os.path.basename(input.reads1))[0]}_fastqc.zip",
+        ),
+        html2=lambda wildcards, input: os.path.join(
+            "qc/2trimmed",
+            f"{os.path.splitext(os.path.basename(input.reads2))[0]}_fastqc.html",
+        ),
+        zip2=lambda wildcards, input: os.path.join(
+            "qc/2trimmed",
+            f"{os.path.splitext(os.path.basename(input.reads2))[0]}_fastqc.zip",
+        )
+    log:
+        "logs/{method}-{condition}-{replicate}-trimmed-fastqc.log"
     shell:
         """
-        fastqc -o qc/2trimmed -t {threads} {input}; mv qc/2trimmed/{params.prefix1}_fastqc.html {output.html1}; mv qc/2trimmed/{params.prefix1}_fastqc.zip {output.zip1}
-        fastqc -o qc/2trimmed -t {threads} {input}; mv qc/2trimmed/{params.prefix2}_fastqc.html {output.html2}; mv qc/2trimmed/{params.prefix2}_fastqc.zip {output.zip2}
+        exec > {log:q} 2>&1
+        fastqc -o {params.outdir:q} -t {threads} {input.reads1:q}
+        mv {params.html1:q} {output.html1:q}
+        mv {params.zip1:q} {output.zip1:q}
+        fastqc -o {params.outdir:q} -t {threads} {input.reads2:q}
+        mv {params.html2:q} {output.html2:q}
+        mv {params.zip2:q} {output.zip2:q}
         """
 
 ruleorder: fastqcraw_paired > fastqcraw_single

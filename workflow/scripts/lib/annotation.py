@@ -37,13 +37,73 @@ def create_annotation_intervals_dict(annotation_df):
 
     return annotation_intervals_dict
 
-def retrieve_annotation_positions(annotation_file_path, read_intervals_dict, total_counts_dict, genome_length_dict, filtering_methods, mapping_method, rpkm_threshold,\
-                                     overlap_distance, positions_out_ORF, positions_in_ORF):
+
+def metagene_window_bounds(
+    beginning,
+    end,
+    strand,
+    positions_out_ORF,
+    positions_in_ORF,
+):
+    """Return inclusive start/stop-profile windows in genomic coordinates.
+
+    ``beginning`` and ``end`` are already zero-based and inclusive.  The
+    outside flank points away from the ORF, while the inside flank points into
+    it, so the two anchors exchange their genomic geometry on the minus strand.
+    Keeping both windows explicit makes asymmetric inside/outside settings and
+    the last valid contig coordinate (``genome_length - 1``) unambiguous.
+    """
+    if strand == "+":
+        return {
+            "start": (
+                beginning - positions_out_ORF,
+                beginning + positions_in_ORF - 1,
+            ),
+            "stop": (
+                end - positions_in_ORF + 1,
+                end + positions_out_ORF,
+            ),
+        }
+
+    return {
+        "start": (
+            end - positions_in_ORF + 1,
+            end + positions_out_ORF,
+        ),
+        "stop": (
+            beginning - positions_out_ORF,
+            beginning + positions_in_ORF - 1,
+        ),
+    }
+
+
+def metagene_windows_fit_contig(windows, genome_length):
+    """Whether every inclusive profile window lies on a zero-based contig."""
+    last_position = genome_length - 1
+    return all(
+        window_start >= 0 and window_stop <= last_position
+        for window_start, window_stop in windows.values()
+    )
+
+
+def retrieve_annotation_positions(
+    annotation_file_path,
+    read_intervals_dict,
+    total_counts_dict,
+    genome_length_dict,
+    filtering_methods,
+    mapping_method,
+    rpkm_threshold,
+    overlap_distance,
+    positions_out_ORF,
+    positions_in_ORF,
+    length_cutoff=None,
+):
     """
     Retrieve start/stop positions of annotated genes.
     Filter annotation based on:
         - gene distance
-        - gene length
+        - gene length (the larger of the in-ORF window and length cutoff)
         - gene type
         - rpkm threshold
     """
@@ -82,7 +142,8 @@ def retrieve_annotation_positions(annotation_file_path, read_intervals_dict, tot
         gene_length = end - beginning + 1
 
         if "length" in filtering_methods:
-            if gene_length < positions_in_ORF:
+            minimum_gene_length = max(positions_in_ORF, length_cutoff or 0)
+            if gene_length < minimum_gene_length:
                 excluded_genes["length"] = (excluded_genes["length"][0] + 1, excluded_genes["length"][1] + [row])
                 continue
 
@@ -99,13 +160,22 @@ def retrieve_annotation_positions(annotation_file_path, read_intervals_dict, tot
                 excluded_genes["rpkm"] = (excluded_genes["rpkm"][0] + 1, excluded_genes["rpkm"][1] + [row])
                 continue
 
-        # remove boundary cases
-        if strand == "+":
-            if beginning - positions_out_ORF < 0:
-                continue
-            if end + positions_out_ORF > genome_length_dict[chromosome]:
-                continue
+        # Remove boundary cases.  A retained feature must support both the
+        # start- and stop-codon profile without inventing positions before zero
+        # or beyond the contig's last valid zero-based coordinate.
+        profile_windows = metagene_window_bounds(
+            beginning,
+            end,
+            strand,
+            positions_out_ORF,
+            positions_in_ORF,
+        )
+        if not metagene_windows_fit_contig(
+            profile_windows, genome_length_dict[chromosome]
+        ):
+            continue
 
+        if strand == "+":
             if chromosome not in start_codon_dict[strand]:
                 start_codon_dict[strand][chromosome] = [(beginning, beginning+2)]
             else:
@@ -117,11 +187,6 @@ def retrieve_annotation_positions(annotation_file_path, read_intervals_dict, tot
                 stop_codon_dict[strand][chromosome].append((end-2, end))
 
         else:
-            if beginning + positions_out_ORF < 0:
-                continue
-            if end - positions_out_ORF > genome_length_dict[chromosome]:
-                continue
-
             if chromosome not in start_codon_dict[strand]:
                 start_codon_dict[strand][chromosome] = [(end-2, end)]
             else:

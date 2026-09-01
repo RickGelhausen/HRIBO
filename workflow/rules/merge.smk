@@ -4,21 +4,21 @@ rule mergeConditions:
     output:
         "tracks/{condition}.merged.gff"
     conda:
-        "../envs/bedtools.yaml"
+        "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "cat {input.reparation} >> {output}.unsorted; bedtools sort -i {output}.unsorted > {output};"
+        "{SCRIPTS}/concatenate_gff.py {input.reparation:q} -o {output:q}"
 
 rule mergeAll:
     input:
-        mergedGff=expand("tracks/{condition}.merged.gff", zip, condition=set(samples["condition"]))
+        mergedGff=expand("tracks/{condition}.merged.gff", condition=conditions)
     output:
         "tracks/all.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/concatenate_gff.py {input.mergedGff} -o {output}"
+        "{SCRIPTS}/concatenate_gff.py {input.mergedGff:q} -o {output:q}"
 
 rule filterAll:
     input:
@@ -29,7 +29,7 @@ rule filterAll:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/merge_duplicates_reparation.py -i {input} -o {output}"
+        "{SCRIPTS}/merge_duplicates_reparation.py -i {input:q} -o {output:q}"
 
 rule reannotatedORFs:
     input:
@@ -41,7 +41,7 @@ rule reannotatedORFs:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/reannotate_orfs.py -a {input.annotation} -c {input.reparation} -o {output}"
+        "{SCRIPTS}/reannotate_orfs.py -a {input.annotation:q} -c {input.reparation:q} -o {output:q}"
 
 rule uniteAnnotation:
     input:

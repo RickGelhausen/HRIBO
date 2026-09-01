@@ -76,6 +76,19 @@ def test_replace_attribute_appends_when_absent():
     assert gff_utils.format_attributes(updated) == "ID=x;Name=abc;"
 
 
+def test_normalize_gff3_attribute_keys_preserves_reserved_names():
+    pairs = gff_utils.split_attributes(
+        "ID=x;Name=feature;Parent=gene1;Prob=0.5;Evidence=A-1;"
+    )
+    assert gff_utils.normalize_gff3_attribute_keys(pairs) == [
+        ("ID", "x"),
+        ("Name", "feature"),
+        ("Parent", "gene1"),
+        ("prob", "0.5"),
+        ("evidence", "A-1"),
+    ]
+
+
 def test_trailing_semicolon_is_optional():
     assert gff_utils.parse_attributes("ID=x;Name=y") == gff_utils.parse_attributes("ID=x;Name=y;")
 

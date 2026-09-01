@@ -23,6 +23,38 @@ $defs:
     pattern: "^$|^[ACGTUNRYSWKMBDHVacgtunryswkmbdhv]+(,[ACGTUNRYSWKMBDHVacgtunryswkmbdhv]+)*$"
     description: empty, or a comma-separated list of nucleotide sequences
 
+  stageName:
+    type: string
+    enum:
+      - trimming
+      - mapping
+      - qc
+      - tracks
+      - genome_tracks
+      - readcounts
+      - metagene
+      - tis_advisor
+      - correlation
+      - pca
+      - predictions
+      - differential_expression
+      - overview
+    description: One part of the pipeline, as listed in config/config.yaml.
+
+  stageSelection:
+    description: >
+      Which parts of the pipeline to run: a preset name ("full",
+      "preprocessing"), a comma-separated list of stage names, or a list of
+      stage names. Unknown names are rejected by lib/stages.py with the full
+      list of what is accepted.
+    oneOf:
+      - type: string
+        pattern: "^[a-z_]+(,[a-z_]+)*$"
+      - type: array
+        minItems: 1
+        uniqueItems: true
+        items: {$ref: "#/$defs/stageName"}
+
   readLengthSpec:
     type: string
     minLength: 1
@@ -32,6 +64,12 @@ $defs:
       for example "22,23,27,34-35" or "25-34".
 
 properties:
+
+  stages:
+    $ref: "#/$defs/stageSelection"
+    description: >
+      Overrides workflowSettings.stages for a single run, set from the command
+      line as `--config stages=mapping,tracks`.
 
   biologySettings:
     type: object
@@ -76,14 +114,12 @@ properties:
   differentialExpressionSettings:
     type: object
     required:
-      - differentialExpression
       - features
       - contrasts
       - padjCutoff
       - log2fcCutoff
     additionalProperties: false
     properties:
-      differentialExpression: {$ref: "#/$defs/onOff"}
       features:
         type: array
         minItems: 1
@@ -200,15 +236,15 @@ properties:
         items:
           type: string
         description: >
-          Optional plot colours. Left empty, a colour-blind friendly palette
-          sized to the number of read lengths is used.
+          Optional per-read-length plot colours, assigned in read-length order.
+          Short lists cycle; left empty, the colour-blind-friendly theme palette
+          is used.
 
   tisAdvisorSettings:
     type: object
-    required: [tisAdvisor, readLengths, mappingMethods]
+    required: [readLengths, mappingMethods]
     additionalProperties: false
     properties:
-      tisAdvisor: {$ref: "#/$defs/onOff"}
       readLengths: {$ref: "#/$defs/readLengthSpec"}
       mappingMethods:
         type: array
@@ -223,9 +259,7 @@ properties:
 
   workflowSettings:
     type: object
-    required: [workflow]
+    required: [stages]
     additionalProperties: false
     properties:
-      workflow:
-        type: string
-        enum: [full, preprocessing, trimming]
+      stages: {$ref: "#/$defs/stageSelection"}

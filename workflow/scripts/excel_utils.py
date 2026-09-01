@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import re
 import sys
 import pandas as pd
 from collections import Counter, OrderedDict
@@ -74,7 +73,10 @@ def calculate_rpkm(total_mapped, read_count, read_length):
 def get_unique(in_list):
     seen = set()
     seen_add = seen.add
-    return sorted([x for x in in_list if not (x in seen or seen_add(x))], key=lambda s: s.lower() if type(s)==str else s)
+    return sorted(
+        [x for x in in_list if not (x in seen or seen_add(x))],
+        key=lambda value: value.lower() if isinstance(value, str) else value,
+    )
 
 def retrieve_column_information(attributes):
     """
@@ -133,7 +135,7 @@ def excel_writer(output_path, data_frames, wildcards):
         worksheet.freeze_panes(1, 0)
         for idx, col in enumerate(df):
             series = df[col]
-            if col in header_only:
+            if col in header_only or series.empty:
                 max_len = len(str(series.name)) + 2
             else:
                 max_len = max(( series.astype(str).str.len().max(), len(str(series.name)) )) + 1
@@ -275,7 +277,10 @@ def generate_deltate_dict(deltate_path):
 
 def _prediction_rows(path):
     """Yield (identifier, row, parsed attributes, read counts) for a prediction GFF."""
-    frame = pd.read_csv(path, header=None, sep="\t", comment="#")
+    try:
+        frame = pd.read_csv(path, header=None, sep="\t", comment="#")
+    except pd.errors.EmptyDataError:
+        return
     prefix_columns = 9
 
     for row in frame.itertuples(index=False, name="Pandas"):
@@ -537,6 +542,17 @@ class Row:
         self.strand = getattr(raw, "_6")
         self.phase = getattr(raw, "_7")
         self.attributes = getattr(raw, "_8")
+        parsed_attributes = parse_attributes(self.attributes)
+        self.novel_rank = first_attribute(parsed_attributes, "novel_rank")
+        if self.novel_rank == "":
+            # Compatibility with mapped DeepRibo files produced before the
+            # novel rank moved out of the GFF3 phase column.
+            self.novel_rank = self.phase
+        else:
+            try:
+                self.novel_rank = int(self.novel_rank)
+            except ValueError:
+                pass
 
         self.identifier = "%s:%s-%s:%s" % (
             self.chromosome, self.start, self.stop, self.strand
@@ -584,9 +600,6 @@ def build_annotation_table(reads_path, context, columns, source=None):
     `source` overrides the Source column when a script writes a fixed value
     rather than passing the file's own second column through.
     """
-    read_df = pd.read_csv(reads_path, comment="#", header=None, sep="\t")
-    prefix_columns = len(read_df.columns) - len(context.wildcards)
-
     header = []
     for name, _ in columns:
         if name == "te_list":
@@ -595,6 +608,12 @@ def build_annotation_table(reads_path, context, columns, source=None):
             header.extend(context.rpkm_columns())
         else:
             header.append(name)
+
+    try:
+        read_df = pd.read_csv(reads_path, comment="#", header=None, sep="\t")
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame(columns=header), []
+    prefix_columns = len(read_df.columns) - len(context.wildcards)
 
     records = []
     for raw in read_df.itertuples(index=False, name="Pandas"):

@@ -72,6 +72,18 @@ partition, then run:
 
 This requires `snakemake-executor-plugin-slurm` in your Snakemake environment.
 
+Run only parts of the workflow:
+
+The `workflowSettings.stages` list in `config/config.yaml` decides what a run produces.
+Comment out what you do not need; everything a remaining stage depends on is still built,
+so asking only for `predictions` still trims, filters and maps the reads on the way there.
+
+A single run can override the list without editing the config file:
+
+       snakemake ... --config stages=mapping             # stop at the BAM files
+       snakemake ... --config stages=mapping,tracks,qc   # BAM files, coverage tracks and QC
+       snakemake ... --config stages=preprocessing       # trimming, mapping and the QC report
+
 Once the workflow has finished you can request a automatically generated report.html file with the following command:
 
        snakemake -s HRIBO/workflow/Snakefile --directory ${PWD} --report report.html

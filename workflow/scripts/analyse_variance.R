@@ -84,15 +84,19 @@ write_pca_info <- function (object, intgroup = "condition", ntop = 500){
   else {
     colData(object)[[intgroup]]
   }
-  d <- data.frame(PC1 = pca$x[, 1],
-                  PC2 = pca$x[, 2],
-                  PC3 = pca$x[, 3],
+  tolerance <- sqrt(.Machine$double.eps) * max(pca$sdev)
+  effective_rank <- sum(pca$sdev > tolerance)
+  component_count <- min(3, max(1, effective_rank))
+  scores <- as.data.frame(pca$x[, seq_len(component_count), drop = FALSE])
+  colnames(scores) <- paste0("PC", seq_len(component_count))
+  d <- data.frame(scores,
                   group = group,
                   intgroup.df,
-                  name = colnames(object))
+                  name = colnames(object),
+                  check.names = FALSE)
 
   write.table(d, file = paste(options$output_path, "rld.tsv",sep=""), sep = "\t", quote = FALSE, row.names = FALSE)
-  write.table(percentVar, file = paste(options$output_path, "variance_percentages.tsv",sep=""), sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
+  write.table(percentVar[seq_len(component_count)], file = paste(options$output_path, "variance_percentages.tsv",sep=""), sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
 }
 
 write_pca_info(rld, intgroup = "sampletype")
@@ -101,5 +105,3 @@ rld_mat = assay(rld)
 rld_cor = cor(rld_mat)
 
 write.table(rld_cor, file = paste(options$output_path, "rld_cor.tsv", sep=""), sep = "\t", quote = FALSE, row.names = TRUE, col.names = TRUE)
-
-

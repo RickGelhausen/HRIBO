@@ -168,18 +168,18 @@ rule concatDeepRibo:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/concatenate_gff.py {input} -o {output}"
+        "{SCRIPTS}/concatenate_gff.py {input:q} -o {output:q}"
 
 rule allDeepRibo:
     input:
-        merged_gff=expand("tracks/{condition}.deepribo.gff", zip, condition=set(samples["condition"]))
+        merged_gff=expand("tracks/{condition}.deepribo.gff", condition=conditions)
     output:
         "tracks/deepribo_all.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/concatenate_gff.py {input.merged_gff} -o {output}"
+        "{SCRIPTS}/concatenate_gff.py {input.merged_gff:q} -o {output:q}"
 
 rule filterDeepRibo:
     input:
@@ -192,7 +192,13 @@ rule filterDeepRibo:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/merge_duplicates_deepribo.py -i {input.ingff} -o {output.merged} -a {input.annotation}"
+        """
+        {SCRIPTS}/merge_duplicates_deepribo.py \
+            -i {input.ingff:q} \
+            -o {output.merged:q} \
+            --plus-output {output.plus:q} \
+            -a {input.annotation:q}
+        """
 
 
 rule createExcelSummaryDeepRibo:
@@ -220,5 +226,5 @@ rule newAnnotationDeepRibo:
     threads: 1
     shell:
         """
-        {SCRIPTS}/concatenate_gff.py {input.deepribo_orfs} {input.reparation_orfs} {input.currentAnnotation} -o {output}
+        {SCRIPTS}/concatenate_gff.py {input.deepribo_orfs:q} {input.reparation_orfs:q} {input.currentAnnotation:q} -o {output:q}
         """

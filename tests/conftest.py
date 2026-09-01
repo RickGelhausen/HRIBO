@@ -104,7 +104,6 @@ def config(genome_file: Path, annotation_file: Path):
             "alternativeStartCodons": ["GTG", "TTG"],
         },
         "differentialExpressionSettings": {
-            "differentialExpression": "off",
             "features": ["CDS", "sRNA"],
             "contrasts": [],
             "padjCutoff": 0.05,
@@ -126,5 +125,5 @@ def config(genome_file: Path, annotation_file: Path):
             "includePlotlyJS": "integrated",
             "colorList": [],
         },
-        "workflowSettings": {"workflow": "full"},
+        "workflowSettings": {"stages": "full"},
     }

@@ -34,8 +34,8 @@ biologySettings:
 ##################################
 
 differentialExpressionSettings:
-  # Differential expression: on / off
-  differentialExpression: "off"
+  # Whether differential expression runs at all is decided by the
+  # "differential_expression" stage in workflowSettings.stages below.
 
   # Features used for counting reads for differential expression
   features: ["CDS", "sRNA"]
@@ -123,16 +123,17 @@ metageneSettings:
   # local: references a local plotly.js script (requires a local copy of plotly.js to open the plots)
   includePlotlyJS: "integrated"
 
-  # Custom list of colors to be used for the plots. Must be atleast as many as the number of read lengths considered.
-  # If empty we try to match the number of read lengths trying to prioritize color-blind friendly colors.
+  # Optional series colors for the per-read-length plots, assigned in read-length
+  # order. Short lists cycle; an empty list uses the color-blind-friendly theme.
   colorList: []
 
 # TIS caller advice
 ##################
 
 tisAdvisorSettings:
-  # Suggest read lengths and P-site offsets for a TIS caller (e.g. ORFBounder): on / off
-  tisAdvisor: "on"
+  # Whether the advisor runs at all is decided by the "tis_advisor" stage in
+  # workflowSettings.stages below. It suggests read lengths and P-site offsets
+  # for a TIS caller such as ORFBounder.
 
   # Read lengths examined when looking for an initiation signal. Keep this wider
   # than the metagene readLengths so that a usable length outside the expected
@@ -150,6 +151,35 @@ tisAdvisorSettings:
 #####################
 
 workflowSettings:
-  ###
-  # Use specific parts of the workflow. preprocessing (preprocessing) vs Full run (full)
-  workflow: "full"
+  # Which parts of the pipeline to run.
+  #
+  # A stage only says what is asked for, not what is computed: whatever a
+  # selected stage depends on is still built, so asking for "predictions" alone
+  # also trims, filters, maps and counts reads on the way there. Commenting a
+  # line out removes its outputs from the run, which is how a run can stop at,
+  # say, the BAM files.
+  #
+  # Instead of a list, a preset name can be given:
+  #   stages: "full"           every stage below, differential expression included
+  #   stages: "preprocessing"  trimming, mapping and the MultiQC report
+  #
+  # A single run can override this without editing the file:
+  #   snakemake ... --config stages=mapping,tracks
+  stages:
+    - trimming                 # adapter removal, FastQC of the raw and trimmed reads
+    - mapping                  # the final alignments in maplink/ with their indices
+    - qc                       # the MultiQC report over every quality control step
+    - tracks                   # bigwig coverage tracks
+    - genome_tracks            # start, stop, alternative start codon and RBS tracks
+    - readcounts               # read count and annotation spreadsheets
+    - metagene                 # metagene profiles and read length statistics
+    - tis_advisor              # read length and P-site offset advice for a TIS caller
+    - correlation              # the Spearman correlation heatmap between libraries
+    - pca                      # the PCA plot of the read counts
+    - predictions              # annotation independent ORF predictions
+    # - differential_expression  # xtail, riborex and deltaTE; needs RNA-seq libraries
+                                 # and at least two conditions
+    - overview                 # the combined overview spreadsheet
+  #
+  # predictions, differential_expression and overview need Ribo-seq libraries and
+  # are skipped when the sample sheet has none.

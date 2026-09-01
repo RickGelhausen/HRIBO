@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import re
-import os
+import sys
 import pandas as pd
 import collections
 import csv
@@ -22,9 +22,7 @@ def create_parent_dictionary(annotation_df):
             try:
                 idx = attribute_list[next(i for i,v in enumerate(attribute_list) if v.lower() == "id") + 1]
             except (StopIteration, IndexError):
-                print("Missing ID in row!")
-                print(row)
-                sys.exit()
+                sys.exit(f"Missing ID in annotation row: {row}")
 
             parent_dict[idx] = attribute_list
 

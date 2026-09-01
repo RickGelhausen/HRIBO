@@ -1,184 +1,555 @@
 #!/usr/bin/env python
+"""Convert a consistently formatted GTF annotation to GFF3.
+
+GFF3 input is copied unchanged. GTF records are grouped by ``gene_id`` and
+receive deterministic GFF3 IDs while retaining their remaining attributes.
+The converter deliberately rejects mixed or unidentifiable attribute syntax:
+silently guessing here would corrupt every annotation-derived result later in
+the workflow.
+"""
+
+from __future__ import annotations
+
 import argparse
-import re
-import os, sys
-import pandas as pd
-import collections
-import csv
+import os
+from collections import defaultdict
+from dataclasses import dataclass, replace
+from pathlib import Path
 from shutil import copyfile
 
-def generate_dictionaries(args):
-    annotation_df = pd.read_csv(args.annotation, sep="\t", comment="#", header=None)
+import gff_utils
 
-    unknown_entries = []
 
-    gene_dict = {}
-    cds_dict = {}
-    RNA_dict = {}
-    for row in annotation_df.itertuples(index=False, name='Pandas'):
-        reference_name = getattr(row, "_0")
-        source = getattr(row, "_1")
-        feature = getattr(row, "_2")
-        start = getattr(row, "_3")
-        stop = getattr(row, "_4")
-        score = getattr(row, "_5")
-        strand = getattr(row, "_6")
-        phase = getattr(row, "_7")
-        attributes = getattr(row, "_8")
+RNA_FEATURES = {"ncrna", "rrna", "trna", "srna"}
+IGNORED_GTF_FEATURES = {"exon", "start_codon", "stop_codon", "transcript"}
+GENERATED_ATTRIBUTE_KEYS = {"gene_id", "id", "locus_tag", "parent"}
+GFF3_RESERVED_ATTRIBUTE_CHARACTERS = frozenset("%;=&,")
 
-        if "gene_id " in attributes:
-            attribute_list = [x.replace(";", "") for x in list(csv.reader([attributes], delimiter=' ', quotechar='"'))[0]]
-            gene_id = attribute_list[attribute_list.index("gene_id")+1]
 
-            if feature.lower() in ["gene", "pseudogene"]:
-                gene_dict[gene_id] = (reference_name, source, feature, start, stop, score, strand, phase, attributes)
-            elif feature.lower() == "cds":
-                cds_dict[gene_id] = (reference_name, source, feature, start, stop, score, strand, phase, attributes)
-            elif feature.lower() in ["ncrna", "rrna", "trna", "srna"]:
-                RNA_dict[gene_id] = (reference_name, source, feature, start, stop, score, strand, phase, attributes)
-            elif feature.lower() in ["transcript"]:
-                biotype = ""
-                if "gene_biotype" in attribute_list:
-                    biotype = attribute_list[attribute_list.index("gene_biotype")+1]
-                if biotype in ["ncRNA", "rRNA", "tRNA", "sRNA"]:
-                    RNA_dict[gene_id] = (reference_name, source, biotype, start, stop, score, strand, phase, attributes)
+class AnnotationConversionError(ValueError):
+    """An annotation cannot be converted without guessing its meaning."""
 
-            elif feature.lower() not in ["exon", "start_codon", "stop_codon", "transcript"]:
-                unknown_entries.append((reference_name, source, feature, start, stop, score, strand, phase, attributes))
 
+@dataclass(frozen=True)
+class Record:
+    seq_name: str
+    source: str
+    feature: str
+    start: int
+    stop: int
+    score: str
+    strand: str
+    phase: str
+    attributes: str
+    line_number: int
+
+    def to_gff_line(self) -> str:
+        return "\t".join(
+            (
+                self.seq_name,
+                self.source,
+                self.feature,
+                str(self.start),
+                str(self.stop),
+                self.score,
+                self.strand,
+                self.phase,
+                self.attributes,
+            )
+        )
+
+
+def read_annotation(path: Path) -> tuple[list[Record], bool]:
+    """Read the nine GFF/GTF columns without coercing identifiers or dots."""
+    records = []
+    declares_gff3 = False
+    with path.open() as handle:
+        for line_number, line in enumerate(handle, start=1):
+            stripped = line.rstrip("\n\r")
+            if not stripped:
+                continue
+            if stripped.startswith("#"):
+                declares_gff3 = declares_gff3 or stripped == "##gff-version 3"
+                continue
+
+            fields = stripped.split("\t")
+            if len(fields) != 9:
+                raise AnnotationConversionError(
+                    f"line {line_number} has {len(fields)} columns; expected nine tab-separated columns"
+                )
+            try:
+                start, stop = int(fields[3]), int(fields[4])
+            except ValueError as exc:
+                raise AnnotationConversionError(
+                    f"line {line_number} has non-integer coordinates {fields[3]!r}-{fields[4]!r}"
+                ) from exc
+            if start < 1 or stop < start:
+                raise AnnotationConversionError(
+                    f"line {line_number} has invalid coordinates {start}-{stop}"
+                )
+
+            records.append(
+                Record(
+                    fields[0],
+                    fields[1],
+                    fields[2],
+                    start,
+                    stop,
+                    fields[5],
+                    fields[6],
+                    fields[7],
+                    fields[8],
+                    line_number,
+                )
+            )
+
+    if not records:
+        raise AnnotationConversionError(f"{path} contains no annotation records")
+    return records, declares_gff3
+
+
+def split_attribute_fields(attributes: str) -> list[str]:
+    """Split column nine on semicolons that are outside GTF quoted values."""
+    fields = []
+    current = []
+    quoted = False
+    for character in attributes:
+        if character == '"':
+            quoted = not quoted
+        if character == ";" and not quoted:
+            field = "".join(current).strip()
+            if field:
+                fields.append(field)
+            current = []
         else:
-            unknown_entries.append((reference_name, source, feature, start, stop, score, strand, phase, attributes))
+            current.append(character)
 
-    return unknown_entries, gene_dict, cds_dict, RNA_dict
+    field = "".join(current).strip()
+    if field:
+        fields.append(field)
+    return fields
 
-def attributes_to_gff3(attributes, id, locus_tag, parent=""):
+
+def split_gtf_attributes(attributes: str) -> list[tuple[str, str]]:
+    """Return already-validated GTF attributes without splitting quoted text."""
+    pairs = []
+    for field in split_attribute_fields(attributes):
+        match = gff_utils.GTF2_PAIR.match(field)
+        if match is not None:
+            pairs.append((match.group("key"), match.group("value")))
+    return pairs
+
+
+def parse_gtf_attributes(attributes: str) -> dict[str, str]:
+    """Parse GTF attributes case-insensitively, retaining the first value."""
+    parsed = {}
+    for key, value in split_gtf_attributes(attributes):
+        parsed.setdefault(key.lower(), value)
+    return parsed
+
+
+def attribute_syntax(attributes: str, line_number: int) -> set[str]:
+    """Return the syntaxes used by one attribute column."""
+    if attributes.strip() in {"", "."}:
+        return set()
+
+    syntaxes = set()
+    for field in split_attribute_fields(attributes):
+        if gff_utils.GTF2_PAIR.match(field):
+            syntaxes.add("GTF")
+        elif "=" in field and field.split("=", 1)[0].strip():
+            syntaxes.add("GFF3")
+        else:
+            raise AnnotationConversionError(
+                f"line {line_number} has unsupported attribute {field!r}; "
+                'use GTF key "value" or GFF3 key=value syntax'
+            )
+    return syntaxes
+
+
+def annotation_format(records: list[Record], declares_gff3: bool) -> str:
+    """Identify one consistent format and require its defining identifier."""
+    syntaxes = set()
+    for record in records:
+        syntaxes.update(attribute_syntax(record.attributes, record.line_number))
+
+    if len(syntaxes) > 1:
+        raise AnnotationConversionError(
+            "mixed GFF3 and GTF attribute syntax; use one format consistently"
+        )
+    if not syntaxes:
+        raise AnnotationConversionError(
+            'no supported identifiers found; expected GTF gene_id "..." or GFF3 ID=...'
+        )
+
+    detected = next(iter(syntaxes))
+    if declares_gff3 and detected != "GFF3":
+        raise AnnotationConversionError(
+            "the file declares GFF3 but its records use GTF attribute syntax"
+        )
+
+    parser = parse_gtf_attributes if detected == "GTF" else gff_utils.parse_attributes
+    parsed = [parser(record.attributes) for record in records]
+    if detected == "GFF3" and not any("id" in attributes for attributes in parsed):
+        raise AnnotationConversionError(
+            "GFF3 input contains no ID attribute; HRIBO cannot identify its features"
+        )
+    if detected == "GTF" and not any("gene_id" in attributes for attributes in parsed):
+        raise AnnotationConversionError(
+            'GTF input contains no gene_id attribute; expected gene_id "..."'
+        )
+    return detected
+
+
+def converted_attributes(
+    attributes: str,
+    identifier: str,
+    gene_id: str,
+    locus_tag: str,
+    parent: str = "",
+) -> str:
+    """Add one canonical identity set while retaining lowercase GTF provenance."""
+    remaining = [
+        (escape_gff3_component(key), escape_gff3_component(value))
+        for key, value in split_gtf_attributes(attributes)
+        if key.lower() not in GENERATED_ATTRIBUTE_KEYS
+    ]
+    prefix = [
+        ("ID", escape_gff3_component(identifier)),
+        ("locus_tag", escape_gff3_component(locus_tag)),
+    ]
+    if parent:
+        prefix.append(("Parent", escape_gff3_component(parent)))
+    prefix.append(("gene_id", escape_gff3_component(gene_id)))
+    return gff_utils.format_attributes(prefix + remaining)
+
+
+def escape_gff3_component(value: str) -> str:
+    """Percent-encode one GTF attribute component for GFF3 column nine.
+
+    Column nine reserves ``;``, ``=``, ``&`` and ``,`` as separators and uses
+    URL-style escapes for those characters, literal percent signs, ASCII
+    controls and DEL.  Spaces, punctuation and UTF-8 are valid unescaped text.
+    A percent triplet in GTF is literal source text, so its percent sign is
+    encoded too; already-converted GFF3 input takes the separate pass-through
+    path and never reaches this function.
     """
-    take gff2 format attributes and convert them to gff3
-    """
-
-    if "=" in attributes and ";" in attributes:
-        attribute_list = [x.strip(" ") for x in re.split('[;=]', attributes)]
-    else:
-        attribute_list = [x.strip(" ") for x in re.split('[;\"]', attributes) if x != ""]
-
-    empty_fields=[]
-    for i in range(len(attribute_list)):
-        if attribute_list[i] == "":
-            empty_fields.extend([i-1, i])
-        elif attribute_list[i] == "gene_id":
-            empty_fields.extend([i, i+1])
-            i+=1
-
-    for index in sorted(empty_fields, reverse=True):
-        del attribute_list[index]
-
-    new_attributes="ID=%s;locus_tag=%s;" % (id, locus_tag)
-    if parent != "":
-        new_attributes += "Parent=%s;" % (parent)
-
-    new_attributes += "".join(["%s=%s;" % (attribute_list[i], attribute_list[i+1]) for i in range(0, len(attribute_list), 2)])
-
-    return new_attributes
+    escaped = []
+    for character in value:
+        if (
+            character in GFF3_RESERVED_ATTRIBUTE_CHARACTERS
+            or ord(character) < 32
+            or ord(character) == 127
+        ):
+            escaped.extend(f"%{byte:02X}" for byte in character.encode("utf-8"))
+        else:
+            escaped.append(character)
+    return "".join(escaped)
 
 
-def create_gff3_annotation(args):
-    unknown_entries, gene_dict, cds_dict, RNA_dict = generate_dictionaries(args)
+def structural_record_key(record: Record) -> tuple:
+    """Stable biological/file-content order, independent of input row order."""
+    return (
+        record.seq_name,
+        record.start,
+        record.stop,
+        record.strand,
+        record.feature.lower(),
+        record.feature,
+        record.source,
+        record.score,
+        record.phase,
+        record.attributes,
+    )
 
-    union_keys = sorted(list(set().union(gene_dict.keys(), cds_dict.keys(), RNA_dict.keys())))
-    nTuple = collections.namedtuple('Pandas', ["seq_name","source","feature","start","stop","score","strand","phase","attribute"])
 
-    cds_count = 1
-    gene_count = 1
-    RNA_count = 1
+def output_record_key(record: Record) -> tuple:
+    """Keep parents before same-start children and resolve every remaining tie."""
+    parent_rank = 0 if record.feature.lower() in {"gene", "pseudogene"} else 1
+    return (
+        record.seq_name,
+        record.start,
+        parent_rank,
+        record.stop,
+        record.strand,
+        record.feature.lower(),
+        record.feature,
+        record.source,
+        record.score,
+        record.phase,
+        record.attributes,
+    )
 
-    rows = []
-    for key in union_keys:
-        if key in gene_dict:
-            reference_name, source, feature, start, stop, score, strand, phase, attributes = gene_dict[key]
 
-            rows.append(nTuple(reference_name, source, feature, start, stop, score, strand, phase, attributes_to_gff3(attributes, "gene%s" % gene_count, key)))
-            if key in cds_dict:
-                cds_entries = cds_dict[key]
-                rows.append(nTuple(cds_entries[0], cds_entries[1], "CDS", start, stop, cds_entries[5], cds_entries[6], cds_entries[7], attributes_to_gff3(cds_entries[8], "cds%s" % cds_count, key, "gene%s" % gene_count)))
+def group_locus_tags(records_by_gene: dict[str, list[Record]]) -> dict[str, str]:
+    """Choose one explicit nonempty locus tag per gene, or use ``gene_id``."""
+    resolved = {}
+    for gene_id, records in records_by_gene.items():
+        occurrences = defaultdict(list)
+        for record in records:
+            for key, value in split_gtf_attributes(record.attributes):
+                if key.lower() == "locus_tag" and value:
+                    occurrences[value].append(record.line_number)
+
+        if len(occurrences) > 1:
+            conflicts = ", ".join(
+                f"{value!r} (lines {', '.join(map(str, occurrences[value]))})"
+                for value in sorted(occurrences)
+            )
+            raise AnnotationConversionError(
+                f"gene_id {gene_id!r} has conflicting locus_tag values: {conflicts}"
+            )
+        resolved[gene_id] = next(iter(occurrences), gene_id)
+    return resolved
+
+
+def validate_gene_groups(
+    records_by_gene: dict[str, list[Record]], genes: dict[str, Record]
+) -> None:
+    """Reject groupings that cannot form a valid GFF3 parent hierarchy."""
+    for gene_id, records in records_by_gene.items():
+        seq_names = {record.seq_name for record in records}
+        if len(seq_names) > 1:
+            lines = ", ".join(str(record.line_number) for record in records)
+            raise AnnotationConversionError(
+                f"gene_id {gene_id!r} spans multiple sequence IDs on lines {lines}"
+            )
+
+        strands = {record.strand for record in records}
+        if len(strands) > 1:
+            lines = ", ".join(str(record.line_number) for record in records)
+            raise AnnotationConversionError(
+                f"gene_id {gene_id!r} spans multiple strands on lines {lines}"
+            )
+
+        gene = genes.get(gene_id)
+        if gene is None:
+            continue
+        for record in records:
+            if record is gene:
+                continue
+            if record.start < gene.start or record.stop > gene.stop:
+                raise AnnotationConversionError(
+                    f"line {record.line_number} ({record.feature} {record.start}-{record.stop}) "
+                    f"lies outside gene_id {gene_id!r} on line {gene.line_number} "
+                    f"({gene.start}-{gene.stop})"
+                )
+
+
+def group_gtf_records(records: list[Record]):
+    genes = {}
+    coding = defaultdict(list)
+    rna = defaultdict(list)
+    unknown = []
+    records_by_gene = defaultdict(list)
+
+    for record in records:
+        attributes = parse_gtf_attributes(record.attributes)
+        gene_id = attributes.get("gene_id", "")
+        if not gene_id:
+            raise AnnotationConversionError(
+                f"line {record.line_number} has no gene_id; every convertible GTF record needs one"
+            )
+        records_by_gene[gene_id].append(record)
+
+        feature = record.feature.lower()
+        if feature in {"gene", "pseudogene"}:
+            if gene_id in genes:
+                raise AnnotationConversionError(
+                    f"duplicate gene records for gene_id {gene_id!r} on lines "
+                    f"{genes[gene_id].line_number} and {record.line_number}"
+                )
+            genes[gene_id] = record
+        elif feature == "cds":
+            coding[gene_id].append(record)
+        elif feature in RNA_FEATURES:
+            rna[gene_id].append(record)
+        elif feature == "transcript":
+            biotype = attributes.get("gene_biotype", "")
+            if biotype.lower() in RNA_FEATURES:
+                rna[gene_id].append(replace(record, feature=biotype))
+        elif feature not in IGNORED_GTF_FEATURES:
+            unknown.append((gene_id, record))
+
+    validate_gene_groups(records_by_gene, genes)
+    locus_tags = group_locus_tags(records_by_gene)
+    return genes, coding, rna, unknown, locus_tags
+
+
+def convert_gtf(records: list[Record]) -> list[Record]:
+    genes, coding, rna, unknown, locus_tags = group_gtf_records(records)
+    for children in coding.values():
+        children.sort(key=structural_record_key)
+    for children in rna.values():
+        children.sort(key=structural_record_key)
+    unknown.sort(key=lambda item: (structural_record_key(item[1]), item[0]))
+    gene_ids = sorted(set(genes) | set(coding) | set(rna))
+
+    converted = []
+    gene_count = cds_count = rna_count = 1
+    for gene_id in gene_ids:
+        parent_id = f"gene{gene_count}"
+        locus_tag = locus_tags[gene_id]
+        if gene_id in genes:
+            gene = genes[gene_id]
+            converted.append(
+                replace(
+                    gene,
+                    phase=".",
+                    attributes=converted_attributes(
+                        gene.attributes, parent_id, gene_id, locus_tag
+                    ),
+                )
+            )
+
+            for child in coding.get(gene_id, []):
+                converted.append(
+                    replace(
+                        child,
+                        feature="CDS",
+                        attributes=converted_attributes(
+                            child.attributes,
+                            f"cds{cds_count}",
+                            gene_id,
+                            locus_tag,
+                            parent_id,
+                        ),
+                    )
+                )
                 cds_count += 1
 
-            if key in RNA_dict:
-                RNA_entries = RNA_dict[key]
-                rows.append(nTuple(RNA_entries[0], RNA_entries[1], RNA_entries[2], start, stop, RNA_entries[5], RNA_entries[6], RNA_entries[7], attributes_to_gff3(RNA_entries[8], "rna%s" % RNA_count, key, "gene%s" % gene_count)))
-                RNA_count += 1
-            gene_count += 1
+            for child in rna.get(gene_id, []):
+                converted.append(
+                    replace(
+                        child,
+                        phase=".",
+                        attributes=converted_attributes(
+                            child.attributes,
+                            f"rna{rna_count}",
+                            gene_id,
+                            locus_tag,
+                            parent_id,
+                        ),
+                    )
+                )
+                rna_count += 1
 
-        elif key in cds_dict:
-            reference_name, source, feature, start, stop, score, strand, phase, attributes = cds_dict[key]
+        else:
+            coding_children = coding.get(gene_id, [])
+            rna_children = rna.get(gene_id, [])
+            children = coding_children + rna_children
+            first = min(children, key=structural_record_key)
+            parent_start = min(child.start for child in children)
+            parent_stop = max(child.stop for child in children)
 
-            if strand == "-":
-                new_start, new_stop = start - 3, stop
-            else:
-                new_start, new_stop = start, stop + 3
+            converted.append(
+                replace(
+                    first,
+                    feature="gene",
+                    start=parent_start,
+                    stop=parent_stop,
+                    score=".",
+                    phase=".",
+                    attributes=converted_attributes(
+                        first.attributes, parent_id, gene_id, locus_tag
+                    ),
+                )
+            )
+            for child in coding_children:
+                converted.append(
+                    replace(
+                        child,
+                        feature="CDS",
+                        attributes=converted_attributes(
+                            child.attributes,
+                            f"cds{cds_count}",
+                            gene_id,
+                            locus_tag,
+                            parent_id,
+                        ),
+                    )
+                )
+                cds_count += 1
 
-            rows.append(nTuple(reference_name, source, "gene", new_start, new_stop, score, strand, phase, attributes_to_gff3(attributes, "gene%s"%gene_count, key)))
-            rows.append(nTuple(reference_name, source, "CDS", new_start, new_stop, score, strand, phase, attributes_to_gff3(attributes, "cds%s"%cds_count, key, "gene%s"%gene_count)))
+            for child in rna_children:
+                converted.append(
+                    replace(
+                        child,
+                        phase=".",
+                        attributes=converted_attributes(
+                            child.attributes,
+                            f"rna{rna_count}",
+                            gene_id,
+                            locus_tag,
+                            parent_id,
+                        ),
+                    )
+                )
+                rna_count += 1
 
-            gene_count += 1
-            cds_count += 1
+        gene_count += 1
 
-        elif key in RNA_dict:
-            reference_name, source, feature, start, stop, score, strand, phase, attributes = RNA_dict[key]
+    for unknown_count, (gene_id, record) in enumerate(unknown, start=1):
+        converted.append(
+            replace(
+                record,
+                phase="." if record.feature.lower() != "cds" else record.phase,
+                attributes=converted_attributes(
+                    record.attributes,
+                    f"misc{unknown_count}",
+                    gene_id,
+                    locus_tags[gene_id],
+                ),
+            )
+        )
 
-            rows.append(nTuple(reference_name, source, "gene", start, stop, score, strand, phase, attributes_to_gff3(attributes, "gene%s"%gene_count, key)))
-            rows.append(nTuple(reference_name, source, feature, start, stop, score, strand, phase, attributes_to_gff3(attributes, "rna%s"%rna_count, key, "gene%s"%gene_count)))
+    if not converted:
+        raise AnnotationConversionError(
+            "GTF input contains no gene, CDS, RNA, or preservable feature records"
+        )
+    return sorted(converted, key=output_record_key)
 
-            gene_count += 1
-            RNA_count += 1
 
-    unknown_count = 1
-    for entry in unknown_entries:
-        reference_name, source, feature, start, stop, score, strand, phase, attributes = entry
-        rows.append(nTuple(reference_name, source, feature, start, stop, score, strand, phase, attributes_to_gff3(attributes, "misc%s" % unknown_count, key)))
-        unknown_count += 1
+def write_converted(records: list[Record], output: Path) -> None:
+    with output.open("w") as handle:
+        handle.write("##gff-version 3\n")
+        for record in records:
+            handle.write(record.to_gff_line() + "\n")
 
-    return pd.DataFrame.from_records(rows, columns=["seqName","source","type","start","stop","score","strand","phase","attribute"])
 
-def which_annotation(args):
-    """
-    Check if data consitently contains "ID=" or "gene_id ", deciding whether it is in gff2 or gff3 format
-    If file has mixed IDs, terminate (for now)
-    """
-    annotation_df = pd.read_csv(args.annotation, sep="\t", comment="#", header=None)
+def write_output(annotation: Path, output: Path) -> None:
+    records, declares_gff3 = read_annotation(annotation)
+    detected = annotation_format(records, declares_gff3)
 
-    has_gene_id = False
-    has_id = False
-    for row in annotation_df.itertuples(index=False, name='Pandas'):
-        attributes = getattr(row, "_8")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.with_name(f".{output.name}.{os.getpid()}.tmp")
+    try:
+        if detected == "GFF3":
+            copyfile(annotation, temporary)
+        else:
+            write_converted(convert_gtf(records), temporary)
+        os.replace(temporary, output)
+    finally:
+        temporary.unlink(missing_ok=True)
 
-        if "ID=" in attributes:
-            has_id = True
-        elif "gene_id \"" in attributes:
-            has_gene_id = True
 
-        if has_gene_id and has_id:
-            print("Mixed gff file, found gene_id and ID identifiers. File should be either gff2 or gff3!")
-            sys.exit("First occurence of ambiguity: " + row)
-
-    return has_gene_id, has_id
-
-def main():
-    # store commandline args
-    parser = argparse.ArgumentParser(description='create gff3 format from gff2 file.')
-    parser.add_argument("-a", "--annotation", action="store", dest="annotation", required=True, help= "input annotation file")
-    parser.add_argument("-o", "--output", action="store", dest="output", required=True, help= "output annotation file")
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Convert GTF to GFF3, or validate and copy GFF3 input."
+    )
+    parser.add_argument(
+        "-a", "--annotation", required=True, type=Path, help="input annotation file"
+    )
+    parser.add_argument(
+        "-o", "--output", required=True, type=Path, help="output GFF3 annotation file"
+    )
     args = parser.parse_args()
 
-    is_gff2, is_gff3 = which_annotation(args)
-    if is_gff3:
-        copyfile(args.annotation, args.output)
-    elif is_gff2:
-        annotation_df = create_gff3_annotation(args)
-        annotation_df = annotation_df.sort_values(by=["seqName", "start", "stop", "strand"], kind="stable")
-        with open(args.output, "w") as f:
-            f.write("##gff-version 3\n")
-        with open(args.output, "a") as f:
-            annotation_df.to_csv(f, sep="\t", header=None, index=False, quoting=csv.QUOTE_NONE)
+    try:
+        write_output(args.annotation, args.output)
+    except (AnnotationConversionError, OSError) as exc:
+        parser.exit(2, f"gtf2gff3: error: {exc}\n")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -224,6 +224,27 @@
  * Switched the JSON schemas to draft 2020-12 to match the installed validator
  * Bumped the minimum Snakemake version to 9.0.0 and updated the CLI usage
 
+ * Made the pipeline runnable in parts. workflowSettings.workflow, which offered
+   the three fixed choices full/preprocessing/trimming, is replaced by
+   workflowSettings.stages: a list of the thirteen output groups the run should
+   produce (trimming, mapping, qc, tracks, genome_tracks, readcounts, metagene,
+   tis_advisor, correlation, pca, predictions, differential_expression,
+   overview), or one of the presets "full" and "preprocessing". A stage only says
+   what is requested, so everything it depends on is still built; commenting one
+   out is what stops a run at, for instance, the BAM files. A single run can
+   override the config file with --config stages=mapping,tracks
+   - differentialExpressionSettings.differentialExpression and
+     tisAdvisorSettings.tisAdvisor are gone; they are now the
+     "differential_expression" and "tis_advisor" stages, so there is one place
+     that decides what runs rather than two that can contradict each other
+   - the preflight only checks the settings a run actually depends on, and warns
+     about stages that need Ribo-seq libraries when the sample sheet has none
+     instead of failing
+   - the shipped config lists the stages explicitly with differential_expression
+     commented out, which reproduces the previous default exactly: the target set
+     of a default run, of an RNA-only run and of a run with differential
+     expression enabled are each unchanged
+
 ### version 1.8.1 [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de) 22.05.25
  * fixed off-by-one error in rna filtering rule. 
 

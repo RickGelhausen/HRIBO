@@ -16,6 +16,7 @@ import re
 from pathlib import Path
 from typing import Sequence
 
+from lib.stages import RIBO_LIKE_METHODS, StageError, resolve_stages
 from lib.validation import (
     CDS_FEATURES,
     STRUCTURAL_RNA_FEATURES,
@@ -144,7 +145,9 @@ def check_annotation(annotation_path: Path) -> tuple[ValidationReport, list[GffR
         return report, []
 
     try:
-        records, declares_gff3, has_embedded_fasta = parse_annotation(annotation_path)
+        records, declares_gff3, has_embedded_fasta, malformed = parse_annotation(
+            annotation_path
+        )
     except AnnotationParseError as exc:
         report.error(
             "ANNOTATION_UNPARSEABLE",
@@ -153,6 +156,18 @@ def check_annotation(annotation_path: Path) -> tuple[ValidationReport, list[GffR
             hint="The annotation must be a tab-separated GFF3 or GTF file with nine columns.",
         )
         return report, []
+
+    if malformed:
+        report.error(
+            "ANNOTATION_MALFORMED_ROWS",
+            f"Annotation contains {len(malformed)} malformed row(s)",
+            detail=(
+                "Malformed rows cannot be represented downstream and were not included "
+                "in the parsed annotation. Continuing would silently discard features."
+            ),
+            hint="Fix or remove every listed row; each feature must have nine tab-separated columns and integer coordinates.",
+            items=malformed,
+        )
 
     if has_embedded_fasta:
         report.error(
@@ -489,12 +504,63 @@ def check_config_semantics(config: dict, samples) -> ValidationReport:
 
     _check_adapters(report, biology)
 
-    if str(diffex.get("differentialExpression", "off")).lower() == "on":
+    stages = _check_stages(report, config, methods)
+
+    if "differential_expression" in stages:
         _check_diffex_feasibility(report, diffex, samples, conditions, methods)
 
-    _check_metagene_settings(report, metagene, methods)
+    if "pca" in stages and len(samples.index) < 2:
+        report.error(
+            "PCA_TOO_FEW_LIBRARIES",
+            "PCA requires at least two libraries",
+            detail="A single observation has no between-library variance to decompose.",
+            hint="Add another library or drop the 'pca' stage.",
+            items=[
+                f"{row.method}-{row.condition}-{row.replicate}"
+                for row in samples.itertuples(index=False)
+            ],
+        )
+
+    if "metagene" in stages or "tis_advisor" in stages:
+        _check_metagene_settings(report, metagene, methods)
 
     return report
+
+
+def _check_stages(report: ValidationReport, config: dict, methods: set[str]) -> list[str]:
+    """Resolve the requested stages, reporting what cannot be run.
+
+    Returns the stages that will actually be built, so the checks below only
+    complain about settings this run depends on.
+    """
+    has_ribo = "RIBO" in methods
+    has_ribo_like = bool(RIBO_LIKE_METHODS & methods)
+    try:
+        requested = resolve_stages(config, has_ribo=True)
+    except StageError as exc:
+        report.error(
+            "CONFIG_UNKNOWN_STAGE",
+            "The requested workflow stages could not be interpreted",
+            detail=str(exc),
+        )
+        return []
+
+    stages = resolve_stages(
+        config,
+        has_ribo=has_ribo,
+        has_ribo_like=has_ribo_like,
+    )
+
+    skipped = [stage for stage in requested if stage not in stages]
+    if skipped:
+        report.warning(
+            "STAGES_NEED_RIBO",
+            "Requested stages were skipped because their required ribosome-profiling library type is absent",
+            detail="They are skipped; the rest of the requested stages still run.",
+            items=skipped,
+        )
+
+    return stages
 
 
 def _check_adapters(report: ValidationReport, biology: dict) -> None:
@@ -520,17 +586,26 @@ def _check_adapters(report: ValidationReport, biology: dict) -> None:
 def _check_diffex_feasibility(
     report: ValidationReport, diffex: dict, samples, conditions: set[str], methods: set[str]
 ) -> None:
-    if len(conditions) < 2:
+    contrasts = diffex.get("contrasts") or []
+    ribo_conditions = set(samples.loc[samples["method"] == "RIBO", "condition"])
+    rna_conditions = set(samples.loc[samples["method"] == "RNA", "condition"])
+    matched_conditions = ribo_conditions & rna_conditions
+
+    if not contrasts and len(matched_conditions) < 2:
         report.error(
             "DIFFEX_SINGLE_CONDITION",
-            "Differential expression is enabled but the sample sheet has only one condition",
-            hint="Add a second condition, or set differentialExpressionSettings.differentialExpression to 'off'.",
-            items=sorted(conditions),
+            "Differential expression needs at least two conditions with both RIBO and RNA libraries",
+            detail=(
+                "Automatic contrasts are derived only from matched RIBO/RNA conditions; "
+                "conditions belonging only to another assay are not comparable here."
+            ),
+            hint="Add a second matched condition, configure an explicit valid contrast, or drop the 'differential_expression' stage.",
+            items=sorted(matched_conditions),
         )
-        return
 
-    contrasts = diffex.get("contrasts") or []
     unknown = []
+    self_contrasts = []
+    selected_conditions = set() if contrasts else set(matched_conditions)
     for contrast in contrasts:
         parts = str(contrast).split("-")
         if len(parts) != 2:
@@ -540,7 +615,21 @@ def _check_diffex_feasibility(
                 detail="Condition names may not contain '-', because it separates the two sides of a contrast.",
             )
             continue
+        if parts[0] == parts[1]:
+            self_contrasts.append(str(contrast))
         unknown.extend(p for p in parts if p not in conditions)
+        selected_conditions.update(p for p in parts if p in conditions)
+    if self_contrasts:
+        report.error(
+            "DIFFEX_SELF_CONTRAST",
+            "Differential-expression contrasts must compare two different conditions",
+            detail=(
+                "A self-contrast duplicates the same count columns on both sides and "
+                "produces a one-level statistical design rather than a comparison."
+            ),
+            hint="Remove the self-contrast or replace one side with a different condition.",
+            items=sorted(set(self_contrasts)),
+        )
     if unknown:
         report.error(
             "DIFFEX_UNKNOWN_CONDITION",
@@ -565,7 +654,7 @@ def _check_diffex_feasibility(
     for method in ("RIBO", "RNA"):
         if method not in methods:
             continue
-        for condition in sorted(conditions):
+        for condition in sorted(selected_conditions):
             count = len(samples[(samples["method"] == method) & (samples["condition"] == condition)])
             if count == 0:
                 report.error(
@@ -574,13 +663,40 @@ def _check_diffex_feasibility(
                     detail="Every condition entering a contrast needs both a RIBO and an RNA library.",
                 )
             elif count < MIN_REPLICATES_FOR_DIFFEX:
-                report.warning(
+                report.error(
                     "DIFFEX_SINGLE_REPLICATE",
                     f"Only {count} {method} replicate for condition {condition!r}",
                     detail=(
-                        "DESeq2, which underlies deltaTE and riborex, cannot estimate dispersion "
-                        "from a single replicate and its p-values will be unreliable."
+                        "DESeq2, which underlies deltaTE and riborex, cannot estimate "
+                        "dispersion from a single replicate. HRIBO does not schedule "
+                        "differential-expression tools for an unsupported design."
                     ),
+                    hint="Provide at least two biological replicates for every RIBO and RNA condition.",
+                )
+
+    if {"RIBO", "RNA"} <= methods:
+        for condition in sorted(selected_conditions):
+            ribo_count = len(
+                samples[
+                    (samples["method"] == "RIBO")
+                    & (samples["condition"] == condition)
+                ]
+            )
+            rna_count = len(
+                samples[
+                    (samples["method"] == "RNA")
+                    & (samples["condition"] == condition)
+                ]
+            )
+            if ribo_count and rna_count and ribo_count != rna_count:
+                report.error(
+                    "DIFFEX_UNMATCHED_REPLICATES",
+                    f"Condition {condition!r} has {ribo_count} RIBO but {rna_count} RNA replicates",
+                    detail=(
+                        "Riborex reuses the RIBO condition vector for the RNA matrix, so "
+                        "unequal table widths would mislabel samples or fail inside R."
+                    ),
+                    hint="Provide the same number of RIBO and RNA biological replicates for each contrasted condition.",
                 )
 
 
@@ -609,9 +725,27 @@ def _check_metagene_settings(report: ValidationReport, metagene: dict, methods: 
             )
 
 
-def check_metagene_annotation_coverage(config: dict, gff_records: Sequence[GffRecord]) -> ValidationReport:
+def check_metagene_annotation_coverage(
+    config: dict,
+    gff_records: Sequence[GffRecord],
+    methods: set[str] | None = None,
+) -> ValidationReport:
     """Warn when the metagene window filters away almost the whole annotation."""
     report = ValidationReport()
+
+    try:
+        if methods is None:
+            stages = resolve_stages(config)
+        else:
+            stages = resolve_stages(
+                config,
+                has_ribo="RIBO" in methods,
+                has_ribo_like=bool(RIBO_LIKE_METHODS & methods),
+            )
+    except StageError:
+        return report  # reported by check_config_semantics
+    if "metagene" not in stages and "tis_advisor" not in stages:
+        return report
 
     metagene = config.get("metageneSettings", {})
     positions_in_orf = metagene.get("positionsInORF")

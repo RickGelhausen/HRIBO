@@ -21,6 +21,28 @@ import sys
 # GTF2 writes attributes as: key "value"; key "value";
 GTF2_PAIR = re.compile(r'^\s*(?P<key>\S+)\s+"(?P<value>[^"]*)"\s*$')
 
+# GFF3 reserves capitalised attribute names for this defined set.  Prediction
+# tools historically emitted names such as ``Prob`` and ``Evidence``; those are
+# user attributes and must start with a lowercase character to remain valid
+# GFF3.  Keep the spelling of the real reserved names while normalising every
+# custom key.
+GFF3_RESERVED_ATTRIBUTES = {
+    key.lower(): key
+    for key in (
+        "ID",
+        "Name",
+        "Alias",
+        "Parent",
+        "Target",
+        "Gap",
+        "Derives_from",
+        "Note",
+        "Dbxref",
+        "Ontology_term",
+        "Is_circular",
+    )
+}
+
 
 def split_attributes(attributes):
     """Ordered (key, value) pairs, preserving key case and empty values.
@@ -53,6 +75,21 @@ def split_attributes(attributes):
 def format_attributes(pairs):
     """Render (key, value) pairs back into a GFF3 attribute column."""
     return "".join("%s=%s;" % (key, value) for key, value in pairs)
+
+
+def normalize_gff3_attribute_keys(pairs):
+    """Return pairs whose keys follow GFF3's reserved-name convention.
+
+    Values and pair order are deliberately untouched.  This is an explicit
+    output-normalisation helper rather than part of :func:`split_attributes`,
+    because readers must continue to preserve the spelling found in legacy
+    files.
+    """
+
+    return [
+        (GFF3_RESERVED_ATTRIBUTES.get(key.lower(), key.lower()), value)
+        for key, value in pairs
+    ]
 
 
 def parse_attributes(attributes, lowercase_keys=True):

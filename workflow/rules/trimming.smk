@@ -28,33 +28,28 @@ def get_inputs_paired(wildcards):
 
 rule link_single:
     input:
-        get_inputs_single
+        fastq=get_inputs_single,
+        stager=str(SCRIPTS / "stage_input.py")
     output:
         fastq="trimlink/{method}-{condition}-{replicate}.fastq.gz"
-    params:
-        prefix=lambda wildcards, input: os.path.splitext(os.path.splitext(os.path.basename(input[0]))[0]),
-        inlink=lambda wildcards, input:(os.getcwd() + "/" + str(input)),
-        outlink=lambda wildcards, output:(os.getcwd() + "/" + str(output.fastq))
     threads: 1
     shell:
-        "ln -s {params.inlink} {params.outlink};"
+        "python3 {input.stager:q} link {input.fastq:q} {output.fastq:q}"
 
 rule link_paired:
     input:
-        get_inputs_paired
+        fastq1=lambda wildcards: get_inputs_paired(wildcards)[0],
+        fastq2=lambda wildcards: get_inputs_paired(wildcards)[1],
+        stager=str(SCRIPTS / "stage_input.py")
     output:
         fastq1="trimlink/{method}-{condition}-{replicate}_q.fastq.gz",
         fastq2="trimlink/{method}-{condition}-{replicate}_p.fastq.gz"
-    params:
-        prefix1=lambda wildcards, input: os.path.splitext(os.path.splitext(os.path.basename(input[0]))[0]),
-        prefix2=lambda wildcards, input: os.path.splitext(os.path.splitext(os.path.basename(input[1]))[0]),
-        inlink1=lambda wildcards, input:(os.getcwd() + "/" + str(input[0])),
-        inlink2=lambda wildcards, input:(os.getcwd() + "/" + str(input[1])),
-        outlink1=lambda wildcards, output:(os.getcwd() + "/" + str(output.fastq1)),
-        outlink2=lambda wildcards, output:(os.getcwd() + "/" + str(output.fastq2))
     threads: 1
     shell:
-        "ln -s {params.inlink1} {params.outlink1}; ln -s {params.inlink2} {params.outlink2};"
+        """
+        python3 {input.stager:q} link {input.fastq1:q} {output.fastq1:q}
+        python3 {input.stager:q} link {input.fastq2:q} {output.fastq2:q}
+        """
 
 ruleorder: link_paired > link_single
 

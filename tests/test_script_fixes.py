@@ -4,6 +4,7 @@ Each test names the behaviour that was wrong, so that a regression is obvious
 from the failure rather than from the diff.
 """
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -21,6 +22,16 @@ def run_script(name, *args):
         [sys.executable, str(SCRIPTS / name), *args],
         capture_output=True, text=True, cwd=str(SCRIPTS),
     )
+
+
+def assert_valid_gff3(path):
+    genome_tools = shutil.which("gt")
+    if genome_tools is None:
+        return
+    result = subprocess.run(
+        [genome_tools, "gff3validator", str(path)], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
 
 
 # --------------------------------------------------------------------------
@@ -89,7 +100,7 @@ def test_samples_to_xlsx_keeps_every_row(sample_sheet, tmp_path):
 @pytest.fixture
 def genomes(tmp_path):
     """A small genome and its reverse complement, as the workflow builds them."""
-    Bio = pytest.importorskip("Bio")
+    pytest.importorskip("Bio")
     from Bio.Seq import Seq
 
     # Contains ATG on both strands, so both code paths are exercised.
@@ -147,6 +158,88 @@ def test_motif_finds_hits_on_both_strands(genomes, tmp_path):
     assert strands == {"+", "-"}
 
 
+def test_motif_input_is_case_insensitive_and_empty_input_has_no_hits(genomes, tmp_path):
+    assert run_motif(genomes, tmp_path, "atg") == run_motif(genomes, tmp_path, "ATG")
+    assert run_motif(genomes, tmp_path, "") == []
+
+
+def test_motif_option_without_a_shell_token_produces_a_header_only_track(
+    genomes, tmp_path
+):
+    """Snakemake omits the token when an empty configured list is formatted."""
+    forward, reverse, _ = genomes
+    output = tmp_path / "no-alternative-starts.gff"
+
+    result = run_script(
+        "motif_to_gff.py",
+        "--input_genome_fasta_filepath",
+        str(forward),
+        "--input_reverse_genome_fasta_filepath",
+        str(reverse),
+        "--motif_string",
+        "--output_gff3_filepath",
+        str(output),
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert output.read_text() == "##gff-version 3\n"
+
+
+def test_motif_search_retains_overlapping_hits(tmp_path):
+    pytest.importorskip("Bio")
+    from Bio.Seq import Seq
+
+    forward = tmp_path / "overlap.fa"
+    reverse = tmp_path / "overlap.rev.fa"
+    forward.write_text(">chr1\nAAAA\n")
+    reverse.write_text(f">chr1\n{Seq('AAAA').reverse_complement()}\n")
+
+    plus_rows = [row for row in run_motif((forward, reverse, "AAAA"), tmp_path, "AAA") if row[6] == "+"]
+    assert [(int(row[3]), int(row[4])) for row in plus_rows] == [(1, 3), (2, 4)]
+
+
+def test_alternative_start_track_uses_the_configured_codons():
+    rules = (
+        Path(__file__).resolve().parent.parent
+        / "workflow"
+        / "rules"
+        / "visualization.smk"
+    ).read_text()
+    block = rules.split("rule alternativeStartCodonTrack:", 1)[1].split(
+        "rule stopCodonTrack:", 1
+    )[0]
+
+    assert '",".join(str(codon).upper() for codon in CODONS)' in block
+    assert "GTG,TTG,CTG" not in block
+    assert "{params.motifs:q}" in block
+
+
+# --------------------------------------------------------------------------
+# enrich_annotation
+# --------------------------------------------------------------------------
+
+
+def test_enrichment_reports_a_malformed_id_without_nameerror(tmp_path):
+    annotation = tmp_path / "malformed.gff"
+    output = tmp_path / "enriched.gff"
+    annotation.write_text(
+        "##gff-version 3\n"
+        "chr1\ttest\tgene\t1\t9\t.\t+\t.\tbadid=value;\n"
+    )
+
+    result = run_script(
+        "enrich_annotation.py",
+        "-a",
+        str(annotation),
+        "-o",
+        str(output),
+    )
+
+    assert result.returncode != 0
+    assert "Missing ID in annotation row" in result.stderr
+    assert "NameError" not in result.stderr
+
+
 # --------------------------------------------------------------------------
 # create_reparation_gff
 # --------------------------------------------------------------------------
@@ -180,14 +273,21 @@ def test_reparation_gff_extends_coordinates_on_both_strands(tmp_path):
     assert result.returncode == 0, result.stderr
 
     coordinates = {}
+    phases = []
     for line in output.read_text().splitlines():
         fields = line.split("\t")
         if len(fields) < 9:
             continue
         coordinates[fields[6]] = (int(fields[3]), int(fields[4]))
+        phases.append(fields[7])
 
     assert coordinates["+"] == (100, 202), "plus strand stop codon not added"
     assert coordinates["-"] == (297, 399), "minus strand stop codon not added"
+    assert phases == ["0", "0"]
+    assert output.read_text().startswith("##gff-version 3\n")
+    assert "orf_type=sORF" in output.read_text()
+    assert "ORF_type=" not in output.read_text()
+    assert_valid_gff3(output)
 
 
 def test_reparation_gff_emits_no_syntax_warning():
@@ -198,3 +298,76 @@ def test_reparation_gff_emits_no_syntax_warning():
     with warnings.catch_warnings():
         warnings.simplefilter("error", SyntaxWarning)
         compile(source, "create_reparation_gff.py", "exec")
+
+
+def test_deepribo_gff_stores_distance_outside_phase(tmp_path):
+    predicted = tmp_path / "predictions.csv"
+    columns = [
+        "filename",
+        "filename_counts",
+        "label",
+        "in_gene",
+        "strand",
+        "coverage",
+        "coverage_elo",
+        "rpk",
+        "rpk_elo",
+        "start_site",
+        "start_codon",
+        "stop_site",
+        "stop_codon",
+        "locus",
+        "prot_seq",
+        "nuc_seq",
+        "pred",
+        "pred_rank",
+        "SS",
+        "dist",
+        "SS_pred_rank",
+    ]
+    values = [
+        "sample",
+        "counts",
+        "True",
+        "False",
+        "+",
+        "1",
+        "1",
+        "1",
+        "1",
+        "10",
+        "ATG",
+        "20",
+        "TAA",
+        "chr1:10-20",
+        "M",
+        "ATG",
+        "0.9",
+        "1",
+        "1",
+        "-1",
+        "1",
+    ]
+    predicted.write_text(",".join(columns) + "\n" + ",".join(values) + "\n")
+
+    output = tmp_path / "deepribo.gff"
+    result = run_script(
+        "create_deepribo_gff.py",
+        "-c",
+        "A",
+        "-r",
+        "1",
+        "-i",
+        str(predicted),
+        "-o",
+        str(output),
+    )
+    assert result.returncode == 0, result.stderr
+
+    row = [line for line in output.read_text().splitlines() if not line.startswith("#")][0]
+    fields = row.split("\t")
+    assert fields[7] == "0"
+    assert "deepribo_distance=-1" in fields[8]
+    assert "condition=A" in fields[8]
+    assert "Condition=" not in fields[8]
+    assert_valid_gff3(output)

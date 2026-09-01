@@ -20,7 +20,7 @@ import re
 from dataclasses import dataclass, field
 from enum import IntEnum
 from pathlib import Path
-from typing import Iterable, Iterator, Sequence
+from typing import Iterable, Sequence
 
 # Characters permitted in a nucleotide FASTA, including the IUPAC ambiguity
 # codes and the gap characters that some assemblies carry.
@@ -234,19 +234,22 @@ class AnnotationParseError(Exception):
     """Raised when the annotation cannot be read as GFF/GTF at all."""
 
 
-def parse_annotation(path: Path) -> tuple[list[GffRecord], bool, bool]:
+def parse_annotation(
+    path: Path,
+) -> tuple[list[GffRecord], bool, bool, list[str]]:
     """Parse a GFF3/GTF annotation line by line.
 
-    Returns the records, whether the file declared ``##gff-version 3`` and
-    whether it carries an embedded ``##FASTA`` section. Line-based parsing is
-    deliberate: reading these with ``pandas.read_csv`` breaks on the embedded
-    FASTA that Prokka and NCBI routinely emit, which is one of the failure modes
-    this validation exists to catch.
+    Returns the records, whether the file declared ``##gff-version 3``, whether
+    it carries an embedded ``##FASTA`` section, and descriptions of malformed
+    rows. Line-based parsing is deliberate: reading these with
+    ``pandas.read_csv`` breaks on the embedded FASTA that Prokka and NCBI
+    routinely emit, which is one of the failure modes this validation exists to
+    catch.
     """
     records: list[GffRecord] = []
     declares_gff3 = False
     has_embedded_fasta = False
-    malformed: list[int] = []
+    malformed: list[str] = []
 
     with open_maybe_gzip(path) as handle:
         for number, line in enumerate(handle, start=1):
@@ -263,14 +266,16 @@ def parse_annotation(path: Path) -> tuple[list[GffRecord], bool, bool]:
 
             fields = line.split("\t")
             if len(fields) != 9:
-                malformed.append(number)
+                malformed.append(f"line {number} ({len(fields)} columns; expected 9)")
                 continue
 
             seqid, source, feature, start, end, score, strand, phase, attributes = fields
             try:
                 start_i, end_i = int(start), int(end)
             except ValueError:
-                malformed.append(number)
+                malformed.append(
+                    f"line {number} (non-integer coordinates {start!r}-{end!r})"
+                )
                 continue
 
             records.append(
@@ -294,7 +299,7 @@ def parse_annotation(path: Path) -> tuple[list[GffRecord], bool, bool]:
             "or to contain only comment lines."
         )
 
-    return records, declares_gff3, has_embedded_fasta
+    return records, declares_gff3, has_embedded_fasta, malformed
 
 
 ATTRIBUTE_GFF3_RE = re.compile(r"(?P<key>[^=;]+)=(?P<value>[^;]*)")

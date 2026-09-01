@@ -49,14 +49,17 @@ rule startCodonTrack:
 rule alternativeStartCodonTrack:
     input:
         fwd=rules.retrieveGenome.output,
-        rev=rules.reversecomplementGenome.output
+        rev=rules.reversecomplementGenome.output,
+        script=str(SCRIPTS / "motif_to_gff.py")
     output:
         report("tracks/potentialAlternativeStartCodons.gff", caption="../report/startCodons.rst", category="Annotation")
     conda:
         "../envs/biopython.yaml"
     threads: 1
+    params:
+        motifs=",".join(str(codon).upper() for codon in CODONS)
     shell:
-        "{SCRIPTS}/motif_to_gff.py --input_genome_fasta_filepath {input.fwd} --input_reverse_genome_fasta_filepath {input.rev} --motif_string GTG,TTG,CTG --output_gff3_filepath {output}"
+        "python3 {input.script:q} --input_genome_fasta_filepath {input.fwd:q} --input_reverse_genome_fasta_filepath {input.rev:q} --motif_string {params.motifs:q} --output_gff3_filepath {output:q}"
 
 
 rule stopCodonTrack:

@@ -1,17 +1,3 @@
-def read_has_replicates(filename):
-    try:
-        line = False
-        with open(filename, "r") as f:
-            line = f.readline().strip()
-            print(line)
-            if line == "False":
-                line = False
-            else:
-                line = True
-        return line
-    except FileNotFoundError:
-        return "failed"
-
 rule deltatePrepareInput:
     input:
         rawreads="readcounts/differential_expression_read_counts.csv",
@@ -39,26 +25,34 @@ rule deltate:
         ribo="deltate/{contrast}/ribo_counts.txt",
         rna="deltate/{contrast}/rna_counts.txt",
         samples="deltate/{contrast}/samples_info.txt",
-        replicates="deltate/{contrast}/has_replicates.txt"
+        replicates="deltate/{contrast}/has_replicates.txt",
+        runner=str(SCRIPTS / "run_deltate.sh")
     output:
-        fcribo="deltate/{contrast}/fold_changes/deltaRibo.txt",
-        fcrna="deltate/{contrast}/fold_changes/deltaRNA.txt",
-        fcte="deltate/{contrast}/fold_changes/deltaTE.txt",
-        fig="deltate/{contrast}_figures.pdf"
+        fcribo=ensure("deltate/{contrast}/fold_changes/deltaRibo.txt", non_empty=True),
+        fcrna=ensure("deltate/{contrast}/fold_changes/deltaRNA.txt", non_empty=True),
+        fcte=ensure("deltate/{contrast}/fold_changes/deltaTE.txt", non_empty=True),
+        fig=ensure("deltate/{contrast}_figures.pdf", non_empty=True)
     container:
         "docker://gelhausr/deltate:latest"
     threads: 1
     params:
-        has_replicates=lambda wildcards, input: read_has_replicates(input[4]),
-        contrast=lambda wildcards, input: input[0].split("/")[1]
+        result_dir=lambda wildcards: f"deltate/{wildcards.contrast}",
+        result_fig=lambda wildcards: f"deltate/{wildcards.contrast}/Result_figures.pdf"
+    log:
+        "logs/deltate/{contrast}.log"
     shell:
         """
-        touch {output.fcribo}
-        touch {output.fcrna}
-        touch {output.fcte}
-        touch deltate/{params.contrast}/Result_figures.pdf
-        DTEG.R {input.ribo} {input.rna} {input.samples} 0 deltate/{params.contrast}/ || true
-        cp deltate/{params.contrast}/Result_figures.pdf {output.fig}
+        bash {input.runner:q} \
+            {input.ribo:q} \
+            {input.rna:q} \
+            {input.samples:q} \
+            {params.result_dir:q} \
+            {output.fcribo:q} \
+            {output.fcrna:q} \
+            {output.fcte:q} \
+            {params.result_fig:q} \
+            {output.fig:q} \
+            > {log:q} 2>&1
         """
 
 rule deltatexlsx:

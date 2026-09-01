@@ -1,23 +1,56 @@
 #!/usr/bin/env python
 import argparse
-
-import os
-import pandas as pd
-import shlex, subprocess
 import collections
-import sys
 import csv
+import os
+import shlex
+import subprocess
+import sys
+
+import pandas as pd
+
+
+RAW_SCHEMA_VERSION = "#hribo-read-counts-v1"
+
+
+def bam_labels(bamfiles):
+    return [os.path.splitext(os.path.basename(path))[0] for path in bamfiles]
+
+
+def raw_schema(bamfiles):
+    columns = (
+        ["Identifier", "Genome", "Start", "Stop", "Strand", "Length"]
+        + bam_labels(bamfiles)
+        + ["Feature"]
+    )
+    return RAW_SCHEMA_VERSION + "\t" + "\t".join(columns) + "\n"
+
 
 def call_featureCounts(args):
     """
     set up commandline call for featureCounts, process the featureCounts output
     """
-    # Truncate any output from a previous run before appending to it below.
-    with open(args.output, "w"):
-        pass
-
     bamfiles = sorted(args.bamfiles, key=lambda s: s.lower())
-    annotation_df = pd.read_csv(args.annotation, sep="\t", header=None, comment="#")
+    try:
+        annotation_df = pd.read_csv(
+            args.annotation, sep="\t", header=None, comment="#"
+        )
+    except pd.errors.EmptyDataError:
+        annotation_df = pd.DataFrame(columns=range(9))
+
+    # Every empty result remains self-describing.  The comment is ignored by
+    # legacy pandas readers but tells the mapper how many library columns an
+    # empty raw table represents.
+    if args.diff_expr:
+        header = "Identifier," + ",".join(bam_labels(bamfiles)) + "\n"
+    else:
+        header = raw_schema(bamfiles)
+    with open(args.output, "w", encoding="utf-8", newline="") as handle:
+        handle.write(header)
+
+    if annotation_df.empty:
+        return
+
     if args.features == []:
         features = list(annotation_df[2].unique())
     else:
@@ -39,9 +72,6 @@ def call_featureCounts(args):
         commandline_parameters += " --fraction"
 
     if args.diff_expr:
-        header = "Identifier," + ",".join([os.path.splitext(os.path.basename(bamfile))[0] for bamfile in bamfiles]) +"\n"
-        with open(args.output, "w") as f:
-            f.write(header)
         labels = [f"s{x}" for x in range(0, len(bamfiles)+1)]
         nTuple = collections.namedtuple('Pandas', labels)
     else:

@@ -16,10 +16,15 @@ rule readLengthStatistics:
         runtime=60
     log: "logs/read_length_statistics.log"
     params:
+        script=str(SCRIPTS / "read_length_statistics.py"),
         readlengths=config["readstatSettings"]["readLengths"]
     shell:
         """
-        {SCRIPTS}/read_length_statistics.py -a {input.bamfiles} -r {params.readlengths} -o metageneprofiling/ > {log}
+        python3 {params.script:q} \
+            -a {input.bamfiles:q} \
+            -r {params.readlengths:q} \
+            -o "metageneprofiling/" \
+            > {log:q} 2>&1
         """
 
 rule metageneProfiling:
@@ -37,6 +42,7 @@ rule metageneProfiling:
         mem_mb=20000,
         runtime=120
     params:
+        script=str(SCRIPTS / "metagene_profiling.py"),
         readlengths=config["metageneSettings"]["readLengths"],
         positionsInORF=config["metageneSettings"]["positionsInORF"],
         positionsOutORF=config["metageneSettings"]["positionsOutsideORF"],
@@ -48,28 +54,32 @@ rule metageneProfiling:
         normalizationMethods=config["metageneSettings"]["normalizationMethods"],
         outputFormats=config["metageneSettings"]["outputFormats"],
         includePlotlyJS=config["metageneSettings"]["includePlotlyJS"],
-        colorList= "nocolor" if len(config["metageneSettings"]["colorList"]) == 0 else config["metageneSettings"]["colorList"]
+        colorArgs=(
+            ["--color_list", *config["metageneSettings"]["colorList"]]
+            if config["metageneSettings"]["colorList"]
+            else []
+        )
     log: "logs/{method}-{condition}-{replicate}_metageneprofiling.log"
     shell:
         """
-        if [ {params.colorList} == nocolor ]; then
-            colorList="";
-        else
-            colorList="--color_list {params.colorList}";
-        fi;
-        {SCRIPTS}/metagene_profiling.py -b {input.bam} -g {input.genome} -a {input.annotation} -o {output.meta} \
-            --read_lengths {params.readlengths} \
-            --normalization_methods {params.normalizationMethods} \
-            --mapping_methods {params.mappingMethods} \
-            --positions_in_ORF {params.positionsInORF} \
-            --positions_out_ORF {params.positionsOutORF} \
-            --filtering_method {params.filteringMethods} \
-            --neighboring_genes_distance {params.neighboringGenesDistance} \
-            --rpkm_threshold {params.rpkmThreshold} \
-            --length_cutoff {params.lengthCutoff} \
-            --output_formats {params.outputFormats} \
-            --include_plotly_js {params.includePlotlyJS} \
-            ${{colorList}}; > {log}
+        python3 {params.script:q} \
+            -b {input.bam:q} \
+            -g {input.genome:q} \
+            -a {input.annotation:q} \
+            -o {output.meta:q} \
+            --read_lengths {params.readlengths:q} \
+            --normalization_methods {params.normalizationMethods:q} \
+            --mapping_methods {params.mappingMethods:q} \
+            --positions_in_ORF {params.positionsInORF:q} \
+            --positions_out_ORF {params.positionsOutORF:q} \
+            --filtering_methods {params.filteringMethods:q} \
+            --neighboring_genes_distance {params.neighboringGenesDistance:q} \
+            --rpkm_threshold {params.rpkmThreshold:q} \
+            --length_cutoff {params.lengthCutoff:q} \
+            --output_formats {params.outputFormats:q} \
+            --include_plotly_js {params.includePlotlyJS:q} \
+            {params.colorArgs:q} \
+            > {log:q} 2>&1
         """
 
 
@@ -95,6 +105,7 @@ rule tisAdvisor:
         mem_mb=20000,
         runtime=120
     params:
+        script=str(SCRIPTS / "tis_advisor.py"),
         outdir=lambda wildcards, output: os.path.dirname(output.report_html),
         readlengths=config["tisAdvisorSettings"]["readLengths"],
         mappingMethods=config["tisAdvisorSettings"]["mappingMethods"],
@@ -103,22 +114,25 @@ rule tisAdvisor:
         filteringMethods=config["metageneSettings"]["filteringMethods"],
         neighboringGenesDistance=config["metageneSettings"]["neighboringGenesDistance"],
         rpkmThreshold=config["metageneSettings"]["rpkmThreshold"],
+        lengthCutoff=config["metageneSettings"]["lengthCutoff"],
         includePlotlyJS=config["metageneSettings"]["includePlotlyJS"]
     log:
         "logs/{method}-{condition}-{replicate}_tis_advisor.log"
     shell:
         """
-        {SCRIPTS}/tis_advisor.py \
-            -b {input.bam} \
-            -a {input.annotation} \
-            -g {input.genome} \
-            -o {params.outdir} \
-            -r {params.readlengths} \
-            --mapping_methods {params.mappingMethods} \
-            --positions_in_ORF {params.positionsInORF} \
-            --positions_out_ORF {params.positionsOutORF} \
-            --filtering_methods {params.filteringMethods} \
-            --neighboring_genes_distance {params.neighboringGenesDistance} \
-            --rpkm_threshold {params.rpkmThreshold} \
-            --include_plotly_js {params.includePlotlyJS} > {log} 2>&1
+        python3 {params.script:q} \
+            -b {input.bam:q} \
+            -a {input.annotation:q} \
+            -g {input.genome:q} \
+            -o {params.outdir:q} \
+            -r {params.readlengths:q} \
+            --mapping_methods {params.mappingMethods:q} \
+            --positions_in_ORF {params.positionsInORF:q} \
+            --positions_out_ORF {params.positionsOutORF:q} \
+            --filtering_methods {params.filteringMethods:q} \
+            --neighboring_genes_distance {params.neighboringGenesDistance:q} \
+            --rpkm_threshold {params.rpkmThreshold:q} \
+            --length_cutoff {params.lengthCutoff:q} \
+            --include_plotly_js {params.includePlotlyJS:q} \
+            > {log:q} 2>&1
         """

@@ -33,11 +33,14 @@ def inputs(tmp_path_factory):
     return make_excel_fixture.build(tmp_path_factory.mktemp("excel_inputs"))
 
 
-def command(name, inputs, output):
+def command(name, inputs, output, overview_contrasts=("B-A",)):
     """The command line for one script, mirroring how the rules invoke it."""
     genome = ["-g", str(inputs / "genome.fa")]
     totals = ["-t", str(inputs / "total_mapped_reads.txt")]
     annotation = ["-a", str(inputs / "annotation.gff")]
+    overview_contrast_args = (
+        [] if overview_contrasts is None else ["-c", *overview_contrasts]
+    )
 
     commands = {
         "annotation": ["generate_excel.py", *genome, *totals,
@@ -66,16 +69,19 @@ def command(name, inputs, output):
                      "--riborex", str(inputs / "riborex_pooled.csv"),
                      "--xtail", str(inputs / "xtail_pooled.csv"),
                      "--deltate", str(inputs / "deltate_pooled.csv"),
-                     "-c", "B-A"],
+                     *overview_contrast_args],
     }
     script, *rest = commands[name]
     return [sys.executable, str(SCRIPTS / script), *rest, "-o", str(output)]
 
 
-def run(name, inputs, tmp_path):
+def run(name, inputs, tmp_path, overview_contrasts=("B-A",)):
     output = tmp_path / f"{name}.xlsx"
     result = subprocess.run(
-        command(name, inputs, output), capture_output=True, text=True, cwd=str(SCRIPTS)
+        command(name, inputs, output, overview_contrasts),
+        capture_output=True,
+        text=True,
+        cwd=str(SCRIPTS),
     )
     assert result.returncode == 0, f"{name} failed:\n{result.stderr}"
     assert output.is_file(), f"{name} produced no output"
@@ -124,3 +130,32 @@ def test_annotation_splits_features_into_sheets(inputs, tmp_path):
     output = run("annotation", inputs, tmp_path)
     sheets = excel_snapshot.read_workbook(output)
     assert {"CDS", "gene", "rRNA", "tRNA", "sRNA"} <= set(sheets)
+
+
+def test_overview_honors_explicit_contrast_orientation(inputs, tmp_path):
+    """A requested B-A contrast must neither be renamed nor replaced by A-B."""
+    output = run("overview", inputs, tmp_path, overview_contrasts=("B-A",))
+    sheets = excel_snapshot.read_workbook(output)
+
+    for sheet_name, frame in sheets.items():
+        contrast_columns = [
+            column
+            for column in frame.columns
+            if column.startswith(("xtail_", "riborex_", "deltaTE_"))
+        ]
+        assert contrast_columns, f"{sheet_name} has no differential-expression columns"
+        assert all("_B-A_" in column for column in contrast_columns)
+        assert not any("_A-B_" in column for column in contrast_columns)
+
+    # The fixture contains pooled B-A rows. Checking a populated column makes
+    # this a value-propagation regression, not merely a header spelling test.
+    assert sheets["all"]["xtail_B-A_TE_log2FC"].notna().any()
+
+
+def test_overview_infers_pairwise_contrasts_when_none_are_passed(inputs, tmp_path):
+    """Standalone use without -c retains the deterministic pairwise fallback."""
+    output = run("overview", inputs, tmp_path, overview_contrasts=None)
+    columns = excel_snapshot.read_workbook(output)["all"].columns
+
+    assert "xtail_A-B_TE_log2FC" in columns
+    assert "xtail_B-A_TE_log2FC" not in columns

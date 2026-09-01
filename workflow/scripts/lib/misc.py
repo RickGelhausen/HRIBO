@@ -68,7 +68,14 @@ def window_normalize_df(df, window_size):
 
     columns = df.columns[1:].tolist()
     for column in columns:
-        df[column] = df[column].div( (df[column].sum() / window_size))
+        scale = df[column].sum() / window_size
+        if scale == 0:
+            # A read length filled in by ``equalize_dictionary_keys`` represents
+            # explicit zero evidence.  Dividing that column by zero would turn a
+            # valid empty profile into NaNs in both plots and workbooks.
+            df[column] = 0.0
+        else:
+            df[column] = df[column].div(scale)
 
     return df
 
@@ -83,6 +90,12 @@ def create_data_frame(metagene_dict, positions_out_ORF, positions_in_ORF, state)
     else:
         coordinates = list(range(-positions_in_ORF, positions_out_ORF, 1))
 
+    if not metagene_dict:
+        # Keep empty scientific evidence explicit in the workbook instead of
+        # relying on the spreadsheet engine's anonymous fallback sheet.
+        dataframe_dict["no_evidence"] = pd.DataFrame({"coordinates": coordinates})
+        return dataframe_dict
+
     for chrom in metagene_dict:
         if chrom not in dataframe_dict:
             dataframe_dict[chrom] = pd.DataFrame()
@@ -91,12 +104,6 @@ def create_data_frame(metagene_dict, positions_out_ORF, positions_in_ORF, state)
             dataframe_dict[chrom][f"{read_length}"] = metagene_dict[chrom][read_length]
 
     return dataframe_dict
-
-def flatten_list(l):
-    """
-    Flatten a list of lists to a single list.
-    """
-    return [item for sublist in l for item in sublist]
 
 def equalize_dictionary_keys(start_dict, stop_dict, positions_out_ORF, positions_in_ORF):
     """
@@ -112,16 +119,25 @@ def equalize_dictionary_keys(start_dict, stop_dict, positions_out_ORF, positions
 
     unique_keys = set(start_dict.keys()).union(set(stop_dict.keys()))
 
-    start_list = flatten_list([[int(x) for x in start_dict[key].keys()] for key in unique_keys if key in start_dict])
-    stop_list = flatten_list([[int(x) for x in stop_dict[key].keys()] for key in unique_keys if key in stop_dict])
-
-    overall_min = min(min(start_list), min(stop_list))
-    overall_max = max(max(start_list), max(stop_list))
-
     for key in unique_keys:
         for coverage_dict in (start_dict, stop_dict):
             if key not in coverage_dict:
                 coverage_dict[key] = {}
+
+    read_lengths = {
+        int(read_length)
+        for coverage_dict in (start_dict, stop_dict)
+        for chromosome_coverage in coverage_dict.values()
+        for read_length in chromosome_coverage
+    }
+    if not read_lengths:
+        return start_dict, stop_dict
+
+    overall_min = min(read_lengths)
+    overall_max = max(read_lengths)
+
+    for key in unique_keys:
+        for coverage_dict in (start_dict, stop_dict):
             for read_length in range(overall_min, overall_max + 1):
                 if read_length not in coverage_dict[key]:
                     coverage_dict[key][read_length] = empty_window()

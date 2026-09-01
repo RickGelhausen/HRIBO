@@ -20,6 +20,14 @@ import sys
 from pathlib import Path
 
 from lib import checks
+from lib.stages import (
+    ANNOTATION_REQUIRED_STAGES,
+    FASTQ_REQUIRED_STAGES,
+    GENOME_REQUIRED_STAGES,
+    RIBO_LIKE_METHODS,
+    StageError,
+    resolve_stages,
+)
 from lib.validation import Severity, ValidationReport
 
 SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schemas"
@@ -51,7 +59,7 @@ def validate_sample_sheet(samples):
 
 
 def validate_inputs(config, samples, verbose: bool = True) -> ValidationReport:
-    """Run the full preflight over the reference files, fastq files and config.
+    """Validate only the inputs required by the requested workflow stages.
 
     Returns the report so that callers can render it; raises on any error.
     """
@@ -61,16 +69,44 @@ def validate_inputs(config, samples, verbose: bool = True) -> ValidationReport:
 
     report = ValidationReport()
 
-    genome_report, genome_records = checks.check_genome(genome_path)
-    report.extend(genome_report)
+    methods = set(samples["method"].astype(str))
+    try:
+        stages = resolve_stages(
+            config,
+            has_ribo="RIBO" in methods,
+            has_ribo_like=bool(RIBO_LIKE_METHODS & methods),
+        )
+    except StageError:
+        # check_config_semantics records the actionable stage error below.
+        stages = []
 
-    annotation_report, gff_records = checks.check_annotation(annotation_path)
-    report.extend(annotation_report)
+    needs_genome = bool(GENOME_REQUIRED_STAGES.intersection(stages))
+    needs_annotation = bool(ANNOTATION_REQUIRED_STAGES.intersection(stages))
+    needs_fastq = bool(FASTQ_REQUIRED_STAGES.intersection(stages))
 
-    report.extend(checks.check_reference_consistency(genome_records, gff_records))
-    report.extend(checks.check_fastq_files(samples))
+    genome_records = []
+    if needs_genome:
+        genome_report, genome_records = checks.check_genome(genome_path)
+        report.extend(genome_report)
+
+    gff_records = []
+    if needs_annotation:
+        annotation_report, gff_records = checks.check_annotation(annotation_path)
+        report.extend(annotation_report)
+
+    if needs_genome and needs_annotation:
+        report.extend(checks.check_reference_consistency(genome_records, gff_records))
+    if needs_fastq:
+        report.extend(checks.check_fastq_files(samples))
     report.extend(checks.check_config_semantics(config, samples))
-    report.extend(checks.check_metagene_annotation_coverage(config, gff_records))
+    if needs_annotation:
+        report.extend(
+            checks.check_metagene_annotation_coverage(
+                config,
+                gff_records,
+                methods=methods,
+            )
+        )
 
     if verbose:
         _emit(report)

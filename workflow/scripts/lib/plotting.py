@@ -175,11 +175,23 @@ def plot_metagene_heatmap(
     return fig
 
 
-def plot_read_length_profiles(df_start, read_lengths, title, subtitle="", offsets=None, max_panels=12):
+def plot_read_length_profiles(
+    df_start,
+    read_lengths,
+    title,
+    subtitle="",
+    offsets=None,
+    color_list=None,
+    max_panels=12,
+):
     """One panel per read length, sharing an x axis.
 
     Small multiples rather than overlaid lines: comparing shapes across panels is
     what the eye is good at, and it does not need a colour per read length.
+
+    User-supplied series colours are assigned in read-length order and cycle
+    deterministically when fewer colours than panels are supplied.  An empty
+    list falls back to the fixed colour-vision-deficiency-safe theme palette.
     """
     matrix, lengths = _profile_matrix(df_start, read_lengths)
     if matrix.size == 0:
@@ -187,6 +199,11 @@ def plot_read_length_profiles(df_start, read_lengths, title, subtitle="", offset
 
     lengths = lengths[:max_panels]
     matrix = matrix[: len(lengths)]
+    palette = list(color_list) if color_list else theme.CATEGORICAL
+    colors_by_length = {
+        int(read_length): palette[index % len(palette)]
+        for index, read_length in enumerate(read_lengths)
+    }
 
     fig = make_subplots(
         rows=len(lengths),
@@ -197,14 +214,14 @@ def plot_read_length_profiles(df_start, read_lengths, title, subtitle="", offset
     )
 
     for index, (length, row_values) in enumerate(zip(lengths, matrix), start=1):
+        color = colors_by_length[length]
         fig.add_trace(
             go.Scatter(
                 x=df_start["coordinates"],
                 y=row_values,
                 mode="lines",
-                line=dict(color=theme.CATEGORICAL[0], width=1.5),
+                line=dict(color=color, width=1.5),
                 fill="tozeroy",
-                fillcolor="rgba(42,120,214,0.12)",
                 name=f"{length} nt",
                 showlegend=False,
                 hovertemplate="%{x} nt from start<br>%{y:.0f} reads<extra></extra>",

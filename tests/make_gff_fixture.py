@@ -78,10 +78,10 @@ def write_reparation_tracks(path, orf_type=""):
     duplicate merging is exercised.
 
     `orf_type` defaults to empty, which is what Reparation reports when it has no
-    type for an ORF and which writes "ORF_type=;" into the attributes. That empty
+    type for an ORF and which writes "orf_type=;" into the attributes. That empty
     value used to crash reannotate_orfs.py.
     """
-    lines = []
+    lines = ["##gff-version 3"]
     for contig, feature, start, stop, strand, index in _features():
         if feature != "CDS":
             continue
@@ -90,11 +90,11 @@ def write_reparation_tracks(path, orf_type=""):
             probability = 0.5 + (index % 40) / 100 + (0.01 if replicate == "2" else 0)
             lines.append("\t".join([
                 contig, "reparation", "CDS", str(start), str(stop),
-                f"{probability:.2f}", strand, ".",
-                f"ID={identifier};Name={identifier};ORF_type={orf_type};Length={stop - start + 1};"
-                f"Ribo_count={100 + index};Ribo_rpkm={index}.5;Ribo_coverage=0.9;"
-                f"SD_score=5.1;SD_pos=-8;Prob={probability:.2f};Reference=aTIS;"
-                f"Distance_from_aTIS=0;Condition=A;Replicate={replicate};Method=reparation;",
+                f"{probability:.2f}", strand, "0",
+                f"ID={identifier};Name={identifier};orf_type={orf_type};length={stop - start + 1};"
+                f"ribo_count={100 + index};ribo_rpkm={index}.5;ribo_coverage=0.9;"
+                f"sd_score=5.1;sd_pos=-8;prob={probability:.2f};reference=aTIS;"
+                f"distance_from_atis=0;condition=A;replicate={replicate};method=reparation;",
             ]))
     Path(path).write_text("\n".join(lines) + "\n")
 
@@ -102,10 +102,9 @@ def write_reparation_tracks(path, orf_type=""):
 def write_deepribo_tracks(path):
     """DeepRibo predictions, as create_deepribo_gff.py writes them.
 
-    Column 8 carries the distance to the nearest gene rather than a phase, which
-    is a deliberate internal convention the merge step reads back.
+    Distance is a lowercase custom attribute; CDS phase remains strict GFF3.
     """
-    lines = []
+    lines = ["##gff-version 3"]
     for contig, feature, start, stop, strand, index in _features():
         if feature != "CDS":
             continue
@@ -115,9 +114,9 @@ def write_deepribo_tracks(path):
             distance = 0 if index % 4 else -1
             lines.append("\t".join([
                 contig, "deepribo", "CDS", str(start), str(stop),
-                f"{score:.2f}", strand, str(distance),
-                f"ID={identifier};pred_value={score:.2f};Method=deepribo;"
-                f"Condition=A;Replicate={replicate}",
+                f"{score:.2f}", strand, "0",
+                f"ID={identifier};pred_value={score:.2f};deepribo_distance={distance};"
+                f"method=deepribo;condition=A;replicate={replicate};",
             ]))
     Path(path).write_text("\n".join(lines) + "\n")
 

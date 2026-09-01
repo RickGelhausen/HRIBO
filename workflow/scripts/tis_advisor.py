@@ -34,7 +34,7 @@ import lib.theme as theme
 from lib.alignment import IntervalReader, LengthCounter
 
 
-def parse_arguments():
+def parse_arguments(argv=None):
     parser = argparse.ArgumentParser(
         description="Recommend read lengths and P-site offsets for a TIS caller.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -59,6 +59,8 @@ def parse_arguments():
                         help="Nucleotides upstream of the start codon to profile.")
     parser.add_argument("--positions_in_ORF", type=int, default=150,
                         help="Nucleotides inside the ORF to profile.")
+    parser.add_argument("--length_cutoff", type=int, default=50,
+                        help="Minimum ORF length when the length filter is enabled.")
     parser.add_argument("--filtering_methods", nargs="+", default=["overlap", "rpkm", "length"],
                         help="Annotation filters applied before profiling.")
     parser.add_argument("--neighboring_genes_distance", type=int, default=50,
@@ -69,7 +71,7 @@ def parse_arguments():
                         choices=["integrated", "online", "local"],
                         help="How the report references plotly.js. 'integrated' is self "
                              "contained but adds several megabytes per report.")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def build_profiles(args):
@@ -98,6 +100,7 @@ def build_profiles(args):
             args.neighboring_genes_distance,
             args.positions_out_ORF,
             args.positions_in_ORF,
+            args.length_cutoff,
         )
 
         start_coverage = mg.metagene_mapping_start(
@@ -151,6 +154,13 @@ def to_dataframe(profiles, coordinates):
     return frame
 
 
+def metagene_coordinates(positions_out_ORF, positions_in_ORF):
+    """Return the distinct transcript-oriented axes for start and stop profiles."""
+    start = np.arange(-positions_out_ORF, positions_in_ORF)
+    stop = np.arange(-positions_in_ORF, positions_out_ORF)
+    return start, stop
+
+
 # --------------------------------------------------------------------------
 # Output
 # --------------------------------------------------------------------------
@@ -165,7 +175,7 @@ def orfbounder_config(recommendation):
     )
     return (
         "# Suggested ORFBounder settings, derived from this library.\n"
-        f"readLengths: [{', '.join(str(l) for l in recommendation.read_lengths)}]\n"
+        f"readLengths: [{', '.join(str(length) for length in recommendation.read_lengths)}]\n"
         f"mappingMethod: \"{recommendation.read_end}\"\n"
         "# Offsets are measured from the "
         f"{"5'" if recommendation.read_end == 'fiveprime' else "3'"} end of the read.\n"
@@ -341,11 +351,15 @@ def main():
     args.output_dir_path.mkdir(parents=True, exist_ok=True)
     library = args.alignment_file_path.stem
 
-    coordinates = np.arange(-args.positions_out_ORF, args.positions_in_ORF)
+    start_coordinates, stop_coordinates = metagene_coordinates(
+        args.positions_out_ORF, args.positions_in_ORF
+    )
     profiles_by_end, totals = build_profiles(args)
 
     start_by_end = {end: start for end, (start, _) in profiles_by_end.items()}
-    best, comparisons = psite.compare_read_ends(start_by_end, coordinates, totals)
+    best, comparisons = psite.compare_read_ends(
+        start_by_end, start_coordinates, totals
+    )
 
     # Figures follow the chosen end; the other end's numbers stay in the tables.
     chosen = best.read_end if best else args.mapping_methods[0]
@@ -355,8 +369,8 @@ def main():
     recommendation = chosen_comparison.recommendation
 
     read_lengths = sorted(start_profiles)
-    df_start = to_dataframe(start_profiles, coordinates)
-    df_stop = to_dataframe(stop_profiles, coordinates)
+    df_start = to_dataframe(start_profiles, start_coordinates)
+    df_stop = to_dataframe(stop_profiles, stop_coordinates)
     significant_offsets = {s.read_length: (s.offset if s.usable else None) for s in scores}
     end_label = "5'" if chosen == "fiveprime" else "3'"
 
@@ -378,9 +392,9 @@ def main():
             psite.READ_ENDS[chosen]
         )
         figures.append(("Pooled, offset corrected", plotting.plot_pooled_profile(
-            pooled, coordinates, "Pooled P-site profile",
+            pooled, start_coordinates, "Pooled P-site profile",
             f"{end_label} mapping, read lengths "
-            f"{', '.join(str(l) for l in recommendation.read_lengths)}")))
+            f"{', '.join(str(length) for length in recommendation.read_lengths)}")))
 
     render_report(library, best, comparisons, figures,
                   args.output_dir_path / "tis_recommendation.html", args.include_plotly_js)

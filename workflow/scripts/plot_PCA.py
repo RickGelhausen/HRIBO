@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 import argparse
+import sys
+from pathlib import Path
+
 import pandas as pd
 
 import plotly as py
 import plotly.graph_objects as go
-
-from pathlib import Path
 
 
 INTRO_HTML = \
@@ -49,6 +50,22 @@ def custom_sort(group_by_names):
 
     return group_by_names
 
+
+def _variance_label(percentage_variance, index):
+    """Format one component's variance, tolerating rank-deficient PCA output."""
+    if index >= len(percentage_variance):
+        return "not available"
+    return f"{percentage_variance[index] * 100:.2f}% variance"
+
+
+def _padded_range(minimum, maximum):
+    """Plotly needs a nonzero range even when every score is identical."""
+    if minimum == maximum:
+        padding = max(abs(float(minimum)) * 0.1, 1.0)
+    else:
+        padding = (float(maximum) - float(minimum)) * 0.1
+    return [float(minimum) - padding, float(maximum) + padding]
+
 def plot_scatter_2D(table_df, percentage_variance):
     """
     Plot the 2D scatter plot.
@@ -59,10 +76,14 @@ def plot_scatter_2D(table_df, percentage_variance):
     labels = []
     pca_data = []
     group_by_names = custom_sort(group_by_names)
+    has_pc2 = "PC2" in table_df.columns
 
     for group in group_by_names:
         labels.append(group[0])
-        pca_data.append([group[1]["PC1"], group[1]["PC2"]])
+        second_component = (
+            group[1]["PC2"] if has_pc2 else group[1]["PC1"] * 0
+        )
+        pca_data.append([group[1]["PC1"], second_component])
 
     color_list = py.colors.DEFAULT_PLOTLY_COLORS
 
@@ -73,10 +94,8 @@ def plot_scatter_2D(table_df, percentage_variance):
     min_y = min([min(x[1]) for x in pca_data])
     max_y = max([max(x[1]) for x in pca_data])
 
-    l_min_x = min_x + (min_x * 0.1) if (min_x * 0.1) < 0 else min_x - (min_x * 0.1)
-    l_max_x = max_x - (max_x * 0.1) if (max_x * 0.1) < 0 else max_x + (max_x * 0.1)
-    l_min_y = min_y + (min_y * 0.1) if (min_y * 0.1) < 0 else min_y - (min_y * 0.1)
-    l_max_y = max_y - (max_y * 0.1) if (max_y * 0.1) < 0 else max_y + (max_y * 0.1)
+    x_range = _padded_range(min_x, max_x)
+    y_range = _padded_range(min_y, max_y)
 
     fig = go.Figure()
     for i in range(len(labels)):
@@ -84,7 +103,7 @@ def plot_scatter_2D(table_df, percentage_variance):
             x=pca_data[i][0],
             y=pca_data[i][1],
             mode="markers",
-            marker=dict(color=color_list[i], size=12), #line=dict(color="rgb(0,0,0)", width=2)),
+            marker=dict(color=color_list[i % len(color_list)], size=12),
             name=labels[i],
             legendgroup=group_labels[i],
             text=group_by_names[i][1]["name"],
@@ -94,15 +113,19 @@ def plot_scatter_2D(table_df, percentage_variance):
     fig.update_layout(
         xaxis = dict(#backgroundcolor="rgb(255,255,255)",
                     #gridcolor="rgb(0,0,0)",
-                    title=f"PC1 ({percentage_variance[0] * 100:.2f}% variance)",
+                    title=f"PC1 ({_variance_label(percentage_variance, 0)})",
                     tickfont=dict(size=14),
-                    range=[l_min_x, l_max_x],
+                    range=x_range,
                 ),
         yaxis = dict(#backgroundcolor="rgb(255,255,255)",
                     #gridcolor="rgb(0,0,0)",
-                    title=f"PC2 ({percentage_variance[1] * 100:.2f}% variance)",
+                    title=(
+                        f"PC2 ({_variance_label(percentage_variance, 1)})"
+                        if has_pc2
+                        else "No second principal component"
+                    ),
                     tickfont=dict(size=14),
-                    range=[l_min_y, l_max_y],
+                    range=y_range,
                 ),
         font_family="Arial",
         font_size=16,
@@ -140,12 +163,9 @@ def plot_scatter_3D(table_df, percentage_variance):
     min_z = min([min(x[2]) for x in pca_data])
     max_z = max([max(x[2]) for x in pca_data])
 
-    l_min_x = min_x + (min_x * 0.1) if (min_x * 0.1) < 0 else min_x - (min_x * 0.1)
-    l_max_x = max_x - (max_x * 0.1) if (max_x * 0.1) < 0 else max_x + (max_x * 0.1)
-    l_min_y = min_y + (min_y * 0.1) if (min_y * 0.1) < 0 else min_y - (min_y * 0.1)
-    l_max_y = max_y - (max_y * 0.1) if (max_y * 0.1) < 0 else max_y + (max_y * 0.1)
-    l_min_z = min_z + (min_z * 0.1) if (min_z * 0.1) < 0 else min_z - (min_z * 0.1)
-    l_max_z = max_z - (max_z * 0.1) if (max_z * 0.1) < 0 else max_z + (max_z * 0.1)
+    x_range = _padded_range(min_x, max_x)
+    y_range = _padded_range(min_y, max_y)
+    z_range = _padded_range(min_z, max_z)
 
     fig = go.Figure()
     for i in range(len(labels)):
@@ -154,7 +174,7 @@ def plot_scatter_3D(table_df, percentage_variance):
             y=pca_data[i][1],
             z=pca_data[i][2],
             mode="markers",
-            marker=dict(color=color_list[i]), #line=dict(color="rgb(0,0,0)", width=2)),
+            marker=dict(color=color_list[i % len(color_list)]),
             name=labels[i],
             legendgroup=group_labels[i],
             text=group_by_names[i][1]["name"],
@@ -178,19 +198,19 @@ def plot_scatter_3D(table_df, percentage_variance):
                         #gridcolor="rgb(0,0,0)",
                         title=f"PC1 ({percentage_variance[0] * 100:.2f} %)",
                         tickfont=dict(size=14),
-                        range=[l_min_x, l_max_x],
+                        range=x_range,
                     ),
             yaxis = dict(#backgroundcolor="rgb(255,255,255)",
                         #gridcolor="rgb(0,0,0)",
                         title=f"PC2 ({percentage_variance[1] * 100:.2f} %)",
                         tickfont=dict(size=14),
-                        range=[l_min_y, l_max_y],
+                        range=y_range,
                     ),
             zaxis = dict(#backgroundcolor="rgb(255,255,255)",
                         #gridcolor="rgb(0,0,0)",
                         title=f"PC3 ({percentage_variance[2] * 100:.2f} %)",
                         tickfont=dict(size=14),
-                        range=[l_min_z, l_max_z],
+                        range=z_range,
                     ),
             camera=dict(eye=dict(x=1.5, y=1.5, z=1.5))
         ),
@@ -237,17 +257,17 @@ def create_html_file(fig_cor, fig_pca, output_path, file_suffix):
     Write the html file.
     """
     html_string = INTRO_HTML + "\n"
-    html_string += f"<h1>Differential expression Quality Control</h1>\n"
-    html_string += f"<h2>Hierarchical Clustering Heatmap</h2>\n"
+    html_string += "<h1>Differential expression Quality Control</h1>\n"
+    html_string += "<h2>Hierarchical Clustering Heatmap</h2>\n"
     html_string += fig_cor.to_html(config={"toImageButtonOptions": {"format" : "svg"}}, full_html=False, default_width="100%", default_height="800px" )
     html_string += "<div class=description>\n"
-    html_string += f"<p>The heatmap displays the correlation of gene expression for all pairwise combinations of input samples. It indicates which samples are more similar to each other based on the normalized gene expression values.</p>\n"
-    html_string += f"<p>Typically all samples have high correlations with each other (values >0.70). Samples that have a lower value may indicate an outlier in your data or sample contamination.</p>\n"
+    html_string += "<p>The heatmap displays the correlation of gene expression for all pairwise combinations of input samples. It indicates which samples are more similar to each other based on the normalized gene expression values.</p>\n"
+    html_string += "<p>Typically all samples have high correlations with each other (values >0.70). Samples that have a lower value may indicate an outlier in your data or sample contamination.</p>\n"
     html_string += "</div>\n"
-    html_string += f"<h2>Principal Component Analysis (PCA)</h2>\n"
+    html_string += "<h2>Principal Component Analysis (PCA)</h2>\n"
     html_string += fig_pca.to_html(config={"toImageButtonOptions": {"format" : "svg"}}, full_html=False, include_plotlyjs=False, default_width="100%", default_height="800px")
     html_string += "<div class=description>\n"
-    html_string += f"<p>PCA is a statistical technique used to reduce the dimensionality of large data sets. It is does this by splitting the data into its principal components based on the variance in the data. <br>The first principal component (PC1) represents the maximum variance within the samples (PC2 the second highest etc...). PCA is a powerful tool to detect patterns and outliers among all the samples. </p>\n"
+    html_string += "<p>PCA is a statistical technique used to reduce the dimensionality of large data sets. It is does this by splitting the data into its principal components based on the variance in the data. <br>The first principal component (PC1) represents the maximum variance within the samples (PC2 the second highest etc...). PCA is a powerful tool to detect patterns and outliers among all the samples. </p>\n"
     html_string += "</div>\n"
     with open(output_path / f"diffex_QC{file_suffix}.html", "w") as f:
         f.write(html_string)
@@ -275,15 +295,34 @@ def main():
 
     # read the table
     table_df = pd.read_csv(args.input_table, sep="\t")
+    if "PC1" not in table_df.columns:
+        sys.exit("PCA score table contains no principal components (expected PC1).")
 
-    cor_df = pd.read_csv(args.correlation_map, sep="\t")
+    cor_df = pd.read_csv(args.correlation_map, sep="\t", index_col=0)
     fig_cor = plot_correlation(cor_df)
 
     with open(args.percentage_variance, "r") as f:
         percentage_variance = [float(line.rstrip()) for line in f]
 
     fig_2D = plot_scatter_2D(table_df, percentage_variance)
-    fig_3D = plot_scatter_3D(table_df, percentage_variance)
+    if "PC3" in table_df.columns and len(percentage_variance) >= 3:
+        fig_3D = plot_scatter_3D(table_df, percentage_variance)
+    else:
+        fig_3D = go.Figure(fig_2D)
+        component_count = len(
+            [column for column in table_df.columns if column.startswith("PC")]
+        )
+        fig_3D.add_annotation(
+            text=(
+                f"Only {component_count} principal component(s) are available; "
+                "showing the lower-dimensional PCA."
+            ),
+            xref="paper",
+            yref="paper",
+            x=0.5,
+            y=1.08,
+            showarrow=False,
+        )
 
     create_html_file(fig_cor, fig_2D, args.output_dir, f"{args.file_suffix}")
     create_html_file_3D(fig_3D, args.output_dir)
