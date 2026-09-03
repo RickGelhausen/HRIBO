@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test and static checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Create development environment
+        uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-file: environment-dev.yaml
+          cache-environment: true
+          cache-downloads: true
+          post-cleanup: all
+
+      - name: Cache Snakemake production environments
+        uses: actions/cache@v4
+        with:
+          path: .snakemake/conda
+          key: snakemake-conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('workflow/envs/*.yaml', 'workflow/envs/*.post-deploy.sh', 'environment-dev.yaml') }}
+
+      - name: Verify test toolchain
+        run: |
+          python --version
+          snakemake --version
+          pytest --version
+          ruff --version
+          shellcheck --version
+          gt -version
+          Rscript --version
+          python -c "import Bio, interlap, numpy, openpyxl, pandas, plotly, pysam, xlsxwriter, yaml"
+
+      - name: Validate YAML, config, and sample schemas
+        run: |
+          yamllint -c .yamllint.yaml \
+            environment.yaml environment-dev.yaml config \
+            workflow/envs workflow/schemas .github/workflows
+          python .github/scripts/check_config.py
+
+      - name: Lint maintained Python scope
+        run: ruff check .github/scripts tests workflow/scripts
+
+      - name: Check shell and R syntax
+        run: |
+          mapfile -t shell_files < <(find . workflow/scripts workflow/envs -maxdepth 2 -type f -name '*.sh' -print)
+          bash -n "${shell_files[@]}"
+          shellcheck "${shell_files[@]}"
+
+          mapfile -t r_files < <(find workflow/scripts -maxdepth 1 -type f -name '*.R' -print)
+          for r_file in "${r_files[@]}"; do
+            Rscript -e 'parse(file=commandArgs(trailingOnly=TRUE)[1])' "$r_file"
+          done
+
+      - name: Run complete Python test suite
+        env:
+          HRIBO_TEST_CONDA_PREFIX: ${{ github.workspace }}/.snakemake/conda
+        run: |
+          mkdir -p .ci-results
+          pytest -q --junitxml=.ci-results/pytest.xml
+          python .github/scripts/assert_no_pytest_skips.py \
+            .ci-results/pytest.xml --expected-tests 418

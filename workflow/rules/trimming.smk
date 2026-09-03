@@ -58,12 +58,12 @@ rule trim_single:
     input:
         fastq="trimlink/{method}-{condition}-{replicate}.fastq.gz"
     output:
-        fastq=temp("trimmed/{method}-{condition}-{replicate}.fastq")
+        fastq="trimmed/{method}-{condition}-{replicate}.fastq"
     params:
-        adapter3=lambda wildcards, output: ("" if not ADAPTERS_S3 else (" ".join([" -a %s" % adapter for adapter in ADAPTERS_S3.split(",")]))),
-        adapter5=lambda wildcards, output: ("" if not ADAPTERS_S5 else (" ".join([" -g %s" % adapter for adapter in ADAPTERS_S5.split(",")]))),
-        quality=" -q 20 --trim-n ",
-        filtering=" -m 10 "
+        adapter3=command_option_values("-a", ADAPTERS_S3),
+        adapter5=command_option_values("-g", ADAPTERS_S5),
+        quality=["-q", "20", "--trim-n"],
+        filtering=["-m", "10"]
     conda:
         "../envs/cutadapt.yaml"
     threads: 20
@@ -71,7 +71,7 @@ rule trim_single:
         mem_mb=40000,
         runtime=120
     shell:
-        "cutadapt -j {threads} {params.adapter3} {params.adapter5} {params.quality} {params.filtering} -o {output.fastq} {input.fastq}"
+        "cutadapt -j {threads} {params.adapter3:q} {params.adapter5:q} {params.quality:q} {params.filtering:q} -o {output.fastq:q} {input.fastq:q}"
 
 rule trim_paired:
     input:
@@ -81,12 +81,12 @@ rule trim_paired:
         fastq1=temp("trimmedpaired/{method}-{condition}-{replicate}_q.fastq"),
         fastq2=temp("trimmedpaired/{method}-{condition}-{replicate}_p.fastq")
     params:
-        adapter3q=lambda wildcards, output: ("" if not ADAPTERS_P3R1 else (" ".join([" -a %s" % adapter for adapter in ADAPTERS_P3R1.split(",")]))),
-        adapter5q=lambda wildcards, output: ("" if not ADAPTERS_P5R1 else (" ".join([" -g %s" % adapter for adapter in ADAPTERS_P5R1.split(",")]))),
-        adapter3p=lambda wildcards, output: ("" if not ADAPTERS_P3R2 else (" ".join([" -A %s" % adapter for adapter in ADAPTERS_P3R2.split(",")]))),
-        adapter5p=lambda wildcards, output: ("" if not ADAPTERS_P5R2 else (" ".join([" -G %s" % adapter for adapter in ADAPTERS_P5R2.split(",")]))),
-        quality=" -q 20 --trim-n ",
-        filtering=" -m 10 "
+        adapter3q=command_option_values("-a", ADAPTERS_P3R1),
+        adapter5q=command_option_values("-g", ADAPTERS_P5R1),
+        adapter3p=command_option_values("-A", ADAPTERS_P3R2),
+        adapter5p=command_option_values("-G", ADAPTERS_P5R2),
+        quality=["-q", "20", "--trim-n"],
+        filtering=["-m", "10"]
     conda:
         "../envs/cutadapt.yaml"
     threads: 20
@@ -94,7 +94,7 @@ rule trim_paired:
         mem_mb=40000,
         runtime=120
     shell:
-        "cutadapt -j {threads} {params.adapter3q} {params.adapter5q} {params.adapter3p} {params.adapter5p} {params.quality} {params.filtering} -o {output.fastq1} -p {output.fastq2} {input.fastq1} {input.fastq2}"
+        "cutadapt -j {threads} {params.adapter3q:q} {params.adapter5q:q} {params.adapter3p:q} {params.adapter5p:q} {params.quality:q} {params.filtering:q} -o {output.fastq1:q} -p {output.fastq2:q} {input.fastq1:q} {input.fastq2:q}"
 
 rule merge_fastq:
     input:
@@ -108,13 +108,18 @@ rule merge_fastq:
     resources:
         mem_mb=20000,
         runtime=120
+    params:
+        outdir="pear",
+        prefix=lambda wildcards: f"pear/{library_name(wildcards)}",
+        assembled=lambda wildcards: f"pear/{library_name(wildcards)}.assembled.fastq"
     log:
         "logs/{method}-{condition}-{replicate}_pear.log"
     shell:
         """
-        mkdir -p pear
-        pear -n 10 -f {input.fastq1} -r {input.fastq2} -o pear/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}
-        mv pear/{wildcards.method}-{wildcards.condition}-{wildcards.replicate}.assembled.fastq {output.fastq}
+        exec > {log:q} 2>&1
+        mkdir -p {params.outdir:q}
+        pear -n 10 -f {input.fastq1:q} -r {input.fastq2:q} -o {params.prefix:q}
+        mv {params.assembled:q} {output.fastq:q}
         """
 
 ruleorder: trim_single > merge_fastq

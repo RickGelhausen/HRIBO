@@ -12,7 +12,7 @@ min_version("9.0.0")
 configfile: "config/config.yaml"
 
 # Absolute path to the bundled scripts, so the workflow can live anywhere on disk.
-# Referenced from shell directives as {SCRIPTS}/<script>.
+# Rule-executed scripts and local helpers are declared as named job inputs.
 SCRIPTS = Path(workflow.basedir) / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
@@ -126,8 +126,6 @@ if DIFFEXPRESS:
 if DEEPRIBO:
     #deepribo
     include: "rules/deepribo.smk"
-else:
-    include: "rules/conditionals.smk"
 
 include: "rules/pca.smk"
 
@@ -175,6 +173,7 @@ if "pca" in STAGES:
 
 if "predictions" in STAGES:
     hribo_output.append("auxiliary/predictions_reparation.xlsx")
+    hribo_output.append("tracks/updated_annotation.gff")
     if DEEPRIBO:
         hribo_output.append("auxiliary/predictions_deepribo.xlsx")
 

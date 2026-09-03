@@ -7,6 +7,8 @@ practices, so that the rule files stay declarative.
 
 from dataclasses import dataclass
 
+from lib.cli import command_option_values
+
 
 # --------------------------------------------------------------------------
 # Coverage tracks
@@ -156,6 +158,16 @@ def get_trimmed_qc_files():
     return qc_files
 
 
+def get_processed_read_files():
+    """Mapping-ready reads produced by trimming for every library.
+
+    Single-end libraries use Cutadapt's output directly. Paired-end libraries
+    use the PEAR assembly consumed by the mapping rules. Both layouts therefore
+    publish the same stable path contract.
+    """
+    return _library_files("trimmed", ".fastq")
+
+
 def get_qc_files():
     """Inputs of the MultiQC summary that depend on the library layout."""
     qc_files = get_raw_qc_files()
@@ -167,8 +179,8 @@ def get_qc_files():
 
 
 def get_trimming_files():
-    """Targets of the 'trimming' stage: raw and trimmed FastQC reports only."""
-    return get_raw_qc_files() + get_trimmed_qc_files()
+    """Targets of 'trimming': processed reads and their FastQC reports."""
+    return get_processed_read_files() + get_raw_qc_files() + get_trimmed_qc_files()
 
 
 # --------------------------------------------------------------------------
@@ -187,13 +199,13 @@ class ReadCountSet:
 
     bam_dir: str
     annotation: str
-    extra: str = ""
+    extra: tuple[str, ...] = ()
 
 
 # Keyed by output basename under readcounts/, which is the {countset} wildcard.
 READ_COUNT_SETS = {
     "differential_expression_read_counts.csv": ReadCountSet(
-        "maplink", "auxiliary/unambigous_annotation.gff", "--for_diff_expr"
+        "maplink", "auxiliary/unambigous_annotation.gff", ("--for_diff_expr",)
     ),
     "annotation_independant_read_counts.raw": ReadCountSet(
         "maplink", "auxiliary/unambigous_annotation.gff"
@@ -206,10 +218,10 @@ READ_COUNT_SETS = {
     ),
     # Multi-mappers are counted fractionally against the enriched annotation.
     "annotation_total_reads.raw": ReadCountSet(
-        "bammulti", "auxiliary/unambigous_annotation.gff", "--with_M --fraction"
+        "bammulti", "auxiliary/unambigous_annotation.gff", ("--with_M", "--fraction")
     ),
     "annotation_unique_reads.raw": ReadCountSet(
-        "rRNAbam", "auxiliary/unambigous_annotation.gff", "--fraction"
+        "rRNAbam", "auxiliary/unambigous_annotation.gff", ("--fraction",)
     ),
 }
 
@@ -228,11 +240,11 @@ def readcount_annotation(wildcards):
 
 def readcount_flags(wildcards):
     """Flags beyond the ones every run shares."""
-    extra = READ_COUNT_SETS[wildcards.countset].extra
+    extra = list(READ_COUNT_SETS[wildcards.countset].extra)
     if wildcards.countset == "differential_expression_read_counts.csv":
         features = config["differentialExpressionSettings"]["features"]
         if features:
-            extra = f"{extra} --use_features {' '.join(features)}"
+            extra.extend(["--use_features", *features])
     return extra
 
 
@@ -313,14 +325,14 @@ def overview_sources():
 
 
 def overview_flags():
-    """Command line flags matching overview_sources()."""
+    """Command-line argv matching ``overview_sources`` without shell fragments."""
     sources = overview_sources()
-    flags = [f"--mapped_reads_reparation {sources['reparation']}"]
+    flags = ["--mapped_reads_reparation", sources["reparation"]]
     if "deepribo" in sources:
-        flags.append(f"--mapped_reads_deepribo {sources['deepribo']}")
+        flags.extend(["--mapped_reads_deepribo", sources["deepribo"]])
     for tool in ("xtail", "riborex", "deltate"):
         if tool in sources:
-            flags.append(f"--{tool} {sources[tool]}")
+            flags.extend([f"--{tool}", sources[tool]])
     if CONTRASTS:
-        flags.append("-c " + " ".join(CONTRASTS))
-    return " ".join(flags)
+        flags.extend(["-c", *CONTRASTS])
+    return flags

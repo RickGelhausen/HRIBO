@@ -2,11 +2,9 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- # Deliberately not updated. Both riborex builds on bioconda (2.3.4 and 2.4.0)
- # declare r-base >=3.4.1,<3.4.2, so R 3.4.1 is not a stale pin but the only
- # version the package can be installed against. Modernising this means
- # packaging riborex again or dropping it; see ChangeLog.
- - r-base =3.4.1
- - riborex =2.4.0
- - r-optparse =1.6.0
- - r-plyr
+  # Bioconda's current rebuild targets the R 4.4 series. Its upstream 2.4.0
+  # tag still reports internal package metadata version 2.3.4; the value below
+  # is the published Conda artifact version, not R's packageVersion() result.
+ - r-base =4.4
+ - r-riborex =2.4.0
+ - r-optparse

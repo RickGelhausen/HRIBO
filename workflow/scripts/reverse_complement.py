@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 import argparse
-import os
-from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 

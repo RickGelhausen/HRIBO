@@ -14,7 +14,7 @@ rule fastqcunique:
     params:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.sam))[0])
     shell:
-        "fastqc -o qc/4unique -t {threads} -f sam_mapped {input.sam}; mv qc/4unique/{params.prefix}_fastqc.html {output.html}; mv qc/4unique/{params.prefix}_fastqc.zip {output.zip}"
+        "fastqc -o qc/4unique -t {threads} -f sam_mapped {input.sam:q}; mv qc/4unique/{params.prefix:q}_fastqc.html {output.html:q}; mv qc/4unique/{params.prefix:q}_fastqc.zip {output.zip:q}"
 
 rule fastqcmulti:
     input:
@@ -32,7 +32,7 @@ rule fastqcmulti:
     params:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.sam))[0])
     shell:
-        "fastqc -o qc/3mapped -t {threads} -f sam_mapped {input.sam}; mv qc/3mapped/{params.prefix}_fastqc.html {output.html}; mv qc/3mapped/{params.prefix}_fastqc.zip {output.zip}"
+        "fastqc -o qc/3mapped -t {threads} -f sam_mapped {input.sam:q}; mv qc/3mapped/{params.prefix:q}_fastqc.html {output.html:q}; mv qc/3mapped/{params.prefix:q}_fastqc.zip {output.zip:q}"
 
 rule fastqcrrnafilter:
     input:
@@ -50,7 +50,7 @@ rule fastqcrrnafilter:
     params:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads))[0])
     shell:
-        "fastqc -o qc/5removedrRNA -t {threads} {input}; mv qc/5removedrRNA/{params.prefix}_fastqc.html {output.html}; mv qc/5removedrRNA/{params.prefix}_fastqc.zip {output.zip}"
+        "fastqc -o qc/5removedrRNA -t {threads} {input:q}; mv qc/5removedrRNA/{params.prefix:q}_fastqc.html {output.html:q}; mv qc/5removedrRNA/{params.prefix:q}_fastqc.zip {output.zip:q}"
 
 rule featurescounts:
     input:
@@ -66,12 +66,12 @@ rule featurescounts:
         runtime=60
     shell:
         """
-        column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
+        column3=$(cut -f3 {input.annotation:q} | sort | uniq)
         if [[ " ${{column3[@]}} " =~ "gene" ]];
         then
-            featureCounts -T {threads} -t gene -g ID -a {input.annotation} -o {output.txt} {input.bam};
+            featureCounts -T {threads} -t gene -g ID -a {input.annotation:q} -o {output.txt:q} {input.bam:q};
         else
-            touch {output.txt};
+            touch {output.txt:q};
         fi
         """
 
@@ -89,12 +89,12 @@ rule trnafeaturescounts:
         runtime=60
     shell:
         """
-        column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
+        column3=$(cut -f3 {input.annotation:q} | sort | uniq)
         if [[ " ${{column3[@]}} " =~ "tRNA" ]];
         then
-            featureCounts -T {threads} -t tRNA -g ID -a {input.annotation} -o {output.txt} {input.bam};
+            featureCounts -T {threads} -t tRNA -g ID -a {input.annotation:q} -o {output.txt:q} {input.bam:q};
         else
-            touch {output.txt};
+            touch {output.txt:q};
         fi
         """
 
@@ -112,12 +112,12 @@ rule norrnafeaturescounts:
         runtime=60
     shell:
         """
-        column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
+        column3=$(cut -f3 {input.annotation:q} | sort | uniq)
         if [[ " ${{column3[@]}} " =~ "rRNA" ]];
         then
-            featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam};
+            featureCounts -T {threads} -t rRNA -g ID -a {input.annotation:q} -o {output.txt:q} {input.bam:q};
         else
-            touch {output.txt};
+            touch {output.txt:q};
         fi
         """
 
@@ -135,12 +135,12 @@ rule rrnatotalfeaturescounts:
         runtime=60
     shell:
         """
-        column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
+        column3=$(cut -f3 {input.annotation:q} | sort | uniq)
         if [[ " ${{column3[@]}} " =~ "rRNA" ]];
         then
-            featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam};
+            featureCounts -T {threads} -t rRNA -g ID -a {input.annotation:q} -o {output.txt:q} {input.bam:q};
         else
-            touch {output.txt};
+            touch {output.txt:q};
         fi
         """
         
@@ -158,12 +158,12 @@ rule rrnauniquefeaturescounts:
         runtime=60
     shell:
         """
-        column3=$(cut -f3 auxiliary/unambigous_annotation.gff | sort | uniq)
+        column3=$(cut -f3 {input.annotation:q} | sort | uniq)
         if [[ " ${{column3[@]}} " =~ "rRNA" ]];
         then
-            featureCounts -T {threads} -t rRNA -g ID -a {input.annotation} -o {output.txt} {input.bam};
+            featureCounts -T {threads} -t rRNA -g ID -a {input.annotation:q} -o {output.txt:q} {input.bam:q};
         else
-            touch {output.txt};
+            touch {output.txt:q};
         fi
         """
 
@@ -176,4 +176,4 @@ rule coveragedepth:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "bedtools genomecov -ibam {input} -bg > {output}"
+        "bedtools genomecov -ibam {input:q} -bg > {output:q}"

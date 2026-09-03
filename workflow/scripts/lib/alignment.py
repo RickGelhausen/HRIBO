@@ -91,9 +91,7 @@ class LengthCounter:
                 if read.get_tag("NH") > 1 or read.mapping_quality < 0 or read.is_unmapped:
                     continue
 
-                start = read.reference_start
                 read_length = read.query_length # query read length
-                stop = start + read_length - 1
                 if read_length not in self.read_length_list:
                     continue
 

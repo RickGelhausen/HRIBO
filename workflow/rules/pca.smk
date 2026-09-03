@@ -2,6 +2,7 @@ rule preparePCAinput:
     input:
         rawreads="readcounts/differential_expression_read_counts.csv",
         samples=config["biologySettings"]["samples"],
+        script=str(SCRIPTS / "preparePCAinput.py"),
     output:
         rawreads="pca/raw_reads.csv",
         meta="pca/meta.csv",
@@ -10,14 +11,15 @@ rule preparePCAinput:
         "../envs/pytools.yaml"
     shell:
         """
-        sed -e '1s/-/_/g' {input.rawreads} > {output.rawreads};
-        {SCRIPTS}/preparePCAinput.py -s {input.samples} -o {output.meta};
+        sed -e '1s/-/_/g' {input.rawreads:q} > {output.rawreads:q}
+        python3 {input.script:q} -s {input.samples:q} -o {output.meta:q}
         """
 
 rule runDeseqPreprocessing:
     input:
         rawreads="pca/raw_reads.csv",
-        meta="pca/meta.csv"
+        meta="pca/meta.csv",
+        script=str(SCRIPTS / "analyse_variance.R")
     output:
         distr="pca/raw_count_distributions.pdf",
         mv="pca/mean_vs_variance.pdf",
@@ -30,14 +32,15 @@ rule runDeseqPreprocessing:
         "../envs/deseq2.yaml"
     shell:
         """
-        {SCRIPTS}/analyse_variance.R -r {input.rawreads} -m {input.meta} -o pca/;
+        Rscript {input.script:q} -r {input.rawreads:q} -m {input.meta:q} -o pca/
         """
         
 rule plotPCA:
     input:
         rld="pca/rld.tsv",
         pvar="pca/variance_percentages.tsv",
-        cor="pca/rld_cor.tsv"
+        cor="pca/rld_cor.tsv",
+        script=str(SCRIPTS / "plot_PCA.py")
     output:
         plot="pca/PCA_3D.html",
         plot2="pca/diffex_QC.html"
@@ -46,5 +49,5 @@ rule plotPCA:
         "../envs/plotly.yaml"
     shell:
         """
-        {SCRIPTS}/plot_PCA.py -r {input.rld} -p {input.pvar} -c {input.cor} -o pca/;
+        python3 {input.script:q} -r {input.rld:q} -p {input.pvar:q} -c {input.cor:q} -o pca/
         """

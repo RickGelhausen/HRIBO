@@ -31,12 +31,23 @@ if [[ "$mode" == "fail" ]]; then
     exit 23
 fi
 
-printf 'baseMean\\tlog2FoldChange\\n' > "$result_dir/fold_changes/deltaRibo.txt"
-printf 'baseMean\\tlog2FoldChange\\n' > "$result_dir/fold_changes/deltaRNA.txt"
+printf 'baseMean\\tlog2FoldChange\\tlfcSE\\tpvalue\\tpadj\\n' > "$result_dir/fold_changes/deltaRibo.txt"
+printf 'baseMean\\tlog2FoldChange\\tlfcSE\\tpvalue\\tpadj\\n' > "$result_dir/fold_changes/deltaRNA.txt"
 if [[ "$mode" != "missing" ]]; then
-    printf 'baseMean\\tlog2FoldChange\\n' > "$result_dir/fold_changes/deltaTE.txt"
+    printf 'baseMean\\tlog2FoldChange\\tlfcSE\\tstat\\tpvalue\\tpadj\\n' > "$result_dir/fold_changes/deltaTE.txt"
 fi
-printf '%%PDF-1.4\\n' > "$result_dir/Result_figures.pdf"
+if [[ "$mode" != "header_only" ]]; then
+    printf 'gene_1\\t10\\t1\\t0.2\\t0.01\\t0.02\\n' >> "$result_dir/fold_changes/deltaRibo.txt"
+    printf 'gene_1\\t10\\t0.5\\t0.2\\t0.01\\t0.02\\n' >> "$result_dir/fold_changes/deltaRNA.txt"
+    if [[ "$mode" != "missing" ]]; then
+        printf 'gene_1\\t10\\t0.5\\t0.2\\t2.5\\t0.01\\t0.02\\n' >> "$result_dir/fold_changes/deltaTE.txt"
+    fi
+fi
+if [[ "$mode" == "bad_pdf" ]]; then
+    printf 'not a PDF\\n' > "$result_dir/Result_figures.pdf"
+else
+    printf '%%PDF-1.4\\n' > "$result_dir/Result_figures.pdf"
+fi
 """
     )
     executable.chmod(executable.stat().st_mode | stat.S_IXUSR)
@@ -63,9 +74,9 @@ printf '%%PDF-1.4\\n' > "$result_dir/Result_figures.pdf"
         *(str(path) for path in outputs),
         str(figure_source),
         str(figure_output),
+        str(executable),
     ]
     environment = os.environ.copy()
-    environment["PATH"] = f"{bin_dir}{os.pathsep}{environment['PATH']}"
 
     return command, environment, outputs, figure_source, figure_output
 
@@ -78,6 +89,10 @@ def execute(fixture, mode):
 
 def test_deltate_rule_delegates_to_the_checked_runner():
     assert 'runner=str(SCRIPTS / "run_deltate.sh")' in RULE
+    assert 'patcher=str(SCRIPTS / "patch_deltate.py")' in RULE
+    assert "rule prepareDeltaTEScript:" in RULE
+    assert "engine=rules.prepareDeltaTEScript.output.script" in RULE
+    assert "{input.engine:q}" in RULE
     assert "bash {input.runner:q}" in RULE
     assert "|| true" not in RULE
     assert "touch {output" not in RULE
@@ -107,7 +122,15 @@ def test_deltate_rejects_a_success_exit_with_missing_outputs(deltate_run):
     assert "completed without required non-empty output" in result.stderr
 
 
-def test_deltate_accepts_nonempty_header_only_results(deltate_run):
+def test_deltate_validates_tables_and_pdf_before_publication(deltate_run):
+    header_only = execute(deltate_run, "header_only")
+    assert header_only.returncode != 0
+    assert "has no valid data rows" in header_only.stderr
+
+    bad_pdf = execute(deltate_run, "bad_pdf")
+    assert bad_pdf.returncode != 0
+    assert "figure is not a PDF" in bad_pdf.stderr
+
     result = execute(deltate_run, "success")
     _, _, outputs, figure_source, figure_output = deltate_run
 

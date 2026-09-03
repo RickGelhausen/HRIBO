@@ -21,7 +21,8 @@ rule retrieveAnnotation:
 rule checkAnnotation:
     input:
         annotation=rules.retrieveAnnotation.output,
-        converter=str(SCRIPTS / "gtf2gff3.py")
+        converter=str(SCRIPTS / "gtf2gff3.py"),
+        converter_deps=[str(SCRIPTS / "gff_utils.py")]
     output:
         annotation="annotation/annotation_processed.gff"
     threads: 1

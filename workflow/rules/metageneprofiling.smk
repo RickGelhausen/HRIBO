@@ -3,7 +3,14 @@ from pathlib import Path
 rule readLengthStatistics:
     input:
         bamfiles=expand("maplink/{method}-{condition}-{replicate}.bam", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]),
-        bamIndex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"])
+        bamIndex=expand("maplink/{method}-{condition}-{replicate}.bam.bai", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]),
+        script=str(SCRIPTS / "read_length_statistics.py"),
+        script_deps=[
+            str(SCRIPTS / "lib" / "__init__.py"),
+            str(SCRIPTS / "lib" / "alignment.py"),
+            str(SCRIPTS / "lib" / "io.py"),
+            str(SCRIPTS / "lib" / "theme.py"),
+        ]
     output:
         plot="metageneprofiling/read_length_fractions.html",
         table="metageneprofiling/read_length_fractions.xlsx",
@@ -16,11 +23,10 @@ rule readLengthStatistics:
         runtime=60
     log: "logs/read_length_statistics.log"
     params:
-        script=str(SCRIPTS / "read_length_statistics.py"),
         readlengths=config["readstatSettings"]["readLengths"]
     shell:
         """
-        python3 {params.script:q} \
+        python3 {input.script:q} \
             -a {input.bamfiles:q} \
             -r {params.readlengths:q} \
             -o "metageneprofiling/" \
@@ -32,7 +38,19 @@ rule metageneProfiling:
         bam=rules.maplink.output,
         bamIndex=rules.bamindex.output,
         genome=rules.retrieveGenome.output,
-        annotation=rules.checkAnnotation.output
+        annotation=rules.checkAnnotation.output,
+        script=str(SCRIPTS / "metagene_profiling.py"),
+        script_deps=[
+            str(SCRIPTS / "lib" / "__init__.py"),
+            str(SCRIPTS / "lib" / "alignment.py"),
+            str(SCRIPTS / "lib" / "annotation.py"),
+            str(SCRIPTS / "lib" / "io.py"),
+            str(SCRIPTS / "lib" / "metagene.py"),
+            str(SCRIPTS / "lib" / "misc.py"),
+            str(SCRIPTS / "lib" / "plotting.py"),
+            str(SCRIPTS / "lib" / "psite.py"),
+            str(SCRIPTS / "lib" / "theme.py"),
+        ]
     output:
         meta=directory("metageneprofiling/{method}-{condition}-{replicate}")
     conda:
@@ -42,7 +60,6 @@ rule metageneProfiling:
         mem_mb=20000,
         runtime=120
     params:
-        script=str(SCRIPTS / "metagene_profiling.py"),
         readlengths=config["metageneSettings"]["readLengths"],
         positionsInORF=config["metageneSettings"]["positionsInORF"],
         positionsOutORF=config["metageneSettings"]["positionsOutsideORF"],
@@ -62,7 +79,7 @@ rule metageneProfiling:
     log: "logs/{method}-{condition}-{replicate}_metageneprofiling.log"
     shell:
         """
-        python3 {params.script:q} \
+        python3 {input.script:q} \
             -b {input.bam:q} \
             -g {input.genome:q} \
             -a {input.annotation:q} \
@@ -88,7 +105,19 @@ rule tisAdvisor:
         bam=rules.maplink.output,
         bamIndex=rules.bamindex.output,
         genome=rules.retrieveGenome.output,
-        annotation=rules.checkAnnotation.output
+        annotation=rules.checkAnnotation.output,
+        script=str(SCRIPTS / "tis_advisor.py"),
+        script_deps=[
+            str(SCRIPTS / "lib" / "__init__.py"),
+            str(SCRIPTS / "lib" / "alignment.py"),
+            str(SCRIPTS / "lib" / "annotation.py"),
+            str(SCRIPTS / "lib" / "io.py"),
+            str(SCRIPTS / "lib" / "metagene.py"),
+            str(SCRIPTS / "lib" / "misc.py"),
+            str(SCRIPTS / "lib" / "plotting.py"),
+            str(SCRIPTS / "lib" / "psite.py"),
+            str(SCRIPTS / "lib" / "theme.py"),
+        ]
     output:
         report_html=report(
             "tis_advice/{method}-{condition}-{replicate}/tis_recommendation.html",
@@ -105,7 +134,6 @@ rule tisAdvisor:
         mem_mb=20000,
         runtime=120
     params:
-        script=str(SCRIPTS / "tis_advisor.py"),
         outdir=lambda wildcards, output: os.path.dirname(output.report_html),
         readlengths=config["tisAdvisorSettings"]["readLengths"],
         mappingMethods=config["tisAdvisorSettings"]["mappingMethods"],
@@ -120,7 +148,7 @@ rule tisAdvisor:
         "logs/{method}-{condition}-{replicate}_tis_advisor.log"
     shell:
         """
-        python3 {params.script:q} \
+        python3 {input.script:q} \
             -b {input.bam:q} \
             -a {input.annotation:q} \
             -g {input.genome:q} \

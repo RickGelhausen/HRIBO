@@ -63,13 +63,26 @@ def call_featureCounts(args):
     identifier = "ID" if attribute_column.str.contains("ID=").any() else "gene_id"
 
     tmp_file = os.path.splitext(args.output)[0] + ".tmp"
-    commandline_parameters = f" -a {args.annotation} -F GTF -g {identifier} -s {args.strandness} -T {args.threads} -o {tmp_file}"
+    commandline_parameters = [
+        "-a",
+        args.annotation,
+        "-F",
+        "GTF",
+        "-g",
+        identifier,
+        "-s",
+        str(args.strandness),
+        "-T",
+        str(args.threads),
+        "-o",
+        tmp_file,
+    ]
     if args.assign_to_all:
-        commandline_parameters += " -O"
+        commandline_parameters.append("-O")
     if args.assign_multi_mappers:
-        commandline_parameters += " -M"
+        commandline_parameters.append("-M")
     if args.with_fraction:
-        commandline_parameters += " --fraction"
+        commandline_parameters.append("--fraction")
 
     if args.diff_expr:
         labels = [f"s{x}" for x in range(0, len(bamfiles)+1)]
@@ -79,10 +92,15 @@ def call_featureCounts(args):
         nTuple = collections.namedtuple('Pandas', labels)
 
     for feature in features:
-        commandline_call = f"featureCounts -t {feature} {commandline_parameters} " + " ".join(bamfiles)
-        subprocess_call = shlex.split(commandline_call, posix=False)
+        subprocess_call = [
+            "featureCounts",
+            "-t",
+            feature,
+            *commandline_parameters,
+            *bamfiles,
+        ]
 
-        print(commandline_call)
+        print(shlex.join(subprocess_call))
 
         # A stale temporary file from the previous feature would otherwise be
         # read back as though it belonged to this one.

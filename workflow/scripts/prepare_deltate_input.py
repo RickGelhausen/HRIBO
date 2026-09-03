@@ -1,16 +1,21 @@
 #!/usr/bin/env python
-from calendar import c
 import pandas as pd
 from pathlib import Path
 import argparse
 import os
 
-def split_bam_files(bam_folder, contrast):
+def split_bam_files(bam_folder, contrast, bam_files=None):
     """
-    Split the input bam_folder entries into RIBO and RNA files.
+    Split selected BAM entries into RIBO and RNA files.
+
+    Explicit BAM paths take precedence when supplied. Scanning ``bam_folder``
+    remains available for backwards compatibility with the original CLI.
     """
 
-    files = [entry for entry in Path(bam_folder).glob("*.bam") if entry.is_file()]
+    if bam_files is None:
+        files = [entry for entry in Path(bam_folder).glob("*.bam") if entry.is_file()]
+    else:
+        files = [Path(entry) for entry in bam_files]
     files = sorted(files, key=lambda s: str(s.stem).lower())
 
     ribo_bam = []
@@ -123,7 +128,9 @@ def create_readcount_table(bam_files, read_count_dict, output_path, file_name):
 def main():
     # store commandline args
     parser = argparse.ArgumentParser(description='Create the input files necessary to run deltaTE for a given contrast.')
-    parser.add_argument("-b", "--bam_folder", action="store", dest="bam_folder", required=True, help= "The folder containing all bam files.")
+    bam_source = parser.add_mutually_exclusive_group(required=True)
+    bam_source.add_argument("-b", "--bam_folder", action="store", dest="bam_folder", help= "The folder containing all bam files.")
+    bam_source.add_argument("--bam_files", nargs="+", metavar="BAM", help="Explicit BAM files to include.")
     parser.add_argument("-r", "--read_count_file", action="store", dest="read_count_file", required=True, help="Read count table containing raw read counts.")
     parser.add_argument("-c", "--contrast", action="store", dest="contrast", required=True, help="Contrast to be used for preparaton.")
     parser.add_argument("-o", "--output_folder", action="store", dest="output_path", required=True, help= "The output folder.")
@@ -131,7 +138,7 @@ def main():
     p = Path(args.output_path)
     p.mkdir(parents=True, exist_ok=True)
 
-    ribo_bam, rna_bam = split_bam_files(args.bam_folder, args.contrast)
+    ribo_bam, rna_bam = split_bam_files(args.bam_folder, args.contrast, args.bam_files)
     create_sample_sheet(ribo_bam, rna_bam, args.output_path)
 
     read_count_dict = prepare_read_count_dict(args.read_count_file)

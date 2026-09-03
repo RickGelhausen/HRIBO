@@ -2,9 +2,10 @@
 """Stage user inputs without changing what downstream rules see.
 
 FASTQ files remain symlinks, but their targets are made absolute so both
-relative project paths and already-absolute paths work. Text references are
-copied byte-for-byte unless their gzip magic bytes show that they need to be
-decompressed first.
+relative project paths and already-absolute paths work. Final workflow links
+can instead use relative targets so that a result directory remains portable.
+Text references are copied byte-for-byte unless their gzip magic bytes show
+that they need to be decompressed first.
 """
 
 from __future__ import annotations
@@ -45,6 +46,34 @@ def link_input(source: Path, destination: Path) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def link_portable(source: Path, destination: Path) -> None:
+    """Atomically create a relative link that survives moving its result tree."""
+
+    source = Path(os.path.abspath(os.fspath(source)))
+    if not source.is_file():
+        raise FileNotFoundError(f"input file does not exist or is not a file: {source}")
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination = Path(os.path.abspath(os.fspath(destination)))
+    if source == destination:
+        raise ValueError("input and staged-link destination must be different paths")
+
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=destination.parent,
+        prefix=f".{destination.name}.",
+    )
+    os.close(descriptor)
+    temporary = Path(temporary_name)
+    temporary.unlink()
+
+    try:
+        relative_target = os.path.relpath(source, start=destination.parent)
+        temporary.symlink_to(relative_target)
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def materialize_text(source: Path, destination: Path) -> None:
     """Atomically copy ``source`` to plain text, decompressing gzip if needed."""
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -73,7 +102,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Create an input symlink or materialize a plain-text reference."
     )
-    parser.add_argument("operation", choices=("link", "text"))
+    parser.add_argument("operation", choices=("link", "portable-link", "text"))
     parser.add_argument("source", type=Path)
     parser.add_argument("destination", type=Path)
     return parser.parse_args()
@@ -83,6 +112,8 @@ def main() -> None:
     args = parse_arguments()
     if args.operation == "link":
         link_input(args.source, args.destination)
+    elif args.operation == "portable-link":
+        link_portable(args.source, args.destination)
     else:
         materialize_text(args.source, args.destination)
 

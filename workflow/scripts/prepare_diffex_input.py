@@ -2,7 +2,6 @@
 import pandas as pd
 from pathlib import Path
 import argparse
-import os
 
 def create_readcount_tables(read_count_file, contrast, tool, output_path):
     """
@@ -13,6 +12,9 @@ def create_readcount_tables(read_count_file, contrast, tool, output_path):
 
     if tool == "xtail":
         cond1, cond2 = cond2, cond1
+        cond1_label, cond2_label = "control", "treated"
+    else:
+        cond1_label, cond2_label = "treated", "control"
 
     read_count_df = pd.read_csv(read_count_file, sep=",")
 
@@ -30,10 +32,10 @@ def create_readcount_tables(read_count_file, contrast, tool, output_path):
     ribo_df.to_csv(output_path / f"{contrast}_ribo_readcount_table.tsv", sep="\t", index=False)
     rna_df.to_csv(output_path / f"{contrast}_rna_readcount_table.tsv", sep="\t", index=False)
 
-    # if tool == "riborex":
-    #     condition_vector = [ "control" if col.split("-")[1] == cond1 else "treat" for col in ribo_cols[1:] ]
-    # else:
-    condition_vector = [ "treated" if col.split("-")[1] == cond1 else "control" for col in ribo_cols[1:] ]
+    condition_vector = [
+        cond1_label if col.split("-")[1] == cond1 else cond2_label
+        for col in ribo_cols[1:]
+    ]
 
     with open(output_path / f"{contrast}_condition_vector.csv", "w") as f:
         f.write(",".join(condition_vector) + "\n")

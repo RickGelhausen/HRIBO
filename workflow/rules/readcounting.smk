@@ -15,7 +15,8 @@ rule readCounts:
     input:
         bam=readcount_bams,
         bamindex=readcount_bam_indices,
-        annotation=readcount_annotation
+        annotation=readcount_annotation,
+        script=str(SCRIPTS / "call_featurecounts.py")
     output:
         "readcounts/{countset}"
     conda:
@@ -30,19 +31,20 @@ rule readCounts:
         "logs/readcounts_{countset}.log"
     shell:
         """
-        {SCRIPTS}/call_featurecounts.py \
-            -b {input.bam} \
-            -a {input.annotation} \
-            -s 1 --with_O {params.extra} \
+        python3 {input.script:q} \
+            -b {input.bam:q} \
+            -a {input.annotation:q} \
+            -s 1 --with_O {params.extra:q} \
             -t {threads} \
-            -o {output} 2> {log}
+            -o {output:q} 2> {log:q}
         """
 
 
 rule mapReadsToAnnotation:
     input:
         reads=mapped_counts_reads,
-        annotation=mapped_counts_annotation
+        annotation=mapped_counts_annotation,
+        script=str(SCRIPTS / "map_reads_to_annotation.py")
     output:
         "readcounts/{mapped}"
     conda:
@@ -54,13 +56,14 @@ rule mapReadsToAnnotation:
     log:
         "logs/map_reads_to_annotation_{mapped}.log"
     shell:
-        "{SCRIPTS}/map_reads_to_annotation.py -i {input.reads} -a {input.annotation} -o {output} 2> {log}"
+        "python3 {input.script:q} -i {input.reads:q} -a {input.annotation:q} -o {output:q} 2> {log:q}"
 
 
 rule mappedReadSummary:
     input:
         bam=mapped_read_bams,
-        bamindex=mapped_read_bam_indices
+        bamindex=mapped_read_bam_indices,
+        script=str(SCRIPTS / "total_mapped_reads.py")
     output:
         mapped="readcounts/{source}_mapped_reads.txt",
         length="readcounts/{source}_average_read_lengths.txt"
@@ -73,4 +76,4 @@ rule mappedReadSummary:
     log:
         "logs/mapped_read_summary_{source}.log"
     shell:
-        "{SCRIPTS}/total_mapped_reads.py -b {input.bam} -m {output.mapped} -l {output.length} 2> {log}"
+        "python3 {input.script:q} -b {input.bam:q} -m {output.mapped:q} -l {output.length:q} 2> {log:q}"

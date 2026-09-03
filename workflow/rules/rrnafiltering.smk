@@ -8,7 +8,7 @@ rule rrnaannotation:
     threads: 1
     shell:
         """
-        awk -F'\\t' '$3 == "rRNA" || $3 == "tRNA"' {input.annotation} | awk -F'\\t' '{{print $1 FS $4-1 FS $5 FS "." FS "." FS $7}}' > {output.annotation}
+        awk -F'\\t' '$3 == "rRNA" || $3 == "tRNA"' {input.annotation:q} | awk -F'\\t' '{{print $1 FS $4-1 FS $5 FS "." FS "." FS $7}}' > {output.annotation:q}
         """
 
 rule rrnafilter2:
@@ -24,4 +24,4 @@ rule rrnafilter2:
         mem_mb=40000,
         runtime=120
     shell:
-        "bedtools intersect -v -a {input.mapuniq} -b {input.annotation} > {output.bam}"
+        "bedtools intersect -v -a {input.mapuniq:q} -b {input.annotation:q} > {output.bam:q}"

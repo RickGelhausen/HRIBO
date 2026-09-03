@@ -1,0 +1,46 @@
+# Complete local development and CI environment for HRIBO.
+#
+# The production workflow still installs rule-specific software from
+# workflow/envs. This environment intentionally contains only the Python/R
+# libraries and validators needed to collect and run the repository test suite,
+# lint source files, validate GFF3, construct Snakemake DAGs, and execute the
+# bounded mapping smoke test with isolated production rule environments.
+#
+#   micromamba create -f environment-dev.yaml
+#   micromamba activate hribo-dev
+name: hribo-dev
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - python =3.11
+  - snakemake =9.25.2
+  - snakemake-executor-plugin-slurm =2.8.0
+  # Snakemake currently requires the conda command (not only micromamba) to
+  # create the isolated rule environments used by executed workflow tests.
+  - conda =26.7.1
+
+  # Python runtime libraries imported by workflow/scripts and tests.
+  - biopython =1.88
+  - interlap =0.2.7
+  # NumPy 2.5 dropped Python 3.11, while GenomeTools 1.6.6 has no Python 3.12
+  # Conda build. The final Python-3.11-compatible NumPy line keeps strict GFF3
+  # validation and HRIBO's documented lower Python bound in the same test env.
+  - numpy =2.4.5
+  - openpyxl =3.1.5
+  - pandas =2.3.3
+  - plotly =6.9.0
+  - pysam =0.24.0
+  - pyyaml =6.0.3
+  - xlsxwriter =3.2.9
+
+  # Test and static-validation tools. GenomeTools makes the strict GFF3 tests
+  # mandatory; R is used only to parse scripts, so analysis packages remain in
+  # their rule-specific environments.
+  - genometools-genometools =1.6.6
+  - pytest =9.0.3
+  - r-base =4.6.1
+  - ruff =0.15.14
+  - shellcheck =0.11.0
+  - yamllint =1.38.0

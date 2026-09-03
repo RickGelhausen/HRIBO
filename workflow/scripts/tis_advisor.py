@@ -170,6 +170,7 @@ def orfbounder_config(recommendation):
     """A config block that can be pasted straight into an ORFBounder run."""
     if not recommendation.has_recommendation:
         return "# No usable initiation signal was found; no setup is suggested."
+    read_end = "5'" if recommendation.read_end == "fiveprime" else "3'"
     offsets = "\n".join(
         f"    {length}: {offset}" for length, offset in recommendation.offset_table()
     )
@@ -178,7 +179,7 @@ def orfbounder_config(recommendation):
         f"readLengths: [{', '.join(str(length) for length in recommendation.read_lengths)}]\n"
         f"mappingMethod: \"{recommendation.read_end}\"\n"
         "# Offsets are measured from the "
-        f"{"5'" if recommendation.read_end == 'fiveprime' else "3'"} end of the read.\n"
+        f"{read_end} end of the read.\n"
         "psiteOffsets:\n"
         f"{offsets}\n"
     )

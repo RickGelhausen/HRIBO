@@ -1,55 +1,71 @@
+def updated_annotation_predictions(_wildcards):
+    predictions = ["tracks/reparation_annotated.gff"]
+    if DEEPRIBO:
+        predictions.append("tracks/deepribo_merged_plus.gff")
+    return predictions
+
+
 rule mergeConditions:
     input:
-        reparation="tracks/{condition}.reparation.gff"
+        reparation="tracks/{condition}.reparation.gff",
+        script=str(SCRIPTS / "concatenate_gff.py")
     output:
         "tracks/{condition}.merged.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/concatenate_gff.py {input.reparation:q} -o {output:q}"
+        "python3 {input.script:q} {input.reparation:q} -o {output:q}"
 
 rule mergeAll:
     input:
-        mergedGff=expand("tracks/{condition}.merged.gff", condition=conditions)
+        mergedGff=expand("tracks/{condition}.merged.gff", condition=conditions),
+        script=str(SCRIPTS / "concatenate_gff.py")
     output:
         "tracks/all.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/concatenate_gff.py {input.mergedGff:q} -o {output:q}"
+        "python3 {input.script:q} {input.mergedGff:q} -o {output:q}"
 
 rule filterAll:
     input:
-        "tracks/all.gff"
+        gff="tracks/all.gff",
+        script=str(SCRIPTS / "merge_duplicates_reparation.py"),
+        script_deps=[str(SCRIPTS / "gff_utils.py")]
     output:
         "tracks/reparation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/merge_duplicates_reparation.py -i {input:q} -o {output:q}"
+        "python3 {input.script:q} -i {input.gff:q} -o {output:q}"
 
 rule reannotatedORFs:
     input:
         annotation=rules.checkAnnotation.output,
-        reparation="tracks/reparation.gff"
+        reparation="tracks/reparation.gff",
+        script=str(SCRIPTS / "reannotate_orfs.py"),
+        script_deps=[str(SCRIPTS / "gff_utils.py")]
     output:
         "tracks/reparation_annotated.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/reannotate_orfs.py -a {input.annotation:q} -c {input.reparation:q} -o {output:q}"
+        "python3 {input.script:q} -a {input.annotation:q} -c {input.reparation:q} -o {output:q}"
 
-rule uniteAnnotation:
+rule updatedAnnotation:
     input:
-        "tracks/totalAnnotation.gff"
+        annotation=rules.checkAnnotation.output,
+        predictions=updated_annotation_predictions,
+        script=str(SCRIPTS / "build_updated_annotation.py"),
+        script_deps=[str(SCRIPTS / "concatenate_gff.py")]
     output:
         "tracks/updated_annotation.gff"
     conda:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "{SCRIPTS}/annotation_unite.py -a {input} -o {output}"
+        "python3 {input.script:q} --annotation {input.annotation:q} --predictions {input.predictions:q} --output {output:q}"

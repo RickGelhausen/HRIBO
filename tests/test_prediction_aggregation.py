@@ -452,3 +452,25 @@ def test_prediction_rules_have_no_hidden_append_state_and_declare_plus_output():
     assert ".unsorted" not in merge_rule
     assert ">>" not in merge_rule
     assert "--plus-output {output.plus:q}" in deepribo_rule
+
+
+def test_deepribo_parse_artifacts_are_one_declared_predictor_input():
+    deepribo_rule = (REPO / "workflow" / "rules" / "deepribo.smk").read_text()
+
+    assert 'parser=str(SCRIPTS / "deepribo_data_parser.py")' in deepribo_rule
+    assert "python3 {input.parser:q}" in deepribo_rule
+    assert "DataParser.py {input.covS:q}" not in deepribo_rule
+    assert (
+        'parsed=temp(directory("deepribo/parsed/{condition}-{replicate}"))'
+        in deepribo_rule
+    )
+    assert deepribo_rule.count("parsed=rules.parseDeepRibo.output.parsed") == 2
+    assert "{output.parsed:q} -g {input.annotation:q}" in deepribo_rule
+    assert 'os.path.join(input.parsed, "data_list.csv")' in deepribo_rule
+    assert "--pred_data {params.prediction_data:q}" in deepribo_rule
+    assert "root=lambda wildcards, input: os.path.dirname(input.parsed)" in deepribo_rule
+    assert (
+        "prediction_data=lambda wildcards, input: os.path.basename(input.parsed)"
+        in deepribo_rule
+    )
+    assert 'data= "deepribo/{condition}-{replicate}/data_list.csv"' not in deepribo_rule

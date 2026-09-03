@@ -1,5 +1,7 @@
-# Environment for running HRIBO itself. The workflow's own tools are installed
-# per rule from workflow/envs, so only Snakemake and its plugins belong here.
+# Environment for running HRIBO itself. The workflow's scientific tools are
+# installed per rule from workflow/envs. This launcher environment also needs
+# pandas because the Snakefile reads the sample sheet while constructing the
+# DAG, and conda because Snakemake uses it to create those rule environments.
 #
 #   conda env create -f environment.yaml
 #   conda activate snakemake
@@ -7,10 +9,11 @@ name: snakemake
 channels:
   - conda-forge
   - bioconda
+  - nodefaults
 dependencies:
-  - python >=3.11
-  - snakemake >=9.0
+  - python =3.11
+  - snakemake =9.25.2
+  - pandas =2.3.3
+  - conda =26.7.1
   # Only needed to submit to a cluster; harmless otherwise.
-  - snakemake-executor-plugin-slurm
-  # Used by the test suite, not by the workflow.
-  - pytest
+  - snakemake-executor-plugin-slurm =2.8.0

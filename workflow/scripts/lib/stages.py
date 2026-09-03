@@ -19,7 +19,7 @@ from __future__ import annotations
 # roughly the order of the pipeline and is preserved when the stages are
 # resolved, so error messages and the startup banner read sensibly.
 STAGE_DESCRIPTIONS = {
-    "trimming": "adapter removal, plus FastQC of the raw and trimmed reads",
+    "trimming": "mapping-ready trimmed/assembled reads, plus raw and processed FastQC",
     "mapping": "the final alignments in maplink/ with their indices",
     "qc": "the MultiQC report over every quality control step",
     "tracks": "bigwig coverage tracks",
@@ -29,7 +29,7 @@ STAGE_DESCRIPTIONS = {
     "tis_advisor": "read length and P-site offset advice for a TIS caller",
     "correlation": "the Spearman correlation heatmap between libraries",
     "pca": "the PCA plot of the read counts",
-    "predictions": "annotation independent ORF predictions",
+    "predictions": "annotation-independent ORF predictions and a combined updated annotation",
     "differential_expression": "xtail, riborex and deltaTE contrast tables",
     "overview": "the combined overview spreadsheet",
 }

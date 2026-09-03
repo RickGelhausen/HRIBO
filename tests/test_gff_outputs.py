@@ -35,7 +35,6 @@ def command(name, inputs, output):
         "gtf2gff3": ["gtf2gff3.py", "-a", str(inputs / "annotation_gtf2.gtf")],
         "gtf2gff3_passthrough": ["gtf2gff3.py", "-a", annotation],
         "enriched": ["enrich_annotation.py", "-a", annotation],
-        "united": ["annotation_unite.py", "-a", str(inputs / "total_annotation.gff")],
         "reannotated": ["reannotate_orfs.py", "-a", annotation,
                         "-c", str(inputs / "reparation_tracks_typed.gff")],
         "reparation_merged": ["merge_duplicates_reparation.py",
@@ -57,7 +56,7 @@ def run(name, inputs, tmp_path):
     return output
 
 
-SCRIPT_NAMES = ["gtf2gff3", "gtf2gff3_passthrough", "enriched", "united",
+SCRIPT_NAMES = ["gtf2gff3", "gtf2gff3_passthrough", "enriched",
                 "reannotated", "reparation_merged", "deepribo_merged"]
 
 

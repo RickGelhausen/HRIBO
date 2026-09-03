@@ -3,7 +3,8 @@ rule riborex:
     input:
         ribo="diffex_input/riborex/{contrast}_ribo_readcount_table.tsv",
         rna="diffex_input/riborex/{contrast}_rna_readcount_table.tsv",
-        cv="diffex_input/riborex/{contrast}_condition_vector.csv"
+        cv="diffex_input/riborex/{contrast}_condition_vector.csv",
+        script=str(SCRIPTS / "riborex.R")
     output:
         table="riborex/{contrast}_deseq2.csv"
     conda:
@@ -11,14 +12,19 @@ rule riborex:
     threads: 1
     shell:
         """
-        {SCRIPTS}/riborex.R -r {input.ribo} -m {input.rna} -c {input.cv} -x {output.table};
+        Rscript {input.script:q} -r {input.ribo:q} -m {input.rna:q} -c {input.cv:q} -x {output.table:q}
         """
 
 rule riborexxlsx:
     input:
         annotation=rules.checkAnnotation.output,
         genome=rules.retrieveGenome.output,
-        riborex_out="riborex/{contrast}_deseq2.csv"
+        riborex_out="riborex/{contrast}_deseq2.csv",
+        script=str(SCRIPTS / "generate_excel_riborex.py"),
+        script_deps=[
+            str(SCRIPTS / "excel_utils.py"),
+            str(SCRIPTS / "gff_utils.py"),
+        ]
     output:
         xlsx_sorted="riborex/{contrast}_sorted.xlsx"
     conda:
@@ -29,12 +35,13 @@ rule riborexxlsx:
         log2fc_cutoff=config["differentialExpressionSettings"]["log2fcCutoff"]
     shell:
         """
-        python3 {SCRIPTS}/generate_excel_riborex.py -a {input.annotation} -g {input.genome} -i {input.riborex_out} -o {output.xlsx_sorted} --padj_cutoff {params.padj_cutoff} --log2fc_cutoff {params.log2fc_cutoff}
+        python3 {input.script:q} -a {input.annotation:q} -g {input.genome:q} -i {input.riborex_out:q} -o {output.xlsx_sorted:q} --padj_cutoff {params.padj_cutoff:q} --log2fc_cutoff {params.log2fc_cutoff:q}
         """
 
 rule poolriborex:
     input:
-        riborex=expand("riborex/{contr}_sorted.xlsx", contr=CONTRASTS)
+        riborex=expand("riborex/{contr}_sorted.xlsx", contr=CONTRASTS),
+        script=str(SCRIPTS / "merge_differential_expression.py")
     output:
         "riborex/riborex_all.csv"
     conda:
@@ -42,5 +49,5 @@ rule poolriborex:
     threads: 1
     shell:
         """
-        python3 {SCRIPTS}/merge_differential_expression.py {input.riborex} -o {output} -t riborex
+        python3 {input.script:q} {input.riborex:q} -o {output:q} -t riborex
         """

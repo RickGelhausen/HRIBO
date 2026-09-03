@@ -44,9 +44,6 @@ def parse_orfs(args):
 
     main_sheet = []
     for row in read_df.itertuples(index=False, name='Pandas'):
-        reference_name = getattr(row, "_0")
-        start = getattr(row, "_3")
-        stop = getattr(row, "_4")
         feature = getattr(row, "_2")
 
         read_list = [getattr(row, "_%s" %x) for x in range(prefix_columns,len(row))]

@@ -14,7 +14,7 @@ rule fastqcraw_single:
         mem_mb=40000,
         runtime=60
     shell:
-        "fastqc -o qc/1raw -t {threads} {input.fastq}; mv qc/1raw/{params.prefix}_fastqc.html {output.html}; mv qc/1raw/{params.prefix}_fastqc.zip {output.zip}"
+        "fastqc -o qc/1raw -t {threads} {input.fastq:q}; mv qc/1raw/{params.prefix:q}_fastqc.html {output.html:q}; mv qc/1raw/{params.prefix:q}_fastqc.zip {output.zip:q}"
 
 rule fastqctrimmed_single:
     input:
@@ -31,7 +31,7 @@ rule fastqctrimmed_single:
     params:
         prefix=lambda wildcards, input: (os.path.splitext(os.path.basename(input.reads))[0])
     shell:
-        "fastqc -o qc/2trimmed -t {threads} {input}; mv qc/2trimmed/{params.prefix}_fastqc.html {output.html}; mv qc/2trimmed/{params.prefix}_fastqc.zip {output.zip}"
+        "fastqc -o qc/2trimmed -t {threads} {input:q}; mv qc/2trimmed/{params.prefix:q}_fastqc.html {output.html:q}; mv qc/2trimmed/{params.prefix:q}_fastqc.zip {output.zip:q}"
 
 
 rule fastqcraw_paired:
@@ -54,8 +54,8 @@ rule fastqcraw_paired:
         runtime=60
     shell:
         """
-        fastqc -o qc/1raw -t {threads} {input.fastq1}; mv qc/1raw/{params.prefix1}_fastqc.html {output.html1}; mv qc/1raw/{params.prefix1}_fastqc.zip {output.zip1}
-        fastqc -o qc/1raw -t {threads} {input.fastq2}; mv qc/1raw/{params.prefix2}_fastqc.html {output.html2}; mv qc/1raw/{params.prefix2}_fastqc.zip {output.zip2}
+        fastqc -o qc/1raw -t {threads} {input.fastq1:q}; mv qc/1raw/{params.prefix1:q}_fastqc.html {output.html1:q}; mv qc/1raw/{params.prefix1:q}_fastqc.zip {output.zip1:q}
+        fastqc -o qc/1raw -t {threads} {input.fastq2:q}; mv qc/1raw/{params.prefix2:q}_fastqc.html {output.html2:q}; mv qc/1raw/{params.prefix2:q}_fastqc.zip {output.zip2:q}
         """
 
 rule fastqctrimmed_paired:
@@ -131,4 +131,4 @@ rule multiqc:
     conda:
         "../envs/multiqc.yaml"
     shell:
-        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir} qc/1raw qc/2trimmed qc/3mapped qc/4unique qc/5removedrRNA qc/all qc/trnainall qc/rrnainallaligned qc/rrnainuniquelyaligned qc/rrnainall 2> {log}"
+        "export LC_ALL=en_US.utf8; export LANG=en_US.utf8; multiqc -f -d --exclude picard --exclude gatk -z -o {params.dir:q} qc/1raw qc/2trimmed qc/3mapped qc/4unique qc/5removedrRNA qc/all qc/trnainall qc/rrnainallaligned qc/rrnainuniquelyaligned qc/rrnainall 2> {log:q}"

@@ -6,7 +6,8 @@ finding the longest non-overlapping interval.
 
 import pandas as pd
 import argparse
-import os, sys
+import os
+import sys
 import csv
 import collections
 

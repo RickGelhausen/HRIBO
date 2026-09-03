@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import csv
-import sys
 import argparse
 
 def main():

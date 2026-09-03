@@ -2,12 +2,24 @@ channels:
  - conda-forge
  - bioconda
 dependencies:
- # xtail 1.1.5 is the only release on bioconda, but it has builds for several R
- # versions. r40 is the newest of them, so this is as current as xtail gets.
- # r-optparse and r-plyr are left unpinned so that conda can pick builds
- # compatible with R 4.0.
- - r-base =4.0
- - xtail =1.1.5
+ # Bioconda only packages the R-4-incompatible xTail 1.1.5. Declare the
+ # official 1.2.0 source release's dependencies directly; the adjacent
+ # checksum-pinned post-deploy script installs that release once this modern
+ # environment has been created.
+ - r-base =4.4
+ - bioconductor-deseq2
+ - bioconductor-s4vectors
+ - bioconductor-biocgenerics
+ - bioconductor-biocstyle
+ - bioconductor-summarizedexperiment
+ - r-rcpp
+ - r-rcpparmadillo
+ - r-matrixstats
+ - r-locfit
+ - r-ggplot2
  - r-optparse
- - r-plyr
+ - cxx-compiler
+ - make
+ - curl
+ - coreutils
  - libgfortran-ng

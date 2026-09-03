@@ -20,8 +20,8 @@ $defs:
 
   adapter:
     type: string
-    pattern: "^$|^[ACGTUNRYSWKMBDHVacgtunryswkmbdhv]+(,[ACGTUNRYSWKMBDHVacgtunryswkmbdhv]+)*$"
-    description: empty, or a comma-separated list of nucleotide sequences
+    pattern: "^ *$|^ *[ACGTUNRYSWKMBDHVacgtunryswkmbdhv]+ *(, *[ACGTUNRYSWKMBDHVacgtunryswkmbdhv]+ *)*$"
+    description: empty, or a comma-separated list of nucleotide sequences with optional surrounding spaces
 
   stageName:
     type: string
@@ -145,6 +145,21 @@ properties:
         description: >
           Applied as > log2fcCutoff for upregulated and < -log2fcCutoff for
           downregulated features, so it is given as a positive number.
+      xtailBins:
+        type: integer
+        minimum: 1
+        default: 10000
+        description: >
+          Number of probability-density bins used by xTail. Larger values
+          improve p-value accuracy at the cost of runtime.
+      xtailMinMeanCount:
+        type: number
+        minimum: 1
+        default: 1
+        description: >
+          Minimum mean RNA and RPF count retained by xTail. The default keeps
+          the historical HRIBO/xTail 1.1.5 threshold rather than silently
+          adopting xTail 1.2.0's higher default of 10.
 
   predictionSettings:
     type: object

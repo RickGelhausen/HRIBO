@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import argparse
-import re
 import os
-import pandas as pd
 import pysam
 
 def count_mapped_reads(args):
@@ -21,7 +19,6 @@ def count_mapped_reads(args):
         total_length = {}
         for read in alignment_file.fetch():
             # get required attributes
-            flag = int(read.flag) # flag: 0-forward-strand 4-unmapped 16-reverse-strand
             reference_name = read.reference_name
 
             if not read.is_unmapped:

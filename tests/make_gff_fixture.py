@@ -121,23 +121,6 @@ def write_deepribo_tracks(path):
     Path(path).write_text("\n".join(lines) + "\n")
 
 
-def write_total_annotation(path):
-    """Predictions concatenated onto the annotation, the input annotation_unite reads."""
-    lines = []
-    for contig, feature, start, stop, strand, index in _features():
-        lines.append("\t".join([
-            contig, "RefSeq", feature, str(start), str(stop), ".", strand, "0",
-            f"ID=cds{index};locus_tag=b{index:04d};Name=gene{index};",
-        ]))
-        if feature == "CDS":
-            identifier = f"{contig}:{start}-{stop}:{strand}"
-            lines.append("\t".join([
-                contig, "reparation", "CDS", str(start), str(stop), "0.9", strand, "0",
-                f"ID={identifier};Condition=A;Replicate=1;Method=reparation;",
-            ]))
-    Path(path).write_text("\n".join(lines) + "\n")
-
-
 def build(directory):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
@@ -149,7 +132,6 @@ def build(directory):
     write_reparation_tracks(directory / "reparation_tracks.gff")
     write_reparation_tracks(directory / "reparation_tracks_typed.gff", orf_type="sORF")
     write_deepribo_tracks(directory / "deepribo_tracks.gff")
-    write_total_annotation(directory / "total_annotation.gff")
 
     return directory
 

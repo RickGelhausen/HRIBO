@@ -1,17 +1,14 @@
 rule contrastInput:
     output:
         "contrasts/{contrast}"
-    run:
-        if not os.path.exists("contrasts"):
-            os.makedirs("contrasts")
-        for f in CONTRASTS:
-            print(f)
-            open(f"contrasts/{f}", 'a').close()
+    shell:
+        "touch {output:q}"
 
 rule prepareRiborexInput:
     input:
         rawreads="readcounts/differential_expression_read_counts.csv",
-        contrastfile="contrasts/{contrast}"
+        contrastfile="contrasts/{contrast}",
+        script=str(SCRIPTS / "prepare_diffex_input.py")
     output:
         ribo="diffex_input/riborex/{contrast}_ribo_readcount_table.tsv",
         rna="diffex_input/riborex/{contrast}_rna_readcount_table.tsv",
@@ -21,14 +18,15 @@ rule prepareRiborexInput:
     threads: 1
     shell:
         """
-        python3 {SCRIPTS}/prepare_diffex_input.py -r {input.rawreads} -c {wildcards.contrast}  -t riborex -o diffex_input/riborex/
+        python3 {input.script:q} -r {input.rawreads:q} -c {wildcards.contrast:q} -t riborex -o diffex_input/riborex/
         """
 
 
 rule prepareXtailInput:
     input:
         rawreads="readcounts/differential_expression_read_counts.csv",
-        contrastfile="contrasts/{contrast}"
+        contrastfile="contrasts/{contrast}",
+        script=str(SCRIPTS / "prepare_diffex_input.py")
     output:
         ribo="diffex_input/xtail/{contrast}_ribo_readcount_table.tsv",
         rna="diffex_input/xtail/{contrast}_rna_readcount_table.tsv",
@@ -38,5 +36,5 @@ rule prepareXtailInput:
     threads: 1
     shell:
         """
-        python3 {SCRIPTS}/prepare_diffex_input.py -r {input.rawreads} -c {wildcards.contrast} -t xtail -o diffex_input/xtail/
+        python3 {input.script:q} -r {input.rawreads:q} -c {wildcards.contrast:q} -t xtail -o diffex_input/xtail/
         """

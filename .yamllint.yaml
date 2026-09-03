@@ -1,0 +1,14 @@
+extends: default
+
+rules:
+  document-start: disable
+  line-length: disable
+  comments:
+    min-spaces-from-content: 1
+  # Existing long-form config comments use visual alignment independent of the
+  # surrounding mapping indentation. Validate their syntax without rewriting
+  # user-facing documentation solely for a style rule.
+  comments-indentation: disable
+  truthy:
+    allowed-values: ["true", "false"]
+    check-keys: false

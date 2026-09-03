@@ -49,6 +49,14 @@ differentialExpressionSettings:
   # log2FC to be used to prefilter the result tables. Use positive values the cutoff is used as follows - upregulated: > log2fcCutoff, downregulated: < log2fcCutoff * -1)
   log2fcCutoff: 1.0
 
+  # Number of probability-density bins used by xTail. Larger values improve
+  # p-value accuracy at the cost of runtime (xTail's default is 10000).
+  xtailBins: 10000
+
+  # Minimum mean RNA and RPF count retained by xTail. Keep the historical
+  # HRIBO/xTail 1.1.5 threshold; xTail 1.2.0 otherwise raises this to 10.
+  xtailMinMeanCount: 1
+
 # ORF predictions
 #################
 
@@ -166,7 +174,7 @@ workflowSettings:
   # A single run can override this without editing the file:
   #   snakemake ... --config stages=mapping,tracks
   stages:
-    - trimming                 # adapter removal, FastQC of the raw and trimmed reads
+    - trimming                 # mapping-ready trimmed/assembled reads plus FastQC
     - mapping                  # the final alignments in maplink/ with their indices
     - qc                       # the MultiQC report over every quality control step
     - tracks                   # bigwig coverage tracks
@@ -176,7 +184,7 @@ workflowSettings:
     - tis_advisor              # read length and P-site offset advice for a TIS caller
     - correlation              # the Spearman correlation heatmap between libraries
     - pca                      # the PCA plot of the read counts
-    - predictions              # annotation independent ORF predictions
+    - predictions              # ORF predictions plus a combined updated annotation
     # - differential_expression  # xtail, riborex and deltaTE; needs RNA-seq libraries
                                  # and at least two conditions
     - overview                 # the combined overview spreadsheet

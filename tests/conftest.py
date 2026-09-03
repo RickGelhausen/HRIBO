@@ -1,6 +1,8 @@
 """Shared fixtures for the HRIBO test suite."""
 
 import random
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -11,6 +13,25 @@ sys.path.insert(0, str(SCRIPTS))
 
 
 CONTIGS = {"NC_000913.3": 6000, "pPlasmid1": 2000}
+
+
+@pytest.fixture(scope="session")
+def snakemake_command() -> list[str]:
+    """Locate the Snakemake CLI in an active or named development environment."""
+
+    executable = shutil.which("snakemake")
+    if executable:
+        return [executable]
+
+    conda = shutil.which("conda")
+    if conda:
+        command = [conda, "run", "-n", "snakemake", "snakemake"]
+        probe = subprocess.run(
+            [*command, "--version"], capture_output=True, text=True
+        )
+        if probe.returncode == 0:
+            return command
+    pytest.skip("Snakemake is unavailable for workflow integration tests")
 
 
 @pytest.fixture

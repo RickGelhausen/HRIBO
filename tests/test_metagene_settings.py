@@ -275,7 +275,53 @@ def test_tis_advisor_accepts_and_forwards_length_cutoff(monkeypatch):
 
 
 def test_metagene_rules_quote_settings_and_run_scripts_through_python():
-    assert RULES.count("python3 {params.script:q}") == 3
+    expected_code_inputs = {
+        "readLengthStatistics": (
+            "read_length_statistics.py",
+            ("alignment.py", "io.py", "theme.py"),
+        ),
+        "metageneProfiling": (
+            "metagene_profiling.py",
+            (
+                "alignment.py",
+                "annotation.py",
+                "io.py",
+                "metagene.py",
+                "misc.py",
+                "plotting.py",
+                "psite.py",
+                "theme.py",
+            ),
+        ),
+        "tisAdvisor": (
+            "tis_advisor.py",
+            (
+                "alignment.py",
+                "annotation.py",
+                "io.py",
+                "metagene.py",
+                "misc.py",
+                "plotting.py",
+                "psite.py",
+                "theme.py",
+            ),
+        ),
+    }
+    for rule_name, (script, dependencies) in expected_code_inputs.items():
+        match = re.search(
+            rf"rule {rule_name}:\n    input:\n(?P<input>.*?)\n    output:",
+            RULES,
+            re.DOTALL,
+        )
+        assert match is not None
+        input_block = match.group("input")
+        assert f'script=str(SCRIPTS / "{script}")' in input_block
+        assert 'str(SCRIPTS / "lib" / "__init__.py")' in input_block
+        for dependency in dependencies:
+            assert f'str(SCRIPTS / "lib" / "{dependency}")' in input_block
+
+    assert RULES.count("python3 {input.script:q}") == 3
+    assert "params.script" not in RULES
     assert RULES.count("> {log:q} 2>&1") == 3
     assert RULES.count("--length_cutoff") == 2
     assert "--filtering_methods" in RULES
