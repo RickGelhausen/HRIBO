@@ -28,7 +28,8 @@ jobs:
       - name: Create development environment
         uses: mamba-org/setup-micromamba@v3
         with:
-          environment-file: environment-dev.yaml
+          environment-file: environment-dev.linux-64.pin.txt
+          environment-name: hribo-dev
           cache-environment: true
           cache-downloads: true
           post-cleanup: all
@@ -37,12 +38,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .snakemake/conda
-          key: snakemake-conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('workflow/envs/*.yaml', 'workflow/envs/*.post-deploy.sh', 'environment-dev.yaml') }}
+          key: snakemake-conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environment*.yaml', 'environment*.linux-64.pin.txt', 'workflow/envs/*.yaml', 'workflow/envs/*.linux-64.pin.txt', 'workflow/envs/*.post-deploy.sh', 'workflow/conda-lock/virtual-packages.yml') }}
 
       - name: Verify test toolchain
         run: |
           python --version
           snakemake --version
+          conda-lock --version
           pytest --version
           ruff --version
           shellcheck --version
@@ -54,8 +56,9 @@ jobs:
         run: |
           yamllint -c .yamllint.yaml \
             environment.yaml environment-dev.yaml config \
-            workflow/envs workflow/schemas .github/workflows
+            workflow/conda-lock workflow/envs workflow/schemas .github/workflows
           python .github/scripts/check_config.py
+          python .github/scripts/check_conda_pins.py
 
       - name: Lint maintained Python scope
         run: ruff check .github/scripts tests workflow/scripts
@@ -78,4 +81,340 @@ jobs:
           mkdir -p .ci-results
           pytest -q --junitxml=.ci-results/pytest.xml
           python .github/scripts/assert_no_pytest_skips.py \
-            .ci-results/pytest.xml --expected-tests 418
+            .ci-results/pytest.xml --expected-tests 539
+
+  deltate-container-smoke:
+    name: DeltaTE production container smoke
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Create development environment
+        uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-file: environment-dev.linux-64.pin.txt
+          environment-name: hribo-dev
+          cache-environment: true
+          cache-downloads: true
+          post-cleanup: all
+
+      - name: Install checksum-verified Apptainer
+        env:
+          APPTAINER_DEB_SHA256: 82b0bdddf459087d202383360b8318d526ad6826c748a2f669913cc6aef9ee40
+          APPTAINER_DEB_URL: https://github.com/apptainer/apptainer/releases/download/v1.5.3/apptainer_1.5.3_amd64.deb
+        run: |
+          test "$(dpkg --print-architecture)" = amd64
+          package="${RUNNER_TEMP}/apptainer_1.5.3_amd64.deb"
+          curl --fail --location --retry 5 --show-error \
+            --output "$package" "$APPTAINER_DEB_URL"
+          printf '%s  %s\n' "$APPTAINER_DEB_SHA256" "$package" \
+            | sha256sum --check --strict
+          sudo apt-get update
+          sudo env DEBIAN_FRONTEND=noninteractive \
+            apt-get install --yes "$package" poppler-utils
+          test "$(apptainer version)" = 1.5.3
+
+      - name: Cache DeltaTE adapter environment
+        uses: actions/cache@v4
+        with:
+          path: .snakemake/ci-deltate-conda
+          key: deltate-conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environment-dev.linux-64.pin.txt', 'workflow/envs/excel.yaml', 'workflow/envs/excel.linux-64.pin.txt', 'workflow/conda-lock/virtual-packages.yml') }}
+
+      - name: Restore DeltaTE Apptainer image
+        id: restore-deltate-sif
+        uses: actions/cache/restore@v4
+        with:
+          path: .snakemake/ci-deltate-apptainer/1cee6985c43be9e4d154c994b509b2e8.simg
+          key: apptainer-sif-v1-${{ runner.os }}-${{ runner.arch }}-apptainer-1.5.3-f7611403ff14417b495ce1806ec88416dd5f6b7cfeb0a8ad4fa6300889265492
+
+      - name: Run DeltaTE container smoke
+        env:
+          APPTAINER_CACHEDIR: ${{ runner.temp }}/apptainer-cache
+          APPTAINER_DISABLE_CACHE: "true"
+          APPTAINER_TMPDIR: ${{ runner.temp }}/apptainer-tmp
+          XDG_CACHE_HOME: ${{ runner.temp }}/xdg-cache
+        run: |
+          timeout --signal=TERM --kill-after=30s 35m \
+            python .github/scripts/deltate_container_smoke.py \
+            --workdir "${RUNNER_TEMP}/hribo DeltaTE smoke" \
+            --conda-prefix "${GITHUB_WORKSPACE}/.snakemake/ci-deltate-conda" \
+            --apptainer-prefix "${GITHUB_WORKSPACE}/.snakemake/ci-deltate-apptainer"
+
+      - name: Record DeltaTE smoke diagnostics
+        if: always()
+        env:
+          SMOKE_WORKDIR: ${{ runner.temp }}/hribo DeltaTE smoke
+          SIF_PATH: ${{ github.workspace }}/.snakemake/ci-deltate-apptainer/1cee6985c43be9e4d154c994b509b2e8.simg
+        run: |
+          mkdir -p "${SMOKE_WORKDIR}/logs"
+          {
+            apptainer version
+            df -h "${RUNNER_TEMP}"
+            free -h
+            du -sh "${SMOKE_WORKDIR}"
+            if test -f "${SIF_PATH}"
+            then
+              stat --format='SIF bytes: %s' "${SIF_PATH}"
+            fi
+          } | tee "${SMOKE_WORKDIR}/logs/runtime-diagnostics.txt"
+          {
+            echo "### DeltaTE container smoke"
+            echo "- SIF cache hit: ${{ steps.restore-deltate-sif.outputs.cache-hit }}"
+            echo "- Coverage: production input adapters, patched engine, result tables, four-page report, and stable no-op rerun."
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Save DeltaTE Apptainer image
+        if: >-
+          success() &&
+          steps.restore-deltate-sif.outputs.cache-hit != 'true' &&
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/development' ||
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+        uses: actions/cache/save@v4
+        with:
+          path: .snakemake/ci-deltate-apptainer/1cee6985c43be9e4d154c994b509b2e8.simg
+          key: apptainer-sif-v1-${{ runner.os }}-${{ runner.arch }}-apptainer-1.5.3-f7611403ff14417b495ce1806ec88416dd5f6b7cfeb0a8ad4fa6300889265492
+
+      - name: Upload DeltaTE smoke logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deltate-container-smoke-logs
+          path: |
+            ${{ runner.temp }}/hribo DeltaTE smoke/logs
+            ${{ runner.temp }}/hribo DeltaTE smoke/.snakemake/log
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 7
+
+  reparation-container-smoke:
+    name: Reparation production container smoke
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Create development environment
+        uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-file: environment-dev.linux-64.pin.txt
+          environment-name: hribo-dev
+          cache-environment: true
+          cache-downloads: true
+          post-cleanup: all
+
+      - name: Install checksum-verified Apptainer
+        env:
+          APPTAINER_DEB_SHA256: 82b0bdddf459087d202383360b8318d526ad6826c748a2f669913cc6aef9ee40
+          APPTAINER_DEB_URL: https://github.com/apptainer/apptainer/releases/download/v1.5.3/apptainer_1.5.3_amd64.deb
+        run: |
+          test "$(dpkg --print-architecture)" = amd64
+          package="${RUNNER_TEMP}/apptainer_1.5.3_amd64.deb"
+          curl --fail --location --retry 5 --show-error \
+            --output "$package" "$APPTAINER_DEB_URL"
+          printf '%s  %s\n' "$APPTAINER_DEB_SHA256" "$package" \
+            | sha256sum --check --strict
+          sudo apt-get update
+          sudo env DEBIAN_FRONTEND=noninteractive \
+            apt-get install --yes "$package" poppler-utils
+          test "$(apptainer version)" = 1.5.3
+
+      - name: Cache Reparation adapter environment
+        uses: actions/cache@v4
+        with:
+          path: .snakemake/ci-reparation-conda
+          key: reparation-conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environment-dev.linux-64.pin.txt', 'workflow/envs/mergetools.yaml', 'workflow/envs/mergetools.linux-64.pin.txt', 'workflow/conda-lock/virtual-packages.yml') }}
+
+      - name: Restore Reparation Apptainer image
+        id: restore-reparation-sif
+        uses: actions/cache/restore@v4
+        with:
+          path: .snakemake/ci-reparation-apptainer/18db806f76e8a97f85ab18f80d0959f7.simg
+          key: apptainer-sif-v1-${{ runner.os }}-${{ runner.arch }}-apptainer-1.5.3-6852b3b69b532039a5d674115b9cbfd2953f6479cf187bcc769e2d899fcbc288
+
+      - name: Run Reparation container smoke
+        env:
+          APPTAINER_CACHEDIR: ${{ runner.temp }}/apptainer-cache
+          APPTAINER_DISABLE_CACHE: "true"
+          APPTAINER_TMPDIR: ${{ runner.temp }}/apptainer-tmp
+          XDG_CACHE_HOME: ${{ runner.temp }}/xdg-cache
+        run: |
+          timeout --signal=TERM --kill-after=30s 50m \
+            python .github/scripts/reparation_container_smoke.py \
+            --workdir "${RUNNER_TEMP}/hribo Reparation smoke" \
+            --conda-prefix "${GITHUB_WORKSPACE}/.snakemake/ci-reparation-conda" \
+            --apptainer-prefix "${GITHUB_WORKSPACE}/.snakemake/ci-reparation-apptainer"
+
+      - name: Record Reparation smoke diagnostics
+        if: always()
+        env:
+          SMOKE_WORKDIR: ${{ runner.temp }}/hribo Reparation smoke
+          SIF_PATH: ${{ github.workspace }}/.snakemake/ci-reparation-apptainer/18db806f76e8a97f85ab18f80d0959f7.simg
+        run: |
+          mkdir -p "${SMOKE_WORKDIR}/logs"
+          {
+            apptainer version
+            df -h "${RUNNER_TEMP}"
+            free -h
+            du -sh "${SMOKE_WORKDIR}"
+            if test -f "${SIF_PATH}"
+            then
+              stat --format='SIF bytes: %s' "${SIF_PATH}"
+            fi
+          } | tee "${SMOKE_WORKDIR}/logs/runtime-diagnostics.txt"
+          {
+            echo "### Reparation container smoke"
+            echo "- SIF cache hit: ${{ steps.restore-reparation-sif.outputs.cache-hit }}"
+            echo "- Coverage: production annotation adapter, transactional engine boundary, GFF3 conversion, complete artifact contract, and stable no-op rerun."
+            echo "- The purpose-built protein database deliberately excludes the live UniProt download rule."
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Save Reparation Apptainer image
+        if: >-
+          success() &&
+          steps.restore-reparation-sif.outputs.cache-hit != 'true' &&
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/development' ||
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+        uses: actions/cache/save@v4
+        with:
+          path: .snakemake/ci-reparation-apptainer/18db806f76e8a97f85ab18f80d0959f7.simg
+          key: apptainer-sif-v1-${{ runner.os }}-${{ runner.arch }}-apptainer-1.5.3-6852b3b69b532039a5d674115b9cbfd2953f6479cf187bcc769e2d899fcbc288
+
+      - name: Upload Reparation smoke logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reparation-container-smoke-logs
+          path: |
+            ${{ runner.temp }}/hribo Reparation smoke/logs
+            ${{ runner.temp }}/hribo Reparation smoke/.snakemake/log
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 7
+
+  deepribo-container-smoke:
+    name: DeepRibo production container smoke
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Create development environment
+        uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-file: environment-dev.linux-64.pin.txt
+          environment-name: hribo-dev
+          cache-environment: true
+          cache-downloads: true
+          post-cleanup: all
+
+      - name: Install checksum-verified Apptainer
+        env:
+          APPTAINER_DEB_SHA256: 82b0bdddf459087d202383360b8318d526ad6826c748a2f669913cc6aef9ee40
+          APPTAINER_DEB_URL: https://github.com/apptainer/apptainer/releases/download/v1.5.3/apptainer_1.5.3_amd64.deb
+        run: |
+          test "$(dpkg --print-architecture)" = amd64
+          package="${RUNNER_TEMP}/apptainer_1.5.3_amd64.deb"
+          curl --fail --location --retry 5 --show-error \
+            --output "$package" "$APPTAINER_DEB_URL"
+          printf '%s  %s\n' "$APPTAINER_DEB_SHA256" "$package" \
+            | sha256sum --check --strict
+          sudo apt-get update
+          sudo env DEBIAN_FRONTEND=noninteractive \
+            apt-get install --yes "$package" poppler-utils
+          test "$(apptainer version)" = 1.5.3
+
+      - name: Cache DeepRibo helper environments
+        uses: actions/cache@v4
+        with:
+          path: .snakemake/ci-deepribo-conda
+          key: deepribo-conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environment-dev.linux-64.pin.txt', 'workflow/envs/bedtools.yaml', 'workflow/envs/bedtools.linux-64.pin.txt', 'workflow/envs/download.yaml', 'workflow/envs/download.linux-64.pin.txt', 'workflow/envs/mergetools.yaml', 'workflow/envs/mergetools.linux-64.pin.txt', 'workflow/envs/pytools.yaml', 'workflow/envs/pytools.linux-64.pin.txt', 'workflow/conda-lock/virtual-packages.yml') }}
+
+      - name: Restore DeepRibo Apptainer image
+        id: restore-deepribo-sif
+        uses: actions/cache/restore@v4
+        with:
+          path: .snakemake/ci-deepribo-apptainer/740097e3e5dad598a6388f394618dcd7.simg
+          key: apptainer-sif-v1-${{ runner.os }}-${{ runner.arch }}-apptainer-1.5.3-4c4aef7d7d8eea790c6fcb360f69eda864888ea5effe24492ec88b8ef807a780
+
+      - name: Run DeepRibo container smoke
+        env:
+          APPTAINER_CACHEDIR: ${{ runner.temp }}/apptainer-cache
+          APPTAINER_DISABLE_CACHE: "true"
+          APPTAINER_TMPDIR: ${{ runner.temp }}/apptainer-tmp
+          XDG_CACHE_HOME: ${{ runner.temp }}/xdg-cache
+        run: |
+          timeout --signal=TERM --kill-after=30s 80m \
+            python .github/scripts/deepribo_container_smoke.py \
+            --workdir "${RUNNER_TEMP}/hribo DeepRibo smoke" \
+            --conda-prefix "${GITHUB_WORKSPACE}/.snakemake/ci-deepribo-conda" \
+            --apptainer-prefix "${GITHUB_WORKSPACE}/.snakemake/ci-deepribo-apptainer"
+
+      - name: Record DeepRibo smoke diagnostics
+        if: always()
+        env:
+          SMOKE_WORKDIR: ${{ runner.temp }}/hribo DeepRibo smoke
+          SIF_PATH: ${{ github.workspace }}/.snakemake/ci-deepribo-apptainer/740097e3e5dad598a6388f394618dcd7.simg
+        run: |
+          mkdir -p "${SMOKE_WORKDIR}/logs"
+          {
+            apptainer version
+            df -h "${RUNNER_TEMP}"
+            free -h
+            du -sh "${SMOKE_WORKDIR}"
+            if test -f "${SIF_PATH}"
+            then
+              stat --format='SIF bytes: %s' "${SIF_PATH}"
+            fi
+          } | tee "${SMOKE_WORKDIR}/logs/runtime-diagnostics.txt"
+          {
+            echo "### DeepRibo container smoke"
+            echo "- SIF cache hit: ${{ steps.restore-deepribo-sif.outputs.cache-hit }}"
+            echo "- Coverage: BAM-derived signals, parser, cutoff transaction, real pinned model inference, GFF3 conversion, and stable no-op rerun."
+            echo "- This bounded fixture validates integration contracts, not biological sensitivity or real-data equivalence."
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Save DeepRibo Apptainer image
+        if: >-
+          success() &&
+          steps.restore-deepribo-sif.outputs.cache-hit != 'true' &&
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/development' ||
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+        uses: actions/cache/save@v4
+        with:
+          path: .snakemake/ci-deepribo-apptainer/740097e3e5dad598a6388f394618dcd7.simg
+          key: apptainer-sif-v1-${{ runner.os }}-${{ runner.arch }}-apptainer-1.5.3-4c4aef7d7d8eea790c6fcb360f69eda864888ea5effe24492ec88b8ef807a780
+
+      - name: Upload DeepRibo smoke logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepribo-container-smoke-logs
+          path: |
+            ${{ runner.temp }}/hribo DeepRibo smoke/logs
+            ${{ runner.temp }}/hribo DeepRibo smoke/.snakemake/log
+            ${{ runner.temp }}/hribo DeepRibo smoke/smoke-command.log
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 7

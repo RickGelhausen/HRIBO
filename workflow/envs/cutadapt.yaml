@@ -1,6 +1,7 @@
 channels:
  - conda-forge
  - bioconda
+ - nodefaults
 dependencies:
  # Adapter trimming. A version change here can change which reads survive
  # trimming, and so every downstream count; see ChangeLog.

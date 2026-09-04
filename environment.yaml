@@ -3,7 +3,7 @@
 # pandas because the Snakefile reads the sample sheet while constructing the
 # DAG, and conda because Snakemake uses it to create those rule environments.
 #
-#   conda env create -f environment.yaml
+#   conda create -n snakemake -f environment.linux-64.pin.txt
 #   conda activate snakemake
 name: snakemake
 channels:

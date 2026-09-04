@@ -331,7 +331,8 @@ def test_reparation_bam_index_is_adjacent_and_alphanumeric_conditions_render():
     assert 'bam="maplink/RIBO-{condition}-{replicate}.bam"' in rule
     assert 'bamindex="maplink/RIBO-{condition}-{replicate}.bam.bai"' in rule
     assert "{condition," not in rule
-    assert "-wdir {params.prefix:q}" in rule
+    assert "--output-dir {params.prefix:q}" in rule
+    assert "--bai {input.bamindex:q}" in rule
 
 
 def test_shell_directives_quote_paths_and_track_project_scripts_as_inputs():

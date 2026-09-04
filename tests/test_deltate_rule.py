@@ -88,8 +88,8 @@ def execute(fixture, mode):
 
 
 def test_deltate_rule_delegates_to_the_checked_runner():
-    assert 'runner=str(SCRIPTS / "run_deltate.sh")' in RULE
-    assert 'patcher=str(SCRIPTS / "patch_deltate.py")' in RULE
+    assert 'runner=workflow.source_path("../scripts/run_deltate.sh")' in RULE
+    assert 'patcher=workflow.source_path("../scripts/patch_deltate.py")' in RULE
     assert "rule prepareDeltaTEScript:" in RULE
     assert "engine=rules.prepareDeltaTEScript.output.script" in RULE
     assert "{input.engine:q}" in RULE

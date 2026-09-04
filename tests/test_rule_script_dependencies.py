@@ -17,9 +17,17 @@ RULE_START = re.compile(r"^rule\s+(?P<name>[A-Za-z_]\w*):", re.MULTILINE)
 SCRIPT_PATH = re.compile(
     r"SCRIPTS(?P<parts>(?:\s*/\s*[\"'][^\"']+[\"'])+)"
 )
+SOURCE_SCRIPT_PATH = re.compile(
+    r"workflow\.source_path\(\s*[\"']\.\./scripts/"
+    r"(?P<relative>[^\"']+)[\"']\s*\)"
+)
 NAMED_SCRIPT_INPUT = re.compile(
     r"(?P<key>[A-Za-z_]\w*)\s*=\s*str\(\s*SCRIPTS"
     r"(?P<parts>(?:\s*/\s*[\"'][^\"']+[\"'])+)\s*\)"
+)
+NAMED_SOURCE_SCRIPT_INPUT = re.compile(
+    r"(?P<key>[A-Za-z_]\w*)\s*=\s*workflow\.source_path\("
+    r"\s*[\"']\.\./scripts/(?P<relative>[^\"']+)[\"']\s*\)"
 )
 QUOTED_EXECUTABLE_INPUT = re.compile(
     r"(?:python(?:3)?|Rscript|bash|sh)\s+"
@@ -63,7 +71,21 @@ def _script_path(parts: str) -> Path:
 
 
 def _script_paths(text: str) -> set[Path]:
-    return {_script_path(match.group("parts")) for match in SCRIPT_PATH.finditer(text)}
+    paths = {
+        _script_path(match.group("parts")) for match in SCRIPT_PATH.finditer(text)
+    }
+    paths.update(
+        SCRIPTS / match.group("relative")
+        for match in SOURCE_SCRIPT_PATH.finditer(text)
+    )
+    return paths
+
+
+def _source_script_paths(text: str) -> set[Path]:
+    return {
+        SCRIPTS / match.group("relative")
+        for match in SOURCE_SCRIPT_PATH.finditer(text)
+    }
 
 
 def _shared_script_inputs(text: str) -> dict[str, set[Path]]:
@@ -170,6 +192,7 @@ def test_rule_executables_and_local_import_closures_are_job_inputs():
                 continue
 
             declared_code = _script_paths(input_body)
+            source_cached_code = _source_script_paths(input_body)
             for constant, paths in shared_inputs.items():
                 if re.search(rf"\b{re.escape(constant)}\b", input_body):
                     declared_code.update(paths)
@@ -178,6 +201,12 @@ def test_rule_executables_and_local_import_closures_are_job_inputs():
                 match.group("key"): _script_path(match.group("parts"))
                 for match in NAMED_SCRIPT_INPUT.finditer(input_body)
             }
+            named_executables.update(
+                {
+                    match.group("key"): SCRIPTS / match.group("relative")
+                    for match in NAMED_SOURCE_SCRIPT_INPUT.finditer(input_body)
+                }
+            )
             inventory.extend(
                 (rule_path.name, rule_name, key, path)
                 for key, path in named_executables.items()
@@ -227,6 +256,18 @@ def test_rule_executables_and_local_import_closures_are_job_inputs():
                     f"{rule_path.name}:{rule_name}: aggregate input passes code "
                     "dependencies to the command"
                 )
+
+            if _directive_body(rule_body, "container"):
+                host_only_code = sorted(declared_code - source_cached_code)
+                if host_only_code:
+                    failures.append(
+                        f"{rule_path.name}:{rule_name}: container cannot portably "
+                        "access host-only code inputs "
+                        + ", ".join(
+                            str(path.relative_to(SCRIPTS))
+                            for path in host_only_code
+                        )
+                    )
 
             for basename in executable_basenames:
                 literal = re.compile(

@@ -6,7 +6,7 @@
 # lint source files, validate GFF3, construct Snakemake DAGs, and execute the
 # bounded mapping smoke test with isolated production rule environments.
 #
-#   micromamba create -f environment-dev.yaml
+#   micromamba create -n hribo-dev -f environment-dev.linux-64.pin.txt
 #   micromamba activate hribo-dev
 name: hribo-dev
 channels:
@@ -38,6 +38,7 @@ dependencies:
   # Test and static-validation tools. GenomeTools makes the strict GFF3 tests
   # mandatory; R is used only to parse scripts, so analysis packages remain in
   # their rule-specific environments.
+  - conda-lock =4.0.2
   - genometools-genometools =1.6.6
   - pytest =9.0.3
   - r-base =4.6.1

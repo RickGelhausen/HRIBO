@@ -258,7 +258,7 @@ def test_reparation_gff_extends_coordinates_on_both_strands(tmp_path):
         "Distance_from_aTIS",
     ]
     rows = [
-        ["chr1:100-199", "+", "100", "ATG", "10", "1.0", "0.9", "5", "-8", "0.9", "sORF", "aTIS", "0"],
+        ["assembly:chr1:100-199", "+", "100", "ATG", "10", "1.0", "0.9", "5", "-8", "0.9", "sORF", "aTIS", "0"],
         ["chr1:300-399", "-", "100", "ATG", "10", "1.0", "0.9", "5", "-8", "0.9", "sORF", "aTIS", "0"],
     ]
     predicted.write_text(
@@ -274,15 +274,18 @@ def test_reparation_gff_extends_coordinates_on_both_strands(tmp_path):
 
     coordinates = {}
     phases = []
+    sequence_ids = []
     for line in output.read_text().splitlines():
         fields = line.split("\t")
         if len(fields) < 9:
             continue
+        sequence_ids.append(fields[0])
         coordinates[fields[6]] = (int(fields[3]), int(fields[4]))
         phases.append(fields[7])
 
     assert coordinates["+"] == (100, 202), "plus strand stop codon not added"
     assert coordinates["-"] == (297, 399), "minus strand stop codon not added"
+    assert sequence_ids == ["assembly:chr1", "chr1"]
     assert phases == ["0", "0"]
     assert output.read_text().startswith("##gff-version 3\n")
     assert "orf_type=sORF" in output.read_text()
@@ -302,6 +305,8 @@ def test_reparation_gff_emits_no_syntax_warning():
 
 def test_deepribo_gff_stores_distance_outside_phase(tmp_path):
     predicted = tmp_path / "predictions.csv"
+    genome = tmp_path / "genome.fa"
+    genome.write_text(">chr1 description\n" + "A" * 30 + "\n")
     columns = [
         "filename",
         "filename_counts",
@@ -339,7 +344,7 @@ def test_deepribo_gff_stores_distance_outside_phase(tmp_path):
         "ATG",
         "20",
         "TAA",
-        "chr1:10-20",
+        "chr1:10-19",
         "M",
         "ATG",
         "0.9",
@@ -359,6 +364,8 @@ def test_deepribo_gff_stores_distance_outside_phase(tmp_path):
         "1",
         "-i",
         str(predicted),
+        "-g",
+        str(genome),
         "-o",
         str(output),
     )
@@ -371,3 +378,243 @@ def test_deepribo_gff_stores_distance_outside_phase(tmp_path):
     assert "condition=A" in fields[8]
     assert "Condition=" not in fields[8]
     assert_valid_gff3(output)
+
+
+DEEPRIBO_COLUMNS = [
+    "filename",
+    "filename_counts",
+    "label",
+    "in_gene",
+    "strand",
+    "coverage",
+    "coverage_elo",
+    "rpk",
+    "rpk_elo",
+    "start_site",
+    "start_codon",
+    "stop_site",
+    "stop_codon",
+    "locus",
+    "prot_seq",
+    "nuc_seq",
+    "pred",
+    "pred_rank",
+    "SS",
+    "dist",
+    "SS_pred_rank",
+]
+
+
+def write_deepribo_predictions(path, rows):
+    defaults = {
+        "filename": "sample_seq.pt",
+        "filename_counts": "sample_reads.pt",
+        "label": "True",
+        "in_gene": "False",
+        "strand": "+",
+        "coverage": "1",
+        "coverage_elo": "1",
+        "rpk": "1",
+        "rpk_elo": "1",
+        "start_site": "1",
+        "start_codon": "ATG",
+        "stop_site": "10",
+        "stop_codon": "TAA",
+        "locus": "chr1:1-10",
+        "prot_seq": "MAA*",
+        "nuc_seq": "ATGGCTGCTTAA",
+        "pred": "0.9",
+        "pred_rank": "1",
+        "SS": "True",
+        "dist": "-1",
+        "SS_pred_rank": "1",
+    }
+    rendered = []
+    for changes in rows:
+        values = {**defaults, **changes}
+        rendered.append(",".join(values[column] for column in DEEPRIBO_COLUMNS))
+    path.write_text(",".join(DEEPRIBO_COLUMNS) + "\n" + "\n".join(rendered) + "\n")
+
+
+def run_deepribo_gff(predictions, genome, output):
+    return run_script(
+        "create_deepribo_gff.py",
+        "-c",
+        "A",
+        "-r",
+        "1",
+        "-i",
+        str(predictions),
+        "-g",
+        str(genome),
+        "-o",
+        str(output),
+    )
+
+
+def test_deepribo_gff_accepts_exact_reference_edges_and_colon_ids(tmp_path):
+    genome = tmp_path / "genome.fa"
+    genome.write_text(">assembly:chr1 description\n" + "A" * 12 + "\n")
+    predictions = tmp_path / "predictions.csv"
+    write_deepribo_predictions(
+        predictions,
+        [
+            {"locus": "assembly:chr1:1-10", "strand": "+", "pred": "0.8"},
+            {
+                "locus": "assembly:chr1:3-12",
+                "strand": "-",
+                "pred": "0.9",
+                "pred_rank": "2",
+                "SS_pred_rank": "2",
+            },
+        ],
+    )
+    output = tmp_path / "predictions.gff"
+
+    result = run_deepribo_gff(predictions, genome, output)
+
+    assert result.returncode == 0, result.stderr
+    rows = [
+        line.split("\t")
+        for line in output.read_text().splitlines()
+        if line and not line.startswith("#")
+    ]
+    assert {(row[0], int(row[3]), int(row[4]), row[6]) for row in rows} == {
+        ("assembly:chr1", 1, 12, "+"),
+        ("assembly:chr1", 1, 12, "-"),
+    }
+    assert all("ID=assembly:chr1:1-12:" in row[8] for row in rows)
+    assert_valid_gff3(output)
+
+
+@pytest.mark.parametrize(
+    ("locus", "strand", "message"),
+    [
+        ("missing:1-10", "+", "unknown reference sequence 'missing'"),
+        ("assembly:chr1:1-11", "+", "outside the reference sequence length 12"),
+        ("assembly:chr1:2-12", "-", "outside the reference sequence length 12"),
+        ("assembly:chr1:1-10", ".", "invalid strand '.'"),
+    ],
+    ids=["missing-contig", "plus-upper-bound", "minus-lower-bound", "strand"],
+)
+def test_deepribo_gff_rejects_invalid_reference_coordinates_atomically(
+    tmp_path, locus, strand, message
+):
+    genome = tmp_path / "genome.fa"
+    genome.write_text(">assembly:chr1\n" + "A" * 12 + "\n")
+    predictions = tmp_path / "predictions.csv"
+    write_deepribo_predictions(predictions, [{"locus": locus, "strand": strand}])
+    output = tmp_path / "predictions.gff"
+    previous = "##gff-version 3\nchr1\told\tCDS\t1\t3\t.\t+\t0\tID=old;\n"
+    output.write_text(previous)
+
+    result = run_deepribo_gff(predictions, genome, output)
+
+    assert result.returncode != 0
+    assert message in result.stderr
+    assert output.read_text() == previous
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("pred", "nan", "non-finite pred"),
+        ("dist", "1.5", "non-integer dist"),
+        ("SS_pred_rank", "2.5", "non-integer SS_pred_rank"),
+        ("SS_pred_rank", "-1", "negative SS_pred_rank"),
+    ],
+)
+def test_deepribo_gff_rejects_malformed_numeric_predictions_atomically(
+    tmp_path, field, value, message
+):
+    genome = tmp_path / "genome.fa"
+    genome.write_text(">chr1\n" + "A" * 20 + "\n")
+    predictions = tmp_path / "predictions.csv"
+    write_deepribo_predictions(predictions, [{field: value}])
+    output = tmp_path / "predictions.gff"
+    previous = "##gff-version 3\nchr1\told\tCDS\t1\t3\t.\t+\t0\tID=old;\n"
+    output.write_text(previous)
+
+    result = run_deepribo_gff(predictions, genome, output)
+
+    assert result.returncode != 0
+    assert message in result.stderr
+    assert output.read_text() == previous
+
+
+@pytest.mark.parametrize(
+    ("locus", "strand", "message"),
+    [
+        ("chr1:1-1", "+", "has length 3; a complete CDS must be at least 6 nt"),
+        ("chr1:3-3", "-", "has length 3; a complete CDS must be at least 6 nt"),
+        ("chr1:1-6", "+", "has length 8, which is not divisible by 3"),
+        ("chr1:3-8", "-", "has length 8, which is not divisible by 3"),
+    ],
+    ids=[
+        "plus-too-short",
+        "minus-too-short",
+        "plus-out-of-frame",
+        "minus-out-of-frame",
+    ],
+)
+def test_deepribo_gff_rejects_invalid_completed_cds_lengths_atomically(
+    tmp_path, locus, strand, message
+):
+    genome = tmp_path / "genome.fa"
+    genome.write_text(">chr1\n" + "A" * 20 + "\n")
+    predictions = tmp_path / "predictions.csv"
+    write_deepribo_predictions(predictions, [{"locus": locus, "strand": strand}])
+    output = tmp_path / "predictions.gff"
+    previous = "##gff-version 3\nchr1\told\tCDS\t1\t3\t.\t+\t0\tID=old;\n"
+    output.write_text(previous)
+
+    result = run_deepribo_gff(predictions, genome, output)
+
+    assert result.returncode != 0
+    assert message in result.stderr
+    assert output.read_text() == previous
+
+
+def test_deepribo_gff_accepts_rank_zero_and_preserves_large_decimal_integer(
+    tmp_path,
+):
+    genome = tmp_path / "genome.fa"
+    genome.write_text(">chr1\n" + "A" * 20 + "\n")
+    predictions = tmp_path / "predictions.csv"
+    write_deepribo_predictions(
+        predictions,
+        [
+            {"dist": "9007199254740993.0", "SS_pred_rank": "0.0"},
+            {
+                "locus": "chr1:9-18",
+                "pred": "0.8",
+                "SS_pred_rank": "999999",
+            },
+        ],
+    )
+    output = tmp_path / "predictions.gff"
+
+    result = run_deepribo_gff(predictions, genome, output)
+
+    assert result.returncode == 0, result.stderr
+    rows = [
+        line for line in output.read_text().splitlines() if not line.startswith("#")
+    ]
+    assert len(rows) == 1
+    assert "deepribo_distance=9007199254740993" in rows[0]
+
+
+def test_deepribo_gff_rejects_non_iupac_reference_sequence_atomically(tmp_path):
+    genome = tmp_path / "genome.fa"
+    genome.write_text(">chr1\nAAAA10 bases\n")
+    predictions = tmp_path / "predictions.csv"
+    write_deepribo_predictions(predictions, [{}])
+    output = tmp_path / "predictions.gff"
+    previous = "##gff-version 3\nchr1\told\tCDS\t1\t3\t.\t+\t0\tID=old;\n"
+    output.write_text(previous)
+
+    result = run_deepribo_gff(predictions, genome, output)
+
+    assert result.returncode != 0
+    assert "non-IUPAC FASTA sequence data" in result.stderr
+    assert output.read_text() == previous

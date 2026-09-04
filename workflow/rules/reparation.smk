@@ -98,37 +98,45 @@ rule reparation:
         gtf=rules.prepareReparationAnnotation.output,
         db="uniprotDB/uniprot_sprot.fasta",
         bam="maplink/RIBO-{condition}-{replicate}.bam",
-        bamindex="maplink/RIBO-{condition}-{replicate}.bam.bai"
+        bamindex="maplink/RIBO-{condition}-{replicate}.bam.bai",
+        runner=workflow.source_path("../scripts/run_reparation.py")
     output:
-        orfs="reparation/{condition}-{replicate}/Predicted_ORFs.txt",
-        metagene="reparation/{condition}-{replicate}/metagene_profile.pdf",
-        roc="reparation/{condition}-{replicate}/PR_and_ROC_curve.pdf",
-        psite="reparation/{condition}-{replicate}/p_site_offset.png",
-        scurve="reparation/{condition}-{replicate}/S_Curve.pdf"
+        # Snakemake removes ordinary outputs before a job, while its rollback
+        # backup can itself survive a killed scheduler. Declare only a receipt;
+        # the checked runner owns the result tree and publishes the receipt
+        # only after that tree is durably committed.
+        receipt=ensure(
+            "reparation/{condition}-{replicate}/.complete", non_empty=True
+        )
     container:
         REPARATION_CONTAINER
     threads: 12
     resources:
         reparation_instances=1,
         mem_mb=30000,
+        disk_mb=30000,
         runtime=240
     params:
-        prefix=lambda wildcards, output: os.path.dirname(output.orfs),
-        temporary=lambda wildcards, output: os.path.join(
-            os.path.dirname(output.orfs), "tmp"
-        )
+        prefix=lambda wildcards, output: os.path.dirname(output.receipt)
     log:
         "logs/{condition}-{replicate}_reparation.log"
     shell:
         """
         exec > {log:q} 2>&1
-        mkdir -p {params.prefix:q} {params.temporary:q}
-        reparation.pl -bam {input.bam:q} -g {input.genome:q} -gtf {input.gtf:q} -db {input.db:q} -wdir {params.prefix:q} -threads {threads}
+        python3 {input.runner:q} \
+            --engine reparation.pl \
+            --genome {input.genome:q} \
+            --gtf {input.gtf:q} \
+            --database {input.db:q} \
+            --bam {input.bam:q} \
+            --bai {input.bamindex:q} \
+            --output-dir {params.prefix:q} \
+            --threads {threads:q}
         """
 
 rule reparationGFF:
     input:
-        orfs="reparation/{condition}-{replicate}/Predicted_ORFs.txt",
+        receipt=rules.reparation.output.receipt,
         script=str(SCRIPTS / "create_reparation_gff.py"),
         script_deps=[str(SCRIPTS / "gff_utils.py")]
     output:
@@ -136,8 +144,12 @@ rule reparationGFF:
     conda:
         "../envs/mergetools.yaml"
     threads: 1
+    params:
+        orfs=lambda wildcards, input: os.path.join(
+            os.path.dirname(input.receipt), "Predicted_ORFs.txt"
+        )
     shell:
-        "python3 {input.script:q} -c {wildcards.condition:q} -r {wildcards.replicate:q} -i {input.orfs:q} -o {output:q}"
+        "python3 {input.script:q} -c {wildcards.condition:q} -r {wildcards.replicate:q} -i {params.orfs:q} -o {output:q}"
 
 rule concatReparation:
     input:

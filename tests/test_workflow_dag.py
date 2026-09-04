@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gzip
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -139,6 +140,21 @@ def test_full_preset_constructs_every_analysis_branch(
     assert "tracks/updated_annotation.gff" in rendered
     assert "build_updated_annotation.py" in rendered
     assert "tracks/deepribo_merged_plus.gff" in rendered
+
+    # Container jobs run with the selected project directory as their home.
+    # Bundled helpers therefore have to resolve through Snakemake's source cache,
+    # which it bind-mounts independently of where the HRIBO checkout lives.
+    for helper in (
+        "patch_deltate.py",
+        "run_deltate.sh",
+        "run_reparation.py",
+        "patch_deepribo_scurve.py",
+        "deepribo_data_parser.py",
+        "run_parameter_estimation.py",
+        "parameter_estimation.R",
+    ):
+        assert f"{helper} (cached)" in rendered
+        assert re.search(rf"source-cache/\S*{re.escape(helper)}", rendered)
 
 
 @pytest.mark.parametrize(

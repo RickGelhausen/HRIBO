@@ -1,6 +1,7 @@
 channels:
  - conda-forge
  - bioconda
+ - nodefaults
 dependencies:
   # Bioconda's current rebuild targets the R 4.4 series. Its upstream 2.4.0
   # tag still reports internal package metadata version 2.3.4; the value below

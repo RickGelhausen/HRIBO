@@ -36,11 +36,11 @@ def sha256(contents: bytes) -> str:
 
 def test_deepribo_parameter_reader_accepts_one_finite_bounded_pair(tmp_path):
     parameters = tmp_path / "parameters.txt"
-    parameters.write_text(" 12.5 , 0.75 \n")
+    parameters.write_text(" 12.5 , 0.55 \n")
     reader = deepribo_parameter_reader()
 
     assert reader(parameters, 0) == "12.5"
-    assert reader(parameters, 1) == "0.75"
+    assert reader(parameters, 1) == "0.55"
 
 
 def test_deepribo_parameter_reader_rejects_malformed_cutoffs(tmp_path):
@@ -52,8 +52,10 @@ def test_deepribo_parameter_reader_rejects_malformed_cutoffs(tmp_path):
         "NA,0.5",
         "NaN,0.5",
         "Inf,0.5",
+        "0,0.5",
         "-1,0.5",
         "1,-0.1",
+        "1,0.61",
         "1,1.1",
         "1,0.5\n2,0.6",
     )

@@ -457,7 +457,10 @@ def test_prediction_rules_have_no_hidden_append_state_and_declare_plus_output():
 def test_deepribo_parse_artifacts_are_one_declared_predictor_input():
     deepribo_rule = (REPO / "workflow" / "rules" / "deepribo.smk").read_text()
 
-    assert 'parser=str(SCRIPTS / "deepribo_data_parser.py")' in deepribo_rule
+    assert (
+        'parser=workflow.source_path("../scripts/deepribo_data_parser.py")'
+        in deepribo_rule
+    )
     assert "python3 {input.parser:q}" in deepribo_rule
     assert "DataParser.py {input.covS:q}" not in deepribo_rule
     assert (

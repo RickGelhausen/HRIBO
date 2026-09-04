@@ -1,6 +1,7 @@
 channels:
  - conda-forge
  - bioconda
+ - nodefaults
 dependencies:
  - pandas =2.3.3
  - plotly =6.9.0

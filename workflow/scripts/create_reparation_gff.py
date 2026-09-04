@@ -27,7 +27,9 @@ def createNTuple(args, row):
     Distance_from_aTIS = str(getattr(row, "Distance_from_aTIS"))
 
     # new content
-    chromosome, rest = ORF_locus.split(":")
+    # Sequence identifiers may themselves contain colons.  REPARATION appends
+    # the numeric coordinate suffix after the final colon.
+    chromosome, rest = ORF_locus.rsplit(":", 1)
     start, stop = rest.split("-")
     # modify coordinates to include stop codon
     if strand == '+':

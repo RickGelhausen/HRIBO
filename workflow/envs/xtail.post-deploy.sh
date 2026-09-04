@@ -21,8 +21,8 @@ curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
     --output "$archive" "$source_url"
 printf '%s  %s\n' "$source_sha256" "$archive" | sha256sum --check -
 
-R CMD INSTALL --clean --no-multiarch --library="$target_library" "$archive"
-Rscript -e '
+R --vanilla CMD INSTALL --clean --no-multiarch --library="$target_library" "$archive"
+Rscript --vanilla -e '
 library_path <- normalizePath(commandArgs(trailingOnly = TRUE)[1], mustWork = TRUE)
 package_path <- normalizePath(find.package("xtail", lib.loc = library_path), mustWork = TRUE)
 stopifnot(

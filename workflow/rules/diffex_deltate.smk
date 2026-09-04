@@ -6,7 +6,7 @@ DELTATE_CONTAINER = (
 
 rule prepareDeltaTEScript:
     input:
-        patcher=str(SCRIPTS / "patch_deltate.py")
+        patcher=workflow.source_path("../scripts/patch_deltate.py")
     output:
         script="deltate/DTEG.R"
     container:
@@ -50,7 +50,7 @@ rule deltate:
         rna="deltate/{contrast}/rna_counts.txt",
         samples="deltate/{contrast}/samples_info.txt",
         replicates="deltate/{contrast}/has_replicates.txt",
-        runner=str(SCRIPTS / "run_deltate.sh"),
+        runner=workflow.source_path("../scripts/run_deltate.sh"),
         engine=rules.prepareDeltaTEScript.output.script
     output:
         fcribo=ensure("deltate/{contrast}/fold_changes/deltaRibo.txt", non_empty=True),

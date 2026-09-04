@@ -1,6 +1,7 @@
 channels:
  - conda-forge
  - bioconda
+ - nodefaults
 dependencies:
  # Bioconda only packages the R-4-incompatible xTail 1.1.5. Declare the
  # official 1.2.0 source release's dependencies directly; the adjacent

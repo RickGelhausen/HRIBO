@@ -1,6 +1,7 @@
 channels:
  - conda-forge
  - bioconda
+ - nodefaults
 dependencies:
  # featureCounts. A version change here can change read counts; see ChangeLog.
  - subread =2.1.1

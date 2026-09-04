@@ -1,5 +1,6 @@
 
 import math
+import os
 
 
 DEEPRIBO_CONTAINER = (
@@ -16,10 +17,22 @@ DEEPRIBO_MODEL_SHA256 = (
 DEEPRIBO_MODEL_SIZE = 8292882
 
 
-def read_parameters(filename, idx):
+def read_parameters(filename, idx, receipt=None):
     """Validate and return one cutoff written by parameter_estimation.R."""
-    with open(filename) as handle:
-        lines = handle.read().strip().splitlines()
+    try:
+        with open(filename) as handle:
+            lines = handle.read().strip().splitlines()
+    except FileNotFoundError as error:
+        if receipt is not None and not os.path.exists(receipt):
+            # Params functions are evaluated while constructing dry-run DAGs,
+            # before the receipt-producing job has run. Point the exception at
+            # that declared input so Snakemake represents the value as <TBD>.
+            raise FileNotFoundError(
+                2, "cutoff publication is not ready", receipt
+            ) from error
+        raise ValueError(
+            f"{filename} is missing despite its completed cutoff receipt"
+        ) from error
     fields = lines[0].split(",") if len(lines) == 1 else []
     if len(fields) != 2 or not all(field.strip() for field in fields):
         raise ValueError(
@@ -38,11 +51,14 @@ def read_parameters(filename, idx):
             f"{filename} contains a non-finite DeepRibo cutoff: {fields!r}. "
             "The S-curve estimation step probably failed."
         )
-    if values[0] < 0:
-        raise ValueError(f"{filename} has a negative min_RPKM cutoff: {fields[0]!r}")
-    if not 0 <= values[1] <= 1:
+    if values[0] <= 0:
         raise ValueError(
-            f"{filename} has a min_coverage cutoff outside [0, 1]: {fields[1]!r}"
+            f"{filename} has a non-positive min_RPKM cutoff: {fields[0]!r}"
+        )
+    if not 0 <= values[1] <= 0.60:
+        raise ValueError(
+            f"{filename} has a min_coverage cutoff outside [0, 0.60]: "
+            f"{fields[1]!r}"
         )
     return fields[idx].strip()
 
@@ -71,6 +87,25 @@ rule deepriboGetModel:
             --sha256 {params.sha256:q} \
             --size {params.size} \
             --output {output:q} > {log:q} 2>&1
+        """
+
+
+rule prepareDeepRiboSCurveScript:
+    input:
+        patcher=workflow.source_path("../scripts/patch_deepribo_scurve.py")
+    output:
+        script="deepribo/s_curve_cutoff_estimation.R"
+    container:
+        DEEPRIBO_CONTAINER
+    threads: 1
+    resources:
+        mem_mb=256,
+        runtime=1
+    shell:
+        """
+        python3 {input.patcher:q} \
+            /usr/local/bin/s_curve_cutoff_estimation.R \
+            {output.script:q}
         """
 
 
@@ -130,7 +165,7 @@ rule parseDeepRibo:
         asiteAS= "coverage_deepribo/{condition}-{replicate}_asite_rev.bedgraph",
         genome= rules.retrieveGenome.output,
         annotation= rules.checkAnnotation.output,
-        parser=str(SCRIPTS / "deepribo_data_parser.py")
+        parser=workflow.source_path("../scripts/deepribo_data_parser.py")
     output:
         # DataParser writes the CSV plus paired *_seq.pt and *_reads.pt tensors
         # below 0/ and 1/.  They are one indivisible predictor input, so expose
@@ -160,10 +195,19 @@ rule parseDeepRibo:
 
 rule parameterEstimation:
     input:
+        launcher=workflow.source_path("../scripts/run_parameter_estimation.py"),
         parsed=rules.parseDeepRibo.output.parsed,
-        script=str(SCRIPTS / "parameter_estimation.R")
+        wrapper_deps=[workflow.source_path("../scripts/parameter_estimation.R")],
+        engine=rules.prepareDeepRiboSCurveScript.output.script
     output:
-        "deepribo/{condition}-{replicate}/parameters.txt"
+        # Snakemake removes ordinary outputs before a job and its update()
+        # backup can itself survive a killed scheduler. Declare only a receipt;
+        # the checked runner owns the sibling pair and publishes the receipt
+        # only after both artifacts are durably committed.
+        receipt=ensure(
+            "deepribo/cutoffs/{condition}-{replicate}/.complete",
+            non_empty=True
+        )
     container:
         DEEPRIBO_CONTAINER
     threads: 1
@@ -172,19 +216,30 @@ rule parameterEstimation:
         runtime=60
     params:
         data=lambda wildcards, input: os.path.join(input.parsed, "data_list.csv"),
-        # A per-library prefix: the previous constant "figure" meant every
-        # library wrote its S-curve diagnostic to the same path.
-        dest=lambda wildcards, output: os.path.join(os.path.dirname(output[0]), "s_curve")
+        parameters=lambda wildcards, output: os.path.join(
+            os.path.dirname(output.receipt), "parameters.txt"
+        ),
+        plot=lambda wildcards, output: os.path.join(
+            os.path.dirname(output.receipt), "s_curve.png"
+        )
     log:
         "logs/{condition}-{replicate}_parameter_estimation.log"
     shell:
-        "Rscript {input.script:q} -f {params.data:q} -o {output:q} -d {params.dest:q} > {log:q} 2>&1"
+        """
+        python3 {input.launcher:q} {input.wrapper_deps:q} \
+            --file {params.data:q} \
+            --out {params.parameters:q} \
+            --plot {params.plot:q} \
+            --receipt {output.receipt:q} \
+            --engine {input.engine:q} \
+            > {log:q} 2>&1
+        """
 
 rule predictDeepRibo:
     input:
         model= "deepribo/DeepRibo_model_v1.pt",
         parsed=rules.parseDeepRibo.output.parsed,
-        parameter= "deepribo/{condition}-{replicate}/parameters.txt"
+        cutoff_receipt=rules.parameterEstimation.output.receipt
     output:
         "deepribo/{condition}-{replicate}/predictions.csv"
     container:
@@ -194,8 +249,16 @@ rule predictDeepRibo:
         mem_mb=20000,
         runtime=240
     params:
-        rpkm=lambda wildcards, input: read_parameters(input.parameter, 0),
-        cov=lambda wildcards, input: read_parameters(input.parameter, 1),
+        rpkm=lambda wildcards, input: read_parameters(
+            os.path.join(os.path.dirname(input.cutoff_receipt), "parameters.txt"),
+            0,
+            input.cutoff_receipt
+        ),
+        cov=lambda wildcards, input: read_parameters(
+            os.path.join(os.path.dirname(input.cutoff_receipt), "parameters.txt"),
+            1,
+            input.cutoff_receipt
+        ),
         # The pinned DeepRibo loader inserts separators between data_path and
         # pred_data itself, so pass the two path components without trailing `/`.
         prediction_data=lambda wildcards, input: os.path.basename(input.parsed),
@@ -210,6 +273,7 @@ rule predictDeepRibo:
 rule deepriboGFF:
     input:
         predictions="deepribo/{condition}-{replicate}/predictions.csv",
+        genome=rules.retrieveGenome.output,
         script=str(SCRIPTS / "create_deepribo_gff.py"),
         script_deps=[str(SCRIPTS / "gff_utils.py")]
     output:
@@ -218,7 +282,7 @@ rule deepriboGFF:
         "../envs/mergetools.yaml"
     threads: 1
     shell:
-        "python3 {input.script:q} -c {wildcards.condition:q} -r {wildcards.replicate:q} -i {input.predictions:q} -o {output:q}"
+        "python3 {input.script:q} -c {wildcards.condition:q} -r {wildcards.replicate:q} -i {input.predictions:q} -g {input.genome:q} -o {output:q}"
 
 rule concatDeepRibo:
     input:

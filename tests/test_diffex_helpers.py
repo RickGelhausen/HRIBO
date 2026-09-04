@@ -78,6 +78,8 @@ def test_xtail_resources_are_validated_and_forwarded():
         in XTAIL_DEPLOY
     )
     assert '--library="$target_library"' in XTAIL_DEPLOY
+    assert "R --vanilla CMD INSTALL" in XTAIL_DEPLOY
+    assert "Rscript --vanilla -e" in XTAIL_DEPLOY
     assert 'find.package("xtail", lib.loc = library_path)' in XTAIL_DEPLOY
     assert 'packageVersion("xtail", lib.loc = library_path)' in XTAIL_DEPLOY
 

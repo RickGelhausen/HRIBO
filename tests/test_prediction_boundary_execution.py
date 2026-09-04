@@ -314,9 +314,13 @@ def _build_project(tmp_path: Path) -> tuple[Path, Path]:
 
         bam = workdir / f"maplink/RIBO-A-{replicate}.bam"
         _write_bam(bam, bam_reads[replicate])
+        reparation_dir = workdir / f"reparation/A-{replicate}"
         _write_reparation_output(
-            workdir / f"reparation/A-{replicate}/Predicted_ORFs.txt",
+            reparation_dir / "Predicted_ORFs.txt",
             replicate,
+        )
+        (reparation_dir / ".complete").write_text(
+            "HRIBO REPARATION publication v1\n"
         )
         _write_deepribo_output(
             workdir / f"deepribo/A-{replicate}/predictions.csv",

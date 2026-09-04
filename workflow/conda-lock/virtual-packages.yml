@@ -1,0 +1,10 @@
+# Solve against a portable, non-CUDA x86-64 baseline instead of inheriting
+# virtual packages from whichever workstation regenerates the locks. Linux
+# 3.10 and glibc 2.17 match the oldest broadly used x86-64 HPC generation.
+subdirs:
+  linux-64:
+    packages:
+      __unix: "0"
+      __linux: "3.10"
+      __archspec: "1 x86_64"
+      __glibc: "2.17"
