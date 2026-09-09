@@ -1,0 +1,5 @@
+# Direct documentation dependencies.  Compile this file with Python 3.12;
+# the generated requirements.txt is the Read the Docs installation input.
+Sphinx==9.1.0
+sphinx-rtd-theme==3.1.0
+sphinxcontrib-bibtex==2.7.0

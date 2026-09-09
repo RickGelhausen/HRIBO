@@ -14,6 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 pytest.importorskip("Bio")
@@ -91,6 +92,25 @@ def run(name, inputs, tmp_path, overview_contrasts=("B-A",)):
 SCRIPT_NAMES = ["annotation", "reparation", "deepribo", "readtable",
                 "riborex", "xtail", "deltate", "overview"]
 
+POOLED_DIFFEX_COLUMNS = {
+    "riborex": [
+        "gene_id", "baseMean", "log2FC", "log2FC_SE", "stat", "pvalue",
+        "pvalue_adjusted", "contrast",
+    ],
+    "xtail": [
+        "gene_id", "mRNA_log2FC", "RPF_log2FC", "log2FC_TE_v1",
+        "pvalue_v1", "log2FC_TE_v2", "pvalue_v2", "log2FC_TE_final",
+        "pvalue_final", "pvalue_adjusted", "contrast",
+    ],
+    "deltate": [
+        "gene_id", "RIBO_baseMean", "RIBO_log2FC", "RIBO_log2FC_SE",
+        "RIBO_pvalue", "RIBO_pvalue_adjusted", "RNA_baseMean", "RNA_log2FC",
+        "RNA_log2FC_SE", "RNA_pvalue", "RNA_pvalue_adjusted", "TE_baseMean",
+        "TE_log2FC", "TE_log2FC_SE", "TE_stat", "TE_pvalue",
+        "TE_pvalue_adjusted", "contrast",
+    ],
+}
+
 
 @pytest.mark.parametrize("name", SCRIPT_NAMES)
 def test_output_matches_golden(name, inputs, tmp_path):
@@ -116,6 +136,42 @@ def test_output_is_not_empty(name, inputs, tmp_path):
     )
 
 
+@pytest.mark.parametrize("name", ["riborex", "xtail", "deltate"])
+def test_generated_diffex_workbook_can_be_pooled(name, inputs, tmp_path):
+    """The pooler must consume the exact standardized workbook schema."""
+    workbook = tmp_path / "B-A_sorted.xlsx"
+    generated = subprocess.run(
+        command(name, inputs, workbook),
+        capture_output=True,
+        text=True,
+        cwd=str(SCRIPTS),
+    )
+    assert generated.returncode == 0, generated.stderr
+
+    pooled = tmp_path / f"{name}_all.csv"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPTS / "merge_differential_expression.py"),
+            str(workbook),
+            "--output_csv",
+            str(pooled),
+            "--tool",
+            name,
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(SCRIPTS),
+    )
+    assert result.returncode == 0, result.stderr
+
+    actual = pd.read_csv(pooled)
+    source = excel_snapshot.read_workbook(workbook)["all"]
+    assert list(actual.columns) == POOLED_DIFFEX_COLUMNS[name]
+    assert actual["gene_id"].tolist() == source["Identifier"].tolist()
+    assert set(actual["contrast"]) == {f"{name}_B-A"}
+
+
 def test_translational_efficiency_columns_are_present(inputs, tmp_path):
     """The fixture pairs RIBO with RNA, so TE columns must be generated."""
     output = run("reparation", inputs, tmp_path)
@@ -124,6 +180,57 @@ def test_translational_efficiency_columns_are_present(inputs, tmp_path):
     assert any(column.endswith("_rpkm") for column in columns)
     # A replicate average is added only when a condition has more than one.
     assert any("avg" in column for column in columns)
+
+
+def test_annotation_rpkm_uses_each_two_contig_library_total(inputs, tmp_path):
+    output = run("annotation", inputs, tmp_path)
+    actual = excel_snapshot.read_workbook(output)["all"]
+    source = pd.read_csv(inputs / "total_annotation.gtf", sep="\t", header=None)
+    totals = pd.read_csv(
+        inputs / "total_mapped_reads.txt",
+        sep="\t",
+        header=None,
+        names=["library", "contig", "count"],
+    ).groupby("library")["count"].sum()
+
+    for contig in make_excel_fixture.CONTIGS:
+        source_row = source[source[0] == contig].iloc[0]
+        identifier = f"{source_row[0]}:{source_row[3]}-{source_row[4]}:{source_row[6]}"
+        actual_row = actual[actual["Identifier"] == identifier].iloc[0]
+        for index, wildcard in enumerate(make_excel_fixture.WILDCARDS):
+            expected = round(
+                source_row[9 + index]
+                * 1_000_000_000
+                / (totals[wildcard] * (source_row[4] - source_row[3] + 1)),
+                2,
+            )
+            assert actual_row[f"{wildcard}_rpkm"] == expected
+
+
+@pytest.mark.parametrize(
+    "name, reads_flag",
+    [("annotation", "-r"), ("readtable", "-r"), ("overview", "-a")],
+)
+def test_feature_tables_reject_a_summary_count_column_mismatch(
+    name, reads_flag, inputs, tmp_path
+):
+    malformed_reads = tmp_path / "missing-library-count.gff"
+    rows = []
+    for line in (inputs / "total_annotation.gtf").read_text().splitlines():
+        rows.append("\t".join(line.split("\t")[:-1]))
+    malformed_reads.write_text("\n".join(rows) + "\n")
+
+    output = tmp_path / f"{name}.xlsx"
+    argv = command(name, inputs, output)
+    reads_argument = argv.index(reads_flag) + 1
+    argv[reads_argument] = str(malformed_reads)
+    result = subprocess.run(
+        argv, capture_output=True, text=True, cwd=str(SCRIPTS)
+    )
+
+    assert result.returncode != 0
+    assert "found 7 library read-count columns" in result.stderr
+    assert "8 libraries are present in the mapped-read summary" in result.stderr
 
 
 def test_annotation_splits_features_into_sheets(inputs, tmp_path):
@@ -159,3 +266,29 @@ def test_overview_infers_pairwise_contrasts_when_none_are_passed(inputs, tmp_pat
 
     assert "xtail_A-B_TE_log2FC" in columns
     assert "xtail_B-A_TE_log2FC" not in columns
+
+
+def test_overview_writes_every_declared_side_output(inputs, tmp_path):
+    output = run("overview", inputs, tmp_path)
+
+    tsv = output.with_suffix(".tsv")
+    gff_outputs = (
+        output.with_suffix(".gff"),
+        output.with_name(f"{output.stem}_misc.gff"),
+    )
+    for expected in (tsv, *gff_outputs):
+        assert expected.is_file()
+        assert expected.stat().st_size > 0
+
+    pd.testing.assert_frame_equal(
+        pd.read_csv(tsv, sep="\t"),
+        excel_snapshot.read_workbook(output)["all"],
+        check_dtype=False,
+    )
+    for gff in gff_outputs:
+        lines = gff.read_text().splitlines()
+        assert lines[0] == "##gff-version 3"
+        for line in lines[1:]:
+            fields = line.split("\t")
+            assert len(fields) == 9
+            assert 1 <= int(fields[3]) <= int(fields[4])

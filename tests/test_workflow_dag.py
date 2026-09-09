@@ -140,6 +140,13 @@ def test_full_preset_constructs_every_analysis_branch(
     assert "tracks/updated_annotation.gff" in rendered
     assert "build_updated_annotation.py" in rendered
     assert "tracks/deepribo_merged_plus.gff" in rendered
+    for overview_output in (
+        "auxiliary/overview.xlsx",
+        "auxiliary/overview.tsv",
+        "auxiliary/overview.gff",
+        "auxiliary/overview_misc.gff",
+    ):
+        assert overview_output in rendered
 
     # Container jobs run with the selected project directory as their home.
     # Bundled helpers therefore have to resolve through Snakemake's source cache,

@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: >-
+  If you use HRIBO in published work, please cite the software and the HRIBO
+  article below.
+title: HRIBO
+type: software
+version: 2.0.0-dev
+license: GPL-3.0-only
+repository-code: https://github.com/RickGelhausen/HRIBO
+url: https://hribo.readthedocs.io/
+authors:
+  - family-names: Gelhausen
+    given-names: Rick
+preferred-citation:
+  type: article
+  title: "HRIBO: high-throughput analysis of bacterial ribosome profiling data"
+  authors:
+    - family-names: Gelhausen
+      given-names: Rick
+    - family-names: Svensson
+      given-names: Sarah L.
+    - family-names: Froschauer
+      given-names: Kathrin
+    - family-names: Heyl
+      given-names: Florian
+    - family-names: Hadjeras
+      given-names: Lydia
+    - family-names: Sharma
+      given-names: Cynthia M.
+    - family-names: Eggenhofer
+      given-names: Florian
+    - family-names: Backofen
+      given-names: Rolf
+  journal: Bioinformatics
+  year: 2021
+  volume: 37
+  issue: 14
+  start: 2061
+  end: 2063
+  doi: 10.1093/bioinformatics/btaa959

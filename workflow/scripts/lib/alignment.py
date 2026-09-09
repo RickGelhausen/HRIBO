@@ -32,13 +32,15 @@ class IntervalReader():
                 if read.get_tag("NH") > 1 or read.mapping_quality < 0 or read.is_unmapped:
                     continue
 
-                # start, stop = read.reference_start, read.reference_end-1
-                # read_length = stop - start + 1 # alignment length
-                #read_length = read.query_length # query read length
-
                 start = read.reference_start
+                # pysam reports an exclusive, CIGAR-aware reference end;
+                # InterLap intervals use inclusive endpoints.
+                stop = read.reference_end - 1
                 read_length = read.query_length # query read length
-                stop = start + read_length - 1
+                aligned_blocks = tuple(
+                    (block_start, block_stop - 1)
+                    for block_start, block_stop in read.get_blocks()
+                )
 
                 strand = "-" if read.is_reverse else "+"
 
@@ -47,7 +49,10 @@ class IntervalReader():
                 else:
                     self.no_accepted_reads_dict[chrom] = 1
 
-                interval = (start, stop, read_length)
+                # The outer bounds drive end/centre mapping and interval lookup.
+                # Blocks let global coverage exclude clipping, deletions, and
+                # reference skips rather than painting across CIGAR gaps.
+                interval = (start, stop, read_length, aligned_blocks)
 
                 if (chrom, strand) in tmp_dict:
                     tmp_dict[(chrom, strand)].append(interval)

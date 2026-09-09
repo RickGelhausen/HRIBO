@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 import lib.io as io
+import lib.annotation as annotation
 import lib.metagene as metagene
 import lib.misc as misc
 import metagene_profiling
@@ -24,6 +25,48 @@ class IntervalCollection:
             for interval in self.intervals
             if interval[0] <= stop and interval[1] >= start
         ]
+
+
+def test_metagene_cpm_uses_the_complete_two_contig_library_total():
+    coverage = {
+        "chrA": {30: np.array([1.0, 2.0])},
+        "chrB": {30: np.array([3.0, 4.0])},
+    }
+
+    normalized = misc.normalize_coverage(
+        coverage, {"chrA": 2, "chrB": 8}
+    )
+
+    assert normalized["chrA"][30] == pytest.approx([100_000, 200_000])
+    assert normalized["chrB"][30] == pytest.approx([300_000, 400_000])
+
+
+def test_shared_metagene_tis_rpkm_filter_uses_the_complete_library(tmp_path):
+    annotation_path = tmp_path / "annotation.gff"
+    annotation_path.write_text(
+        "chrA\ttest\tCDS\t101\t200\t.\t+\t0\tID=gene\n"
+    )
+    reads = {
+        ("chrA", "+"): IntervalCollection([(100, 120, 21)]),
+    }
+
+    starts, stops = annotation.retrieve_annotation_positions(
+        annotation_path,
+        reads,
+        {"chrA": 1, "chrB": 99},
+        {"chrA": 1000, "chrB": 1000},
+        ["rpkm"],
+        "fiveprime",
+        200_000,
+        0,
+        10,
+        20,
+    )
+
+    # 1 read / (100 nt * 100 library reads) = 100,000 RPKM.  The old
+    # contig-local denominator was 1 and incorrectly retained this feature.
+    assert starts == {"-": {}, "+": {}}
+    assert stops == {"-": {}, "+": {}}
 
 
 @pytest.mark.parametrize(
@@ -146,9 +189,13 @@ def test_empty_metagene_evidence_writes_valid_workbooks(tmp_path):
         sheet_name="no_evidence",
     )
 
-    assert len(figures) == 1
+    assert len(figures) == 2
     assert start["coordinates"].tolist() == [-2, -1, 0, 1, 2, 3]
     assert stop["coordinates"].tolist() == [-4, -3, -2, -1, 0, 1]
+    assert list(start.columns) == ["coordinates", "30", "sum"]
+    assert list(stop.columns) == ["coordinates", "30", "sum"]
+    assert start["30"].tolist() == [0, 0, 0, 0, 0, 0]
+    assert stop["30"].tolist() == [0, 0, 0, 0, 0, 0]
     assert start["sum"].tolist() == [0, 0, 0, 0, 0, 0]
     assert stop["sum"].tolist() == [0, 0, 0, 0, 0, 0]
 
@@ -256,3 +303,26 @@ def test_equalize_dictionary_keys_window_length():
     start, stop = misc.equalize_dictionary_keys(start, stop, 4, 6)
 
     assert len(stop["a"][31]) == 4 + 6
+
+
+def test_configured_read_lengths_exclude_observed_lengths_and_keep_exact_gaps():
+    start = {
+        "chr": {
+            25: np.ones(10, dtype=np.intp),
+            26: np.full(10, 2, dtype=np.intp),
+            99: np.full(10, 3, dtype=np.intp),
+        }
+    }
+    stop = {"chr": {25: np.ones(10, dtype=np.intp)}}
+
+    start = misc.retain_read_lengths(start, [25, 27])
+    stop = misc.retain_read_lengths(stop, [25, 27])
+    start, stop = misc.equalize_dictionary_keys(
+        start, stop, 4, 6, read_lengths=[25, 27]
+    )
+
+    assert set(start["chr"]) == {25, 27}
+    assert set(stop["chr"]) == {25, 27}
+    assert start["chr"][25].tolist() == [1] * 10
+    assert not start["chr"][27].any()
+    assert not stop["chr"][27].any()

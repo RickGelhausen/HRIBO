@@ -1,90 +1,91 @@
-<img src="HRIBO.png" width="620">
+<img src="HRIBO.png" width="620" alt="HRIBO">
 
-# High-throughput annotation by Ribo-seq
+# HRIBO
 
-[![GitHub](https://img.shields.io/github/tag/RickGelhausen/HRIBO.svg)](https://github.com/RickGelhausen/HRIBO)
-[![Snakemake](https://img.shields.io/badge/snakemake-≥9.0.0-brightgreen.svg)](https://snakemake.readthedocs.io)
-[![Documentation Status](https://readthedocs.org/projects/hribo/badge/?version=latest)](http://hribo.readthedocs.io/?badge=latest)
-[![PyPI Latest Release](https://img.shields.io/pypi/v/hribo.svg)](https://pypi.org/project/hribo/)
+[![CI](https://github.com/RickGelhausen/HRIBO/actions/workflows/ci.yaml/badge.svg?branch=development)](https://github.com/RickGelhausen/HRIBO/actions/workflows/ci.yaml)
+[![Documentation Status](https://readthedocs.org/projects/hribo/badge/?version=latest)](https://hribo.readthedocs.io/)
+[![Snakemake](https://img.shields.io/badge/Snakemake-9.25.2-brightgreen.svg)](https://snakemake.readthedocs.io/)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
-We present HRIBO (High-throughput annotation by Ribo-seq), a workflow to enable reproducible and high-throughput analysis of bacterial Ribo-seq data. The workflow performs all required pre-processing steps and quality control.  Importantly, HRIBO outputs annotation-independent ORF predictions based on two complementary prokaryotic-focused tools, and integrates them with additional computed features. This facilitates both the rapid discovery of ORFs and their prioritization for functional characterization.
+HRIBO (High-throughput annotation by Ribo-seq) is a reproducible Snakemake
+workflow for bacterial ribosome-profiling data. It provides read processing and
+quality control, strand-aware coverage tracks, metagene analysis and TIS advice,
+feature counting, Reparation and optional DeepRibo ORF prediction, matched
+RNA/Ribo differential analysis, and consolidated result tables.
 
-For a detailed description of this workflow, the installation, usage and examples, please refer to the [ReadTheDocs documentation](http://hribo.readthedocs.io/?badge=latest).
+> **Development status:** HRIBO 2.0 is under active validation. The automated
+> suite and the production container boundaries are exercised in CI. A
+> representative real-data comparison remains a release gate; see the
+> [validation protocol](docs/real-data-validation.rst).
 
-HRIBO installs all dependencies via [conda](https://conda.io/docs/install/quick.html). Once you have conda installed simply type:
+## Quick start
 
-         conda create -c bioconda -c conda-forge -n snakemake snakemake
+The tested path is Linux x86-64 with Conda or Micromamba and Apptainer. Keep the
+workflow checkout separate from each analysis directory.
 
-         source activate snakemake
+```console
+git clone --branch development --single-branch \
+  https://github.com/RickGelhausen/HRIBO.git /path/to/HRIBO
+micromamba create --name hribo --file /path/to/HRIBO/environment.linux-64.pin.txt
+micromamba activate hribo
 
-### <u>Basic usage</u>
+mkdir -p /path/to/my-analysis/config
+cp /path/to/HRIBO/config/config.yaml /path/to/my-analysis/config/
+cp /path/to/HRIBO/config/samples.tsv /path/to/my-analysis/config/
+cd /path/to/my-analysis
+```
 
-The retrieval of input files and running the workflow locally and on a server cluster via a queuing system is
-working as follows. Create a project directory and change into it:
+Edit the copied configuration and sample sheet, then add a matching genome
+FASTA, GFF3/GTF annotation, and gzip-compressed FASTQ files. Check the complete
+DAG before starting work:
 
-         mkdir project
-         cd project
+```console
+/path/to/HRIBO/run_hribo.sh \
+  --configfile "$PWD/config/config.yaml" \
+  --cores 20 \
+  --dry-run all
 
-Retrieve the HRIBO from GitHub:
+/path/to/HRIBO/run_hribo.sh \
+  --configfile "$PWD/config/config.yaml" \
+  --cores 20 \
+  --rerun-incomplete all
+```
 
-         git clone git@github.com:RickGelhausen/HRIBO.git
+Select deliverables with `workflowSettings.stages`, or override them for one
+run, for example `--config stages=mapping,tracks`. The `preprocessing` preset
+selects trimming, mapping, and QC; `full` selects every stage and therefore
+requires a valid matched differential-expression design.
 
-The workflow requires a genome sequence (fasta), an annotation file (gtf) and the sequencing results files (fastq).
-We recommend retrieving both the genome and the annotation files from [Ensembl Genomes](http://ensemblgenomes.org/).
-Copy the genome and the annotation file into the project folder, decompress them and name them genome.fa and annotation.gtf.
+For SLURM, activate the launcher environment, configure
+`workflow/profiles/slurm/config.yaml` for the site, and invoke
+`/path/to/HRIBO/slurm_run.sh` from the analysis directory.
 
-Create a folder fastq and copy your compressed fastq.gz files into the fastq folder.
+## Documentation
 
-Please copy the template of the sample sheet and the config file into a `config` folder
-in your project directory (not into the HRIBO clone, so that the clone stays clean):
+The maintained documentation source and build configuration now live in
+[`docs/`](docs/index.rst); the former `HRIBO_ReadTheDocs` repository is no
+longer a documentation source. Its complete history is preserved on the
+`archive/hribo-readthedocs` branch. The hosted site may continue to show the
+legacy version until a project administrator completes the
+[Read the Docs cutover](docs/development.rst#read-the-docs-cutover). Start with:
 
-         mkdir -p config
-         cp HRIBO/config/config.yaml config/
-         cp HRIBO/config/samples.tsv config/
+- [installation and execution](docs/getting-started.rst)
+- [sample-sheet format](docs/samples.rst)
+- [configuration](docs/configuration.rst)
+- [stage selection](docs/stages.rst)
+- [output catalogue](docs/outputs.rst)
+- [result-table reference](docs/table-reference.rst)
+- [historical public example data](docs/historical-example-data.rst)
+- [migration from HRIBO 1.8](docs/migration-1.8-to-2.0.rst)
 
-Customize the config.yaml with the used adapter sequence and optionally with the path to a precomputed
-STAR genome index. For correct removal of reads mapping to ribosomal genes please specify the taxonomic group of
-the used organism (Eukarya, Bacteria, Archea).
-Now edit the sample sheet corresponding to your project, using one line per sequencing result, stating the used
-method (RIBO for ribosome profiling, RNA for RNA-seq), the applied condition (e.g. A, B, CTRL, TREAT), the replicate (e.g. 1, 2,..) and the filename. Following is an example:
+## Citation
 
-|method|	condition |replicate|	fastqFile                 |
-|------|-----------|---------|--------------------------------|
-|RIBO  |	A         |        1|"fastq/FP-ctrl-1-2.fastq.gz"    |
-|RIBO  |	B         |        1|"fastq/FP-treat-1-2.fastq.gz"   |
-|RNA   |	A         |        1|"fastq/Total-ctrl-1-2.fastq.gz" |
-|RNA   |	B         |        1|"fastq/Total-treat-1-2.fastq.gz"|
+If HRIBO contributes to published work, please cite:
 
-Now you can start your workflow.
+> Gelhausen R, Svensson SL, Froschauer K, et al. HRIBO: high-throughput
+> analysis of bacterial ribosome profiling data. *Bioinformatics*.
+> 2021;37(14):2061–2063.
+> <https://doi.org/10.1093/bioinformatics/btaa959>
 
-Run Snakemake locally:
-
-         snakemake --sdm conda apptainer -s HRIBO/workflow/Snakefile --directory ${PWD} -j 20 --latency-wait 60
-
-
-Run Snakemake on the cluster:
-
-Snakemake 8 and later use executor plugins rather than `--cluster`. Edit the bundled
-SLURM profile (`HRIBO/workflow/profiles/slurm/config.yaml`) to set your account and
-partition, then run:
-
-       snakemake -s HRIBO/workflow/Snakefile --directory ${PWD} --profile HRIBO/workflow/profiles/slurm
-
-This requires `snakemake-executor-plugin-slurm` in your Snakemake environment.
-
-Run only parts of the workflow:
-
-The `workflowSettings.stages` list in `config/config.yaml` decides what a run produces.
-Comment out what you do not need; everything a remaining stage depends on is still built,
-so asking only for `predictions` still trims, filters and maps the reads on the way there.
-
-A single run can override the list without editing the config file:
-
-       snakemake ... --config stages=mapping             # stop at the BAM files
-       snakemake ... --config stages=mapping,tracks,qc   # BAM files, coverage tracks and QC
-       snakemake ... --config stages=preprocessing       # trimming, mapping and the QC report
-
-Once the workflow has finished you can request a automatically generated report.html file with the following command:
-
-       snakemake -s HRIBO/workflow/Snakefile --directory ${PWD} --report report.html
-
+Machine-readable metadata is provided in [`CITATION.cff`](CITATION.cff).
+HRIBO is licensed under GPL-3.0; see [`LICENSE`](LICENSE).

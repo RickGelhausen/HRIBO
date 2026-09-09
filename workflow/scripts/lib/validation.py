@@ -179,6 +179,7 @@ class FastaRecord:
     header: str
     length: int
     invalid_characters: set[str]
+    sequence_characters: set[str] = field(default_factory=set)
 
 
 def parse_fasta(path: Path) -> list[FastaRecord]:
@@ -192,10 +193,19 @@ def parse_fasta(path: Path) -> list[FastaRecord]:
     identifier = header = None
     length = 0
     invalid: set[str] = set()
+    sequence_characters: set[str] = set()
 
     def flush() -> None:
         if identifier is not None:
-            records.append(FastaRecord(identifier, header, length, set(invalid)))
+            records.append(
+                FastaRecord(
+                    identifier,
+                    header,
+                    length,
+                    set(invalid),
+                    set(sequence_characters),
+                )
+            )
 
     with open_maybe_gzip(path) as handle:
         for line in handle:
@@ -208,8 +218,10 @@ def parse_fasta(path: Path) -> list[FastaRecord]:
                 identifier = header.split()[0] if header.split() else ""
                 length = 0
                 invalid = set()
+                sequence_characters = set()
             elif identifier is not None:
                 length += len(line)
+                sequence_characters.update(line)
                 invalid.update(set(line) - IUPAC_NUCLEOTIDES)
         flush()
 

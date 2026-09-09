@@ -81,17 +81,23 @@ def _metagene_mapping(
                     coverage = chromosome_coverage[read_length]
 
                     if mapping_method == "global":
-                        intersection = misc.get_overlap_bounderies(
-                            (window_start, window_stop), read_interval
-                        )
-                        first_index = _transcript_index(
-                            intersection[0], window_start, window_stop, strand
-                        )
-                        last_index = _transcript_index(
-                            intersection[1], window_start, window_stop, strand
-                        )
-                        low_index, high_index = sorted((first_index, last_index))
-                        coverage[low_index : high_index + 1] += 1
+                        for block_start, block_stop in misc.get_aligned_blocks(
+                            read_interval
+                        ):
+                            if block_stop < window_start or block_start > window_stop:
+                                continue
+                            intersection = misc.get_overlap_bounderies(
+                                (window_start, window_stop),
+                                (block_start, block_stop),
+                            )
+                            first_index = _transcript_index(
+                                intersection[0], window_start, window_stop, strand
+                            )
+                            last_index = _transcript_index(
+                                intersection[1], window_start, window_stop, strand
+                            )
+                            low_index, high_index = sorted((first_index, last_index))
+                            coverage[low_index : high_index + 1] += 1
                         continue
 
                     point = _point_position(read_interval, strand, mapping_method)

@@ -339,6 +339,8 @@ rule createExcelSummaryDeepRibo:
         script_deps=[
             str(SCRIPTS / "excel_utils.py"),
             str(SCRIPTS / "gff_utils.py"),
+            str(SCRIPTS / "lib" / "__init__.py"),
+            str(SCRIPTS / "lib" / "misc.py"),
         ]
     output:
         "auxiliary/predictions_deepribo.xlsx"

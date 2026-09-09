@@ -14,18 +14,119 @@ import lib.psite as psite
 
 from lib.alignment import IntervalReader
 
-def create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length_list, meta_dir, mapping_method, normalization_method, positions_out_ORF, positions_in_ORF, color_list):
-    """
-    Create metagene profiles for all chromosomes for a given mapping and normalization method.
-    """
 
-    start_coverage_dict, stop_coverage_dict = misc.equalize_dictionary_keys(start_coverage_dict, stop_coverage_dict, positions_out_ORF, positions_in_ORF)
+def estimate_profile_offsets(df_start, coordinates, mapping_method):
+    """Estimate P-site markers only for profiles anchored on a physical read end."""
+    columns = df_start.columns[1:]
+    if mapping_method not in psite.READ_ENDS:
+        return {int(column): None for column in columns}
 
-    df_start_dict = misc.create_data_frame(start_coverage_dict, positions_out_ORF, positions_in_ORF, "start")
-    df_stop_dict = misc.create_data_frame(stop_coverage_dict, positions_out_ORF, positions_in_ORF, "stop")
+    read_end = psite.READ_ENDS[mapping_method]
+    offsets = {}
+    for column in columns:
+        estimate = psite.estimate_offset(
+            df_start[column].to_numpy(dtype=float),
+            coordinates,
+            read_end,
+        )
+        offsets[int(column)] = estimate.offset if estimate.is_significant else None
+    return offsets
+
+
+def prepare_metagene_dataframes(
+    start_coverage_dict,
+    stop_coverage_dict,
+    read_length_list,
+    positions_out_ORF,
+    positions_in_ORF,
+):
+    """Select configured lengths and construct balanced start/stop frames."""
+    start_coverage_dict = misc.retain_read_lengths(
+        start_coverage_dict, read_length_list
+    )
+    stop_coverage_dict = misc.retain_read_lengths(
+        stop_coverage_dict, read_length_list
+    )
+    start_coverage_dict, stop_coverage_dict = misc.equalize_dictionary_keys(
+        start_coverage_dict,
+        stop_coverage_dict,
+        positions_out_ORF,
+        positions_in_ORF,
+        read_lengths=read_length_list,
+    )
+
+    df_start_dict = misc.create_data_frame(
+        start_coverage_dict,
+        positions_out_ORF,
+        positions_in_ORF,
+        "start",
+        read_lengths=read_length_list,
+    )
+    df_stop_dict = misc.create_data_frame(
+        stop_coverage_dict,
+        positions_out_ORF,
+        positions_in_ORF,
+        "stop",
+        read_lengths=read_length_list,
+    )
+    return df_start_dict, df_stop_dict
+
+
+def estimate_coverage_offsets(
+    start_coverage_dict,
+    stop_coverage_dict,
+    read_length_list,
+    mapping_method,
+    positions_out_ORF,
+    positions_in_ORF,
+):
+    """Estimate markers from raw counts before presentation normalization."""
+    df_start_dict, _ = prepare_metagene_dataframes(
+        start_coverage_dict,
+        stop_coverage_dict,
+        read_length_list,
+        positions_out_ORF,
+        positions_in_ORF,
+    )
+    coordinates = np.arange(-positions_out_ORF, positions_in_ORF)
+    return {
+        chromosome: estimate_profile_offsets(
+            df_start, coordinates, mapping_method
+        )
+        for chromosome, df_start in df_start_dict.items()
+    }
+
+
+def create_metagene_figures(
+    start_coverage_dict,
+    stop_coverage_dict,
+    read_length_list,
+    meta_dir,
+    mapping_method,
+    normalization_method,
+    positions_out_ORF,
+    positions_in_ORF,
+    color_list,
+    offsets_by_chromosome=None,
+):
+    """Create figures for one mapping and presentation normalization."""
+    df_start_dict, df_stop_dict = prepare_metagene_dataframes(
+        start_coverage_dict,
+        stop_coverage_dict,
+        read_length_list,
+        positions_out_ORF,
+        positions_in_ORF,
+    )
 
     window_size = positions_out_ORF + positions_in_ORF
     coordinates = np.arange(-positions_out_ORF, positions_in_ORF)
+    if offsets_by_chromosome is None:
+        offsets_by_chromosome = {
+            chromosome: estimate_profile_offsets(
+                df_start, coordinates, mapping_method
+            )
+            for chromosome, df_start in df_start_dict.items()
+        }
 
     fig_list = []
     for chromosome in df_start_dict:
@@ -36,17 +137,20 @@ def create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length
             df_start = misc.window_normalize_df(df_start, window_size)
             df_stop = misc.window_normalize_df(df_stop, window_size)
 
-        # Estimate an offset per read length so the heatmap can mark it. Only
-        # offsets that pass the significance test are shown; a marker drawn from
-        # noise would be worse than no marker.
-        offsets = {}
-        for column in df_start.columns[1:]:
-            estimate = psite.estimate_offset(df_start[column].to_numpy(dtype=float), coordinates)
-            offsets[int(column)] = estimate.offset if estimate.is_significant else None
+        # Only read-end profiles have a biologically defined P-site geometry.
+        # Centered and global profiles still retain the keys expected by the
+        # plotting functions, but deliberately carry no offset markers.
+        offsets = offsets_by_chromosome[chromosome]
 
         subtitle = f"{mapping_method} mapping, {normalization_method} normalisation"
         fig = plotting.plot_metagene_heatmap(
-            df_start, df_stop, read_length_list, chromosome, subtitle, offsets
+            df_start,
+            df_stop,
+            read_length_list,
+            chromosome,
+            subtitle,
+            offsets,
+            read_end=mapping_method,
         )
         fig_list.append((chromosome, mapping_method, fig))
 
@@ -56,6 +160,7 @@ def create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length
             f"{chromosome}: start codon profiles",
             subtitle,
             offsets,
+            read_end=mapping_method,
             color_list=color_list,
         )
         if profiles is not None:
@@ -139,12 +244,22 @@ def main():
             start_coverage_dict = mg.metagene_mapping_start(start_codon_dict, read_intervals_dict, args.positions_out_ORF, args.positions_in_ORF, mapping_method)
             stop_coverage_dict = mg.metagene_mapping_stop(stop_codon_dict, read_intervals_dict, args.positions_out_ORF, args.positions_in_ORF, mapping_method)
 
+            offsets_by_chromosome = estimate_coverage_offsets(
+                start_coverage_dict,
+                stop_coverage_dict,
+                read_length_list,
+                mapping_method,
+                args.positions_out_ORF,
+                args.positions_in_ORF,
+            )
+
             if normalization_method == "cpm":
                 start_coverage_dict = misc.normalize_coverage(start_coverage_dict, total_counts_dict)
                 stop_coverage_dict = misc.normalize_coverage(stop_coverage_dict, total_counts_dict)
 
             tmp = create_metagene_figures(start_coverage_dict, stop_coverage_dict, read_length_list, meta_dir, mapping_method, normalization_method,\
-                                                                args.positions_out_ORF, args.positions_in_ORF, args.color_list)
+                                                                args.positions_out_ORF, args.positions_in_ORF, args.color_list,
+                                                                offsets_by_chromosome=offsets_by_chromosome)
             fig_list.extend(tmp)
 
         io.write_plots_to_file(fig_list, args.output_formats, args.include_plotly_js, alignment_file.stem, meta_dir)

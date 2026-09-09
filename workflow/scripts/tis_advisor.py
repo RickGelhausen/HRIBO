@@ -112,14 +112,19 @@ def build_profiles(args):
             args.positions_in_ORF, mapping_method
         )
         start_coverage, stop_coverage = misc.equalize_dictionary_keys(
-            start_coverage, stop_coverage, args.positions_out_ORF, args.positions_in_ORF
+            start_coverage,
+            stop_coverage,
+            args.positions_out_ORF,
+            args.positions_in_ORF,
+            read_lengths=read_lengths,
         )
 
         # Sum across sequences: the offset is a property of the protocol, not of
         # a particular replicon, and pooling gives the estimate more to work with.
+        window_length = args.positions_out_ORF + args.positions_in_ORF
         profiles_by_end[mapping_method] = (
-            _sum_over_chromosomes(start_coverage, read_lengths),
-            _sum_over_chromosomes(stop_coverage, read_lengths),
+            _sum_over_chromosomes(start_coverage, read_lengths, window_length),
+            _sum_over_chromosomes(stop_coverage, read_lengths, window_length),
         )
 
     # Abundance is a property of the library, so it is counted from the reads
@@ -133,15 +138,19 @@ def build_profiles(args):
     return profiles_by_end, totals
 
 
-def _sum_over_chromosomes(coverage, wanted_lengths):
-    pooled: dict[int, np.ndarray] = {}
+def _sum_over_chromosomes(coverage, wanted_lengths, window_length):
+    """Pool contigs while retaining every explicitly requested read length."""
+    pooled = {
+        int(read_length): np.zeros(window_length, dtype=float)
+        for read_length in wanted_lengths
+    }
     for chromosome in coverage:
         for read_length, values in coverage[chromosome].items():
-            if int(read_length) not in wanted_lengths:
+            key = int(read_length)
+            if key not in pooled:
                 continue
             values = np.asarray(values, dtype=float)
-            key = int(read_length)
-            pooled[key] = values.copy() if key not in pooled else pooled[key] + values
+            pooled[key] += values
     return pooled
 
 
@@ -379,7 +388,7 @@ def main():
         ("Read length against position", plotting.plot_metagene_heatmap(
             df_start, df_stop, read_lengths, "Metagene profile",
             f"{end_label} mapping, enrichment over each read length's own background",
-            significant_offsets)),
+            significant_offsets, read_end=chosen)),
         ("Library composition", plotting.plot_read_length_distribution(
             scores, "Read length distribution",
             f"Which read lengths carry a usable initiation signal under {end_label} mapping")),

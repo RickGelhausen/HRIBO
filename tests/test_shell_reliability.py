@@ -29,6 +29,33 @@ def run_stager(operation, source, destination):
     )
 
 
+def run_launcher(tmp_path, monkeypatch, launcher, *extra_arguments):
+    fake_bin = tmp_path / "fake bin"
+    fake_bin.mkdir()
+    arguments_file = tmp_path / "snakemake arguments"
+    fake_snakemake = fake_bin / "snakemake"
+    fake_snakemake.write_text(
+        "#!/bin/sh\n"
+        "for argument do\n"
+        "    printf '%s\\n' \"$argument\"\n"
+        "done > \"$HRIBO_TEST_ARGUMENTS\"\n"
+    )
+    fake_snakemake.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{fake_bin}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setenv("HRIBO_TEST_ARGUMENTS", str(arguments_file))
+
+    project = tmp_path / "project with spaces"
+    project.mkdir()
+    result = subprocess.run(
+        [str(REPO / launcher), *extra_arguments],
+        capture_output=True,
+        text=True,
+        cwd=project,
+    )
+    assert result.returncode == 0, result.stderr
+    return project, arguments_file.read_text().splitlines()
+
+
 def rule_body(path, name):
     text = path.read_text()
     start = text.index(f"rule {name}:")
@@ -52,6 +79,33 @@ def shell_blocks(text):
                     break
             body.append(candidate)
         yield "\n".join(body)
+
+
+def test_local_launcher_resolves_checkout_and_forwards_arguments(tmp_path, monkeypatch):
+    project, arguments = run_launcher(
+        tmp_path, monkeypatch, "run_hribo.sh", "--cores", "7"
+    )
+
+    assert arguments[arguments.index("-s") + 1] == str(REPO / "workflow/Snakefile")
+    assert arguments[arguments.index("--directory") + 1] == str(project)
+    assert arguments[-2:] == ["--cores", "7"]
+
+
+def test_slurm_launcher_is_site_neutral_and_resolves_profile(tmp_path, monkeypatch):
+    project, arguments = run_launcher(
+        tmp_path, monkeypatch, "slurm_run.sh", "--jobs", "12"
+    )
+
+    assert arguments[arguments.index("-s") + 1] == str(REPO / "workflow/Snakefile")
+    assert arguments[arguments.index("--directory") + 1] == str(project)
+    assert arguments[arguments.index("--profile") + 1] == str(
+        REPO / "workflow/profiles/slurm"
+    )
+    assert arguments[-2:] == ["--jobs", "12"]
+
+    launcher = (REPO / "slurm_run.sh").read_text()
+    assert "module load" not in launcher
+    assert "singularity" not in launcher.lower()
 
 
 def test_portable_link_survives_spaces_and_moving_the_result_tree(tmp_path):

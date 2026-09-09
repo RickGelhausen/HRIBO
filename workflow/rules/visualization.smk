@@ -158,6 +158,7 @@ rule coverageTracks:
         script_deps=[
             str(SCRIPTS / "lib" / "__init__.py"),
             str(SCRIPTS / "lib" / "library.py"),
+            str(SCRIPTS / "lib" / "misc.py"),
         ]
     output:
         # mapping.py writes all three normalisations and both strands in one pass.

@@ -17,13 +17,21 @@ def main():
     parser.add_argument("--clip_length", type=int, default=11, help='Clip length for centered mapping')
     args = parser.parse_args()
     #parse read count files
-    (genome_read_dict,genome_min_read_dict) = hribo.get_read_count_dict(args.no_of_aligned_reads_file_path, args.library_name)
-    #no_of_aligned_reads_file = open(args.no_of_aligned_reads_file_path,"r")
-    #no_of_aligned_reads = int(no_of_aligned_reads_file.read())
-    #min_no_of_aligned_reads_file = open(args.min_no_of_aligned_reads_file_path,"r")
-    #min_no_of_aligned_reads = int(min_no_of_aligned_reads_file.read())
-    #mappings = {}
-    hribo.compute_wig(args.bam_path, args.wiggle_file_path, args.library_name, genome_read_dict, genome_min_read_dict, True, args.mapping_style, args.clip_length, False, False)
+    library_total, minimum_library_total = hribo.get_read_count_dict(
+        args.no_of_aligned_reads_file_path, args.library_name
+    )
+    hribo.compute_wig(
+        args.bam_path,
+        args.wiggle_file_path,
+        args.library_name,
+        library_total,
+        minimum_library_total,
+        True,
+        args.mapping_style,
+        args.clip_length,
+        False,
+        False,
+    )
 
 
 if __name__ == '__main__':

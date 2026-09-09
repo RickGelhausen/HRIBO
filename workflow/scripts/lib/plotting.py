@@ -81,6 +81,7 @@ def plot_metagene_heatmap(
     title,
     subtitle="",
     offsets=None,
+    read_end="fiveprime",
 ):
     """Read length against position, for the start and stop codon windows.
 
@@ -141,12 +142,15 @@ def plot_metagene_heatmap(
 
     # Direct-label the estimated offset for each read length, so the number a TIS
     # caller needs is readable off the figure instead of inferred from the colour.
-    if offsets:
+    if offsets and read_end in {"fiveprime", "threeprime"}:
         marked = [(length, offset) for length, offset in sorted(offsets.items()) if offset is not None]
         if marked:
+            # The plotted coordinate is the mapped end's position relative to
+            # the start codon: upstream for 5' offsets, downstream for 3'.
+            direction = -1 if read_end == "fiveprime" else 1
             fig.add_trace(
                 go.Scatter(
-                    x=[-offset for _, offset in marked],
+                    x=[direction * offset for _, offset in marked],
                     y=[length for length, _ in marked],
                     mode="markers",
                     marker=dict(
@@ -181,6 +185,7 @@ def plot_read_length_profiles(
     title,
     subtitle="",
     offsets=None,
+    read_end="fiveprime",
     color_list=None,
     max_panels=12,
 ):
@@ -232,9 +237,14 @@ def plot_read_length_profiles(
         fig.add_vline(
             x=0, line=dict(color=theme.INK_SECONDARY, width=1, dash="dot"), row=index, col=1
         )
-        if offsets and offsets.get(length) is not None:
+        if (
+            offsets
+            and read_end in {"fiveprime", "threeprime"}
+            and offsets.get(length) is not None
+        ):
+            direction = -1 if read_end == "fiveprime" else 1
             fig.add_vline(
-                x=-offsets[length],
+                x=direction * offsets[length],
                 line=dict(color=theme.STATUS["serious"], width=1.5),
                 row=index,
                 col=1,

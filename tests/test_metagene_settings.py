@@ -7,11 +7,13 @@ import subprocess
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 import yaml
 
 from lib import annotation
 from lib import io as hribo_io
+from lib import plotting
 from lib import theme
 import metagene_profiling
 import tis_advisor
@@ -213,6 +215,38 @@ def test_metagene_color_list_controls_profile_traces(
     assert [trace.line.color for trace in profile.data] == expected
 
 
+def test_metagene_workbooks_contain_only_exact_configured_read_lengths(tmp_path):
+    coverage = {
+        "chr1": {
+            25: np.arange(1, 7, dtype=np.intp),
+            26: np.arange(2, 8, dtype=np.intp),
+            99: np.arange(3, 9, dtype=np.intp),
+        }
+    }
+
+    metagene_profiling.create_metagene_figures(
+        coverage,
+        {"chr1": {length: values.copy() for length, values in coverage["chr1"].items()}},
+        [25, 27],
+        tmp_path,
+        "fiveprime",
+        "raw",
+        2,
+        4,
+        [],
+    )
+
+    for anchor in ("start", "stop"):
+        frame = pd.read_excel(
+            tmp_path / f"fiveprime_readcounts_{anchor}.xlsx",
+            sheet_name="chr1",
+        )
+        assert list(frame.columns) == ["coordinates", "25", "27", "sum"]
+        assert frame["25"].tolist() == list(range(1, 7))
+        assert not frame["27"].any()
+        assert frame["sum"].tolist() == frame["25"].tolist()
+
+
 def test_tis_advisor_accepts_and_forwards_length_cutoff(monkeypatch):
     args = tis_advisor.parse_arguments(
         [
@@ -264,7 +298,7 @@ def test_tis_advisor_accepts_and_forwards_length_cutoff(monkeypatch):
     monkeypatch.setattr(
         tis_advisor.misc,
         "equalize_dictionary_keys",
-        lambda start, stop, *call_args: (start, stop),
+        lambda start, stop, *call_args, **call_kwargs: (start, stop),
     )
 
     tis_advisor.build_profiles(args)
@@ -272,6 +306,154 @@ def test_tis_advisor_accepts_and_forwards_length_cutoff(monkeypatch):
     assert args.length_cutoff == 175
     assert len(captured) == 1
     assert captured[0][-1] == 175
+
+
+def test_tis_advisor_retains_unobserved_configured_read_lengths():
+    coverage = {
+        "chrA": {25: np.arange(6, dtype=float), 99: np.ones(6)},
+        "chrB": {25: np.ones(6)},
+    }
+
+    pooled = tis_advisor._sum_over_chromosomes(coverage, [25, 27], 6)
+
+    assert set(pooled) == {25, 27}
+    assert pooled[25].tolist() == [1, 2, 3, 4, 5, 6]
+    assert pooled[27].tolist() == [0, 0, 0, 0, 0, 0]
+    assert not np.shares_memory(pooled[25], pooled[27])
+
+
+@pytest.mark.parametrize(
+    "mapping_method,expected_end",
+    [
+        ("fiveprime", "fiveprime"),
+        ("threeprime", "threeprime"),
+    ],
+)
+def test_metagene_offset_markers_use_the_selected_read_end(
+    monkeypatch, mapping_method, expected_end
+):
+    calls = []
+
+    class SignificantEstimate:
+        offset = 7
+        is_significant = True
+
+    def estimate(profile, coordinates, read_end):
+        calls.append((profile.tolist(), coordinates.tolist(), read_end.name))
+        return SignificantEstimate()
+
+    monkeypatch.setattr(metagene_profiling.psite, "estimate_offset", estimate)
+    frame = pd.DataFrame({"coordinates": [-1, 0], "28": [3, 4]})
+
+    offsets = metagene_profiling.estimate_profile_offsets(
+        frame, np.array([-1, 0]), mapping_method
+    )
+
+    assert offsets == {28: 7}
+    assert calls == [([3.0, 4.0], [-1, 0], expected_end)]
+
+
+@pytest.mark.parametrize("mapping_method", ["centered", "global"])
+def test_non_read_end_profiles_do_not_get_psite_markers(monkeypatch, mapping_method):
+    def unexpected_call(*args, **kwargs):
+        raise AssertionError("offset estimation must not run for interval profiles")
+
+    monkeypatch.setattr(
+        metagene_profiling.psite, "estimate_offset", unexpected_call
+    )
+    frame = pd.DataFrame(
+        {"coordinates": [-1, 0], "28": [3, 4], "29": [5, 6]}
+    )
+
+    offsets = metagene_profiling.estimate_profile_offsets(
+        frame, np.array([-1, 0]), mapping_method
+    )
+
+    assert offsets == {28: None, 29: None}
+
+
+@pytest.mark.parametrize(
+    "read_end,expected_coordinate",
+    [("fiveprime", -12), ("threeprime", 12)],
+)
+def test_offset_markers_are_drawn_on_the_correct_side_of_the_start(
+    read_end, expected_coordinate
+):
+    frame = pd.DataFrame(
+        {"coordinates": [-1, 0, 1], "28": [1.0, 2.0, 1.0]}
+    )
+
+    figure = plotting.plot_metagene_heatmap(
+        frame,
+        frame,
+        [28],
+        "profile",
+        offsets={28: 12},
+        read_end=read_end,
+    )
+
+    marker = next(
+        trace for trace in figure.data if trace.name == "estimated P-site offset"
+    )
+    assert list(marker.x) == [expected_coordinate]
+    assert list(marker.customdata) == [12]
+
+    profiles = plotting.plot_read_length_profiles(
+        frame,
+        [28],
+        "profiles",
+        offsets={28: 12},
+        read_end=read_end,
+    )
+    vertical_lines = [shape.x0 for shape in profiles.layout.shapes]
+    assert vertical_lines == [0, expected_coordinate]
+
+
+@pytest.mark.parametrize("normalization_method", ["raw", "window", "cpm"])
+def test_metagene_offset_markers_are_derived_from_raw_counts(
+    normalization_method, tmp_path
+):
+    positions_out = 100
+    positions_in = 150
+    coordinates = np.arange(-positions_out, positions_in)
+    raw_profile = np.full(coordinates.size, 10.0)
+    raw_profile[coordinates == -12] = 30.0
+    raw = {"chr1": {28: raw_profile}}
+    raw_offsets = metagene_profiling.estimate_coverage_offsets(
+        raw,
+        raw,
+        [28],
+        "fiveprime",
+        positions_out,
+        positions_in,
+    )
+    assert raw_offsets == {"chr1": {28: 12}}
+
+    presentation = {
+        "chr1": {
+            28: raw_profile.copy() * (0.01 if normalization_method == "cpm" else 1)
+        }
+    }
+    output = tmp_path / normalization_method
+    output.mkdir()
+    figures = metagene_profiling.create_metagene_figures(
+        presentation,
+        {"chr1": {28: presentation["chr1"][28].copy()}},
+        [28],
+        output,
+        "fiveprime",
+        normalization_method,
+        positions_out,
+        positions_in,
+        [],
+        offsets_by_chromosome=raw_offsets,
+    )
+
+    heatmap = figures[0][2]
+    marker = next(
+        trace for trace in heatmap.data if trace.name == "estimated P-site offset"
+    )
+    assert list(marker.x) == [-12]
 
 
 def test_metagene_rules_quote_settings_and_run_scripts_through_python():

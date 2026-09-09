@@ -11,15 +11,8 @@ def get_unique(in_list):
 
 def parse_orfs(args):
 
-    with open(args.total_mapped, "r") as f:
-        total = f.readlines()
-
-    wildcards = []
-    for line in total:
-        wildcard, reference_name, value = line.strip().split("\t")
-        wildcards.append(wildcard)
-
-    wildcards = get_unique(wildcards)
+    _, library_totals = eu.read_mapped_read_summary(args.total_mapped)
+    wildcards = get_unique(library_totals)
     #read bed file
     read_df = pd.read_csv(args.reads, comment="#", header=None, sep="\t")
 
@@ -27,7 +20,14 @@ def parse_orfs(args):
     main_sheet = []
 
     header = ["Orientation", "Class", "Feature_count"] + wildcards
-    prefix_columns = len(read_df.columns) - len(wildcards)
+    prefix_columns = 9
+    observed_read_columns = len(read_df.columns) - prefix_columns
+    if observed_read_columns != len(wildcards):
+        raise ValueError(
+            f"{args.reads}: found {observed_read_columns} library read-count "
+            f"columns, but {len(wildcards)} libraries are present in the "
+            "mapped-read summary"
+        )
     name_list = ["s%s" % str(x) for x in range(len(header))]
     nTuple = collections.namedtuple('Pandas', name_list)
 

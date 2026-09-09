@@ -35,6 +35,22 @@ def resolve_contrasts(conditions, requested_contrasts):
     )
 
 
+def calculate_library_rpkms(
+    read_list, library_totals, wildcards, feature_length, identifier
+):
+    """Calculate one RPKM per library using complete-library denominators."""
+    if len(read_list) != len(wildcards):
+        raise ValueError(
+            f"{identifier}: found {len(read_list)} library read-count columns, "
+            f"but {len(wildcards)} libraries are present in the mapped-read summary"
+        )
+
+    return [
+        eu.calculate_rpkm(library_totals[wildcard], value, feature_length)
+        for wildcard, value in zip(wildcards, read_list, strict=True)
+    ]
+
+
 def create_interlap(annotation_dict):
     """
     create an interlap object to easily check for overlap of prediction and annotation
@@ -128,12 +144,9 @@ def create_misc_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_di
         if chromosome in genome_dict:
             start_codon, stop_codon, nucleotide_seq, aa_seq, nt_window = eu.get_genome_information(genome_dict[chromosome], int(start)-1, int(stop)-1, strand)
 
-        rpkm_list = []
-        for idx, val in enumerate(read_list):
-            if (wildcards[idx], chromosome) not in total_mapped_dict:
-                rpkm_list.append(0)
-            else:
-                rpkm_list.append(eu.calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
+        rpkm_list = calculate_library_rpkms(
+            read_list, total_mapped_dict, wildcards, length, key
+        )
 
         te_list = eu.calculate_te(rpkm_list, wildcards, conditions)
 
@@ -307,12 +320,9 @@ def create_cds_excel_sheet(args, excel_sheet_dict, genome_dict, total_mapped_dic
         evidence_reparation.sort()
         evidence_deepribo.sort()
 
-        rpkm_list = []
-        for idx, val in enumerate(read_list):
-            if (wildcards[idx], chromosome) not in total_mapped_dict:
-                rpkm_list.append(0)
-            else:
-                rpkm_list.append(eu.calculate_rpkm(total_mapped_dict[(wildcards[idx], chromosome)], val, length))
+        rpkm_list = calculate_library_rpkms(
+            read_list, total_mapped_dict, wildcards, length, key
+        )
 
         te_list = eu.calculate_te(rpkm_list, wildcards, conditions)
 
@@ -381,17 +391,8 @@ def create_excel_sheets(args):
         genome_dict[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
 
     # get the total mapped reads for each bam file
-    total_mapped_dict = {}
-    with open(args.total_mapped, "r") as f:
-        total = f.readlines()
-
-    wildcards = []
-    for line in total:
-        wildcard, reference_name, value = line.strip().split("\t")
-        total_mapped_dict[(wildcard, reference_name)] = int(value)
-        wildcards.append(wildcard)
-
-    wildcards = eu.get_unique(wildcards)
+    _, total_mapped_dict = eu.read_mapped_read_summary(args.total_mapped)
+    wildcards = eu.get_unique(total_mapped_dict)
 
     te_header = eu.get_te_header(wildcards)
 

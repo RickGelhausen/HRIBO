@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 .snakemake/
+/docs/_build/
 
 # Local audit/remediation working notes; intentionally not published.
 /PROJECT_AUDIT.md

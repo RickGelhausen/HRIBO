@@ -50,6 +50,35 @@ def validate_sample_sheet(samples):
     """Validate the sample sheet against the JSON schema, plus cross-row checks."""
     from snakemake.utils import validate as schema_validate
 
+    # Snakemake removes pandas NULL values before validating each row.
+    # Consequently, a nullable field alone cannot distinguish an absent header
+    # from an intentionally empty single-end cell. Check both path headers
+    # before normalization so a malformed sheet cannot be concealed.
+    for column in ("fastqFile", "fastqFile2"):
+        if column not in samples.columns:
+            guidance = (
+                " Keep the column and leave its cells empty for single-end "
+                "libraries."
+                if column == "fastqFile2"
+                else ""
+            )
+            raise ValueError(
+                f"Sample sheet validation: missing required column {column!r}."
+                f"{guidance}"
+            )
+
+    # Preserve the required headers while representing pandas' several NULL
+    # spellings as the empty string understood by all downstream layout checks.
+    # Strip only surrounding whitespace: spaces inside a path remain valid, but
+    # preflight and DAG construction must see exactly the same pathname.
+    for column in ("fastqFile", "fastqFile2"):
+        samples[column] = samples[column].astype("object").where(
+            samples[column].notna(), ""
+        )
+        samples[column] = samples[column].map(
+            lambda value: value.strip() if isinstance(value, str) else value
+        )
+
     schema_validate(samples, str(SCHEMA_DIR / "samples.schema.yaml"))
 
     report = checks.check_sample_sheet(samples)
@@ -88,6 +117,16 @@ def validate_inputs(config, samples, verbose: bool = True) -> ValidationReport:
     if needs_genome:
         genome_report, genome_records = checks.check_genome(genome_path)
         report.extend(genome_report)
+
+    prediction_settings = config.get("predictionSettings", {})
+    deepribo_setting = prediction_settings.get("deepribo", "")
+    runs_deepribo = (
+        isinstance(deepribo_setting, str)
+        and deepribo_setting.lower() == "on"
+        and bool({"predictions", "overview"}.intersection(stages))
+    )
+    if runs_deepribo and genome_records:
+        report.extend(checks.check_deepribo_genome(genome_records))
 
     gff_records = []
     if needs_annotation:

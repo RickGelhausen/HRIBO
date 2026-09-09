@@ -14,6 +14,8 @@ def getGFFtype(filename):
 EXCEL_SCRIPT_DEPS = [
     str(SCRIPTS / "excel_utils.py"),
     str(SCRIPTS / "gff_utils.py"),
+    str(SCRIPTS / "lib" / "__init__.py"),
+    str(SCRIPTS / "lib" / "misc.py"),
 ]
 
 
@@ -134,7 +136,10 @@ rule createOverviewTable:
         script=str(SCRIPTS / "generate_excel_overview.py"),
         script_deps=EXCEL_SCRIPT_DEPS
     output:
-        "auxiliary/overview.xlsx"
+        xlsx="auxiliary/overview.xlsx",
+        tsv="auxiliary/overview.tsv",
+        gff="auxiliary/overview.gff",
+        misc_gff="auxiliary/overview_misc.gff"
     conda:
         "../envs/excel.yaml"
     threads: 1
@@ -152,5 +157,5 @@ rule createOverviewTable:
             -g {input.genome:q} \
             -t {input.totalreads:q} \
             {params.optional:q} \
-            -o {output:q} 2> {log:q}
+            -o {output.xlsx:q} 2> {log:q}
         """

@@ -7,6 +7,7 @@ required:
   - condition
   - replicate
   - fastqFile
+  - fastqFile2
 
 properties:
   method:
@@ -27,15 +28,19 @@ properties:
 
   replicate:
     type: string
-    pattern: "^[0-9]+$"
-    description: Replicate number, starting at 1.
+    pattern: "^[1-9][0-9]*$"
+    description: >
+      Positive replicate number written without a sign or leading zero,
+      starting at 1.
 
   fastqFile:
     type: string
     minLength: 1
+    pattern: '\S'
     description: Path to the gzipped fastq file, relative to the working directory.
 
   fastqFile2:
+    type: [string, "null"]
     description: >
       Path to the second read file for paired-end libraries. Leave empty for
       single-end libraries.

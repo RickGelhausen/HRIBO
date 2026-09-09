@@ -1,4 +1,46 @@
-### version 2.0.0-dev [Rick Gelhausen](mailto:gelhausr@informatik.uni-freiburg.de)
+# Changelog
+
+## Unreleased — 2.0.0-dev
+
+HRIBO 2.0 is a workflow-only development release. It modernizes the Snakemake
+layout and environments, adds stage-based execution and strict preflight
+validation, repairs scientific and failure-signalling defects, and brings the
+maintained documentation into this repository. A representative biological
+dataset comparison is still required before the release is declared complete.
+
+Notable changes since 1.8.1 include:
+
+- migrated to the standard `workflow/`, `config/`, `tests/`, and `docs/`
+  layout, with portable local and SLURM launchers for Snakemake 9;
+- added schema plus semantic input validation and explicit output stages,
+  including canonical sample identifiers, full-stream gzip/FASTQ checks, and
+  a stage-aware DeepRibo reference-alphabet check;
+- corrected start/stop metagene geometry, exact read-length output, raw-count
+  P-site markers, CIGAR-block-aware global metagenes and global/centered
+  browser tracks, empty-profile handling, RPKM/CPM and track normalization,
+  including fractional `1/NH` multi-mapper totals;
+- repaired differential contrast handling, current workbook pooling schemas,
+  PCA rank handling, and hard failure validation for external engines;
+- hardened Reparation, DeepRibo, and deltaTE container boundaries with pinned
+  artifacts, atomic output contracts, recovery receipts, and production CI
+  smokes;
+- made prediction/annotation aggregation deterministic and strict GFF3, exposed
+  the combined updated annotation, and declared every overview side product;
+- pinned the complete Linux launcher, development, and per-rule environments;
+- added a semantic real-data result comparator; consolidated and updated the
+  former `HRIBO_ReadTheDocs` material in the maintained Sphinx documentation;
+  fully locked the documentation build; and preserved that repository's
+  complete history and release tags on the namespaced
+  `archive/hribo-readthedocs` ref.
+
+The automated suite covers workflow DAGs, focused executed rules, golden
+scientific outputs, crash recovery, and production container boundaries. The
+exact current test count is enforced by CI. See `docs/real-data-validation.rst`
+for the remaining release gate.
+
+## Earlier 2.0 development history
+
+### 2.0.0-dev — Rick Gelhausen
  * Moved to the standard Snakemake layout (workflow/ + config/), so the workflow is
    relocatable and no longer has to be cloned into a directory named HRIBO
  * Replaced the 73 hardcoded HRIBO/scripts/... shell paths with a SCRIPTS global

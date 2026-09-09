@@ -111,6 +111,13 @@ def retrieve_annotation_positions(
     annotation_df = pd.read_csv(annotation_file_path, sep="\t", comment="#", header=None)
     annotation_intervals_dict = create_annotation_intervals_dict(annotation_df)
 
+    library_total = None
+    if "rpkm" in filtering_methods:
+        # RPKM describes abundance within the complete library.  A contig-local
+        # denominator makes otherwise identical genes pass or fail depending on
+        # which replicon they happen to occupy.
+        library_total = misc.library_read_total(total_counts_dict)
+
     start_codon_dict = {"-" : {}, "+" : {}}
     stop_codon_dict = {"-" : {}, "+" : {}}
 
@@ -155,7 +162,9 @@ def retrieve_annotation_positions(
                 excluded_genes["rpkm"] = (excluded_genes["rpkm"][0] + 1, excluded_genes["rpkm"][1] + [row])
                 gene_read_counts = 0
                 continue
-            rpkm = misc.calculate_rpkm(gene_length, gene_read_counts, total_counts_dict[chromosome])
+            rpkm = misc.calculate_rpkm(
+                gene_length, gene_read_counts, library_total
+            )
             if rpkm < rpkm_threshold:
                 excluded_genes["rpkm"] = (excluded_genes["rpkm"][0] + 1, excluded_genes["rpkm"][1] + [row])
                 continue

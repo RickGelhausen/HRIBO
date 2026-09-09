@@ -10,6 +10,8 @@ import gff_utils
 from Bio.Seq import Seq
 from Bio import SeqIO
 
+from lib import misc
+
 class OrderedCounter(Counter, OrderedDict):
     pass
 
@@ -61,14 +63,17 @@ def calculate_rpkm(total_mapped, read_count, read_length):
     """
     calculate the rpkm
     """
-    if read_length == 0:
-        print("read_length: 0 detected! Setting RPKM to 0!")
-        return 0
-    elif total_mapped == 0:
-        print("total_mapped: 0 detected! Setting RPKM to 0!")
-        return 0
+    if read_length <= 0:
+        raise ValueError("feature length must be positive to calculate RPKM")
+    if total_mapped <= 0:
+        raise ValueError(
+            "library-wide mapped-read total must be positive to calculate RPKM"
+        )
 
     return float("%.2f" % ((read_count * 1000000000) / (total_mapped * read_length)))
+
+
+read_mapped_read_summary = misc.read_mapped_read_summary
 
 def get_unique(in_list):
     seen = set()
@@ -235,12 +240,12 @@ def calculate_te(read_list, wildcards, conditions):
 # Which columns each differential expression tool contributes to the overview
 # table. The tools differ only in these names, not in how the file is read.
 DIFFEX_COLUMNS = {
-    "riborex": ("log2FoldChange", "pvalue", "padj"),
-    "xtail": ("log2FC_TE_final", "pvalue_final", "pvalue_adjust"),
+    "riborex": ("log2FC", "pvalue", "pvalue_adjusted"),
+    "xtail": ("log2FC_TE_final", "pvalue_final", "pvalue_adjusted"),
     "deltate": (
-        "RIBO_log2FoldChange", "RIBO_pvalue", "RIBO_padj",
-        "RNA_log2FoldChange", "RNA_pvalue", "RNA_padj",
-        "TE_log2FoldChange", "TE_pvalue", "TE_padj",
+        "RIBO_log2FC", "RIBO_pvalue", "RIBO_pvalue_adjusted",
+        "RNA_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted",
+        "TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted",
     ),
 }
 
@@ -248,8 +253,8 @@ DIFFEX_COLUMNS = {
 def generate_diffex_dict(path, tool):
     """{(gene_id, contrast): (values...)} for one differential expression tool.
 
-    The contrast column is written as "contrast_<name>" upstream, so only the
-    part after the underscore is kept.
+    The contrast column is written as "<tool>_<name>" upstream, so only the
+    contrast name after the first underscore is kept.
     """
     frame = pd.read_csv(path, sep=",", comment="#")
     columns = DIFFEX_COLUMNS[tool]
@@ -509,15 +514,8 @@ class TableContext:
         for entry in SeqIO.parse(genome_path, "fasta"):
             self.genome[str(entry.id)] = (str(entry.seq), str(entry.seq.complement()))
 
-        self.total_mapped = {}
-        wildcards = []
-        with open(total_mapped_path) as handle:
-            for line in handle:
-                wildcard, chromosome, value = line.strip().split("\t")
-                self.total_mapped[(wildcard, chromosome)] = int(value)
-                wildcards.append(wildcard)
-
-        self.wildcards = get_unique(wildcards)
+        _, self.total_mapped = read_mapped_read_summary(total_mapped_path)
+        self.wildcards = get_unique(self.total_mapped)
         self.te_header = get_te_header(self.wildcards)
         self.conditions = get_unique([card.split("-")[1] for card in self.wildcards])
 
@@ -579,13 +577,12 @@ class Row:
         ]
         self.rpkm_list = []
         for index, value in enumerate(self.read_list):
-            key = (context.wildcards[index], self.chromosome)
-            if key not in context.total_mapped:
-                self.rpkm_list.append(0)
-            else:
-                self.rpkm_list.append(
-                    calculate_rpkm(context.total_mapped[key], value, self.length)
+            library = context.wildcards[index]
+            self.rpkm_list.append(
+                calculate_rpkm(
+                    context.total_mapped[library], value, self.length
                 )
+            )
 
         self.te_list = calculate_te(self.rpkm_list, context.wildcards, context.conditions)
 
@@ -613,7 +610,14 @@ def build_annotation_table(reads_path, context, columns, source=None):
         read_df = pd.read_csv(reads_path, comment="#", header=None, sep="\t")
     except pd.errors.EmptyDataError:
         return pd.DataFrame(columns=header), []
-    prefix_columns = len(read_df.columns) - len(context.wildcards)
+    prefix_columns = 9
+    observed_read_columns = len(read_df.columns) - prefix_columns
+    if observed_read_columns != len(context.wildcards):
+        raise ValueError(
+            f"{reads_path}: found {observed_read_columns} library read-count "
+            f"columns, but {len(context.wildcards)} libraries are present in "
+            "the mapped-read summary"
+        )
 
     records = []
     for raw in read_df.itertuples(index=False, name="Pandas"):

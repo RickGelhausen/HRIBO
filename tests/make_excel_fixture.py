@@ -182,12 +182,12 @@ def write_pooled_diffex(path, tool, contrasts=("B-A",)):
     column with a contrast column written as "contrast_<name>".
     """
     columns = {
-        "riborex": ["log2FoldChange", "pvalue", "padj"],
-        "xtail": ["log2FC_TE_final", "pvalue_final", "pvalue_adjust"],
+        "riborex": ["log2FC", "pvalue", "pvalue_adjusted"],
+        "xtail": ["log2FC_TE_final", "pvalue_final", "pvalue_adjusted"],
         "deltate": [
-            "RIBO_log2FoldChange", "RIBO_pvalue", "RIBO_padj",
-            "RNA_log2FoldChange", "RNA_pvalue", "RNA_padj",
-            "TE_log2FoldChange", "TE_pvalue", "TE_padj",
+            "RIBO_log2FC", "RIBO_pvalue", "RIBO_pvalue_adjusted",
+            "RNA_log2FC", "RNA_pvalue", "RNA_pvalue_adjusted",
+            "TE_log2FC", "TE_pvalue", "TE_pvalue_adjusted",
         ],
     }[tool]
 

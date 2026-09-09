@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import gzip
 import re
+import zlib
 from pathlib import Path
 from typing import Sequence
 
@@ -32,6 +33,7 @@ from lib.validation import (
 
 VALID_STRANDS = {"+", "-", "."}
 DNA_RE = re.compile(r"^[ACGTUNRYSWKMBDHV]+$", re.IGNORECASE)
+DEEPRIBO_NUCLEOTIDES = frozenset("ACGTN")
 
 # Ribo-seq is single-end after HRIBO's merge step; a condition needs this many
 # replicates before the DESeq2-based differential expression tools are usable.
@@ -125,6 +127,47 @@ def check_genome(genome_path: Path) -> tuple[ValidationReport, list[FastaRecord]
     )
 
     return report, records
+
+
+def check_deepribo_genome(records: Sequence[FastaRecord]) -> ValidationReport:
+    """Reject FASTA symbols that DeepRibo's sequence encoder cannot consume."""
+    report = ValidationReport()
+    incompatible = {
+        record.identifier: sorted(
+            {
+                character
+                for character in record.sequence_characters
+                if character not in DEEPRIBO_NUCLEOTIDES
+            }
+        )
+        for record in records
+    }
+    incompatible = {
+        identifier: characters
+        for identifier, characters in incompatible.items()
+        if characters
+    }
+    if incompatible:
+        report.error(
+            "GENOME_DEEPRIBO_ALPHABET",
+            "Genome contains sequence symbols unsupported by DeepRibo",
+            detail=(
+                "DeepRibo's case-sensitive sequence encoder accepts only uppercase "
+                "A/C/G/T/N. HRIBO's other stages accept lowercase and broader IUPAC "
+                "ambiguity and gap symbols, but DeepRibo would fail or lose calls "
+                "while parsing these records."
+            ),
+            hint=(
+                "Convert lowercase sequence to uppercase and replace each remaining "
+                "unsupported symbol with N (or resolve it to A/C/G/T), or set "
+                "predictionSettings.deepribo to 'off' if DeepRibo is not required."
+            ),
+            items=[
+                f"{identifier} ({''.join(characters)})"
+                for identifier, characters in incompatible.items()
+            ],
+        )
+    return report
 
 
 # --------------------------------------------------------------------------
@@ -431,13 +474,72 @@ def check_sample_sheet(samples) -> ValidationReport:
     return report
 
 
+def _fastq_format_problem(path: Path) -> str | None:
+    """Stream ``path`` and return its first FASTQ structure error, if any."""
+    first_problem: str | None = None
+    record_number = 0
+
+    # This deliberately scans the complete decompressed file, so preflight I/O
+    # is linear in FASTQ size. Reaching EOF is the only way gzip can verify its
+    # trailer/CRC, and later records need the same validation as the first one;
+    # only the current four-line record is retained in memory.
+    with gzip.open(path, "rb") as handle:
+        while True:
+            header = handle.readline()
+            if not header:
+                break
+
+            record_number += 1
+            sequence = handle.readline()
+            separator = handle.readline()
+            quality = handle.readline()
+
+            missing = [
+                name
+                for name, line in (
+                    ("sequence line", sequence),
+                    ("separator line", separator),
+                    ("quality line", quality),
+                )
+                if not line
+            ]
+            if missing:
+                if first_problem is None:
+                    first_problem = (
+                        f"record {record_number} is incomplete (missing {', '.join(missing)})"
+                    )
+                break
+
+            if first_problem is not None:
+                continue
+            if not header.startswith(b"@"):
+                first_problem = f"record {record_number} header line must start with '@'"
+            elif not separator.startswith(b"+"):
+                first_problem = f"record {record_number} separator line must start with '+'"
+            else:
+                sequence_length = len(sequence.rstrip(b"\r\n"))
+                quality_length = len(quality.rstrip(b"\r\n"))
+                if sequence_length != quality_length:
+                    first_problem = (
+                        f"record {record_number} sequence/quality length mismatch "
+                        f"({sequence_length} != {quality_length})"
+                    )
+
+    if record_number == 0:
+        return "contains no FASTQ records"
+    return first_problem
+
+
 def check_fastq_files(samples) -> ValidationReport:
-    """Verify that every referenced fastq exists and is readable."""
+    """Verify referenced FASTQs, including complete gzip and record integrity."""
     report = ValidationReport()
 
     missing: list[str] = []
     unreadable: list[str] = []
     empty: list[str] = []
+    not_gzip: list[str] = []
+    malformed: list[str] = []
+    validated_paths: set[Path] = set()
 
     for _, row in samples.iterrows():
         for column in ("fastqFile", "fastqFile2"):
@@ -451,15 +553,22 @@ def check_fastq_files(samples) -> ValidationReport:
             if path.stat().st_size == 0:
                 empty.append(str(path))
                 continue
+            # Reuse is reported by check_sample_sheet; avoid decompressing the
+            # same exact multi-gigabyte path once for every referencing row.
+            if path in validated_paths:
+                continue
+            validated_paths.add(path)
             try:
-                if str(path).endswith(".gz"):
-                    with gzip.open(path, "rb") as handle:
-                        handle.read(1024)
-                else:
-                    with open(path, "rb") as handle:
-                        handle.read(1024)
-            except (OSError, gzip.BadGzipFile, EOFError) as exc:
-                unreadable.append(f"{path} ({exc.__class__.__name__})")
+                with path.open("rb") as handle:
+                    if handle.read(2) != b"\x1f\x8b":
+                        not_gzip.append(str(path))
+                        continue
+                problem = _fastq_format_problem(path)
+                if problem is not None:
+                    malformed.append(f"{path} ({problem})")
+            except (OSError, EOFError, zlib.error) as exc:
+                reason = f"{exc.__class__.__name__}: {exc}" if str(exc) else exc.__class__.__name__
+                unreadable.append(f"{path} ({reason})")
 
     if missing:
         report.error(
@@ -474,8 +583,31 @@ def check_fastq_files(samples) -> ValidationReport:
         report.error(
             "FASTQ_UNREADABLE",
             f"{len(unreadable)} fastq file(s) could not be read",
-            detail="A truncated gzip file here means a failed download or an interrupted copy.",
+            detail=(
+                "For gzip inputs, truncation or a CRC error usually means a failed download "
+                "or an interrupted copy."
+            ),
             items=unreadable,
+        )
+    if not_gzip:
+        report.error(
+            "FASTQ_NOT_GZIP",
+            f"{len(not_gzip)} fastq file(s) are not gzip-compressed",
+            detail=(
+                "HRIBO stages every input under a '.fastq.gz' name, so the file contents "
+                "must be gzip-compressed regardless of the source filename extension."
+            ),
+            items=not_gzip,
+        )
+    if malformed:
+        report.error(
+            "FASTQ_MALFORMED",
+            f"{len(malformed)} file(s) do not contain valid four-line FASTQ records",
+            detail=(
+                "Each record needs an '@' header, a sequence, a '+' separator, and an "
+                "equal-length quality string."
+            ),
+            items=malformed,
         )
 
     return report

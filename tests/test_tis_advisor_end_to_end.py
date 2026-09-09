@@ -96,8 +96,9 @@ def test_outputs_are_written(reference, tmp_path):
         assert (out / name).is_file(), f"{name} was not written"
 
     evidence = (out / "read_length_evidence.tsv").read_text().splitlines()
-    assert len(evidence) > 1
+    assert len(evidence) == len(sim.ALL_LENGTHS) + 1
     assert evidence[0].startswith("read_length\t")
+    assert [int(line.split("\t", 1)[0]) for line in evidence[1:]] == sim.ALL_LENGTHS
 
 
 def test_report_contains_a_pasteable_config(reference, tmp_path):

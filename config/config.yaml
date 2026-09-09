@@ -40,13 +40,17 @@ differentialExpressionSettings:
   # Features used for counting reads for differential expression
   features: ["CDS", "sRNA"]
 
-  # comma-seperated list of condition contrasts: treated1-control1,treated2-control2...
+  # YAML list of condition contrasts (left minus right), for example:
+  # contrasts: ["treated1-control1", "treated2-control2"]
+  # Leave empty to infer every pairwise contrast among conditions with both
+  # RIBO and RNA libraries.
   contrasts: []
 
   # pvalue adjusted cutoff to be used to prefilter the result tables (default = 0.05)
   padjCutoff: 0.05
 
-  # log2FC to be used to prefilter the result tables. Use positive values the cutoff is used as follows - upregulated: > log2fcCutoff, downregulated: < log2fcCutoff * -1)
+  # log2FC used to prefilter result tables. Supply a positive value; the inclusive
+  # boundaries are upregulated: >= log2fcCutoff, downregulated: <= -log2fcCutoff.
   log2fcCutoff: 1.0
 
   # Number of probability-density bins used by xTail. Larger values improve
@@ -61,7 +65,9 @@ differentialExpressionSettings:
 #################
 
 predictionSettings:
-  # Deepribo predictions: on / off
+  # DeepRibo predictions: on / off. When enabled, the genome sequence may
+  # contain only uppercase A/C/G/T/N because DeepRibo is case-sensitive and
+  # cannot encode other IUPAC symbols.
   deepribo: "on"
 
   # Distance in nucleotides from the 3' end of a read to the ribosomal A-site,
@@ -115,7 +121,7 @@ metageneSettings:
   # Read lengths to be considered. Comma seperated string allows intervals denoted by "-" symbol (e.g. "22,23,27,34-35")
   readLengths: "25-34"
 
-  # Normalization method (raw, mil, window)
+  # Normalization method (raw, cpm, window)
   # raw: no normalization, raw read counts
   # cpm: counts per million normalization (CPM)
   # window: normalized data by total counts and considered window length.
@@ -126,7 +132,7 @@ metageneSettings:
   outputFormats: ["interactive", "svg"]
 
   # Interactive html files require more space as they require plotly.js integrated, online access or a local copy of plotly.js
-  # integrated: integrates plotly.js into each plot (+-3.7mb per file)
+  # integrated: integrates plotly.js once into each HTML report (about 4 MB)
   # online: references an online version of plotly.js (files can only be used with active internet connection)
   # local: references a local plotly.js script (requires a local copy of plotly.js to open the plots)
   includePlotlyJS: "integrated"
