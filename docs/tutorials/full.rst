@@ -1,49 +1,36 @@
-Full matched Ribo-seq/RNA-seq tutorial
-======================================
+Recipe: complete matched analysis
+=================================
 
-This tutorial requests the ``full`` preset for two conditions, with two
-Ribo-seq and two RNA-seq replicates per condition.  It includes ORF prediction,
-differential expression, metagene profiling, the TIS advisor, and the combined
-overview.  Complete :doc:`minimal` first if the checkout, project layout, or
-launcher environment is unfamiliar.
+This recipe requests every HRIBO stage for two conditions with two Ribo-seq
+and two matched RNA-seq biological replicates per condition.  It produces QC,
+coverage, metagene and TIS reports, ORF predictions, differential results, and
+the combined overview.
 
-.. warning::
+Complete the smaller :doc:`minimal` recipe first if the checkout, project
+layout, or launcher environment is unfamiliar.
 
-   Representative real-data validation is still a release gate for
-   |release|.  Biological screenshots and expected numerical or candidate
-   results will be added only after that controlled validation.  The commands
-   and output contracts below are tested, but they are not a claim that one
-   particular biological signal must appear in every dataset.
+Prepare the project
+-------------------
 
-Prepare a separate analysis directory
--------------------------------------
-
-The commands below keep the HRIBO checkout outside the analysis.  They target
-the current development documentation; use a released 2.0 tag when available.
+Create a separate analysis directory and copy the current templates:
 
 .. code-block:: console
 
-   $ tutorial_root="$PWD/hribo-full-tutorial"
-   $ hribo_checkout="$tutorial_root/software/HRIBO"
-   $ project_dir="$tutorial_root/analysis"
-   $ mkdir -p "$tutorial_root/software" "$project_dir/config" \
-       "$project_dir/data" "$project_dir/fastq"
-   $ git clone --branch development --single-branch \
-       https://github.com/RickGelhausen/HRIBO.git "$hribo_checkout"
-   $ micromamba create --name hribo \
-       --file "$hribo_checkout/environment.linux-64.pin.txt"
-   $ micromamba activate hribo
+   $ hribo_checkout=/path/to/HRIBO
+   $ project_dir=/path/to/hribo-full-analysis
+   $ mkdir -p "$project_dir"/{config,data,fastq}
    $ cp "$hribo_checkout/config/config.yaml" "$project_dir/config/"
+   $ cp "$hribo_checkout/config/samples.tsv" "$project_dir/config/"
 
-Copy the matching genome, annotation, and eight gzip-compressed FASTQ files to
-``data/`` and ``fastq/``.  Use biological replicates, not repeated sequencing
-of the same library presented as independent replicates.
+Place a matching genome and annotation in ``data/`` and the eight
+gzip-compressed FASTQ files in ``fastq/``.  Use genuine biological replicates;
+repeated sequencing of one library is not an independent biological replicate.
 
 Define the matched design
 -------------------------
 
-Create ``config/samples.tsv`` with exact tab-separated headers and paths.  This
-example uses single-end files:
+Create ``config/samples.tsv`` with the exact tab-separated headers and paths.
+This example uses single-end reads:
 
 .. code-block:: text
 
@@ -57,9 +44,9 @@ example uses single-end files:
    RNA	Treated	1	fastq/rna-treated-1.fastq.gz	""
    RNA	Treated	2	fastq/rna-treated-2.fastq.gz	""
 
-Edit the copied configuration.  Preserve the complete template, set its input
-and adapter values, request the ``full`` preset, and make the contrast direction
-explicit:
+Edit the copied configuration.  Preserve the rest of the template, set the
+correct input and adapter values, request the full preset, and state the
+contrast direction explicitly:
 
 .. code-block:: yaml
 
@@ -70,6 +57,8 @@ explicit:
 
    differentialExpressionSettings:
      contrasts: ["Treated-Control"]
+     padjCutoff: 0.05
+     log2fcCutoff: 1.0
 
    predictionSettings:
      deepribo: "on"
@@ -78,89 +67,78 @@ explicit:
    workflowSettings:
      stages: "full"
 
-Positive log2 fold changes for this contrast indicate higher signal in
-``Treated``.  The DeepRibo offset shown is the template default derived from its
-published E. coli setup; verify it for the organism and protocol rather than
-copying the TIS advisor's P-site offset.  With DeepRibo enabled, the genome
-FASTA may contain only uppercase ``A``, ``C``, ``G``, ``T``, and ``N``;
-lowercase or other IUPAC ambiguity symbols fail preflight because DeepRibo
-cannot encode them safely.  Review all metagene read lengths and filters in
-:doc:`../configuration` before the production run.
+For ``Treated-Control``, positive log2 fold changes mean higher signal in the
+treated condition.  The shown DeepRibo offset is the template default from its
+published *E. coli* setup; verify it for the organism and protocol.  It is not
+the P-site offset produced by the TIS advisor.  When DeepRibo is enabled, the
+FASTA sequence must use uppercase ``A``, ``C``, ``G``, ``T``, and ``N`` only.
 
-Plan resources and downloads
-----------------------------
+Review all adapter, read-length, metagene-filter, and plotting choices in
+:doc:`../configuration` before a production run.
 
-The full preset includes every stage, including the expensive predictors and
-differential engines.  A default REPARATION job requests 12 threads, 30 GB of
-memory, and 30 GB of disk; DeepRibo jobs request up to 20 GB of memory.  The
-first run also downloads rule environments, digest-pinned containers, the
-DeepRibo model, and a checksum-verified Swiss-Prot release.  Confirm local or
-cluster quotas before starting.
+Plan the run
+------------
 
-Limit concurrent REPARATION instances even when many cores are available.  On
-SLURM, configure the bundled profile as described in :doc:`../troubleshooting`.
+The full preset includes memory- and compute-intensive predictors and three
+differential engines.  A REPARATION job can request 12 threads and 30 GB of
+memory and disk; DeepRibo can request up to 20 GB of memory.  The first run may
+also download Conda environments, containers, a DeepRibo model, and Swiss-Prot
+data.  Confirm local or cluster quotas before starting.
 
-Dry-run and execute
--------------------
+HRIBO limits concurrent REPARATION instances through the supplied launchers.
+For SLURM, configure the bundled profile as described in
+:doc:`../getting-started`.
 
-Run preflight and DAG construction first:
+Validate and run
+----------------
+
+Perform the dry-run from the analysis directory:
 
 .. code-block:: console
 
+   $ micromamba activate hribo
    $ cd "$project_dir"
-   $ snakemake \
-       --snakefile "$hribo_checkout/workflow/Snakefile" \
-       --directory "$project_dir" \
+   $ "$hribo_checkout/run_hribo.sh" \
        --configfile "$project_dir/config/config.yaml" \
-       --software-deployment-method conda apptainer \
        --cores 20 \
-       --resources reparation_instances=1 \
        --dry-run all
 
-After resolving every preflight finding classified as an error, execute the
-same target:
+Resolve every preflight error, then run:
 
 .. code-block:: console
 
-   $ snakemake \
-       --snakefile "$hribo_checkout/workflow/Snakefile" \
-       --directory "$project_dir" \
+   $ "$hribo_checkout/run_hribo.sh" \
        --configfile "$project_dir/config/config.yaml" \
-       --software-deployment-method conda apptainer \
        --cores 20 \
-       --resources reparation_instances=1 \
        --rerun-incomplete \
-       --latency-wait 60 \
-       --printshellcmds \
        --show-failed-logs all
 
 Review the analysis
 -------------------
 
-Begin with ``qc/multi/multiqc_report.html`` and the final BAMs, then review the
-source tables behind summary plots.  The primary deliverables and normalization
-semantics are catalogued in :doc:`../outputs`.  In particular, inspect:
+After the workflow completes, use the following order:
 
-* metagene start and stop profiles for the selected read lengths and both
-  transcript strands;
-* TIS-advisor evidence, confidence, and per-length offsets rather than only its
-  headline recommendation;
-* REPARATION and DeepRibo calls separately before the combined updated
-  annotation;
-* xTail, Riborex, and deltaTE contrast directions and adjusted p-values; and
-* ``auxiliary/overview.xlsx`` together with its TSV and GFF3 companions.
+1. Open ``qc/multi/multiqc_report.html`` and confirm that every library has
+   acceptable read quality, mapping, and depletion metrics.
+2. Check ``figures/heatmap_SpearmanCorr_readCounts.pdf`` and
+   ``pca/PCA_3D.html`` for unexpected sample grouping.
+3. Inspect ``metageneprofiling/read_length_fractions.html`` and the per-library
+   start/stop profiles, followed by each
+   ``tis_advice/<library>/tis_recommendation.html`` report.
+4. Load the BAMs, normalized BigWig tracks, and
+   ``tracks/updated_annotation.gff`` in a genome browser.
+5. Review ``auxiliary/predictions_reparation.xlsx`` and
+   ``auxiliary/predictions_deepribo.xlsx`` separately before interpreting their
+   combined evidence in ``auxiliary/overview.xlsx``.
+6. For each contrast, compare the xTail, RiboRex, and deltaTE workbooks.  Check
+   both effect size and adjusted p-value, and keep the contrast direction in
+   view.
 
-Generate a native workflow report only after the requested targets complete:
+The complete result map and interpretation guidance are in
+:doc:`../outputs`; exact workbook columns and sheets are in
+:doc:`../table-reference`.
 
-.. code-block:: console
-
-   $ snakemake \
-       --snakefile "$hribo_checkout/workflow/Snakefile" \
-       --directory "$project_dir" \
-       --configfile "$project_dir/config/config.yaml" \
-       --report "$project_dir/report.html"
-
-Finish with an ``all`` dry-run.  It should be a no-op.  For an upgrade or
-release decision, retain this result directory and compare it semantically with
-the baseline using the protocol in :doc:`../real-data-validation`; do not infer
-equivalence from successful execution alone.
+Finish by repeating the dry-run.  An unchanged completed analysis should be a
+no-op.  A standalone Snakemake workflow report can then be created with the
+same Snakefile, directory, and configuration options plus
+``--report "$project_dir/report.html"``.

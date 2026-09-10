@@ -1,101 +1,204 @@
-Configuration
-=============
+Configure an analysis
+=====================
 
-Start from ``config/config.yaml`` and edit a copy in the analysis directory.
-The authoritative machine-readable contract is
-``workflow/schemas/config.schema.yaml``; unknown nested settings are rejected.
+Start every project with a fresh copy of ``config/config.yaml``.  Edit the
+copy in the analysis directory and keep all top-level sections, even when a
+particular stage is not selected.  Paths may be absolute or relative to the
+analysis directory.
 
-Biological inputs
------------------
+Settings every user should review
+---------------------------------
 
-``biologySettings`` contains adapter sequences and the three input paths:
+.. list-table:: Required project choices
+   :header-rows: 1
+   :widths: 34 66
 
-* ``genome``: nucleotide FASTA, optionally gzip-compressed at input;
-* ``annotation``: GFF3 or GTF from the same assembly as the FASTA; and
-* ``samples``: the tab-separated sheet described in :doc:`samples`.
+   * - Setting
+     - What to provide
+   * - ``biologySettings.genome``
+     - Reference nucleotide FASTA, optionally gzip-compressed.
+   * - ``biologySettings.annotation``
+     - GFF3 or GTF annotation from the same assembly as the FASTA.
+   * - ``biologySettings.samples``
+     - Tab-separated library sheet described in :doc:`samples`.
+   * - ``biologySettings.adapter*``
+     - Adapter sequences used by the library preparation, or an empty string
+       only when no adapter sequence should be supplied.
+   * - ``workflowSettings.stages``
+     - The analyses and results to request; see :doc:`stages`.
 
-``alternativeStartCodons`` is a YAML list such as ``["GTG", "TTG"]``.  These
-codons control the alternative-start genome track; canonical ATG starts and
-TAG/TGA/TAA stops are reported separately.
+The input portion of a project might look like this:
 
-Adapter values may be empty or contain one or more comma-separated IUPAC
-nucleotide sequences.  Single-end data use ``adapterS3``/``adapterS5``;
-paired-end data use the four ``adapterP*`` values.
+.. code-block:: yaml
 
-Differential expression
------------------------
+   biologySettings:
+     adapterS3: "AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC"
+     adapterS5: ""
+     adapterP3R1: ""
+     adapterP5R1: ""
+     adapterP3R2: ""
+     adapterP5R2: ""
+     genome: "data/genome.fa"
+     annotation: "data/annotation.gff3"
+     samples: "config/samples.tsv"
+     alternativeStartCodons: ["GTG", "TTG"]
 
-Differential analysis is enabled by selecting the ``differential_expression``
-stage, not by an on/off setting.  Its configuration includes:
+Adapter settings
+----------------
 
-``features``
-   Annotation feature types included in the count matrix, by default ``CDS``
-   and ``sRNA``.
+Use ``adapterS3`` and ``adapterS5`` for single-end libraries.  Paired-end
+libraries use ``adapterP3R1``/``adapterP5R1`` for read 1 and
+``adapterP3R2``/``adapterP5R2`` for read 2.  A setting may contain one
+sequence or a comma-separated list of IUPAC nucleotide sequences.
 
-``contrasts``
-   A YAML list such as ``["Treated-Control"]``.  The direction is left minus
-   right: positive log2 fold changes mean higher signal in ``Treated``.  An
-   empty list requests every pairwise combination among conditions that have
-   both ``RIBO`` and ``RNA`` libraries.  Explicit contrasts are preferable for
-   a release or biological comparison.
+An empty string means that no adapter is passed for that end.  It is not a
+placeholder for an unknown sequence.  Single- and paired-end adapter fields
+may coexist in one configuration when the sample sheet contains both layouts.
 
-``padjCutoff`` and ``log2fcCutoff``
-   Positive filtering thresholds used for the sorted result workbooks.  The
-   boundaries are inclusive: adjusted p-values equal to ``padjCutoff`` are
-   retained, as are fold changes equal to ``log2fcCutoff`` or its negative.
+Alternative start codons are supplied as a YAML list.  They control the
+alternative-start genome track; canonical ``ATG`` starts and ``TAG``, ``TGA``,
+and ``TAA`` stops are reported separately.
 
-``xtailBins``
-   Number of probability-density bins used by xTail.  The default 10,000 is
-   computationally expensive but retains upstream behavior.
+Choose which results to create
+------------------------------
 
-``xtailMinMeanCount``
-   Minimum mean RNA and footprint count retained by xTail.  The default ``1``
-   preserves HRIBO's historical inclusion boundary rather than xTail 1.2.0's
-   higher default.
+``workflowSettings.stages`` accepts a YAML list or one of two presets:
+
+.. code-block:: yaml
+
+   workflowSettings:
+     stages:
+       - mapping
+       - qc
+       - tracks
+
+``preprocessing`` requests trimming, mapping, and MultiQC.  ``full`` requests
+all stages, including differential expression, and therefore requires a valid
+matched Ribo-seq/RNA-seq design.  The checked-in template requests the usual
+results but leaves differential expression commented out.
+
+For a one-off run, the command line can override the YAML without changing it:
+
+.. code-block:: console
+
+   $ /path/to/HRIBO/run_hribo.sh \
+       --configfile "$PWD/config/config.yaml" \
+       --config stages=mapping,qc,tracks \
+       --cores 8 all
+
+See :doc:`stages` for every accepted name and its result files.
 
 ORF prediction
 --------------
 
-``predictionSettings.deepribo`` accepts ``on`` or ``off``.  Reparation remains
-the base predictor; enabling DeepRibo adds its model, calls, workbook, and
-accepted calls to the combined annotation.
+``predictionSettings.deepribo`` accepts ``on`` or ``off``.  REPARATION is
+always the base predictor when ``predictions`` is selected; enabling DeepRibo
+adds a second prediction workbook and adds accepted calls to the updated
+annotation.
 
 ``deepriboASiteOffset`` is the nucleotide distance from a read's 3' end to the
-ribosomal A-site.  The default ``12`` came from the DeepRibo E. coli setup and
-should be checked for a different organism, nuclease, or protocol.  It is not
-the P-site offset produced by the TIS advisor; see :doc:`tis-advisor`.
+ribosomal A-site.  The template value of ``12`` was derived from the published
+DeepRibo *E. coli* setup.  Check it for the organism, nuclease, and protocol
+being analysed.  It is not the read-length-specific P-site offset reported by
+the :doc:`tis-advisor`.
 
-When DeepRibo is enabled, the reference sequence may contain only uppercase
-``A``, ``C``, ``G``, ``T``, and ``N``.  HRIBO rejects lowercase sequence and
-other IUPAC ambiguity codes during preflight because the pinned DeepRibo parser
-is case-sensitive and cannot encode the broader alphabet.  Lowercase and
-broader IUPAC nucleotide symbols remain valid when DeepRibo is not selected.
+When DeepRibo runs, the reference sequence may contain only uppercase ``A``,
+``C``, ``G``, ``T``, and ``N``.  Other ambiguity symbols or lowercase sequence
+cause preflight to stop because DeepRibo cannot encode them safely.
 
-Read lengths and metagenes
---------------------------
+Differential expression and translation
+---------------------------------------
 
-Read-length specifications accept comma-separated values and inclusive ranges,
-for example ``22,23,27,34-35`` or ``25-34``.
+Select the ``differential_expression`` stage to run xTail, RiboRex, and
+deltaTE.  Configure it under ``differentialExpressionSettings``:
 
-``metageneSettings`` controls the upstream/outside and downstream/inside
-windows, annotation filters, mapping methods, read lengths, normalization, and
-plot formats.  Valid mapping methods are ``fiveprime``, ``threeprime``,
-``centered``, and ``global``.  Valid normalizations are ``raw``, ``cpm``, and
-``window``.  These names differ from the BigWig track normalizations
-``raw``/``mil``/``min`` described in :doc:`outputs`.
+``features``
+   Annotation feature types to count, by default ``CDS`` and ``sRNA``.
 
-``includePlotlyJS`` selects an embedded, online, or local Plotly JavaScript
-resource.  ``integrated`` makes standalone reports and embeds Plotly once per
-HTML page; ``online`` makes smaller files that need internet access.
+``contrasts``
+   A list such as ``["Treated-Control"]``.  Results use left-minus-right
+   direction: a positive log2 fold change means higher signal in ``Treated``.
+   An empty list requests every pairwise comparison between eligible matched
+   conditions.
 
-``tisAdvisorSettings`` independently selects the read lengths and the 5' and/or
-3' read ends evaluated by the advisor.
+``padjCutoff``
+   Adjusted-p-value threshold used to populate the filtered workbook sheets.
+   It must be greater than 0 and less than 1.
 
-Stage selection
----------------
+``log2fcCutoff``
+   Non-negative absolute log2-fold-change threshold used for the filtered
+   ``up`` and ``down`` sheets.  Values equal to either boundary are included.
 
-``workflowSettings.stages`` is either ``full``, ``preprocessing``, or a YAML
-list of stage names.  The checked-in default lists all ordinary stages but
-comments out differential expression.  In contrast, the ``full`` preset does
-include differential expression and therefore requires a valid matched design.
-See :doc:`stages` before using that preset.
+``xtailBins`` and ``xtailMinMeanCount``
+   xTail density resolution and minimum mean RNA/RPF count.  Higher bin counts
+   take longer.  Change these only as part of a documented analysis choice.
+
+The required library design is described in :doc:`samples`, and workbook
+fields and sheet names are explained in :doc:`table-reference`.
+
+Read lengths and metagene profiles
+----------------------------------
+
+Read-length fields accept comma-separated values and inclusive ranges, for
+example ``22,23,27,34-35`` or ``25-34``.
+
+``readstatSettings.readLengths`` selects the lengths shown in read-length
+statistics.  ``metageneSettings`` separately controls the start/stop windows,
+read lengths, filters, mapping methods, normalizations, and plot formats used
+for metagene profiles.
+
+.. list-table:: Common metagene choices
+   :header-rows: 1
+   :widths: 32 68
+
+   * - Setting
+     - Accepted values or meaning
+   * - ``mappingMethods``
+     - ``fiveprime``, ``threeprime``, ``centered``, and/or ``global``.
+   * - ``readLengths``
+     - Lengths included in the profile, for example ``25-34``.
+   * - ``positionsOutsideORF`` / ``positionsInORF``
+     - Numbers of flanking and within-CDS nucleotides shown around each start
+       or stop boundary.
+   * - ``normalizationMethods``
+     - ``raw``, ``cpm``, and/or ``window``.
+   * - ``filteringMethods``
+     - ``overlap``, ``length``, and/or ``rpkm``.
+   * - ``neighboringGenesDistance``
+     - Distance used by the overlap filter.
+   * - ``lengthCutoff`` / ``rpkmThreshold``
+     - Minimum CDS length and abundance used by the corresponding filters.
+   * - ``outputFormats``
+     - ``interactive``, ``svg``, ``pdf``, ``png``, and/or ``jpg``.
+   * - ``includePlotlyJS``
+     - ``integrated`` for standalone HTML, ``online`` for smaller HTML that
+       needs internet access, or ``local`` for a separately supplied script.
+   * - ``colorList``
+     - Optional series colours in read-length order; leave empty for the
+       built-in colour-blind-friendly palette.
+
+Review the biological meaning of these choices in
+:doc:`metagene-profiling`.  ``tisAdvisorSettings`` independently selects the
+read lengths and the ``fiveprime`` and/or ``threeprime`` ends evaluated for
+P-site advice:
+
+.. code-block:: yaml
+
+   tisAdvisorSettings:
+     readLengths: "22-40"
+     mappingMethods: ["fiveprime", "threeprime"]
+
+Validate changes
+----------------
+
+Always perform a dry-run after changing the configuration:
+
+.. code-block:: console
+
+   $ /path/to/HRIBO/run_hribo.sh \
+       --configfile "$PWD/config/config.yaml" \
+       --dry-run all
+
+HRIBO reports unknown settings inside the named configuration sections,
+invalid choices, unavailable contrasts, and incompatible inputs before
+executing the workflow.

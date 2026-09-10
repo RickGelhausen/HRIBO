@@ -6,9 +6,7 @@ paper :cite:p:`gelhausen2021hribo`.  Record the HRIBO version or commit and the
 configuration alongside the citation so the analysis can be reproduced.
 
 For background on ribosome profiling and the interpretation of protected
-fragments, see :cite:p:`ingolia2014ribosome`.  The historical Salmonella
-candidate dataset retained in :doc:`historical-example-data` accompanies the
-CsrA study by :cite:t:`potts2019csra`.
+fragments, see :cite:p:`ingolia2014ribosome`.
 
 HRIBO integrates two prokaryotic ORF predictors.  Cite the DeepRibo paper
 :cite:p:`clauwaert2019deepribo` when reporting DeepRibo calls and the

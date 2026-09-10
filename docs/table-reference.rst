@@ -1,8 +1,10 @@
-Table reference
-===============
+Result table reference
+======================
 
-This page defines the tabular output contract.  Paths are relative to the
-analysis directory.  A library name has the form
+Use this page when reading a workbook or importing an HRIBO result into another
+program.  For a shorter guide to which result to open first, see
+:doc:`outputs`.  Paths below are relative to the analysis directory.  A
+library name has the form
 ``<method>-<condition>-<replicate>`` and a contrast has the form
 ``<left>-<right>``.
 
@@ -147,8 +149,7 @@ is ``reparation``.
    Start_codon, Stop_codon, Upstream_15nt, Nucleotide_seq, Aminoacid_seq
 
 ``Deepribo_score`` is the prediction value, ``Deepribo_rank`` is the GFF score
-field, and ``Novel_rank`` is the ``novel_rank`` attribute (with the legacy GFF
-phase field accepted as a fallback).
+field, and ``Novel_rank`` ranks candidates that are not already annotated.
 
 Overview workbook
 -----------------
@@ -335,37 +336,6 @@ matching component's ``*_log2FC`` and ``*_pvalue_adjusted``.  A row is included
 when its adjusted p-value is at most ``padjCutoff`` and its fold change is at
 least ``log2fcCutoff`` (up) or at most its negative (down).  Both boundaries
 are inclusive.  An empty selection remains a header-only sheet.
-
-Cross-contrast CSV tables
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The overview consumes ``riborex/riborex_all.csv``, ``xtail/xtail_all.csv``,
-and ``deltate/deltate_all.csv``.  Each is the concatenation of the per-contrast
-``all`` sheets, renames ``Identifier`` to ``gene_id``, retains the tool's
-statistics in the order shown above, and adds a final ``contrast`` column with
-value ``<tool>_<left>-<right>``.  Coordinate and sequence columns are not
-carried into these pooled CSV files.
-
-Their exact schemas are:
-
-.. code-block:: text
-
-   # riborex_all.csv
-   gene_id, baseMean, log2FC, log2FC_SE, stat, pvalue,
-   pvalue_adjusted, contrast
-
-   # xtail_all.csv
-   gene_id, mRNA_log2FC, RPF_log2FC, log2FC_TE_v1, pvalue_v1,
-   log2FC_TE_v2, pvalue_v2, log2FC_TE_final, pvalue_final,
-   pvalue_adjusted, contrast
-
-   # deltate_all.csv
-   gene_id, RIBO_baseMean, RIBO_log2FC, RIBO_log2FC_SE,
-   RIBO_pvalue, RIBO_pvalue_adjusted,
-   RNA_baseMean, RNA_log2FC, RNA_log2FC_SE,
-   RNA_pvalue, RNA_pvalue_adjusted,
-   TE_baseMean, TE_log2FC, TE_log2FC_SE, TE_stat,
-   TE_pvalue, TE_pvalue_adjusted, contrast
 
 xTail diagnostic plots
 ----------------------

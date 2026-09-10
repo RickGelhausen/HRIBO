@@ -1,60 +1,45 @@
-Minimal mapping, QC, and tracks tutorial
-========================================
+Recipe: mapping, QC, and tracks
+===============================
 
-This tutorial runs one single-end Ribo-seq library through trimming, mapping,
-quality control, and coverage-track generation.  It deliberately does not run
-ORF prediction or differential expression.  Use a separate software checkout
-and analysis directory so workflow updates do not mix with data or results.
+This recipe runs one single-end Ribo-seq library through trimming, mapping,
+quality control, and coverage-track generation.  It is a useful first run when
+you want to check the installation and inspect one library without running ORF
+prediction or differential analysis.
 
-Set up the checkout and project
--------------------------------
+Before starting, install HRIBO as described in :doc:`../getting-started` and
+replace the three input paths below with files from your experiment.
 
-The commands below target the current development documentation.  Use a
-released 2.0 tag instead of ``development`` when one is available.
+Create the project
+------------------
 
 .. code-block:: console
 
-   $ tutorial_root="$PWD/hribo-minimal-tutorial"
-   $ hribo_checkout="$tutorial_root/software/HRIBO"
-   $ project_dir="$tutorial_root/analysis"
-   $ mkdir -p "$tutorial_root/software" "$project_dir/config" \
-       "$project_dir/data" "$project_dir/fastq"
-   $ git clone --branch development --single-branch \
-       https://github.com/RickGelhausen/HRIBO.git "$hribo_checkout"
-   $ micromamba create --name hribo \
-       --file "$hribo_checkout/environment.linux-64.pin.txt"
-   $ micromamba activate hribo
+   $ hribo_checkout=/path/to/HRIBO
+   $ project_dir=/path/to/hribo-mapping-example
+   $ mkdir -p "$project_dir"/{config,data,fastq}
    $ cp "$hribo_checkout/config/config.yaml" "$project_dir/config/"
    $ cp "$hribo_checkout/config/samples.tsv" "$project_dir/config/"
+   $ cp /path/to/genome.fa "$project_dir/data/genome.fa"
+   $ cp /path/to/annotation.gff3 "$project_dir/data/annotation.gff3"
+   $ cp /path/to/ribo-control-1.fastq.gz \
+       "$project_dir/fastq/ribo-control-1.fastq.gz"
 
-Copy a nucleotide reference FASTA, its matching GFF3 or GTF annotation, and a
-gzip-compressed FASTQ into the project.  Substitute the three source paths
-before executing these commands:
+The FASTA and annotation must come from the same assembly, and the FASTQ must
+be gzip-compressed.
 
-.. code-block:: console
-
-   $ genome_source=/absolute/path/to/genome.fa
-   $ annotation_source=/absolute/path/to/annotation.gff3
-   $ fastq_source=/absolute/path/to/ribo-control-1.fastq.gz
-   $ cp "$genome_source" "$project_dir/data/genome.fa"
-   $ cp "$annotation_source" "$project_dir/data/annotation.gff3"
-   $ cp "$fastq_source" "$project_dir/fastq/ribo-control-1.fastq.gz"
-
-Configure the sample
+Describe the library
 --------------------
 
-Replace ``config/samples.tsv`` with one tab-separated data row.  The final
-``fastqFile2`` field is empty because this example is single-end:
+Replace ``config/samples.tsv`` with the following tab-separated content.  The
+empty final field marks a single-end library:
 
 .. code-block:: text
 
    method	condition	replicate	fastqFile	fastqFile2
    RIBO	Control	1	fastq/ribo-control-1.fastq.gz	""
 
-Edit the copied ``config/config.yaml``.  Keep the settings not shown below from
-the template, set the input paths relative to the project, enter the experiment's
-real adapter sequence if one is present, and request only the three tutorial
-stages:
+Edit the copied ``config/config.yaml``.  Keep the rest of the template and
+change these values:
 
 .. code-block:: yaml
 
@@ -71,56 +56,53 @@ stages:
        - qc
        - tracks
 
-An empty adapter value means that no adapter sequence is supplied; it is not a
-generic value for an unknown adapter.  Resolve adapter uncertainty before a
-production analysis.
+Set the real 3' and/or 5' adapter sequence used by the experiment.  Leave a
+field empty only when no adapter should be supplied to trimming.
 
-Validate, then run
-------------------
+Validate and run
+----------------
 
-Construct the complete DAG without executing it:
+Run from the analysis directory.  Start with a dry-run:
 
 .. code-block:: console
 
+   $ micromamba activate hribo
    $ cd "$project_dir"
-   $ snakemake \
-       --snakefile "$hribo_checkout/workflow/Snakefile" \
-       --directory "$project_dir" \
+   $ "$hribo_checkout/run_hribo.sh" \
        --configfile "$project_dir/config/config.yaml" \
-       --software-deployment-method conda apptainer \
        --cores 8 \
-       --resources reparation_instances=1 \
        --dry-run all
 
-Fix every preflight error before removing ``--dry-run``.  Then run with safe
-restart and diagnostic options:
+Fix every preflight error.  Then execute the same target:
 
 .. code-block:: console
 
-   $ snakemake \
-       --snakefile "$hribo_checkout/workflow/Snakefile" \
-       --directory "$project_dir" \
+   $ "$hribo_checkout/run_hribo.sh" \
        --configfile "$project_dir/config/config.yaml" \
-       --software-deployment-method conda apptainer \
        --cores 8 \
-       --resources reparation_instances=1 \
        --rerun-incomplete \
-       --latency-wait 60 \
-       --printshellcmds \
        --show-failed-logs all
 
-The first run creates rule environments and therefore requires network access.
-After completion, inspect:
+The first execution downloads and creates the environments needed by these
+stages.  Runtime depends mainly on read count, reference size, available cores,
+storage speed, and whether dependencies are already cached.
 
-* ``maplink/RIBO-Control-1.bam`` and its index;
-* ``qc/multi/multiqc_report.html``; and
-* the ``globaltracks/``, ``centeredtracks/``, ``fiveprimetracks/``, and
-  ``threeprimetracks/`` directories.
+Review the results
+------------------
 
-Reverse-strand BigWig values are negative by convention so both strands can be
-displayed around a shared zero baseline.  See :doc:`../outputs` before using
-the normalized tracks quantitatively.
+After ``Done, no error`` appears, inspect:
 
-Finally, repeat the dry-run command.  An unchanged successful project should
-report that there is nothing to be done.  If it schedules work, inspect which
-input, code dependency, configuration value, or incomplete output changed.
+``qc/multi/multiqc_report.html``
+   Compare raw and trimmed read quality, mapping rates, unique alignments, and
+   the effect of rRNA/tRNA filtering.
+
+``maplink/RIBO-Control-1.bam``
+   Load the final alignment and its ``.bam.bai`` index in a genome browser.
+
+``globaltracks/``, ``centeredtracks/``, ``fiveprimetracks/``, and ``threeprimetracks/``
+   Load the BigWig tracks to compare whole-read, central, 5'-end, and 3'-end
+   signal.  Reverse-strand values are negative only for browser display.
+
+See :doc:`../outputs` for the filename pattern and normalization choices.
+Finally, repeat the dry-run.  An unchanged successful project should report
+that there is nothing to be done.

@@ -1,70 +1,144 @@
-Workflow stages
-===============
+Choose analyses and results
+===========================
 
-A stage describes the deliverables requested from Snakemake.  It is not an
-execution barrier: Snakemake also builds every prerequisite.  Requesting only
-``predictions`` therefore still stages the references, trims, maps, filters,
-and counts the reads needed by the predictors.
+A stage tells HRIBO which result to produce.  Snakemake automatically runs the
+prerequisites, so selecting ``predictions`` also performs the trimming,
+mapping, filtering, and counting needed by the predictors.  Stages are not
+execution barriers and do not need to be listed in dependency order.
 
-.. list-table:: Stage catalogue
+Stage catalogue
+---------------
+
+.. list-table:: Available stages
    :header-rows: 1
-   :widths: 22 78
+   :widths: 21 39 40
 
    * - Stage
-     - Requested deliverables
+     - Question it helps answer
+     - Main result
    * - ``trimming``
-     - Mapping-ready trimmed or assembled reads plus raw and processed FastQC.
+     - Were adapters removed and are the processed reads usable?
+     - Mapping-ready reads in ``trimmed/`` and raw/processed FastQC reports.
    * - ``mapping``
-     - Final uniquely mapped, rRNA/tRNA-depleted BAMs and indexes in ``maplink/``.
+     - Where do the filtered reads align uniquely?
+     - ``maplink/<library>.bam`` and its ``.bam.bai`` index.
    * - ``qc``
-     - Aggregated ``qc/multi/multiqc_report.html``.
+     - How did read quality, mapping, and rRNA/tRNA depletion perform?
+     - ``qc/multi/multiqc_report.html``.
    * - ``tracks``
-     - Global, centered, 5', and 3' BigWig coverage tracks.
+     - What does strand-aware coverage look like across the genome?
+     - Raw and normalized BigWigs in the four ``*tracks/`` directories.
    * - ``genome_tracks``
-     - GFF tracks for start, stop, alternative-start, and ribosome-binding motifs.
+     - Where are possible start, stop, alternative-start, and RBS motifs?
+     - Four browser-ready GFF files in ``tracks/``.
    * - ``readcounts``
-     - Annotation, read-count, and sample workbooks in ``auxiliary/``.
+     - How many reads and how much normalized signal belong to each feature?
+     - Annotation, count-summary, and sample workbooks in ``auxiliary/``.
    * - ``metagene``
-     - Per-library metagene profiles and cross-library read-length summaries.
+     - Which read lengths and start/stop patterns characterize each library?
+     - Interactive reports, figures, and workbooks in ``metageneprofiling/``.
    * - ``tis_advisor``
-     - Per-library P-site/read-end recommendation reports and evidence.
+     - Which mapped end, read lengths, and P-site offsets have usable evidence?
+     - HTML, JSON, and TSV reports in ``tis_advice/<library>/``.
    * - ``correlation``
-     - Spearman read-count correlation heatmap.
+     - Do related libraries have similar binned genomic coverage profiles?
+     - Spearman correlation heatmap in ``figures/``.
    * - ``pca``
-     - PCA and supporting normalized-count diagnostics.
+     - Do samples group by condition and assay as expected?
+     - Interactive PCA and diagnostics in ``pca/``.
    * - ``predictions``
-     - Reparation, optional DeepRibo, prediction workbooks, and
+     - Which annotated or novel ORFs are supported by the predictors?
+     - REPARATION and optional DeepRibo workbooks plus
        ``tracks/updated_annotation.gff``.
    * - ``differential_expression``
-     - xTail, Riborex, and deltaTE results for each configured contrast.
+     - Which features change at RNA, footprint, or translation-efficiency level?
+     - Per-contrast xTail, RiboRex, and deltaTE workbooks.
    * - ``overview``
-     - The combined ``auxiliary/overview.xlsx`` plus TSV and browser-GFF views.
+     - How can annotation, abundance, predictions, and differential evidence be
+       reviewed together?
+     - ``auxiliary/overview.xlsx`` plus TSV and GFF views.
 
-Presets and overrides
----------------------
+Common selections
+-----------------
 
-``preprocessing`` selects ``trimming``, ``mapping``, and ``qc``.  ``full``
-selects all 13 stages, including differential expression.  A one-run override
-does not require editing the YAML:
+Use a preset for the two most common broad choices:
+
+.. code-block:: yaml
+
+   workflowSettings:
+     stages: "preprocessing"
+
+``preprocessing`` selects ``trimming``, ``mapping``, and ``qc``.
+
+.. code-block:: yaml
+
+   workflowSettings:
+     stages: "full"
+
+``full`` selects all thirteen stages.  It includes differential expression and
+therefore needs matched Ribo-seq/RNA-seq libraries in at least two conditions.
+
+For a smaller custom analysis, provide a list.  Some useful patterns are:
+
+.. list-table:: Example stage recipes
+   :header-rows: 1
+   :widths: 33 67
+
+   * - Goal
+     - Stage list
+   * - Mapping and browser inspection
+     - ``mapping``, ``qc``, ``tracks``
+   * - Ribo-seq quality and metagene profiling
+     - ``qc``, ``tracks``, ``metagene``, ``tis_advisor``
+   * - Feature abundance only
+     - ``readcounts``
+   * - ORF discovery and combined table
+     - ``predictions``, ``overview``
+   * - Matched differential analysis
+     - ``qc``, ``pca``, ``correlation``, ``differential_expression``,
+       ``overview``
+
+``overview`` is not a lightweight summary-only stage.  It builds the
+prediction results it combines, including DeepRibo when enabled.  When
+differential expression is selected, it also collects those contrast results.
+Plan the same container downloads and compute resources as for those analyses.
+
+For example:
+
+.. code-block:: yaml
+
+   workflowSettings:
+     stages:
+       - qc
+       - tracks
+       - metagene
+       - tis_advisor
+
+Override stages for one run
+---------------------------
+
+The top-level command-line value ``stages`` takes precedence over the YAML:
 
 .. code-block:: console
 
-   $ snakemake ... all --config stages=mapping,tracks,qc
-   $ snakemake ... all --config stages=preprocessing
+   $ /path/to/HRIBO/run_hribo.sh \
+       --configfile "$PWD/config/config.yaml" \
+       --config stages=mapping,qc,tracks \
+       --cores 8 all
 
-The top-level command-line ``stages`` value takes precedence over
-``workflowSettings.stages``.
+Use an override for exploration or a one-off continuation.  Record the command
+with the analysis, because the effective stage list will differ from the
+configuration file.
 
-Input-aware behavior
---------------------
+Stages and sample types
+-----------------------
 
-HRIBO always validates the configuration and sample-sheet structure before
-constructing a DAG.  It validates the contents of only the input classes needed
-by the requested stages and their dependencies: ``genome_tracks`` needs the
-genome but not annotation or FASTQ files, while ``trimming`` needs the FASTQ
-files but not the references.  Every other stage descends from mapping and
-therefore needs the genome, annotation, and reads.  When the sample sheet has no
-``RIBO`` library, HRIBO removes
-``predictions``, ``differential_expression``, and ``overview``.  When it also
-has no ``TIS`` or ``TTS`` library, it removes ``metagene`` and ``tis_advisor``.
-This is reported in the startup stage list.
+HRIBO prints the resolved stage list at startup.  If the sample sheet contains
+no ``RIBO`` library, it removes ``predictions``,
+``differential_expression``, and ``overview``.  If it also contains no
+``TIS`` or ``TTS`` library, it removes ``metagene`` and ``tis_advisor``.
+
+Input validation follows the requested work.  For example, ``genome_tracks``
+needs the genome but not FASTQ files, while results downstream of mapping need
+the genome, annotation, and reads.  See :doc:`samples` for stage-specific
+design requirements and :doc:`outputs` for the full result locations.

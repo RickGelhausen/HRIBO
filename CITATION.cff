@@ -4,7 +4,7 @@ message: >-
   article below.
 title: HRIBO
 type: software
-version: 2.0.0-dev
+version: 2.0.0
 license: GPL-3.0-only
 repository-code: https://github.com/RickGelhausen/HRIBO
 url: https://hribo.readthedocs.io/

@@ -1,175 +1,262 @@
-Outputs
-========
+Understand the results
+======================
 
-All paths below are relative to the analysis directory.  A library name is
-``<method>-<condition>-<replicate>``, for example ``RIBO-treated-1``.  Selecting
-a stage makes its listed targets; Snakemake also creates and retains supporting
-files required to reach those targets.  See :doc:`stages` for stage selection
-and input-aware stage removal.  See :doc:`table-reference` for workbook sheet,
-column, contrast-direction, and missing-value semantics.
+HRIBO writes results into the analysis directory from which it was launched.
+The selected :doc:`stages` determine which result groups are present.  A
+library is named ``<method>-<condition>-<replicate>``; for example,
+``RIBO-Treated-1``.
 
-Stage output map
-----------------
+What to inspect first
+---------------------
 
-``trimming``
-   ``trimmed/<library>.fastq`` is the mapping-ready read file.  Raw FastQC
-   reports are written below ``qc/1raw/`` and trimmed-read reports below
-   ``qc/2trimmed/``.  Single-end reports use ``-raw`` and ``-trimmed`` in their
-   names; paired-end reports additionally use the ``_q`` and ``_p`` mate
-   suffixes.
+For a typical analysis, review the results in this order:
 
-``mapping``
-   ``maplink/<library>.bam`` and ``maplink/<library>.bam.bai`` contain the final
-   uniquely mapped alignments after rRNA/tRNA removal and their indexes.
+1. Open ``qc/multi/multiqc_report.html`` and confirm that the reads, trimming,
+   mapping, and rRNA/tRNA depletion are plausible for every library.
+2. Check the correlation heatmap and PCA when multiple libraries are present.
+   Biological replicates should normally resemble each other, while unexpected
+   grouping can reveal a sample-label or quality problem.
+3. Review read-length distributions and start/stop metagene profiles for each
+   Ribo-like library.  Read the TIS-advisor confidence and warnings together
+   with its recommended offsets.
+4. Load the final BAM, BigWig, and GFF files in a genome browser to inspect
+   individual loci.
+5. Use ``auxiliary/overview.xlsx`` as the entry point for feature-level
+   abundance, prediction evidence, and differential results.  Consult the
+   predictor- or method-specific workbooks before accepting a candidate.
 
-``qc``
-   ``qc/multi/multiqc_report.html`` aggregates raw, trimmed, mapped, uniquely
-   mapped, and rRNA/tRNA-removal diagnostics.
+Primary result map
+------------------
 
-``tracks``
-   Each library produces 24 BigWigs: four mapping styles, three
-   normalizations, and two strands.  Their exact pattern is
-   ``<mapping>tracks/<norm>/<library>.<norm>.<strand>.<mapping>.bw``, where
-   ``<mapping>`` is ``global``, ``centered``, ``fiveprime``, or ``threeprime``;
-   ``<norm>`` is ``raw``, ``mil``, or ``min``; and ``<strand>`` is ``forward``
-   or ``reverse``.
+.. list-table:: Results by selected stage
+   :header-rows: 1
+   :widths: 20 35 45
 
-``genome_tracks``
-   The exact targets are ``tracks/potentialStartCodons.gff``,
-   ``tracks/potentialAlternativeStartCodons.gff``,
-   ``tracks/potentialStopCodons.gff``, and
-   ``tracks/potentialRibosomeBindingSite.gff``.
+   * - Stage
+     - Main result
+     - What the result contains
+   * - ``trimming``
+     - ``trimmed/<library>.fastq``
+     - Adapter-trimmed or assembled reads that continue to mapping.  Raw and
+       processed FastQC reports are below ``qc/1raw/`` and ``qc/2trimmed/``.
+   * - ``mapping``
+     - ``maplink/<library>.bam`` and ``.bam.bai``
+     - Final uniquely mapped alignments after rRNA/tRNA removal, ready for a
+       genome browser or downstream alignment tools.
+   * - ``qc``
+     - ``qc/multi/multiqc_report.html``
+     - One HTML report aggregating the main read-processing and mapping
+       diagnostics for all libraries.
+   * - ``tracks``
+     - ``globaltracks/``, ``centeredtracks/``, ``fiveprimetracks/``, and
+       ``threeprimetracks/``
+     - Strand-separated BigWig coverage with raw and normalized views.
+   * - ``genome_tracks``
+     - ``tracks/potential*.gff``
+     - Browser tracks for possible start codons, alternative starts, stop
+       codons, and ribosome-binding-site motifs.
+   * - ``readcounts``
+     - ``auxiliary/annotation_*.xlsx`` and
+       ``auxiliary/*_read_counts.xlsx``
+     - Per-feature annotation, abundance, direct TE ratios, and summarized
+       feature counts using total or unique mappings.
+   * - ``metagene``
+     - ``metageneprofiling/read_length_fractions.html`` and
+       ``metageneprofiling/<library>/``
+     - Read-length composition plus start- and stop-centred aggregate profiles,
+       source tables, and figures.
+   * - ``tis_advisor``
+     - ``tis_advice/<library>/tis_recommendation.html``
+     - Recommended mapped end, usable read lengths, per-length P-site offsets,
+       confidence, warnings, evidence, and machine-readable companions.
+   * - ``correlation``
+     - ``figures/heatmap_SpearmanCorr_readCounts.pdf``
+     - Pairwise Spearman correlation of binned genomic coverage and its source
+       matrix.
+   * - ``pca``
+     - ``pca/PCA_3D.html`` and ``pca/diffex_QC.html``
+     - Interactive sample separation and normalized-count diagnostics.
+   * - ``predictions``
+     - ``auxiliary/predictions_reparation.xlsx`` and optionally
+       ``auxiliary/predictions_deepribo.xlsx``
+     - ORF coordinates, predictor evidence, abundance, sequence, and annotation
+       context.  ``tracks/updated_annotation.gff`` combines accepted calls with
+       the supplied annotation.
+   * - ``differential_expression``
+     - ``xtail/<contrast>_sorted.xlsx``,
+       ``riborex/<contrast>_sorted.xlsx``, and
+       ``deltate/<contrast>_sorted.xlsx``
+     - Per-feature RNA, footprint, and/or translation-efficiency effects,
+       p-values, adjusted p-values, and prefiltered up/down sheets.
+   * - ``overview``
+     - ``auxiliary/overview.xlsx``
+     - Consolidated annotation, sequences, abundance, direct TE, predictor
+       evidence, and enabled differential statistics.  The same main table is
+       available as ``auxiliary/overview.tsv``; two GFF files provide browser
+       views.
 
-``readcounts``
-   The five user-facing workbooks are ``auxiliary/annotation_total.xlsx``,
-   ``auxiliary/annotation_unique.xlsx``,
-   ``auxiliary/total_read_counts.xlsx``,
-   ``auxiliary/unique_read_counts.xlsx``, and ``auxiliary/samples.xlsx``.
-   Their supporting count tables and mapped-read summaries are in
-   ``readcounts/``.
+A full run has a result layout similar to this (supporting directories are
+omitted):
 
-``metagene``
-   Each ``RIBO``, ``TIS``, or ``TTS`` library gets a directory named
-   ``metageneprofiling/<library>/``.  Cross-library read-length outputs are
-   ``metageneprofiling/read_length_fractions.html``,
-   ``metageneprofiling/read_length_fractions.xlsx``, and
-   ``metageneprofiling/read_length_counts.xlsx``.  The per-library directory
-   layout is described in :doc:`metagene-profiling`.
+.. code-block:: text
 
-``tis_advisor``
-   Each Ribo-like library produces
-   ``tis_advice/<library>/tis_recommendation.html``,
-   ``tis_advice/<library>/tis_recommendation.json``, and
-   ``tis_advice/<library>/read_length_evidence.tsv``.  See :doc:`tis-advisor`.
+   my-analysis/
+   ├── auxiliary/
+   │   ├── overview.xlsx
+   │   ├── overview.tsv
+   │   ├── annotation_unique.xlsx
+   │   ├── predictions_reparation.xlsx
+   │   └── predictions_deepribo.xlsx       # only when enabled
+   ├── qc/multi/multiqc_report.html
+   ├── maplink/<library>.bam
+   ├── globaltracks/ ... threeprimetracks/
+   ├── tracks/updated_annotation.gff
+   ├── metageneprofiling/<library>/
+   ├── tis_advice/<library>/
+   ├── figures/heatmap_SpearmanCorr_readCounts.pdf
+   ├── pca/PCA_3D.html
+   ├── xtail/ ... riborex/ ... deltate/
+   └── logs/
 
-``correlation``
-   ``figures/heatmap_SpearmanCorr_readCounts.pdf`` is accompanied by its source
-   matrix, ``figures/SpearmanCorr_readCounts.tab``.
+Quality control and alignments
+------------------------------
 
-``pca``
-   The main result is ``pca/PCA_3D.html`` and the second interactive diagnostic
-   is ``pca/diffex_QC.html``.  Retained source and diagnostic files include
-   ``raw_reads.csv``, ``meta.csv``, ``normalized_counts.tsv``, ``rld.tsv``,
-   ``variance_percentages.tsv``, ``rld_cor.tsv``,
-   ``raw_count_distributions.pdf``, and ``mean_vs_variance.pdf`` in ``pca/``.
+The MultiQC report combines results from several points in the workflow.  Use
+it to compare raw and trimmed read quality, read counts and lengths, mapping
+rates, unique alignments, and the effect of rRNA/tRNA filtering.  A completed
+HTML file only means the report was generated; it does not mean that every
+library passed biological quality control.
 
-``predictions``
-   Reparation produces ``auxiliary/predictions_reparation.xlsx`` and contributes
-   to ``tracks/updated_annotation.gff``.  With DeepRibo enabled,
-   ``auxiliary/predictions_deepribo.xlsx`` and the accepted DeepRibo calls are
-   added.  Intermediate evidence tracks, including
-   ``tracks/reparation_annotated.gff`` and, when enabled,
-   ``tracks/deepribo_merged.gff`` and ``tracks/deepribo_merged_plus.gff``, are
-   retained for audit.
+``maplink/<library>.bam`` is the convenient location for the final unique BAM.
+It is a relative symbolic link to the corresponding file under ``bam/``.  Move
+or archive the entire analysis tree to preserve the link.  If exporting only
+the final BAMs, copy with link dereferencing and include each ``.bam.bai``
+index.
 
-``differential_expression``
-   For every configured ``<contrast>``, HRIBO creates the marker
-   ``contrasts/<contrast>`` and the filtered workbooks
-   ``xtail/<contrast>_sorted.xlsx``, ``riborex/<contrast>_sorted.xlsx``, and
-   ``deltate/<contrast>_sorted.xlsx``.  Raw tables and diagnostic PDFs remain in
-   their tool directories.  When ``overview`` is also selected, its inputs
-   include the cross-contrast tables
-   ``xtail/xtail_all.csv``, ``riborex/riborex_all.csv``, and
-   ``deltate/deltate_all.csv``.
+Coverage and genome-browser tracks
+----------------------------------
 
-``overview``
-   All four products are declared workflow outputs:
-   ``auxiliary/overview.xlsx``, ``auxiliary/overview.tsv``,
-   ``auxiliary/overview.gff``, and ``auxiliary/overview_misc.gff``.  The
-   workbook and TSV combine annotation, per-library abundance and translation
-   efficiency, prediction evidence, and enabled differential analyses.  The
-   first GFF represents the combined CDS set; ``overview_misc.gff`` represents
-   non-CDS annotation features.
+Each library receives BigWigs for four mapping views, three normalization
+choices, and two strands.  Their name pattern is:
 
-Alignment links and portability
--------------------------------
+.. code-block:: text
 
-``maplink/<library>.bam`` is a relative symbolic link to the corresponding
-file below ``../bam/``.  Moving or archiving the complete analysis tree keeps
-that link valid because the two directories retain their relative positions.
-Copying only ``maplink/`` does not: the copied BAM link then has no target.
-When exporting only the final BAMs, dereference the links (for example with
-``cp --dereference`` or ``rsync --copy-links``) and copy the ``.bam.bai`` files
-with them.
+   <mapping>tracks/<normalization>/<library>.<normalization>.<strand>.<mapping>.bw
 
-Coverage-track conventions
---------------------------
+The mapping views answer different questions:
 
-The four track mappings answer different questions:
+``global``
+   Coverage across every aligned reference block of the read.
 
-* ``global`` adds coverage across each CIGAR-aligned reference block, excluding
-  soft clips, deletions, and reference skips;
-* ``centered`` clips 11 nt from both reference-alignment ends by default and
-  distributes one read across the remaining aligned central positions, without
-  filling CIGAR gaps;
-* ``fiveprime`` assigns a read to its transcript-oriented 5' end; and
-* ``threeprime`` assigns it to its transcript-oriented 3' end.
+``centered``
+   Coverage from the central aligned portion after clipping the read ends.
+
+``fiveprime`` and ``threeprime``
+   One-position views anchored at the transcript-oriented 5' or 3' read end.
+
+The normalizations are ``raw`` (no depth scaling), ``mil`` (counts per
+million mapped reads), and ``min`` (all libraries scaled to the smallest
+mapped library).  Use ``raw`` to inspect the evidence in one library and a
+normalized track when comparing libraries.
 
 Forward-strand BigWig values are positive and reverse-strand values are
-negative.  The sign is the browser convention used to display the strands on
-opposite sides of zero; it does not mean that the reverse strand has negative
-read abundance.  Use the absolute value when comparing coverage magnitude.
+negative so genome browsers can display the strands on opposite sides of zero.
+The negative sign is a display convention, not negative abundance.
 
-Normalization and mapped-read totals
-------------------------------------
+The browser-ready motif files are:
 
-Normalization is library-wide, including for assemblies with chromosomes and
-plasmids.  HRIBO's three-column mapped-read summaries retain one row per
-library and contig, but consumers sum all contig rows before normalizing.
+* ``tracks/potentialStartCodons.gff``;
+* ``tracks/potentialAlternativeStartCodons.gff``;
+* ``tracks/potentialStopCodons.gff``; and
+* ``tracks/potentialRibosomeBindingSite.gff``.
 
-For a library-wide effective mapped total ``N``, feature length ``L``, and
-feature count ``C``, workbook abundance is ``RPKM = 1e9 * C / (L * N)``.
-Coverage tracks use these factors:
+Counts, abundance, and direct TE
+--------------------------------
 
-* ``raw``: no library-depth scaling;
-* ``mil``: ``raw * 1e6 / N`` (counts per million); and
-* ``min``: ``raw * N_min / N``, where ``N_min`` is the smallest complete-library
-  total in the experiment.
+``auxiliary/annotation_unique.xlsx`` uses uniquely mapped reads;
+``auxiliary/annotation_total.xlsx`` includes fractional contributions from
+multi-mapped reads.  Both organize annotated features into sheets and add one
+RPKM column per library.  When a Ribo-like library has a matching RNA control
+with the same condition and replicate, the workbooks also contain a direct
+translation-efficiency ratio.
 
-Metagene ``cpm`` uses the same complete-library ``1e6 / N`` factor.  Its
-separate ``window`` normalization is described in
-:doc:`metagene-profiling`.
+``auxiliary/unique_read_counts.xlsx`` and
+``auxiliary/total_read_counts.xlsx`` provide smaller feature-class summaries.
+Use them for an overview of where reads were counted; use the annotation
+workbooks when you need individual features and sequences.
 
-Every mapped alignment with a SAM ``NH`` tag contributes ``1 / NH`` to an
-effective total, where ``NH`` is the number of reported hits; an alignment
-without that tag contributes one.  A uniquely mapped read therefore contributes
-one, while all records for a read with multiple reported hits sum to one when
-the records and ``NH`` tag are complete.  This keeps
-``annotation_total.xlsx`` denominators consistent with fractional
-featureCounts output.  The default final BAMs and their tracks contain unique
-alignments, so their ``NH`` contribution is normally one.  Fractional totals
-are valid and may appear in ``readcounts/*_mapped_reads.txt``.
+RPKM values use the mapped total across the complete library, including all
+contigs.  A direct ``*_TE`` value is the Ribo-like RPKM divided by its matched
+RNA-like RPKM.  It is a ratio, not a log2 fold change.
 
-Count tables that look like GFF or GTF
---------------------------------------
+Metagene profiles and TIS advice
+--------------------------------
 
-Several files below ``readcounts/`` have historical ``.gff`` or ``.gtf``
-suffixes, including ``*_annotation.gff`` and ``*_annotation.gtf``.  They are
-HRIBO internal count tables: nine annotation columns followed by one count
-column per library, with an ``#hribo-gff-read-counts-v1`` schema comment.  They
-are deliberately **not** valid nine-column GFF3/GTF files and should not be
-loaded into a genome browser or passed to a general GFF/GTF parser.
+``metageneprofiling/read_length_fractions.html`` compares fragment-length
+composition across libraries.  Each per-library directory then contains
+start- and stop-centred profiles for the requested read ends, normalizations,
+and plot formats.  Use :doc:`metagene-profiling` to interpret the axes,
+normalizations, peaks, and valid zero profiles.
 
-For browser-ready annotation, use the nine-column files under ``tracks/`` or
-``auxiliary/overview.gff`` and ``auxiliary/overview_misc.gff``.  Use the
-workbooks or ``auxiliary/overview.tsv`` for tabular downstream analysis.
+For TIS advice, begin with
+``tis_advice/<library>/tis_recommendation.html``.  It provides the human-facing
+recommendation and diagnostic plots.  The adjacent JSON preserves the complete
+machine-readable result, and ``read_length_evidence.tsv`` provides one row per
+evaluated length.  No recommendation can be a valid result when the data do not
+contain a trustworthy initiation peak; see :doc:`tis-advisor`.
+
+ORF predictions
+---------------
+
+``auxiliary/predictions_reparation.xlsx`` contains REPARATION calls.
+``auxiliary/predictions_deepribo.xlsx`` is present only when DeepRibo is
+enabled.  Review coordinates, predictor scores or probabilities, the libraries
+contributing evidence, RPKM/TE values, and available annotation metadata.  Use
+``auxiliary/overview.xlsx`` for the explicit overlapping-gene context.
+Predictor support is evidence to evaluate, not by itself proof of translation.
+
+``tracks/updated_annotation.gff`` combines the supplied annotation with
+accepted prediction calls for browser inspection.  Keep the separate
+prediction workbooks when reporting which predictor supported an ORF.
+
+Differential results
+--------------------
+
+For a contrast named ``<left>-<right>``, positive log2 fold changes mean higher
+signal in the left condition and negative values mean higher signal in the
+right condition.  For example, a positive value in ``Treated-Control`` means
+higher signal in ``Treated``.
+
+Each tool-specific workbook contains an ``all`` sheet and filtered sheets such
+as ``TE_up`` and ``TE_down``.  deltaTE additionally separates RNA, RIBO, and TE
+changes.  The filtered sheets use ``padjCutoff`` and ``log2fcCutoff`` from the
+configuration; always inspect the effect size and adjusted p-value together.
+The three tools model translation differently, so review agreement and
+disagreement rather than treating one column as interchangeable across tools.
+
+Combined overview
+-----------------
+
+``auxiliary/overview.xlsx`` is the most convenient feature-level starting
+point.  Its ``all`` sheet joins annotated and predicted CDS-like coordinates
+with sequence, per-library RPKM and direct TE, prediction evidence, and any
+enabled differential results.  Other sheets provide annotated or feature-type
+subsets.
+
+``auxiliary/overview.tsv`` contains the same rows and columns as the ``all``
+sheet for scripted analysis.  ``auxiliary/overview.gff`` represents the
+combined CDS set and ``auxiliary/overview_misc.gff`` contains non-CDS features
+for genome-browser use.
+
+Detailed workbook sheet names, column definitions, missing values, and
+coordinate conventions are documented in :doc:`table-reference`.
+
+Primary results versus supporting files
+---------------------------------------
+
+Snakemake retains inputs and intermediate files needed to build the selected
+results.  Directories such as ``readcounts/``, ``bam/``, and tool-specific work
+areas are useful for troubleshooting and custom downstream analysis, but most
+users should begin with the primary files listed above.  Do not assume a file
+with a historical ``.gff`` or ``.gtf`` suffix below ``readcounts/`` is
+browser-ready; use GFF files from ``tracks/`` or ``auxiliary/`` instead.

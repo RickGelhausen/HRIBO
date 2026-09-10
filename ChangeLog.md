@@ -1,12 +1,11 @@
 # Changelog
 
-## Unreleased — 2.0.0-dev
+## 2.0.0
 
-HRIBO 2.0 is a workflow-only development release. It modernizes the Snakemake
+HRIBO 2.0 is a workflow-only release. It modernizes the Snakemake
 layout and environments, adds stage-based execution and strict preflight
 validation, repairs scientific and failure-signalling defects, and brings the
-maintained documentation into this repository. A representative biological
-dataset comparison is still required before the release is declared complete.
+maintained documentation into this repository.
 
 Notable changes since 1.8.1 include:
 
@@ -35,12 +34,11 @@ Notable changes since 1.8.1 include:
 
 The automated suite covers workflow DAGs, focused executed rules, golden
 scientific outputs, crash recovery, and production container boundaries. The
-exact current test count is enforced by CI. See `docs/real-data-validation.rst`
-for the remaining release gate.
+exact current test count is enforced by CI.
 
-## Earlier 2.0 development history
+## Development history leading to 2.0.0
 
-### 2.0.0-dev — Rick Gelhausen
+### Work leading to 2.0.0 — Rick Gelhausen
  * Moved to the standard Snakemake layout (workflow/ + config/), so the workflow is
    relocatable and no longer has to be cloned into a directory named HRIBO
  * Replaced the 73 hardcoded HRIBO/scripts/... shell paths with a SCRIPTS global

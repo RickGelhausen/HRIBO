@@ -7,6 +7,11 @@ ORFBounder.  It recommends a mapped read end, a set of read lengths, and a
 P-site offset for each selected length.  It does not call ORFs itself and its
 recommendation is not automatically applied to HRIBO's prediction stage.
 
+For routine review, open
+``tis_advice/<library>/tis_recommendation.html`` first.  It summarizes the
+verdict, confidence, warnings, per-length evidence, and diagnostic plots.  Use
+the JSON or TSV companions for scripted downstream analysis.
+
 Run it by selecting the ``tis_advisor`` stage and configure the evaluated
 lengths and ends under ``tisAdvisorSettings``.  Annotation filtering and profile
 windows reuse ``metageneSettings``; see :doc:`configuration` and

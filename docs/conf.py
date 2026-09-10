@@ -45,11 +45,11 @@ html_title = f"HRIBO {release} documentation"
 
 # Point each hosted page back to the branch or tag that produced it.  Pull
 # request builds expose only a numeric Git identifier, so their checked-out
-# commit is the stable GitHub target.  Local builds default to development.
+# commit is the stable GitHub target.  Local builds default to the 2.0.0 tag.
 if os.environ.get("READTHEDOCS_VERSION_TYPE") == "external":
-    github_version = os.environ.get("READTHEDOCS_GIT_COMMIT_HASH", "development")
+    github_version = os.environ.get("READTHEDOCS_GIT_COMMIT_HASH", "2.0.0")
 else:
-    github_version = os.environ.get("READTHEDOCS_GIT_IDENTIFIER", "development")
+    github_version = os.environ.get("READTHEDOCS_GIT_IDENTIFIER", "2.0.0")
 
 html_context = {
     "display_github": True,

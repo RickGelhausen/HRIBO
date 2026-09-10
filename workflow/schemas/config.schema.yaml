@@ -143,8 +143,8 @@ properties:
         type: number
         minimum: 0
         description: >
-          Applied as > log2fcCutoff for upregulated and < -log2fcCutoff for
-          downregulated features, so it is given as a positive number.
+          Applied as >= log2fcCutoff for upregulated and <= -log2fcCutoff for
+          downregulated features, so it is given as a non-negative number.
       xtailBins:
         type: integer
         minimum: 1

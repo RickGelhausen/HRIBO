@@ -2,8 +2,8 @@
 
 # HRIBO
 
-[![CI](https://github.com/RickGelhausen/HRIBO/actions/workflows/ci.yaml/badge.svg?branch=development)](https://github.com/RickGelhausen/HRIBO/actions/workflows/ci.yaml)
-[![Documentation Status](https://readthedocs.org/projects/hribo/badge/?version=latest)](https://hribo.readthedocs.io/)
+[![CI](https://github.com/RickGelhausen/HRIBO/actions/workflows/ci.yaml/badge.svg)](https://github.com/RickGelhausen/HRIBO/actions/workflows/ci.yaml)
+[![Documentation Status](https://readthedocs.org/projects/hribo/badge/?version=stable)](https://hribo.readthedocs.io/en/stable/)
 [![Snakemake](https://img.shields.io/badge/Snakemake-9.25.2-brightgreen.svg)](https://snakemake.readthedocs.io/)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
@@ -13,18 +13,13 @@ quality control, strand-aware coverage tracks, metagene analysis and TIS advice,
 feature counting, Reparation and optional DeepRibo ORF prediction, matched
 RNA/Ribo differential analysis, and consolidated result tables.
 
-> **Development status:** HRIBO 2.0 is under active validation. The automated
-> suite and the production container boundaries are exercised in CI. A
-> representative real-data comparison remains a release gate; see the
-> [validation protocol](docs/real-data-validation.rst).
-
 ## Quick start
 
 The tested path is Linux x86-64 with Conda or Micromamba and Apptainer. Keep the
 workflow checkout separate from each analysis directory.
 
 ```console
-git clone --branch development --single-branch \
+git clone --branch 2.0.0 --single-branch \
   https://github.com/RickGelhausen/HRIBO.git /path/to/HRIBO
 micromamba create --name hribo --file /path/to/HRIBO/environment.linux-64.pin.txt
 micromamba activate hribo
@@ -56,26 +51,29 @@ run, for example `--config stages=mapping,tracks`. The `preprocessing` preset
 selects trimming, mapping, and QC; `full` selects every stage and therefore
 requires a valid matched differential-expression design.
 
+After a typical run, start with `qc/multi/multiqc_report.html` for quality
+control and `auxiliary/overview.xlsx` for the combined feature-level results.
+The selected stages also produce final BAMs, BigWig/GFF browser tracks,
+metagene and TIS reports, ORF prediction workbooks, and differential-analysis
+tables as applicable.
+
 For SLURM, activate the launcher environment, configure
 `workflow/profiles/slurm/config.yaml` for the site, and invoke
 `/path/to/HRIBO/slurm_run.sh` from the analysis directory.
 
 ## Documentation
 
-The maintained documentation source and build configuration now live in
-[`docs/`](docs/index.rst); the former `HRIBO_ReadTheDocs` repository is no
-longer a documentation source. Its complete history is preserved on the
-`archive/hribo-readthedocs` branch. The hosted site may continue to show the
-legacy version until a project administrator completes the
-[Read the Docs cutover](docs/development.rst#read-the-docs-cutover). Start with:
+The complete user guide is available on
+[Read the Docs](https://hribo.readthedocs.io/) and in [`docs/`](docs/index.rst).
+Start with:
 
 - [installation and execution](docs/getting-started.rst)
 - [sample-sheet format](docs/samples.rst)
 - [configuration](docs/configuration.rst)
-- [stage selection](docs/stages.rst)
-- [output catalogue](docs/outputs.rst)
+- [choosing analyses and results](docs/stages.rst)
+- [understanding the results](docs/outputs.rst)
 - [result-table reference](docs/table-reference.rst)
-- [historical public example data](docs/historical-example-data.rst)
+- [troubleshooting](docs/troubleshooting.rst)
 - [migration from HRIBO 1.8](docs/migration-1.8-to-2.0.rst)
 
 ## Citation

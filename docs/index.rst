@@ -1,76 +1,105 @@
 HRIBO |release|
 ================
 
-HRIBO is a Snakemake workflow for reproducible processing and analysis of
-bacterial ribosome-profiling data.  It combines read processing and quality
-control with coverage tracks, metagene profiles, ORF prediction, matched
-RNA/Ribo differential analysis, and consolidated result workbooks.
+HRIBO is a Snakemake workflow for analysing bacterial ribosome-profiling
+experiments.  Starting from compressed sequencing reads, a reference genome,
+and its annotation, HRIBO can produce quality-control reports, mapped reads,
+genome-browser tracks, metagene profiles, ORF predictions, differential
+translation results, and consolidated result tables.
 
-This is the canonical documentation and is maintained with the workflow
-source.  It was consolidated and rewritten from the former
-``HRIBO_ReadTheDocs`` repository, which was maintained from 2020 to 2024 by
-Rick Gelhausen with contributions by Florian Eggenhofer.  Its audited head was
-``dcab179968a07cb83617429b972d35837e23d8f4``; the complete history is retained
-on the ``archive/hribo-readthedocs`` branch.  See
-:ref:`documentation-source-and-legacy-archive` for the migration record.
+If this is your first analysis, follow :doc:`getting-started` from top to
+bottom.  It covers installation, project setup, a dry-run, execution, and the
+first results to inspect.
 
-.. important::
+What goes in
+------------
 
-   |release| is under development.  Its automated suite and production
-   container boundaries are validated, but the final comparison against a
-   representative biological dataset remains a release gate.  See
-   :doc:`real-data-validation` for the exact status and protocol.
+HRIBO needs:
 
-Using HRIBO
------------
+* a reference genome in FASTA format;
+* a matching annotation in GFF3 or GTF format;
+* one gzip-compressed FASTQ file per single-end library, or two per paired-end
+  library;
+* a tab-separated sample sheet describing every library; and
+* a YAML configuration file selecting the analyses to run.
+
+See :doc:`samples` and :doc:`configuration` for copyable examples.
+
+What comes out
+--------------
+
+The exact result set depends on the selected :doc:`stages`.  The main result
+types are:
+
+.. list-table:: Main HRIBO results
+   :header-rows: 1
+   :widths: 28 32 40
+
+   * - Result
+     - Main location
+     - What it is used for
+   * - Quality control
+     - ``qc/multi/multiqc_report.html``
+     - Review read quality, trimming, mapping, and rRNA/tRNA depletion.
+   * - Alignments and coverage
+     - ``maplink/`` and ``*tracks/``
+     - Inspect reads and strand-aware coverage in a genome browser.
+   * - Counts and abundance
+     - ``auxiliary/*.xlsx``
+     - Compare feature counts, RPKM values, and direct TE ratios.
+   * - Metagene and TIS reports
+     - ``metageneprofiling/`` and ``tis_advice/``
+     - Assess read lengths, start/stop profiles, and P-site offsets.
+   * - ORF predictions
+     - ``auxiliary/predictions_*.xlsx``
+     - Review REPARATION and optional DeepRibo candidates.
+   * - Differential translation
+     - ``xtail/``, ``riborex/``, and ``deltate/``
+     - Compare matched Ribo-seq and RNA-seq conditions.
+   * - Combined overview
+     - ``auxiliary/overview.xlsx``
+     - Explore annotation, abundance, prediction, and differential evidence in
+       one workbook.
+
+Start the result review with :doc:`outputs`, which explains what each file
+answers and which files are primary results rather than supporting data.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :caption: Run HRIBO
 
    getting-started
    samples
    configuration
    stages
+   tutorials/minimal
+   tutorials/full
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Understand the results
+
    outputs
    table-reference
    metagene-profiling
    tis-advisor
 
-Guides
-------
-
-.. toctree::
-   :maxdepth: 2
-
-   tutorials/minimal
-   tutorials/full
-   historical-example-data
-   migration-1.8-to-2.0
-   real-data-validation
-   troubleshooting
-
-Project information
--------------------
-
 .. toctree::
    :maxdepth: 1
+   :caption: Help and reference
 
-   development
+   troubleshooting
+   migration-1.8-to-2.0
    references
 
-Release history and support
----------------------------
+Getting help
+------------
 
-See the repository `changelog
-<https://github.com/RickGelhausen/HRIBO/blob/development/ChangeLog.md>`_ for
-version history.  Report reproducible defects or documentation gaps in the
-`HRIBO issue tracker <https://github.com/RickGelhausen/HRIBO/issues>`_ and
-include the HRIBO commit, configuration, first failing rule, and relevant log.
+See :doc:`troubleshooting` for common input, environment, and cluster issues.
+To report a reproducible problem, use the `HRIBO issue tracker
+<https://github.com/RickGelhausen/HRIBO/issues>`_ and include the HRIBO version,
+configuration, first failing rule, and relevant log file.
 
-License
--------
-
-HRIBO is distributed under the GNU General Public License version 3.  When
-publishing work that uses HRIBO, cite the HRIBO paper listed in
-:doc:`references`; machine-readable citation metadata is provided in
-``CITATION.cff``.
+HRIBO is distributed under the GNU General Public License version 3.  If HRIBO
+contributes to published work, follow the citation guidance in
+:doc:`references`.

@@ -6,6 +6,12 @@ codons, separately by library, contig, read length, mapping method, and
 normalization.  The profiles are always oriented in transcript direction, so
 plus- and minus-strand genes can be interpreted on the same axis.
 
+Begin with ``metageneprofiling/read_length_fractions.html`` to identify the
+dominant fragment lengths across libraries.  Then open
+``metageneprofiling/<library>/<normalization>/interactive_metagene_profiling.html``
+to compare start and stop profiles.  Use the adjacent Excel workbooks when
+exact values are needed.
+
 Coordinate convention
 ---------------------
 
@@ -48,13 +54,6 @@ Mapping methods
    overlaps the profile window.  Soft-clipped query bases, deletions, and
    reference skips are not coverage.  Each aligned block is clipped to the
    window before it is placed on the transcript-oriented axis.
-
-The ``global`` implementation now fills every valid strand/anchor combination.
-Older HRIBO output could contain empty minus-strand start slices and
-plus-strand stop slices because a genomic array was sliced in the wrong
-direction.  Stop profiles from the old release may also look mirrored relative
-to the convention above.  These are expected corrections, not biological
-strand asymmetry; see :doc:`real-data-validation` when comparing releases.
 
 Annotation filtering
 --------------------
@@ -145,12 +144,6 @@ read-length count workbook; normalization can make a sparse shape visually
 prominent.  Then inspect the implicated alignments and genes in the BAM and
 coverage tracks, and review trimming, depletion, mapping, and annotation
 quality in MultiQC.
-
-The figures from the former documentation repository are deliberately not
-reused here: they were produced before the strand/anchor geometry and marker
-contracts described above were corrected.  Versioned example figures and
-expected values should be added only after the current release candidate has
-completed the :doc:`real-data-validation` protocol.
 
 Outputs
 -------
