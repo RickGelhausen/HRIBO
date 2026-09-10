@@ -113,7 +113,10 @@ Select the ``differential_expression`` stage to run xTail, RiboRex, and
 deltaTE.  Configure it under ``differentialExpressionSettings``:
 
 ``features``
-   Annotation feature types to count, by default ``CDS`` and ``sRNA``.
+   Case-sensitive feature types from annotation column 3 to count, by default
+   ``CDS`` and ``sRNA``.  HRIBO warns and skips a requested type that is absent
+   while counting the requested types that are present.  It stops with an
+   actionable error if none of them occur in the annotation.
 
 ``contrasts``
    A list such as ``["Treated-Control"]``.  Results use left-minus-right

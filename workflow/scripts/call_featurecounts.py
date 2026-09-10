@@ -26,6 +26,45 @@ def raw_schema(bamfiles):
     return RAW_SCHEMA_VERSION + "\t" + "\t".join(columns) + "\n"
 
 
+def select_features(annotation_df, requested_features, annotation):
+    """Return requested feature types that occur in annotation column 3.
+
+    Annotation vocabularies differ between providers.  In particular, many
+    bacterial annotations do not use the optional ``sRNA`` type from HRIBO's
+    example configuration.  A missing optional type must not abort counting of
+    the requested types that are present, but it must remain visible to the
+    user so that an unintended spelling or annotation choice is not hidden.
+    """
+    available_features = list(dict.fromkeys(annotation_df[2].astype(str)))
+    if not requested_features:
+        return available_features
+
+    features = [
+        feature for feature in requested_features if feature in available_features
+    ]
+    missing_features = [
+        feature for feature in requested_features if feature not in available_features
+    ]
+    if missing_features and features:
+        print(
+            "WARNING: Skipping requested annotation feature type(s) not present "
+            f"in {annotation}: {', '.join(missing_features)}. Feature-type "
+            "matching is case-sensitive and uses column 3.",
+            file=sys.stderr,
+        )
+
+    if not features:
+        available = ", ".join(available_features) or "none"
+        sys.exit(
+            "None of the requested annotation feature types were found in "
+            f"{annotation}. Requested: {', '.join(requested_features)}. "
+            f"Available column-3 types: {available}. Feature-type matching is "
+            "case-sensitive."
+        )
+
+    return features
+
+
 def call_featureCounts(args):
     """
     set up commandline call for featureCounts, process the featureCounts output
@@ -37,6 +76,13 @@ def call_featureCounts(args):
         )
     except pd.errors.EmptyDataError:
         annotation_df = pd.DataFrame(columns=range(9))
+
+    if annotation_df.empty:
+        if args.features:
+            select_features(annotation_df, args.features, args.annotation)
+        features = []
+    else:
+        features = select_features(annotation_df, args.features, args.annotation)
 
     # Every empty result remains self-describing.  The comment is ignored by
     # legacy pandas readers but tells the mapper how many library columns an
@@ -50,11 +96,6 @@ def call_featureCounts(args):
 
     if annotation_df.empty:
         return
-
-    if args.features == []:
-        features = list(annotation_df[2].unique())
-    else:
-        features = args.features
 
     # Decided from the whole attribute column rather than its first row: a
     # leading region or source feature without an ID= sent every later lookup to

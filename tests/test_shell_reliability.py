@@ -262,6 +262,91 @@ def test_featurecounts_keeps_spaced_paths_and_features_as_single_argv_tokens(
     assert output.is_file()
 
 
+def test_featurecounts_skips_requested_types_absent_from_annotation(
+    tmp_path, monkeypatch, capsys
+):
+    annotation = tmp_path / "annotation.gff"
+    bam = tmp_path / "reads.bam"
+    output = tmp_path / "counts.csv"
+    annotation.write_text("chr1\ttest\tCDS\t1\t3\t.\t+\t0\tID=cds1\n")
+    bam.write_bytes(b"fake bam")
+    calls = []
+
+    def fake_featurecounts(command):
+        calls.append(command)
+        temporary = Path(command[command.index("-o") + 1])
+        temporary.write_text(
+            "# Program:featureCounts\n"
+            "Geneid\tChr\tStart\tEnd\tStrand\tLength\treads\n"
+            "cds1\tchr1\t1\t3\t+\t3\t7\n"
+        )
+        return 0
+
+    monkeypatch.setattr(call_featurecounts.subprocess, "call", fake_featurecounts)
+    args = SimpleNamespace(
+        bamfiles=[str(bam)],
+        annotation=str(annotation),
+        output=str(output),
+        features=["CDS", "sRNA"],
+        strandness=1,
+        threads=2,
+        assign_to_all=False,
+        assign_multi_mappers=False,
+        with_fraction=False,
+        diff_expr=True,
+    )
+
+    call_featurecounts.call_featureCounts(args)
+
+    assert len(calls) == 1
+    assert calls[0][calls[0].index("-t") + 1] == "CDS"
+    assert output.read_text() == "Identifier,reads\nchr1:1-3:+,7\n"
+    warning = capsys.readouterr().err
+    assert "sRNA" in warning
+    assert "skip" in warning.lower()
+
+    readcount_rule = rule_body(RULES / "readcounting.smk", "readCounts")
+    assert "awk '/^WARNING:/' {log:q} >&2" in readcount_rule
+
+
+def test_featurecounts_fails_before_counting_when_no_requested_type_exists(
+    tmp_path, monkeypatch
+):
+    annotation = tmp_path / "annotation.gff"
+    output = tmp_path / "counts.csv"
+    annotation.write_text("chr1\ttest\tCDS\t1\t3\t.\t+\t0\tID=cds1\n")
+
+    def unexpected_featurecounts_call(command):
+        pytest.fail(f"featureCounts should not have been called: {command}")
+
+    monkeypatch.setattr(
+        call_featurecounts.subprocess, "call", unexpected_featurecounts_call
+    )
+    args = SimpleNamespace(
+        bamfiles=[str(tmp_path / "reads.bam")],
+        annotation=str(annotation),
+        output=str(output),
+        features=["sRNA", "tRNA"],
+        strandness=1,
+        threads=2,
+        assign_to_all=False,
+        assign_multi_mappers=False,
+        with_fraction=False,
+        diff_expr=True,
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        call_featurecounts.call_featureCounts(args)
+
+    message = str(excinfo.value)
+    assert "requested" in message.lower()
+    assert "feature types" in message.lower()
+    assert "sRNA" in message
+    assert "tRNA" in message
+    assert "CDS" in message
+    assert not output.exists()
+
+
 def test_unsupported_browser_export_rules_and_environments_are_removed():
     visualization = (RULES / "visualization.smk").read_text()
     for name in (

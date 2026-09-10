@@ -19,7 +19,9 @@ Notable changes since 1.8.1 include:
   browser tracks, empty-profile handling, RPKM/CPM and track normalization,
   including fractional `1/NH` multi-mapper totals;
 - repaired differential contrast handling, current workbook pooling schemas,
-  PCA rank handling, and hard failure validation for external engines;
+  PCA rank handling, hard failure validation for external engines, and
+  annotation-aware feature selection that warns and skips unavailable optional
+  feature types;
 - hardened Reparation, DeepRibo, and deltaTE container boundaries with pinned
   artifacts, atomic output contracts, recovery receipts, and production CI
   smokes;

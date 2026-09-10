@@ -37,6 +37,7 @@ rule readCounts:
             -s 1 --with_O {params.extra:q} \
             -t {threads} \
             -o {output:q} 2> {log:q}
+        awk '/^WARNING:/' {log:q} >&2
         """
 
 

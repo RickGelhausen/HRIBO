@@ -126,7 +126,11 @@ properties:
         items:
           type: string
           minLength: 1
-        description: Annotation feature types counted for differential expression.
+        description: >
+          Case-sensitive annotation column-3 feature types counted for
+          differential expression. Missing requested types are skipped with a
+          warning when at least one requested type is present; the run stops if
+          none are present.
       contrasts:
         type: array
         items:
