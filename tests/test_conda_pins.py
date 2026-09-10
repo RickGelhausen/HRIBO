@@ -82,6 +82,17 @@ def test_checked_in_conda_pins_have_complete_content_addressed_inventory():
     assert CHECKER.validate_repository(REPO, recorded_hash)[0] == 23
 
 
+def test_coverage_environment_declares_mapping_runtime_dependencies():
+    dependencies = {
+        name
+        for name, _version in CHECKER._parse_environment(
+            REPO / "workflow" / "envs" / "coverage.yaml"
+        )
+    }
+
+    assert {"numpy", "pandas", "pysam"} <= dependencies
+
+
 def test_conda_pin_fixture_is_accepted(tmp_path):
     write_fixture_repository(tmp_path)
 
