@@ -193,6 +193,27 @@ def test_pear_and_reparation_capture_complete_logs_with_quoted_paths():
         assert placeholder in reparation
 
 
+def test_early_metadata_rules_capture_complete_logs_with_quoted_paths():
+    rules = (
+        (
+            rule_body(RULES / "auxiliary.smk", "samplesToExcel"),
+            '"logs/samples_to_excel.log"',
+            ("{input.script:q}", "{input.samples:q}", "{output:q}"),
+        ),
+        (
+            rule_body(RULES / "reparation.smk", "prepareReparationAnnotation"),
+            '"logs/prepare_reparation_annotation.log"',
+            ("{input.adapter:q}", "{input.annotation:q}", "{output:q}"),
+        ),
+    )
+
+    for rule, log_path, placeholders in rules:
+        assert log_path in rule
+        assert rule.index("exec > {log:q} 2>&1") < rule.index("python3 ")
+        for placeholder in placeholders:
+            assert placeholder in rule
+
+
 def test_each_contrast_marker_writes_only_its_declared_output():
     rule = rule_body(RULES / "diffex_contrast.smk", "contrastInput")
 

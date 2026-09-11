@@ -253,6 +253,65 @@ def test_adapter_is_order_independent_and_protects_regex_delimiters(tmp_path):
     assert [row[0][0] for row in records(first_output)] == ["a", "z"]
 
 
+def test_adapter_ignores_unreferenced_duplicate_ids_on_unsupported_features(
+    tmp_path,
+):
+    annotation = tmp_path / "reused-regulatory-ids.gff3"
+    output = tmp_path / "reparation.gtf"
+    annotation.write_text(
+        feature("TATA", 10, 15, "ID=TATA-gene-one;")
+        + "\n"
+        + feature("TATA", 30, 35, "ID=TATA-gene-one;")
+        + "\n"
+        + feature(
+            "CDS",
+            100,
+            300,
+            "ID=cds-one;locus_tag=gene-one;Name=Gene one;",
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = run_adapter(annotation, output)
+
+    assert result.returncode == 0, result.stderr
+    output_records = records(output)
+    assert len(output_records) == 1
+    assert output_records[0][1]["gene_id"] == "gene-one"
+
+
+def test_adapter_rejects_duplicate_ids_that_can_affect_output(tmp_path):
+    for name, content in (
+        (
+            "supported",
+            feature("CDS", 10, 30, "ID=duplicate;")
+            + "\n"
+            + feature("CDS", 40, 60, "ID=duplicate;"),
+        ),
+        (
+            "parent-referenced",
+            feature("gene", 10, 30, "ID=duplicate;")
+            + "\n"
+            + feature("gene", 40, 60, "ID=duplicate;")
+            + "\n"
+            + feature("CDS", 10, 30, "ID=child;Parent=duplicate;"),
+        ),
+    ):
+        case = tmp_path / name
+        case.mkdir()
+        annotation = case / "annotation.gff3"
+        output = case / "existing.gtf"
+        annotation.write_text(content + "\n", encoding="utf-8")
+        output.write_text("keep me\n", encoding="utf-8")
+
+        result = run_adapter(annotation, output)
+
+        assert result.returncode == 2
+        assert "duplicate ID 'duplicate' on lines 1 and 2" in result.stderr
+        assert output.read_text(encoding="utf-8") == "keep me\n"
+
+
 def test_adapter_rejects_split_cds_without_replacing_output(tmp_path):
     annotation = tmp_path / "duplicates.gff3"
     output = tmp_path / "existing.gtf"

@@ -143,16 +143,35 @@ def read_records(path: Path) -> list[Record]:
 
 
 def build_id_index(records: list[Record]) -> dict[str, Record]:
+    # Some bacterial annotations reuse descriptive IDs for regulatory records
+    # such as alternative TATA boxes.  Those records are not emitted for
+    # REPARATION, and a duplicate cannot make parent lookup ambiguous when no
+    # record refers to it.  Keep strict GFF identity checks everywhere the ID
+    # can affect an emitted transcript or its ancestry.
+    referenced_ids = {
+        parent
+        for record in records
+        for parent in record.attributes.get("parent", "").split(",")
+        if parent
+    }
+    emitted_features = set(FEATURE_BIOTYPES) | EXPLICIT_TRANSCRIPTS
     by_id = {}
     for record in records:
         identifier = record.attributes.get("id", "")
         if not identifier:
             continue
         if identifier in by_id:
-            raise ReparationAnnotationError(
-                f"duplicate ID {identifier!r} on lines "
-                f"{by_id[identifier].line_number} and {record.line_number}"
-            )
+            previous = by_id[identifier]
+            if (
+                identifier in referenced_ids
+                or previous.feature.lower() in emitted_features
+                or record.feature.lower() in emitted_features
+            ):
+                raise ReparationAnnotationError(
+                    f"duplicate ID {identifier!r} on lines "
+                    f"{previous.line_number} and {record.line_number}"
+                )
+            continue
         by_id[identifier] = record
     return by_id
 

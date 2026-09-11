@@ -92,6 +92,27 @@ def test_samples_to_xlsx_keeps_every_row(sample_sheet, tmp_path):
     assert frame["fastqFile"].notna().all()
 
 
+def test_samples_to_xlsx_accepts_an_entirely_empty_second_read_column(tmp_path):
+    """Single-end projects leave fastqFile2 empty, giving it a numeric dtype."""
+    samples = tmp_path / "single-end.tsv"
+    samples.write_text(
+        "method\tcondition\treplicate\tfastqFile\tfastqFile2\n"
+        "RIBO\tA\t1\tfastq/RIBO-A-1.fastq.gz\t\n"
+        "RNA\tA\t1\t/data/project/fastq/RNA-A-1.fastq.gz\t\n"
+    )
+    output = tmp_path / "samples.xlsx"
+
+    result = run_script("samples_to_xlsx.py", "-i", str(samples), "-o", str(output))
+
+    assert result.returncode == 0, result.stderr
+    frame = read_samples_sheet(output)
+    assert list(frame["fastqFile"]) == [
+        "RIBO-A-1.fastq.gz",
+        "RNA-A-1.fastq.gz",
+    ]
+    assert frame["fastqFile2"].isna().all()
+
+
 # --------------------------------------------------------------------------
 # motif_to_gff
 # --------------------------------------------------------------------------

@@ -24,6 +24,11 @@ def convert_to_xlsx(samples_file, output_file):
     for column in ("fastqFile", "fastqFile2"):
         if column in samples_df.columns:
             present = samples_df[column].notna()
+            # An entirely empty optional fastqFile2 column is inferred as a
+            # numeric dtype. Pandas does not provide the string accessor for
+            # that empty selection, so there is nothing to shorten.
+            if not present.any():
+                continue
             samples_df.loc[present, column] = (
                 samples_df.loc[present, column].str.split("/").str[-1]
             )

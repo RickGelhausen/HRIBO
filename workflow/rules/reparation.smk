@@ -38,8 +38,13 @@ rule prepareReparationAnnotation:
     resources:
         mem_mb=1000,
         runtime=10
+    log:
+        "logs/prepare_reparation_annotation.log"
     shell:
-        "python3 {input.adapter:q} -a {input.annotation:q} -o {output:q}"
+        """
+        exec > {log:q} 2>&1
+        python3 {input.adapter:q} -a {input.annotation:q} -o {output:q}
+        """
 
 
 rule uniprotDBRetrieve:

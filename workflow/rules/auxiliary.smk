@@ -54,8 +54,13 @@ rule samplesToExcel:
     conda:
         "../envs/excel.yaml"
     threads: 1
+    log:
+        "logs/samples_to_excel.log"
     shell:
-        "python3 {input.script:q} -i {input.samples:q} -o {output:q}"
+        """
+        exec > {log:q} 2>&1
+        python3 {input.script:q} -i {input.samples:q} -o {output:q}
+        """
 
 rule createExcelTotalAnnotation:
     input:
