@@ -56,6 +56,10 @@ COMPLETION_RECEIPT_CONTENT = b"HRIBO REPARATION publication v1\n"
 STAGING_LOCATOR_VERSION = "HRIBO REPARATION staging locator v1"
 STAGING_MARKER = ".hribo_reparation_stage"
 STAGING_MARKER_VERSION = "HRIBO REPARATION staging v1"
+PSITE_REAL_EXECUTABLE_ENV = "HRIBO_REPARATION_REAL_PSITE"
+PSITE_OFFSETS_ENV = "HRIBO_REPARATION_PSITE_OFFSETS"
+PSITE_CORRECTIONS_ENV = "HRIBO_REPARATION_PSITE_CORRECTIONS"
+PSITE_CORRECTION_HEADER = ["length", "original_offset", "replacement_offset"]
 
 
 class ArtifactError(RuntimeError):
@@ -561,7 +565,7 @@ def _validate_pdf(path):
         raise ArtifactError("{} is not a valid PDF".format(path.name))
 
 
-def _validate_offsets(path):
+def _parse_offsets(path):
     _require_file(path, "P-site offset table")
     with path.open(newline="", encoding="utf-8") as handle:
         numbered_rows = list(enumerate(csv.reader(handle, delimiter="\t"), 1))
@@ -576,16 +580,21 @@ def _validate_offsets(path):
         header_index == len(numbered_rows)
         or numbered_rows[header_index][1] != OFFSET_HEADER
     ):
-        raise ArtifactError("p_site_offsets.txt does not have the exact two-column header")
+        raise ArtifactError(
+            "p_site_offsets.txt does not have the exact two-column header"
+        )
     data_rows = numbered_rows[header_index + 1 :]
     if not data_rows:
         raise ArtifactError("p_site_offsets.txt has no offset data rows")
 
     lengths = set()
+    parsed_rows = []
     for line_number, row in data_rows:
         if len(row) != 2:
             raise ArtifactError(
-                "p_site_offsets.txt line {} does not have two columns".format(line_number)
+                "p_site_offsets.txt line {} does not have two columns".format(
+                    line_number
+                )
             )
         if row[0] == "default":
             length = None
@@ -593,15 +602,13 @@ def _validate_offsets(path):
             length = int(row[0])
         else:
             raise ArtifactError(
-                "p_site_offsets.txt line {} has an invalid read length".format(line_number)
+                "p_site_offsets.txt line {} has an invalid read length".format(
+                    line_number
+                )
             )
         if not INTEGER.fullmatch(row[1]) or int(row[1]) < 0:
             raise ArtifactError(
-                "p_site_offsets.txt line {} has an invalid P-site offset".format(line_number)
-            )
-        if length is not None and int(row[1]) >= length:
-            raise ArtifactError(
-                "p_site_offsets.txt line {} has an offset outside the read length".format(
+                "p_site_offsets.txt line {} has an invalid P-site offset".format(
                     line_number
                 )
             )
@@ -610,6 +617,89 @@ def _validate_offsets(path):
                 "p_site_offsets.txt has duplicate length {}".format(row[0])
             )
         lengths.add(row[0])
+        parsed_rows.append((line_number, row[0], length, int(row[1])))
+    return header_index, parsed_rows
+
+
+def _validate_offsets(path):
+    _, parsed_rows = _parse_offsets(path)
+    for line_number, _, length, offset in parsed_rows:
+        if length is not None and offset >= length:
+            raise ArtifactError(
+                "p_site_offsets.txt line {} has an offset outside the read length".format(
+                    line_number
+                )
+            )
+
+
+def _repair_psite_offsets(path):
+    """Replace impossible Plastid estimates before REPARATION consumes them."""
+    header_index, parsed_rows = _parse_offsets(path)
+    invalid_rows = [
+        row for row in parsed_rows if row[2] is not None and row[3] >= row[2]
+    ]
+    if not invalid_rows:
+        return []
+
+    defaults = [row[3] for row in parsed_rows if row[1] == "default"]
+    if not defaults:
+        raise ArtifactError(
+            "p_site_offsets.txt has out-of-range estimates but no default offset"
+        )
+    default_offset = defaults[0]
+    for line_number, _, length, _ in invalid_rows:
+        if default_offset >= length:
+            raise ArtifactError(
+                "p_site_offsets.txt default offset cannot replace the out-of-range "
+                "estimate on line {}".format(line_number)
+            )
+
+    raw_lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    corrections = []
+    for line_number, _, length, original_offset in invalid_rows:
+        raw_line = raw_lines[line_number - 1]
+        ending = "\n"
+        if raw_line.endswith("\r\n"):
+            ending = "\r\n"
+        elif not raw_line.endswith("\n"):
+            ending = ""
+        raw_lines[line_number - 1] = "{}\t{}{}".format(length, default_offset, ending)
+        corrections.append((length, original_offset, default_offset))
+
+    newline = "\n"
+    if raw_lines and raw_lines[header_index].endswith("\r\n"):
+        newline = "\r\n"
+    provenance = [
+        (
+            "# HRIBO corrected P-site offset for read length {}: {} -> {} "
+            "(Plastid default; before REPARATION occupancy){}"
+        ).format(length, original, replacement, newline)
+        for length, original, replacement in corrections
+    ]
+    raw_lines[header_index:header_index] = provenance
+
+    original_mode = stat.S_IMODE(path.stat().st_mode) & 0o666
+    temporary = path.with_name(".{}.hribo.tmp".format(path.name))
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(str(temporary), flags, 0o600)
+    try:
+        os.fchmod(descriptor, original_mode)
+        _write_all(descriptor, "".join(raw_lines).encode("utf-8"))
+        os.fsync(descriptor)
+    except BaseException:
+        if _path_exists(temporary):
+            temporary.unlink()
+        raise
+    finally:
+        os.close(descriptor)
+    try:
+        os.replace(str(temporary), str(path))
+    except BaseException:
+        if _path_exists(temporary):
+            temporary.unlink()
+        raise
+    _sync_directory(path.parent)
+    return corrections
 
 
 def _validate_png(path):
@@ -1267,6 +1357,113 @@ def _publish(staged_result, output_dir, reference_lengths):
         )
 
 
+def _write_psite_corrections(path, corrections):
+    rows = [PSITE_CORRECTION_HEADER]
+    rows.extend([str(value) for value in correction] for correction in corrections)
+    content = "".join("\t".join(row) + "\n" for row in rows).encode("ascii")
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(str(path), flags, 0o600)
+    try:
+        os.fchmod(descriptor, 0o600)
+        _write_all(descriptor, content)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    _sync_directory(path.parent)
+
+
+def _report_psite_corrections(path):
+    if not _path_exists(path):
+        return
+    _require_private_regular_file(path, "P-site correction report")
+    with path.open(newline="", encoding="ascii") as handle:
+        rows = list(csv.reader(handle, delimiter="\t"))
+    if not rows or rows[0] != PSITE_CORRECTION_HEADER or len(rows) == 1:
+        raise ArtifactError("P-site correction report is malformed: {}".format(path))
+    for row in rows[1:]:
+        if len(row) != 3 or any(INTEGER.fullmatch(value) is None for value in row):
+            raise ArtifactError(
+                "P-site correction report is malformed: {}".format(path)
+            )
+        length, original, replacement = (int(value) for value in row)
+        if length <= 0 or original < length or not 0 <= replacement < length:
+            raise ArtifactError(
+                "P-site correction report is malformed: {}".format(path)
+            )
+        print(
+            "WARNING: Plastid estimated a P-site offset of {} nt for {}-nt reads; "
+            "HRIBO replaced it with the table's default offset ({} nt) before "
+            "REPARATION calculated occupancy and predictions. Review "
+            "p_site_offset.png and p_site_offsets.txt.".format(
+                original, length, replacement
+            ),
+            file=sys.stderr,
+        )
+
+
+def _psite_environment(stage_root, result_dir):
+    environment = os.environ.copy()
+    for name in (
+        PSITE_REAL_EXECUTABLE_ENV,
+        PSITE_OFFSETS_ENV,
+        PSITE_CORRECTIONS_ENV,
+    ):
+        environment.pop(name, None)
+
+    real_psite = shutil.which("psite", path=environment.get("PATH"))
+    if real_psite is None:
+        return environment, None
+
+    shim_directory = stage_root / "hribo-bin"
+    shim_directory.mkdir(mode=0o700)
+    shim = shim_directory / "psite"
+    shutil.copyfile(str(Path(__file__).resolve()), str(shim))
+    shim.chmod(0o700)
+
+    correction_report = stage_root / ".hribo_psite_corrections.tsv"
+    environment[PSITE_REAL_EXECUTABLE_ENV] = str(Path(real_psite).resolve())
+    environment[PSITE_OFFSETS_ENV] = str(result_dir / "tmp" / "plastid_p_offsets.txt")
+    environment[PSITE_CORRECTIONS_ENV] = str(correction_report)
+    environment["PATH"] = os.pathsep.join(
+        [str(shim_directory), environment.get("PATH", os.defpath)]
+    )
+    return environment, correction_report
+
+
+def _psite_wrapper(arguments):
+    real_psite = os.environ.get(PSITE_REAL_EXECUTABLE_ENV)
+    offsets = os.environ.get(PSITE_OFFSETS_ENV)
+    correction_report = os.environ.get(PSITE_CORRECTIONS_ENV)
+    if not real_psite or not offsets or not correction_report:
+        print("ERROR: incomplete HRIBO P-site wrapper environment", file=sys.stderr)
+        return 1
+    real_path = Path(real_psite)
+    offsets_path = Path(offsets)
+    report_path = Path(correction_report)
+    if (
+        not real_path.is_absolute()
+        or not offsets_path.is_absolute()
+        or not report_path.is_absolute()
+    ):
+        print("ERROR: invalid HRIBO P-site wrapper paths", file=sys.stderr)
+        return 1
+
+    try:
+        completed = subprocess.run([str(real_path), *arguments])
+        if completed.returncode != 0:
+            return completed.returncode
+        corrections = _repair_psite_offsets(offsets_path)
+        if corrections:
+            _write_psite_corrections(report_path, corrections)
+    except (ArtifactError, OSError, UnicodeError, csv.Error) as error:
+        print(
+            "ERROR: HRIBO could not validate Plastid P-site offsets: {}".format(error),
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
+
 def _run_engine(args, stage_root, aliases):
     result_dir = stage_root / "result"
     engine = args.engine
@@ -1287,7 +1484,10 @@ def _run_engine(args, stage_root, aliases):
         "-threads",
         str(args.threads),
     ]
-    completed = subprocess.run(command, cwd=str(stage_root))
+    environment, correction_report = _psite_environment(stage_root, result_dir)
+    completed = subprocess.run(command, cwd=str(stage_root), env=environment)
+    if correction_report is not None:
+        _report_psite_corrections(correction_report)
     return completed.returncode, result_dir
 
 
@@ -1344,4 +1544,6 @@ def main():
 
 
 if __name__ == "__main__":
+    if Path(sys.argv[0]).name == "psite" and os.environ.get(PSITE_REAL_EXECUTABLE_ENV):
+        sys.exit(_psite_wrapper(sys.argv[1:]))
     sys.exit(main())

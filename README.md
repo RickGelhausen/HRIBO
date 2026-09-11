@@ -67,6 +67,7 @@ The complete user guide is available on
 [Read the Docs](https://hribo.readthedocs.io/) and in [`docs/`](docs/index.rst).
 Start with:
 
+- [HRIBO 2.0.0 PDF user manual](manual/Manual_HRIBO.pdf)
 - [installation and execution](docs/getting-started.rst)
 - [sample-sheet format](docs/samples.rst)
 - [configuration](docs/configuration.rst)

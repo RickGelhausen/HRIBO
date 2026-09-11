@@ -116,6 +116,26 @@ without an error, then inspect:
 See :doc:`metagene-profiling` and :doc:`tis-advisor` before widening filters or
 assigning an offset manually.
 
+REPARATION corrects a P-site estimate
+-------------------------------------
+
+Plastid can occasionally estimate an offset that is equal to or longer than
+the corresponding read length, particularly for a sparsely represented or
+noisy footprint length.  Such an offset cannot identify a position inside the
+read.  HRIBO therefore replaces only that estimate with the ``default`` value
+from Plastid's offset table **before** REPARATION calculates occupancy and ORF
+predictions.  The REPARATION log reports the read length, original estimate,
+and replacement; the published ``p_site_offsets.txt`` also records the
+correction in a comment.
+
+The warning does not by itself mean that the run failed.  Inspect
+``reparation/<condition>-<replicate>/p_site_offset.png`` when present and the
+corresponding ``p_site_offsets.txt``.  One corrected low-depth length may be a
+reasonable fallback.  Corrections across many well-represented lengths suggest
+that the initiation signal, annotation, footprint-length range, or library
+quality needs closer review.  HRIBO still validates the final table and stops
+if no physically valid result is available.
+
 Conda or Apptainer fails
 ------------------------
 

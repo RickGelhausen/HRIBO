@@ -1,0 +1,790 @@
+% HRIBO 2.0.0 user manual.
+% Build from the repository root with: make -C manual
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=2.25cm,headheight=15pt]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{bookmark}
+
+% Keep generated PDFs byte-stable when the source has not changed.
+\ifdefined\pdfinfoomitdate
+  \pdfinfoomitdate=1
+\fi
+\ifdefined\pdftrailerid
+  \pdftrailerid{}
+\fi
+\ifdefined\pdfsuppressptexinfo
+  \pdfsuppressptexinfo=-1
+\fi
+
+\definecolor{hriboBlue}{HTML}{245F75}
+\definecolor{hriboDark}{HTML}{183D4A}
+\definecolor{hriboLight}{HTML}{EAF3F6}
+\definecolor{codeBackground}{HTML}{F5F7F8}
+\definecolor{codeBorder}{HTML}{CBD8DD}
+\definecolor{linkBlue}{HTML}{155A8A}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=hriboBlue,
+  urlcolor=linkBlue,
+  citecolor=hriboBlue,
+  pdftitle={HRIBO 2.0.0 User Manual},
+  pdfauthor={HRIBO contributors},
+  pdfsubject={Installing, running, and interpreting HRIBO 2.0.0}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small HRIBO 2.0.0}
+\rhead{\small User Manual}
+\cfoot{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setlist[itemize]{leftmargin=1.5em,itemsep=0.25em,topsep=0.4em}
+\setlist[enumerate]{leftmargin=1.7em,itemsep=0.35em,topsep=0.4em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlength{\emergencystretch}{2em}
+\renewcommand{\arraystretch}{1.18}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\setting}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\file}[1]{\nolinkurl{#1}}
+\newcommand{\important}[1]{%
+  \par\smallskip
+  \noindent\colorbox{hriboLight}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep\relax}{\textbf{Important.} #1}}%
+  \par\smallskip
+}
+
+\lstdefinestyle{hribo}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codeBackground},
+  frame=single,
+  rulecolor=\color{codeBorder},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=0.4em,
+  xrightmargin=0.4em,
+  aboveskip=0.7em,
+  belowskip=0.7em
+}
+\lstdefinestyle{yaml}{
+  style=hribo,
+  morecomment=[l]{\#},
+  commentstyle=\color{hriboBlue}
+}
+
+\begin{document}
+
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+  \thispagestyle{empty}
+  \centering
+  \vspace*{2.2cm}
+  \includegraphics[width=0.78\textwidth]{../HRIBO.png}
+
+  \vspace{1.5cm}
+  {\Huge\bfseries User Manual\par}
+  \vspace{0.45cm}
+  {\LARGE Release 2.0.0\par}
+
+  \vspace{1.5cm}
+  {\large High-throughput analysis of bacterial ribosome-profiling data\par}
+
+  \vfill
+  \href{https://github.com/RickGelhausen/HRIBO}{github.com/RickGelhausen/HRIBO}
+
+  \href{https://hribo.readthedocs.io/}{hribo.readthedocs.io}
+\end{titlepage}
+
+\pagenumbering{roman}
+\hypersetup{pageanchor=true}
+\begingroup
+  \small
+  \setlength{\parskip}{0pt}
+  \tableofcontents
+\endgroup
+\clearpage
+\pagenumbering{arabic}
+
+\section{About HRIBO}
+
+HRIBO is a reproducible Snakemake workflow for bacterial ribosome-profiling
+data. It takes gzip-compressed sequencing reads, a reference genome, and a
+matching annotation and can produce:
+
+\begin{itemize}
+  \item adapter-trimmed reads, filtered alignments, and a combined quality report;
+  \item strand-aware BAM, BigWig, and GFF files for genome-browser inspection;
+  \item feature counts, normalized abundance, and direct translation-efficiency
+        ratios for matched libraries;
+  \item read-length summaries, metagene profiles, and data-driven TIS advice;
+  \item REPARATION and optional DeepRibo ORF predictions;
+  \item PCA, correlation, xTail, RiboRex, and deltaTE results; and
+  \item a combined feature-level overview in spreadsheet, TSV, and GFF formats.
+\end{itemize}
+
+This manual is for people running HRIBO and interpreting its primary results.
+The complete column-by-column result reference and more detailed biological
+guidance remain available in the
+\href{https://hribo.readthedocs.io/en/stable/}{online documentation}.
+
+\important{HRIBO 2.0 writes selected results directly into the analysis
+directory. The result ZIP and the \file{genome-browser/},
+\file{ORF-predictions/}, and \file{quality-control/} layouts documented for
+HRIBO 1.8 are no longer used. Start a 2.0 analysis with fresh configuration
+and sample-sheet templates.}
+
+\section{Requirements and installation}
+
+\subsection{System requirements}
+
+The supported platform is Linux on x86-64. Before starting, provide:
+
+\begin{itemize}
+  \item Conda or Micromamba;
+  \item Apptainer installed on the host;
+  \item enough disk space for the data, rule environments, containers, and
+        selected prediction resources;
+  \item a reference nucleotide FASTA and GFF3 or GTF annotation from the same
+        assembly; and
+  \item gzip-compressed FASTQ files.
+\end{itemize}
+
+The first run needs network access while Snakemake creates rule-specific Conda
+environments and downloads containers, models, or reference data required by
+the selected stages.
+
+HRIBO's continuous integration tests Apptainer 1.5.3, but the workflow does
+not enforce that exact version. A working modern installation such as 1.4.5
+does not need to be replaced merely to match the test environment. Record the
+version with the analysis and investigate it if container execution fails.
+
+\subsection{Install the 2.0.0 release}
+
+Keep the HRIBO checkout separate from every analysis directory:
+
+\begin{lstlisting}[style=hribo]
+git clone --branch 2.0.0 --single-branch \
+  https://github.com/RickGelhausen/HRIBO.git /path/to/HRIBO
+
+micromamba create --name hribo \
+  --file /path/to/HRIBO/environment.linux-64.pin.txt
+micromamba activate hribo
+
+snakemake --version
+apptainer version
+\end{lstlisting}
+
+Use \setting{conda create} instead of \setting{micromamba create} if Conda is
+preferred. HRIBO runs from its checkout and is not installed with
+\setting{pip}.
+
+\file{environment.linux-64.pin.txt} is the reproducible \emph{launcher}
+environment. It contains Snakemake, Conda, pandas, and the SLURM executor
+plugin. It is not a monolithic environment containing every scientific tool.
+Snakemake obtains those dependencies separately from \file{workflow/envs/} or
+from the pinned containers when the corresponding rule is needed.
+
+\section{Prepare an analysis}
+
+\subsection{Create a project directory}
+
+\begin{lstlisting}[style=hribo]
+mkdir -p /path/to/my-analysis/{config,data,fastq}
+
+cp /path/to/HRIBO/config/config.yaml \
+  /path/to/my-analysis/config/config.yaml
+cp /path/to/HRIBO/config/samples.tsv \
+  /path/to/my-analysis/config/samples.tsv
+\end{lstlisting}
+
+Copy or link the genome, annotation, and reads into the new project. A small
+project initially looks like:
+
+\begin{lstlisting}[style=hribo]
+my-analysis/
+|-- config/
+|   |-- config.yaml
+|   +-- samples.tsv
+|-- data/
+|   |-- genome.fa
+|   +-- annotation.gff3
++-- fastq/
+    +-- ribo-control-1.fastq.gz
+\end{lstlisting}
+
+Relative paths in the configuration and sample sheet are resolved from this
+analysis directory. The FASTA sequence identifier---the first word after
+\setting{>} in each header---must exactly match annotation column 1, including
+capitalization and any version suffix.
+
+\subsection{Describe the libraries}
+
+The sample sheet is tab-separated and has exactly these five headers:
+
+\begin{lstlisting}[style=hribo]
+method	condition	replicate	fastqFile	fastqFile2
+RIBO	Control	1	fastq/ribo-control-1.fastq.gz	""
+RIBO	Control	2	fastq/ribo-control-2.fastq.gz	""
+RNA	Control	1	fastq/rna-control-1.fastq.gz	""
+RNA	Control	2	fastq/rna-control-2.fastq.gz	""
+\end{lstlisting}
+
+Leave \setting{fastqFile2} empty for single-end data. For paired-end data,
+place read 1 in \setting{fastqFile} and read 2 in \setting{fastqFile2}.
+Single- and paired-end libraries may occur in the same sheet.
+
+\begin{tabularx}{\textwidth}{@{}p{0.19\textwidth}Y@{}}
+\toprule
+\textbf{Column} & \textbf{Required value} \\
+\midrule
+\setting{method} &
+One of \setting{RIBO}, \setting{TIS}, \setting{TTS}, \setting{RNA},
+\setting{RNATIS}, or \setting{RNATTS}; capitalization matters. \\
+\setting{condition} &
+An alphanumeric biological condition such as \setting{Control} or
+\setting{Treated}. Spaces, underscores, and hyphens are not accepted. \\
+\setting{replicate} &
+A positive integer. Each method/condition/replicate combination must be
+unique. \\
+\setting{fastqFile} &
+The gzip-compressed single-end FASTQ or read-1 FASTQ. \\
+\setting{fastqFile2} &
+The gzip-compressed read-2 FASTQ, or a genuinely empty cell for single-end
+data. \\
+\bottomrule
+\end{tabularx}
+
+HRIBO names each library
+\file{<method>-<condition>-<replicate>}, for example
+\file{RIBO-Control-1}. This name is used throughout the result tree.
+
+\subsection{Configure the inputs}
+
+Edit the complete copied \file{config/config.yaml}. Do not replace it with the
+short excerpt below, because HRIBO validates the complete section structure.
+At minimum, check all adapter fields, input paths, alternative starts, and
+requested stages:
+
+\begin{lstlisting}[style=yaml]
+biologySettings:
+  adapterS3: ""
+  adapterS5: ""
+  adapterP3R1: ""
+  adapterP5R1: ""
+  adapterP3R2: ""
+  adapterP5R2: ""
+  genome: "data/genome.fa"
+  annotation: "data/annotation.gff3"
+  samples: "config/samples.tsv"
+  alternativeStartCodons: ["GTG", "TTG"]
+
+workflowSettings:
+  stages:
+    - mapping
+    - qc
+    - tracks
+\end{lstlisting}
+
+The single-end adapter fields are \setting{adapterS3} and
+\setting{adapterS5}; the four \setting{adapterP*} fields describe paired-end
+read 1 and read 2. An empty value means no adapter is supplied. It must not be
+used as a placeholder for an unknown library preparation.
+
+\subsection{Choose the results}
+
+A stage specifies a deliverable, not an isolated step. Snakemake automatically
+runs its prerequisites. For example, requesting \setting{predictions} also
+performs the trimming, mapping, filtering, and counting needed to make those
+predictions.
+
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.24\textwidth}
+                       >{\raggedright\arraybackslash}p{0.68\textwidth}@{}}
+\toprule
+\textbf{Stage} & \textbf{Purpose} \\
+\midrule
+\endhead
+\setting{trimming} & Trim or assemble reads and run raw/processed FastQC. \\
+\setting{mapping} & Create final unique BAMs after rRNA/tRNA removal. \\
+\setting{qc} & Build the combined MultiQC report. \\
+\setting{tracks} & Create raw and normalized strand-aware BigWigs. \\
+\setting{genome_tracks} & Create possible start, stop, alternative-start, and RBS tracks. \\
+\setting{readcounts} & Count reads and create annotation/abundance workbooks. \\
+\setting{metagene} & Summarize read lengths and start/stop-centred profiles. \\
+\setting{tis_advisor} & Assess mapped read ends, usable lengths, and P-site offsets. \\
+\setting{correlation} & Compare binned genomic coverage between libraries. \\
+\setting{pca} & Inspect sample grouping using normalized counts. \\
+\setting{predictions} & Run REPARATION and, when enabled, DeepRibo. \\
+\file{differential_expression} & Run xTail, RiboRex, and deltaTE for valid contrasts. \\
+\setting{overview} & Combine annotation, abundance, predictions, and enabled differential results. \\
+\bottomrule
+\end{longtable}
+
+\setting{stages: "preprocessing"} selects trimming, mapping, and QC.
+\setting{stages: "full"} selects every stage, including differential
+expression. A custom YAML list is usually the clearest choice. A one-off
+command-line override is also possible:
+
+\begin{lstlisting}[style=hribo]
+--config stages=mapping,qc,tracks
+\end{lstlisting}
+
+\important{\setting{full} requires at least two conditions with matched RIBO
+and RNA libraries, at least two biological replicates on both sides of every
+contrast, and equal selected RIBO/RNA replicate counts. The
+\setting{overview} stage also builds the prediction results it combines and is
+not a lightweight summary-only action.}
+
+When no RIBO library is present, HRIBO removes predictions, differential
+expression, and overview. Without a RIBO, TIS, or TTS library, it also removes
+metagene and TIS-advisor work. The resolved stage list is printed at startup.
+
+\subsection{Review analysis-specific settings}
+
+\paragraph{Prediction.}
+\setting{predictionSettings.deepribo} accepts \setting{on} or \setting{off}.
+REPARATION is the base predictor. With DeepRibo enabled, the genome may contain
+only uppercase A, C, G, T, and N. \setting{deepriboASiteOffset} is measured
+from a read's 3-prime end to the ribosomal A-site. The template value 12 came
+from an \emph{E. coli} setup and must be reviewed for the protocol. It is not
+the read-length-specific 5-prime-to-P-site offset reported by the TIS advisor.
+
+\paragraph{Differential analysis.}
+\setting{differentialExpressionSettings.features} contains case-sensitive
+feature types from annotation column 3. If some requested types are absent,
+HRIBO warns and counts those that exist; if none are present, it stops with an
+error. A contrast such as \setting{Treated-Control} is left minus right, so a
+positive log2 fold change means higher signal in \setting{Treated}. The
+filtered workbook sheets use the configured \setting{padjCutoff} and inclusive
+\setting{log2fcCutoff} boundaries.
+
+\paragraph{Metagene and TIS settings.}
+Review the allowed read lengths and mapping ends for the library protocol.
+Metagene filtering and plotting are controlled independently from the TIS
+advisor. A wide TIS-advisor length range can retain evidence outside the
+expected metagene range.
+
+\section{Run HRIBO}
+
+\subsection{Validate before computing}
+
+Activate the launcher environment, enter the analysis directory, and first
+construct the complete job graph without running it:
+
+\begin{lstlisting}[style=hribo]
+micromamba activate hribo
+cd /path/to/my-analysis
+
+/path/to/HRIBO/run_hribo.sh \
+  --configfile "$PWD/config/config.yaml" \
+  --cores 8 \
+  --dry-run all
+\end{lstlisting}
+
+The preflight checks configuration keys, sample design, input files, FASTQ
+structure, reference coordinates, and sequence identifiers. Fix every
+reported error before starting a long analysis. Listing many planned jobs is
+normal in a dry-run.
+
+\subsection{Run locally}
+
+\begin{lstlisting}[style=hribo]
+/path/to/HRIBO/run_hribo.sh \
+  --configfile "$PWD/config/config.yaml" \
+  --cores 8 \
+  --rerun-incomplete \
+  --show-failed-logs all
+\end{lstlisting}
+
+The wrapper selects HRIBO's Snakefile, enables Conda and Apptainer, prints
+commands, keeps independent jobs running after a failure, waits for filesystem
+latency, and limits concurrent memory-intensive REPARATION jobs. Additional
+arguments are passed to Snakemake. Always keep the explicit \setting{all}
+target at the end.
+
+\subsection{Use a larger temporary location}
+
+On a workstation or virtual machine, \file{/tmp} may be much smaller than the
+analysis filesystem. Before launching HRIBO, point ordinary temporary files
+and Apptainer's cache/build area to directories with enough space:
+
+\begin{lstlisting}[style=hribo]
+mkdir -p "$PWD/.tmp/general" \
+         "$PWD/.tmp/apptainer-cache" \
+         "$PWD/.tmp/apptainer-build"
+
+export TMPDIR="$PWD/.tmp/general"
+export APPTAINER_CACHEDIR="$PWD/.tmp/apptainer-cache"
+export APPTAINER_TMPDIR="$PWD/.tmp/apptainer-build"
+\end{lstlisting}
+
+Set these variables in the same shell that launches HRIBO. Confirm that the
+chosen filesystem has enough capacity and is suitable for temporary data.
+The \setting{tmpdir=/tmp} text in Snakemake's displayed resources is a
+temporary-resource assignment; it does not mean every rule writes its large
+outputs there.
+
+\subsection{Resume an interrupted analysis}
+
+The normal run command with \setting{--rerun-incomplete} keeps completed
+outputs and schedules only missing or incomplete work. If Snakemake reports a
+stale lock, first confirm that no HRIBO process is using the analysis
+directory, then unlock that exact project once:
+
+\begin{lstlisting}[style=hribo]
+/path/to/HRIBO/run_hribo.sh \
+  --configfile "$PWD/config/config.yaml" \
+  --unlock
+\end{lstlisting}
+
+Never unlock an analysis while another process is active. After unlocking,
+run the usual command again with \setting{--rerun-incomplete all}.
+
+\subsection{Optional SLURM execution}
+
+For a SLURM cluster, set the site account and partition in
+\file{workflow/profiles/slurm/config.yaml}, activate the launcher environment,
+and call \file{slurm_run.sh} from the analysis directory:
+
+\begin{lstlisting}[style=hribo]
+/path/to/HRIBO/slurm_run.sh \
+  --configfile "$PWD/config/config.yaml" \
+  --dry-run all
+
+/path/to/HRIBO/slurm_run.sh \
+  --configfile "$PWD/config/config.yaml" \
+  --rerun-incomplete \
+  --show-failed-logs all
+\end{lstlisting}
+
+Modules, accounts, partitions, and storage policies are site-specific. They
+are not guessed by HRIBO.
+
+\section{Understand the results}
+
+HRIBO writes into the analysis directory. Only the selected stages and their
+prerequisites are present. For a typical analysis, inspect results in this
+order:
+
+\begin{enumerate}
+  \item Open \file{qc/multi/multiqc_report.html} and review every library.
+  \item Check correlation and PCA when multiple libraries are present.
+  \item Review fragment lengths, metagene profiles, and TIS-advisor evidence.
+  \item Inspect BAM, BigWig, and GFF files at representative loci.
+  \item Begin feature-level review with \file{auxiliary/overview.xlsx}, then
+        return to the method-specific workbook for important candidates.
+\end{enumerate}
+
+\subsection{Primary result map}
+
+\footnotesize
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.19\textwidth}
+                       >{\raggedright\arraybackslash}p{0.37\textwidth}
+                       >{\raggedright\arraybackslash}p{0.36\textwidth}@{}}
+\toprule
+\textbf{Stage} & \textbf{Primary result} & \textbf{Use} \\
+\midrule
+\endhead
+\setting{trimming} &
+\file{trimmed/<library>.fastq}; \file{qc/1raw/}; \file{qc/2trimmed/} &
+Mapping-ready reads and FastQC reports before and after trimming. \\
+\setting{mapping} &
+\file{maplink/<library>.bam} and \file{.bam.bai} &
+Final unique alignments after rRNA/tRNA removal. \\
+\setting{qc} &
+\file{qc/multi/multiqc_report.html} &
+Combined read-processing and mapping diagnostics. \\
+\setting{tracks} &
+\file{globaltracks/}, \file{centeredtracks/},
+\file{fiveprimetracks/}, \file{threeprimetracks/} &
+Raw and normalized forward/reverse BigWig coverage. \\
+\setting{genome_tracks} &
+\file{tracks/potential*.gff} &
+Potential starts, alternative starts, stops, and RBS motifs. \\
+\setting{readcounts} &
+\file{auxiliary/annotation_total.xlsx},
+\file{annotation_unique.xlsx}, and \file{*_read_counts.xlsx} &
+Feature annotation, RPKM/direct TE, and feature-class summaries. \\
+\setting{metagene} &
+\file{metageneprofiling/read_length_fractions.html} and per-library directories &
+Fragment composition and aggregate start/stop profiles. \\
+\setting{tis_advisor} &
+\file{tis_advice/<library>/tis_recommendation.html} &
+Recommended read end, usable lengths, P-site offsets, confidence, and warnings. \\
+\setting{correlation} &
+\file{figures/heatmap_SpearmanCorr_readCounts.pdf} &
+Pairwise Spearman correlation of binned coverage. \\
+\setting{pca} &
+\file{pca/PCA_3D.html}; \file{pca/diffex_QC.html} &
+Interactive sample grouping and count diagnostics. \\
+\setting{predictions} &
+\file{auxiliary/predictions_reparation.xlsx}, optional
+\file{predictions_deepribo.xlsx}, and \file{tracks/updated_annotation.gff} &
+ORF calls, scores, supporting libraries, and browser annotation. \\
+\file{differential_expression} &
+\file{xtail/<contrast>_sorted.xlsx},
+\file{riborex/<contrast>_sorted.xlsx},
+\file{deltate/<contrast>_sorted.xlsx} &
+RNA, footprint, and translation-efficiency effects and significance. \\
+\setting{overview} &
+\file{auxiliary/overview.xlsx}, \file{.tsv}, \file{.gff}, and
+\file{overview_misc.gff} &
+Joined annotation, abundance, predictions, and differential evidence. \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\subsection{Quality control and final alignments}
+
+MultiQC combines diagnostics from raw reads, trimming, mapping, and rRNA/tRNA
+filtering. Compare read counts, quality, fragment lengths, mapping rates, and
+depletion across all libraries. A completed report means that the report was
+generated; it does not mean that the experiment passed biological quality
+control.
+
+\file{maplink/<library>.bam} is a relative symbolic link to the final unique
+BAM below \file{bam/}. Moving the complete analysis tree preserves the link.
+When exporting BAMs alone, dereference the links and copy each corresponding
+\file{.bam.bai} index.
+
+\subsection{Coverage and genome-browser tracks}
+
+Each library receives four transcript-oriented views:
+
+\begin{description}[style=nextline,leftmargin=1.6em]
+  \item[\setting{global}] Coverage over all aligned reference blocks.
+  \item[\setting{centered}] Coverage after clipping the aligned read ends.
+  \item[\setting{fiveprime} and \setting{threeprime}]
+        One-position views anchored at the mapped transcript-oriented end.
+\end{description}
+
+All four default views are built from the final unique, rRNA/tRNA-filtered
+alignments. Each is available as \setting{raw}, \setting{mil} (counts per
+million mapped reads), and \setting{min} (scaled to the smallest mapped
+library). Forward values are positive and reverse values are negative so a
+browser can draw the strands on opposite sides of zero; the negative sign is
+a display convention, not negative abundance.
+
+Use the BAM and raw tracks to judge evidence within one library. Use an
+appropriate normalized track for cross-library comparison, and load the motif
+GFFs or \file{tracks/updated_annotation.gff} alongside them.
+
+\subsection{Counts, abundance, and direct TE}
+
+\file{annotation_unique.xlsx} uses uniquely mapped reads;
+\file{annotation_total.xlsx} includes fractional contributions from
+multi-mapped reads. Both provide feature-level annotation and one RPKM column
+per library. The smaller \file{unique_read_counts.xlsx} and
+\file{total_read_counts.xlsx} summarize counts by feature class.
+
+When a Ribo-like library has a matching RNA control with the same condition
+and replicate, HRIBO reports a direct translation-efficiency value:
+
+\[
+  \mathrm{TE}_{\mathrm{direct}} =
+  \frac{\mathrm{Ribo\mbox{-}like\ RPKM}}{\mathrm{matched\ RNA\mbox{-}like\ RPKM}}.
+\]
+
+This is a ratio, not a differential log2 fold change. RPKM values use the
+mapped total across the complete library, including all contigs.
+
+\subsection{Metagene profiles and TIS advice}
+
+Start with \file{metageneprofiling/read_length_fractions.html}, then open each
+library directory for the configured start- and stop-centred profiles. Check
+which read lengths contribute, the selected read end, the normalization, the
+number of included CDSs, and whether the signal fits the experimental
+protocol.
+
+The TIS-advisor HTML report is the human-readable entry point. Its
+machine-readable companions are:
+
+\begin{itemize}
+  \item \file{tis_recommendation.json}, containing the complete result; and
+  \item \file{read_length_evidence.tsv}, containing evidence for every
+        evaluated length.
+\end{itemize}
+
+Read the recommendation, confidence, warnings, and plots together. A result
+with no recommended offset can be scientifically valid when the data do not
+contain a trustworthy initiation peak.
+
+\subsection{ORF predictions}
+
+REPARATION calls are stored in
+\file{auxiliary/predictions_reparation.xlsx}. DeepRibo adds
+\file{auxiliary/predictions_deepribo.xlsx} only when enabled. Review
+coordinates, prediction score or probability, contributing libraries,
+sequence, RPKM/TE, and annotation context. Predictor support is evidence to
+evaluate, not proof of translation.
+
+\file{tracks/updated_annotation.gff} combines the supplied annotation with
+accepted prediction calls for browser inspection. Keep the individual
+workbooks when reporting which predictor supported an ORF.
+
+\subsection{Differential results}
+
+For \file{<left>-<right>}, positive log2 fold changes mean higher signal in the
+left condition. Each xTail, RiboRex, and deltaTE workbook has an
+\setting{all} sheet and prefiltered up/down sheets. deltaTE separates RNA,
+RIBO, and TE effects.
+
+Always inspect effect size and adjusted p-value together, using the cutoffs
+recorded in the configuration. The three tools model translation differently;
+agreement and disagreement are informative, and similarly named columns are
+not automatically interchangeable.
+
+\subsection{Combined overview}
+
+\file{auxiliary/overview.xlsx} is the most convenient feature-level starting
+point. Its \setting{all} sheet joins annotated and predicted CDS-like
+coordinates with sequence, per-library abundance/direct TE, prediction
+evidence, and enabled differential statistics. Other sheets contain annotated
+or feature-type subsets.
+
+\file{auxiliary/overview.tsv} provides the same main table for scripts.
+\file{auxiliary/overview.gff} represents the combined CDS set, while
+\file{auxiliary/overview_misc.gff} contains non-CDS features. Use the
+\href{https://hribo.readthedocs.io/en/stable/table-reference.html}{online
+result-table reference} for current sheet names, dynamic column conventions,
+coordinates, and missing-value rules.
+
+\section{Troubleshooting}
+
+\subsection{Find the first real failure}
+
+Start with the first failing Snakemake rule, not the final downstream summary.
+The terminal names its rule and normally points to a file below \file{logs/}.
+The recommended run command includes \setting{--show-failed-logs}; preserve
+the complete first traceback when requesting help.
+
+\subsection{Preflight stops before any rule}
+
+This is intentional. Common causes are a misspelled configuration key or stage,
+incorrect sample-sheet headers, a path resolved from the wrong directory,
+malformed or uncompressed FASTQ, mismatched FASTA/GFF sequence identifiers,
+or a differential contrast that the sample design cannot support. Correct the
+source input and repeat the dry-run rather than editing generated files.
+
+\subsection{A requested annotation feature is absent}
+
+Feature types are exact, case-sensitive values from GFF/GTF column 3. If the
+configuration requests \setting{["CDS", "sRNA"]} but the annotation contains
+only CDS, HRIBO warns, skips sRNA, and continues with CDS. It stops only when
+none of the requested feature types occur. Choose feature names that genuinely
+exist in the supplied annotation.
+
+\subsection{Zero or empty biological results}
+
+Zero mapped reads are fatal because CPM, RPKM, and normalized coverage cannot
+be calculated honestly. Work backwards through trimming, reference choice,
+mapping, and rRNA/tRNA depletion.
+
+By contrast, an all-zero metagene profile, a header-only subset, or a
+\setting{confidence: none} TIS recommendation can be a valid completed result.
+Check the rule status, mapped depth, configured lengths and filters, annotation
+boundaries, and whether the protocol should produce the expected signal.
+
+\subsection{REPARATION corrects a P-site estimate}
+
+For a sparse or noisy read length, Plastid can estimate a P-site offset that
+falls outside the read. HRIBO replaces only that impossible estimate with the
+\setting{default} value in Plastid's table before REPARATION calculates
+occupancy and ORF predictions. The log names the read length, original value,
+and replacement, and \file{p_site_offsets.txt} retains a comment recording the
+correction. The run may continue successfully because the fallback is valid;
+inspect \file{p_site_offset.png} when present and the offset table. Corrections
+for many well-represented lengths warrant closer review of the signal,
+annotation, configured footprint range, and library quality.
+
+\subsection{Conda or Apptainer fails}
+
+Confirm the active launcher environment and record:
+
+\begin{lstlisting}[style=hribo]
+micromamba activate hribo
+snakemake --version
+apptainer version
+\end{lstlisting}
+
+The bundled wrappers enable both Conda and Apptainer. The first execution may
+need network access and considerable cache space. If storage is limited,
+configure \setting{TMPDIR}, \setting{APPTAINER_CACHEDIR}, and
+\setting{APPTAINER_TMPDIR} before launching. Replacing a pinned scientific
+container with unrelated locally installed tools changes the analysis
+environment and should not be used as an unexplained workaround.
+
+\section{Reproducibility, citation, and help}
+
+For every analysis, retain:
+
+\begin{itemize}
+  \item the HRIBO version or commit;
+  \item the exact \file{config.yaml} and \file{samples.tsv};
+  \item Snakemake and Apptainer versions;
+  \item the launch command and resolved stage list;
+  \item primary results and relevant logs; and
+  \item any manual changes to offsets, filters, cutoffs, or generated tables.
+\end{itemize}
+
+If HRIBO contributes to published work, cite:
+
+\begin{quote}
+Gelhausen R, Svensson SL, Froschauer K, et al. HRIBO:
+high-throughput analysis of bacterial ribosome profiling data.
+\emph{Bioinformatics}. 2021;37(14):2061--2063.
+\href{https://doi.org/10.1093/bioinformatics/btaa959}
+{doi:10.1093/bioinformatics/btaa959}.
+\end{quote}
+
+For current instructions, visit
+\href{https://hribo.readthedocs.io/}{hribo.readthedocs.io}. To report a
+reproducible problem, use
+\href{https://github.com/RickGelhausen/HRIBO/issues}{the GitHub issue tracker}
+and include the first failing rule, its complete log, the software versions,
+the effective configuration, and a redacted sample sheet. Do not upload
+confidential sequencing data.
+
+\appendix
+\section{Pre-run checklist}
+
+\small
+\begin{itemize}[itemsep=0pt,parsep=0pt,topsep=0.2em]
+  \item The HRIBO checkout and analysis directory are separate.
+  \item The release and launcher environment report the expected versions.
+  \item The FASTA and annotation describe the same assembly and sequence IDs.
+  \item Every FASTQ is gzip-compressed and referenced from exactly one valid
+        sample-sheet row.
+  \item Adapter settings match the single- or paired-end library preparation.
+  \item The requested stages match the available library types and study
+        design.
+  \item Differential feature types occur in annotation column 3 and contrast
+        direction is recorded.
+  \item DeepRibo's offset and reference alphabet have been reviewed when it is
+        enabled.
+  \item Temporary and cache locations have enough free space.
+  \item The complete \setting{--dry-run all} succeeds before the production
+        command is launched.
+\end{itemize}
+\normalsize
+
+\end{document}

@@ -1,0 +1,96 @@
+name: Manual PDF
+
+on:
+  pull_request:
+    paths:
+      - "manual/**/*.tex"
+      - "manual/assets/**"
+      - "manual/Makefile"
+      - "manual/README.md"
+      - "HRIBO.png"
+      - ".github/workflows/manual-pdf.yml"
+  push:
+    branches:
+      - development
+      - master
+    paths:
+      - "manual/**/*.tex"
+      - "manual/assets/**"
+      - "manual/Makefile"
+      - "manual/README.md"
+      - "HRIBO.png"
+      - ".github/workflows/manual-pdf.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-pdf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile user manual
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install --yes \
+            latexmk texlive-fonts-recommended texlive-latex-extra
+
+      - name: Compile PDF
+        run: |
+          make -C manual
+          test -s manual/Manual_HRIBO.pdf
+
+      - name: Upload PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: hribo-2.0.0-user-manual
+          path: manual/Manual_HRIBO.pdf
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Refresh tracked PDF
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Download compiled PDF
+        uses: actions/download-artifact@v4
+        with:
+          name: hribo-2.0.0-user-manual
+          path: .manual-artifact
+
+      - name: Commit refreshed PDF when needed
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          cp .manual-artifact/Manual_HRIBO.pdf manual/Manual_HRIBO.pdf
+
+          if git diff --quiet -- manual/Manual_HRIBO.pdf
+          then
+            echo "The tracked PDF is already current."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manual/Manual_HRIBO.pdf
+          git commit --message "docs: rebuild PDF manual [skip ci]"
+          git push origin "HEAD:$TARGET_BRANCH"
