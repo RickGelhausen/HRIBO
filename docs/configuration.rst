@@ -99,8 +99,11 @@ annotation.
 ``deepriboASiteOffset`` is the nucleotide distance from a read's 3' end to the
 ribosomal A-site.  The template value of ``12`` was derived from the published
 DeepRibo *E. coli* setup.  Check it for the organism, nuclease, and protocol
-being analysed.  It is not the read-length-specific P-site offset reported by
-the :doc:`tis-advisor`.
+being analysed.  It is not a P-site offset.  The :doc:`tis-advisor` evaluates
+both read ends and may provide a separate, advisory-only DeepRibo A-site
+suggestion for RIBO libraries.  Compare the advice across libraries before
+changing this one global setting and rerunning predictions; HRIBO never
+applies it automatically.
 
 When DeepRibo runs, the reference sequence may contain only uppercase ``A``,
 ``C``, ``G``, ``T``, and ``N``.  Other ambiguity symbols or lowercase sequence

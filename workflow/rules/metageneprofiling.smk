@@ -143,7 +143,8 @@ rule tisAdvisor:
         neighboringGenesDistance=config["metageneSettings"]["neighboringGenesDistance"],
         rpkmThreshold=config["metageneSettings"]["rpkmThreshold"],
         lengthCutoff=config["metageneSettings"]["lengthCutoff"],
-        includePlotlyJS=config["metageneSettings"]["includePlotlyJS"]
+        includePlotlyJS=config["metageneSettings"]["includePlotlyJS"],
+        deepriboASiteOffset=config["predictionSettings"]["deepriboASiteOffset"]
     log:
         "logs/{method}-{condition}-{replicate}_tis_advisor.log"
     shell:
@@ -162,5 +163,6 @@ rule tisAdvisor:
             --rpkm_threshold {params.rpkmThreshold:q} \
             --length_cutoff {params.lengthCutoff:q} \
             --include_plotly_js {params.includePlotlyJS:q} \
+            --deepribo_asite_offset {params.deepriboASiteOffset:q} \
             > {log:q} 2>&1
         """

@@ -79,11 +79,11 @@ predictionSettings:
   # ribosome preparations and nuclease digestion protocols shift the footprint,
   # so check it rather than assuming it transfers.
   #
-  # Note that this is NOT the offset the TIS advisor reports. The advisor measures
-  # the distance from the 5' end to the P-site, whereas this is measured from the
-  # 3' end and targets the A-site. For a read of length L with an advisor offset p,
-  # the equivalent value here is roughly L - p - 4, so it depends on read length
-  # and the two numbers are not interchangeable.
+  # The TIS advisor measures P-site offsets from both 5' and 3' read ends. For
+  # RIBO libraries, its report may suggest a separate 3'-to-A-site DeepRibo
+  # value when the usable 3' read lengths agree. It does not change this setting
+  # automatically. Compare advice across libraries before changing this one
+  # global value and rerunning predictions.
   deepriboASiteOffset: 12
 
 # Read Length Statistics
@@ -149,7 +149,8 @@ metageneSettings:
 tisAdvisorSettings:
   # Whether the advisor runs at all is decided by the "tis_advisor" stage in
   # workflowSettings.stages below. It suggests read lengths and P-site offsets
-  # for a TIS caller such as ORFBounder.
+  # for a TIS caller such as ORFBounder. For RIBO libraries, it may also suggest
+  # a DeepRibo A-site offset for manual review.
 
   # Read lengths examined when looking for an initiation signal. Keep this wider
   # than the metagene readLengths so that a usable length outside the expected

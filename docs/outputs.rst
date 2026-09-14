@@ -68,7 +68,8 @@ Primary result map
    * - ``tis_advisor``
      - ``tis_advice/<library>/tis_recommendation.html``
      - Recommended mapped end, usable read lengths, per-length P-site offsets,
-       confidence, warnings, evidence, and machine-readable companions.
+       confidence, warnings, evidence, advisory DeepRibo A-site guidance for
+       RIBO libraries, and machine-readable companions.
    * - ``correlation``
      - ``figures/heatmap_SpearmanCorr_readCounts.pdf``
      - Pairwise Spearman correlation of binned genomic coverage and its source

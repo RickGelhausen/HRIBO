@@ -137,6 +137,27 @@ def test_advisor_recovers_the_three_prime_offset(reference, tmp_path):
     recommendation = payload["recommendation"]
     assert recommendation["read_end"] == "threeprime"
     assert set(recommendation["offsets"].values()) == {sim.PLANTED_THREE_PRIME_OFFSET}
+    assert payload["deepribo_a_site"]["suggested_offset"] == 12
+    assert payload["deepribo_a_site"]["applied"] is False
+
+
+def test_deepribo_advice_reports_a_change_without_applying_it(reference, tmp_path):
+    bam = tmp_path / "RIBO-3p.bam"
+    sim.write_bam(
+        bam, periodic=False, signal=True, seed=12, anchor="threeprime",
+        three_prime_offset=16,
+    )
+    out = tmp_path / "out"
+    payload = run_advisor(reference, bam, out)
+
+    advice = payload["deepribo_a_site"]
+    html = (out / "tis_recommendation.html").read_text()
+    assert advice["suggested_offset"] == 13
+    assert advice["current_offset"] == 12
+    assert advice["applied"] is False
+    assert "deepriboASiteOffset: 13" in html
+    assert "HRIBO does not change DeepRibo automatically" in html
+    assert "The suggested DeepRibo A-site offset is 13 nt" in html
 
 
 def test_both_read_ends_are_kept_in_the_output(reference, tmp_path):

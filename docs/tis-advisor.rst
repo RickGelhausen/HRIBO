@@ -6,6 +6,8 @@ start-codon signal to configure a translation-initiation-site caller such as
 ORFBounder.  It recommends a mapped read end, a set of read lengths, and a
 P-site offset for each selected length.  It does not call ORFs itself and its
 recommendation is not automatically applied to HRIBO's prediction stage.
+For RIBO libraries it also gives separate, advisory-only DeepRibo A-site offset
+guidance when the 3' read-length evidence supports one shared value.
 
 For routine review, open
 ``tis_advice/<library>/tis_recommendation.html`` first.  It summarizes the
@@ -88,15 +90,17 @@ For ``<library>``, HRIBO writes:
 
 ``tis_advice/<library>/tis_recommendation.html``
    Human-facing verdict, pasteable ORFBounder-style configuration, comparison
-   of the evaluated read ends, per-length evidence tables, and diagnostic
-   figures.
+   of the evaluated read ends, DeepRibo A-site offset advice, per-length
+   evidence tables, and diagnostic figures.
 
 ``tis_advice/<library>/tis_recommendation.json``
    Complete machine-readable result.  ``chosen_read_end`` is ``null`` when
    neither end is usable.  ``recommendation`` contains the selected lengths,
    per-length offsets, confidence, rationale, warnings, pooled metrics, and
    covered fraction.  ``read_ends`` retains the scores and recommendation for
-   every evaluated end.
+   every evaluated end.  ``deepribo_a_site`` contains the separate DeepRibo
+   suggestion or an explanation of why none was made; ``applied`` is always
+   ``false``.
 
 ``tis_advice/<library>/read_length_evidence.tsv``
    One row per evaluated length for the chosen end, or for the first configured
@@ -104,14 +108,28 @@ For ``<library>``, HRIBO writes:
    background measurements, offset, frame fractions, periodicity, a ``usable``
    flag, and rejection reasons.
 
-TIS offsets are not DeepRibo offsets
-------------------------------------
+DeepRibo advice is separate from TIS advice
+-------------------------------------------
 
 ``predictionSettings.deepriboASiteOffset`` has a different target and
 coordinate convention.  DeepRibo uses one distance from the read's 3' end to
 the ribosomal **A-site** when constructing its occupancy input.  The TIS
-advisor reports a read-length-specific distance from its chosen 5' or 3' end
-to the **P-site**.  The sites are one codon apart, the measured end may differ,
-and read length enters any conversion.  Consequently, copying an advisor
-offset into ``deepriboASiteOffset`` is not valid; inspect or calibrate the
-DeepRibo A-site setting separately for the organism and protocol.
+advisor's main recommendation reports read-length-specific distances from the
+chosen 5' or 3' end to the **P-site**.  For a RIBO library, its separate
+DeepRibo section uses all usable *3'-end* P-site estimates.  It subtracts
+three nucleotides to form an A-site candidate for each read length, then
+suggests one value only when those candidates agree and cover enough reads.
+The conversion assumes the A-site is one codon downstream of the P-site and
+simple aligned footprints; it remains an estimate to review, not a direct
+measurement of A-site position.
+
+The report compares any suggestion with the currently configured
+``deepriboASiteOffset``.  If they differ, compare the RIBO-library reports
+across conditions and replicates before changing that single global setting
+and rerunning predictions.  HRIBO never applies the advice automatically.
+When 3' mapping was not evaluated, the 3' signal is weak, a strong reading-frame
+bias points away from the annotated frame, or lengths disagree, the report gives
+no single DeepRibo setting and explains why.  Read-support percentages use reads
+accepted by the advisor, which can differ from reads accepted by DeepRibo.  A TIS
+or TTS library does not receive a DeepRibo suggestion because DeepRibo uses RIBO
+libraries.

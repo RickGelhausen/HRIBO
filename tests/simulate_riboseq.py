@@ -56,7 +56,8 @@ def write_genome(path):
                 fh.write(seq[i:i + 70] + "\n")
 
 
-def write_bam(path, periodic=True, signal=True, seed=0, anchor="fiveprime"):
+def write_bam(path, periodic=True, signal=True, seed=0, anchor="fiveprime",
+              three_prime_offset=PLANTED_THREE_PRIME_OFFSET):
     """anchor: which read end is placed at a fixed distance from the start codon.
 
     "fiveprime" mimics a protocol where the 5' end is precisely defined, so the 3'
@@ -90,11 +91,11 @@ def write_bam(path, periodic=True, signal=True, seed=0, anchor="fiveprime"):
                         else:
                             pos = cds_end + PLANTED_OFFSET - read_length + 1
                     else:
-                        # 3' end sits PLANTED_THREE_PRIME_OFFSET downstream of it
+                        # 3' end sits three_prime_offset downstream of it
                         if strand == "+":
-                            pos = cds_start + PLANTED_THREE_PRIME_OFFSET - read_length + 1
+                            pos = cds_start + three_prime_offset - read_length + 1
                         else:
-                            pos = cds_end - PLANTED_THREE_PRIME_OFFSET
+                            pos = cds_end - three_prime_offset
                     records.append((name, pos, read_length, strand))
 
                 # elongation signal along the body

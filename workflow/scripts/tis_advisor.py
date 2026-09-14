@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
 
@@ -32,6 +33,12 @@ import lib.plotting as plotting
 import lib.psite as psite
 import lib.theme as theme
 from lib.alignment import IntervalReader, LengthCounter
+
+
+DEEPRIBO_DEFAULT_A_SITE_OFFSET = 12
+DEEPRIBO_MIN_AGREEMENT = 0.80
+DEEPRIBO_MIN_READ_SUPPORT = 0.50
+DEEPRIBO_SINGLE_LENGTH_READ_SUPPORT = 0.80
 
 
 def parse_arguments(argv=None):
@@ -71,6 +78,9 @@ def parse_arguments(argv=None):
                         choices=["integrated", "online", "local"],
                         help="How the report references plotly.js. 'integrated' is self "
                              "contained but adds several megabytes per report.")
+    parser.add_argument("--deepribo_asite_offset", type=int,
+                        default=DEEPRIBO_DEFAULT_A_SITE_OFFSET,
+                        help="Current DeepRibo 3'-to-A-site offset, shown for comparison only.")
     return parser.parse_args(argv)
 
 
@@ -135,7 +145,7 @@ def build_profiles(args):
         for read_length, count in length_counts[chromosome].items():
             totals[int(read_length)] = totals.get(int(read_length), 0) + count
 
-    return profiles_by_end, totals
+    return profiles_by_end, totals, sum(total_counts.values())
 
 
 def _sum_over_chromosomes(coverage, wanted_lengths, window_length):
@@ -194,6 +204,105 @@ def orfbounder_config(recommendation):
     )
 
 
+def deepribo_asite_advice(library, comparisons, total_reads, current_offset):
+    """Suggest a DeepRibo scalar only when usable 3' peaks agree across reads.
+
+    DeepRibo currently uses one 3'-to-A-site offset for the RIBO reads it accepts.
+    A site's first base is three nucleotides downstream of the P site's first
+    base, so the candidate from a 3'-to-P offset is offset - 3. The TIS caller's
+    greedy read-length subset is intentionally not used here: it can conceal
+    conflicting estimates at other abundant lengths that DeepRibo still reads.
+    """
+    advice = {
+        "current_offset": current_offset,
+        "suggested_offset": None,
+        "applied": False,
+        "per_length_offsets": {},
+        "supporting_read_lengths": [],
+        "agreement_fraction": 0.0,
+        "read_support_fraction": 0.0,
+        "reason": "",
+    }
+    if not library.startswith("RIBO-"):
+        advice["reason"] = "DeepRibo uses RIBO libraries; this is not a RIBO library."
+        return advice
+
+    threeprime = next((c for c in comparisons if c.read_end == "threeprime"), None)
+    if threeprime is None:
+        advice["reason"] = "3' read ends were not evaluated."
+        return advice
+    if threeprime.recommendation.confidence not in {"medium", "high"}:
+        advice["reason"] = "The 3' initiation signal is not strong enough for a DeepRibo suggestion."
+        return advice
+    fractions = threeprime.recommendation.frame_fractions
+    if max(fractions) >= 0.5 and fractions[0] < max(fractions):
+        advice["reason"] = (
+            "The dominant 3' P-site reading frame is not frame 0; the estimated "
+            "offsets may be shifted, so no DeepRibo value is suggested."
+        )
+        return advice
+
+    by_offset = defaultdict(list)
+    for score in threeprime.scores:
+        if not score.usable or score.offset is None or score.total_reads <= 0:
+            continue
+        candidate = score.offset - 3
+        if not 0 <= candidate < score.read_length or candidate > 30:
+            continue
+        advice["per_length_offsets"][str(score.read_length)] = candidate
+        by_offset[candidate].append(score)
+
+    if not by_offset or total_reads <= 0:
+        advice["reason"] = "No usable 3' P-site estimates yield a valid A-site offset."
+        return advice
+
+    weights = {
+        offset: sum(score.total_reads for score in scores)
+        for offset, scores in by_offset.items()
+    }
+    max_weight = max(weights.values())
+    leaders = [offset for offset, weight in weights.items() if weight == max_weight]
+    if len(leaders) != 1:
+        advice["reason"] = "Usable read lengths have equally supported but different A-site offsets."
+        return advice
+
+    candidate = leaders[0]
+    supporting_scores = by_offset[candidate]
+    usable_reads = sum(weights.values())
+    agreement = max_weight / usable_reads
+    read_support = max_weight / total_reads
+    advice["supporting_read_lengths"] = sorted(s.read_length for s in supporting_scores)
+    advice["agreement_fraction"] = round(agreement, 4)
+    advice["read_support_fraction"] = round(read_support, 4)
+
+    if agreement < DEEPRIBO_MIN_AGREEMENT:
+        advice["reason"] = (
+            "Usable 3' read lengths disagree on a single A-site offset "
+            f"({agreement:.0%} agreement; at least {DEEPRIBO_MIN_AGREEMENT:.0%} required)."
+        )
+    elif read_support < DEEPRIBO_MIN_READ_SUPPORT:
+        advice["reason"] = (
+            "The best A-site offset represents too few reads accepted by the advisor "
+            f"({read_support:.0%}; at least {DEEPRIBO_MIN_READ_SUPPORT:.0%} required)."
+        )
+    elif (
+        len(supporting_scores) == 1
+        and read_support < DEEPRIBO_SINGLE_LENGTH_READ_SUPPORT
+    ):
+        advice["reason"] = (
+            "Only one read length supports the A-site offset, without dominating "
+            f"the library ({read_support:.0%}; at least "
+            f"{DEEPRIBO_SINGLE_LENGTH_READ_SUPPORT:.0%} required)."
+        )
+    else:
+        advice["suggested_offset"] = candidate
+        advice["reason"] = (
+            f"{agreement:.0%} of usable 3' reads and {read_support:.0%} of all "
+            "reads accepted by the advisor support this offset."
+        )
+    return advice
+
+
 def scores_to_tsv(scores, path):
     header = [
         "read_length", "total_reads", "abundance", "offset", "peak_height",
@@ -220,7 +329,8 @@ def scores_to_tsv(scores, path):
             ]) + "\n")
 
 
-def render_report(library, best, comparisons, figures, path, include_plotly_js="integrated"):
+def render_report(library, best, comparisons, figures, asite_advice, path,
+                  include_plotly_js="integrated"):
     """The human-facing report: verdict first, then the evidence behind it."""
     recommendation = best.recommendation if best else comparisons[0].recommendation
     colour = theme.CONFIDENCE_COLORS.get(recommendation.confidence, theme.INK_MUTED)
@@ -254,6 +364,37 @@ def render_report(library, best, comparisons, figures, path, include_plotly_js="
 
     parts.append("<h2>Suggested configuration</h2>")
     parts.append(f"<pre><code>{orfbounder_config(recommendation)}</code></pre>")
+
+    parts.append("<h2>DeepRibo A-site offset advice</h2>")
+    suggested = asite_advice["suggested_offset"]
+    current = asite_advice["current_offset"]
+    if suggested is None:
+        parts.append("<p>No single DeepRibo offset is suggested for this library.</p>")
+    elif suggested == current:
+        parts.append(f"<p>The suggested DeepRibo A-site offset is {suggested} nt, "
+                     "matching the current configuration.</p>")
+    else:
+        parts.append(f"<p>The suggested DeepRibo A-site offset is {suggested} nt; "
+                     f"the current configuration is {current} nt.</p>")
+        parts.append("<p>In the existing <code>predictionSettings</code> block, "
+                     "change only this line if the advice is appropriate:</p>")
+        parts.append(f"<pre><code>  deepriboASiteOffset: {suggested}</code></pre>")
+    parts.append(f"<p>{asite_advice['reason']}</p>")
+    if asite_advice["per_length_offsets"]:
+        values = ", ".join(
+            f"{length} nt → {offset} nt"
+            for length, offset in sorted(
+                asite_advice["per_length_offsets"].items(),
+                key=lambda item: int(item[0]),
+            )
+        )
+        parts.append(f"<p>Usable 3' read-length candidates: {values}.</p>")
+    parts.append(
+        "<p>This is advice only: HRIBO does not change DeepRibo automatically. "
+        "The estimate assumes the A-site is one codon downstream of the P-site. "
+        "DeepRibo uses one global offset, so compare advice across RIBO "
+        "libraries before changing the setting and rerunning predictions.</p>"
+    )
 
     parts.append("<h2>5' against 3' mapping</h2>")
     parts.append(_end_comparison_table(comparisons, best))
@@ -364,11 +505,14 @@ def main():
     start_coordinates, stop_coordinates = metagene_coordinates(
         args.positions_out_ORF, args.positions_in_ORF
     )
-    profiles_by_end, totals = build_profiles(args)
+    profiles_by_end, totals, total_reads = build_profiles(args)
 
     start_by_end = {end: start for end, (start, _) in profiles_by_end.items()}
     best, comparisons = psite.compare_read_ends(
         start_by_end, start_coordinates, totals
+    )
+    asite_advice = deepribo_asite_advice(
+        library, comparisons, total_reads, args.deepribo_asite_offset
     )
 
     # Figures follow the chosen end; the other end's numbers stay in the tables.
@@ -406,7 +550,7 @@ def main():
             f"{end_label} mapping, read lengths "
             f"{', '.join(str(length) for length in recommendation.read_lengths)}")))
 
-    render_report(library, best, comparisons, figures,
+    render_report(library, best, comparisons, figures, asite_advice,
                   args.output_dir_path / "tis_recommendation.html", args.include_plotly_js)
     scores_to_tsv(scores, args.output_dir_path / "read_length_evidence.tsv")
 
@@ -414,6 +558,7 @@ def main():
         "library": library,
         "evaluated_read_ends": list(profiles_by_end),
         "chosen_read_end": chosen if best else None,
+        "deepribo_a_site": asite_advice,
         "recommendation": {
             **asdict(recommendation),
             "offsets": {str(k): v for k, v in recommendation.offsets.items()},

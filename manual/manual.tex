@@ -365,8 +365,11 @@ metagene and TIS-advisor work. The resolved stage list is printed at startup.
 REPARATION is the base predictor. With DeepRibo enabled, the genome may contain
 only uppercase A, C, G, T, and N. \setting{deepriboASiteOffset} is measured
 from a read's 3-prime end to the ribosomal A-site. The template value 12 came
-from an \emph{E. coli} setup and must be reviewed for the protocol. It is not
-the read-length-specific 5-prime-to-P-site offset reported by the TIS advisor.
+from an \emph{E. coli} setup and must be reviewed for the protocol. The TIS
+advisor evaluates P-site offsets from both read ends and, for RIBO libraries,
+may also suggest a separate DeepRibo A-site value. This is advice only: compare
+RIBO libraries before changing the single global setting and rerunning
+predictions. HRIBO never applies it automatically.
 
 \paragraph{Differential analysis.}
 \setting{differentialExpressionSettings.features} contains case-sensitive
@@ -529,7 +532,8 @@ Feature annotation, RPKM/direct TE, and feature-class summaries. \\
 Fragment composition and aggregate start/stop profiles. \\
 \setting{tis_advisor} &
 \file{tis_advice/<library>/tis_recommendation.html} &
-Recommended read end, usable lengths, P-site offsets, confidence, and warnings. \\
+Recommended read end, usable lengths, P-site offsets, confidence, warnings,
+and separate DeepRibo A-site advice for RIBO libraries. \\
 \setting{correlation} &
 \file{figures/heatmap_SpearmanCorr_readCounts.pdf} &
 Pairwise Spearman correlation of binned coverage. \\
@@ -627,6 +631,13 @@ machine-readable companions are:
 Read the recommendation, confidence, warnings, and plots together. A result
 with no recommended offset can be scientifically valid when the data do not
 contain a trustworthy initiation peak.
+
+The DeepRibo section converts usable 3-prime-to-P-site estimates to candidate
+3-prime-to-A-site offsets by subtracting one codon. It suggests one scalar only
+when the read lengths agree and represent enough of the RIBO library. Compare
+that suggestion with \setting{predictionSettings.deepriboASiteOffset} and with
+other RIBO libraries. Change the global setting and rerun predictions only
+after review; the advisor does not change it for you.
 
 \subsection{ORF predictions}
 
