@@ -334,7 +334,7 @@ predictions.
 \setting{correlation} & Compare binned genomic coverage between libraries. \\
 \setting{pca} & Inspect sample grouping using normalized counts. \\
 \setting{predictions} & Run REPARATION and, when enabled, DeepRibo. \\
-\file{differential_expression} & Run xTail, RiboRex, and deltaTE for valid contrasts. \\
+\file{differential_expression} & Run xTail, RiboRex, and deltaTE and build a cross-condition report for valid contrasts. \\
 \setting{overview} & Combine annotation, abundance, predictions, and enabled differential results. \\
 \bottomrule
 \end{longtable}
@@ -378,7 +378,15 @@ HRIBO warns and counts those that exist; if none are present, it stops with an
 error. A contrast such as \setting{Treated-Control} is left minus right, so a
 positive log2 fold change means higher signal in \setting{Treated}. The
 filtered workbook sheets use the configured \setting{padjCutoff} and inclusive
-\setting{log2fcCutoff} boundaries.
+\setting{log2fcCutoff} boundaries. The cross-condition report uses separate
+\setting{detectionMinCPM}, \setting{detectionMinCount}, and
+\setting{detectionMinReplicates} thresholds (defaults: 1 CPM, 10 reads, 2
+replicates). A replicate passes detection only when both CPM and raw count
+meet their thresholds. A feature is detected if enough replicates pass, not
+detected if none pass and enough usable replicates were available, and uncertain
+otherwise. A zero-depth sample has undefined CPM and is not a usable
+replicate. Detection is separate for RNA and RIBO; these settings do not
+change the statistical tests.
 
 \paragraph{Metagene and TIS settings.}
 Review the allowed read lengths and mapping ends for the library protocol.
@@ -545,10 +553,12 @@ Interactive sample grouping and count diagnostics. \\
 \file{predictions_deepribo.xlsx}, and \file{tracks/updated_annotation.gff} &
 ORF calls, scores, supporting libraries, and browser annotation. \\
 \file{differential_expression} &
+\file{diffex_summary/condition_overview.html},
 \file{xtail/<contrast>_sorted.xlsx},
 \file{riborex/<contrast>_sorted.xlsx},
 \file{deltate/<contrast>_sorted.xlsx} &
-RNA, footprint, and translation-efficiency effects and significance. \\
+Visual condition detection and contrast changes, browser tracks, and detailed
+RNA, footprint, and translation-efficiency statistics. \\
 \setting{overview} &
 \file{auxiliary/overview.xlsx}, \file{.tsv}, \file{.gff}, and
 \file{overview_misc.gff} &
@@ -653,6 +663,29 @@ accepted prediction calls for browser inspection. Keep the individual
 workbooks when reporting which predictor supported an ORF.
 
 \subsection{Differential results}
+
+Open \file{diffex_summary/condition_overview.html} to scan a searchable
+feature-by-condition matrix of RNA and RIBO detection and a separate
+feature-by-contrast matrix of RNA, RIBO, and translation-efficiency (TE)
+changes. The adjacent \file{condition_matrix.tsv},
+\file{contrast_matrix.tsv}, and \file{browser_tracks.tsv} retain the tabular
+results. Selected detected features and up/down contrasts are exported as
+separate \file{diffex_summary/browser/*.gff3} tracks. Load these alongside
+the final BAM or BigWig tracks for locus inspection. The report is part of
+\file{differential_expression}; it does not require the prediction-dependent
+\setting{overview} stage.
+
+Detection states are detected, not detected, or uncertain, based on the
+configured count, CPM, and replicate thresholds. Not detected means below
+the chosen evidence threshold at this sequencing depth, not proven biological
+absence. Contrast states are up, down, no directional call, or not tested.
+The machine value \setting{not\_significant} means that both directional
+thresholds were not met; it does not establish a high adjusted p-value or
+zero effect, and is not interchangeable with not detected. The RNA, RIBO, and
+TE contrast states come from deltaTE; xTail and RiboRex TE estimates are
+supplemental evidence rather than votes in a combined test. See the
+\href{https://hribo.readthedocs.io/en/stable/differential-summary.html}{online
+cross-condition report guide} for interpretation and browser-track use.
 
 For \file{<left>-<right>}, positive log2 fold changes mean higher signal in the
 left condition. Each xTail, RiboRex, and deltaTE workbook has an

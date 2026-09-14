@@ -21,9 +21,12 @@ For a typical analysis, review the results in this order:
    with its recommended offsets.
 4. Load the final BAM, BigWig, and GFF files in a genome browser to inspect
    individual loci.
-5. Use ``auxiliary/overview.xlsx`` as the entry point for feature-level
-   abundance, prediction evidence, and differential results.  Consult the
-   predictor- or method-specific workbooks before accepting a candidate.
+5. For experiments with multiple conditions, open
+   ``diffex_summary/condition_overview.html`` to scan detection and
+   differential patterns before inspecting individual contrasts.  Use
+   ``auxiliary/overview.xlsx`` for feature-level abundance and prediction
+   evidence.  Consult the predictor- or method-specific workbooks before
+   accepting a candidate.
 
 Primary result map
 ------------------
@@ -84,11 +87,13 @@ Primary result map
        context.  ``tracks/updated_annotation.gff`` combines accepted calls with
        the supplied annotation.
    * - ``differential_expression``
-     - ``xtail/<contrast>_sorted.xlsx``,
+     - ``diffex_summary/condition_overview.html``,
+       ``xtail/<contrast>_sorted.xlsx``,
        ``riborex/<contrast>_sorted.xlsx``, and
        ``deltate/<contrast>_sorted.xlsx``
-     - Per-feature RNA, footprint, and/or translation-efficiency effects,
-       p-values, adjusted p-values, and prefiltered up/down sheets.
+     - Searchable condition-detection and contrast-change matrices, TSV
+       companions and browser GFF3 tracks, plus detailed per-feature RNA,
+       footprint, and/or translation-efficiency statistics and filtered sheets.
    * - ``overview``
      - ``auxiliary/overview.xlsx``
      - Consolidated annotation, sequences, abundance, direct TE, predictor
@@ -116,6 +121,8 @@ omitted):
    ├── tis_advice/<library>/
    ├── figures/heatmap_SpearmanCorr_readCounts.pdf
    ├── pca/PCA_3D.html
+   ├── diffex_summary/condition_overview.html
+   ├── diffex_summary/browser/*.gff3
    ├── xtail/ ... riborex/ ... deltate/
    └── logs/
 
@@ -234,6 +241,19 @@ changes.  The filtered sheets use ``padjCutoff`` and ``log2fcCutoff`` from the
 configuration; always inspect the effect size and adjusted p-value together.
 The three tools model translation differently, so review agreement and
 disagreement rather than treating one column as interchangeable across tools.
+
+For a cross-condition overview, open
+``diffex_summary/condition_overview.html``.  It separates the RNA and RIBO
+**detection** state of each feature in each condition from its RNA, RIBO, and
+TE **differential** state in each contrast.  Search and filter the matrices to
+find condition-specific or shared patterns, then inspect the underlying
+counts, fold changes, and adjusted p-values.  Detection depends on a stated
+read-count and CPM threshold across biological replicates; ``not_detected``
+is not proof of biological absence.  The ``not_significant`` machine state
+means no directional call under both statistical cutoffs, not necessarily a
+high adjusted p-value or zero effect.  The adjacent TSV matrices and browser
+GFF3 tracks are described in :doc:`differential-summary`.  This report does
+not require the prediction-dependent ``overview`` stage.
 
 Combined overview
 -----------------

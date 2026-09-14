@@ -55,6 +55,14 @@ differentialExpressionSettings:
   # boundaries are upregulated: >= log2fcCutoff, downregulated: <= -log2fcCutoff.
   log2fcCutoff: 1.0
 
+  # A feature is called detected for one method and condition when at least
+  # this many replicates each have both the minimum raw count and CPM. The
+  # cross-condition report keeps "not detected" separate from "not tested";
+  # these thresholds do not change the differential-expression tests.
+  detectionMinCPM: 1
+  detectionMinCount: 10
+  detectionMinReplicates: 2
+
   # Number of probability-density bins used by xTail. Larger values improve
   # p-value accuracy at the cost of runtime (xTail's default is 10000).
   xtailBins: 10000
@@ -194,8 +202,9 @@ workflowSettings:
     - correlation              # the Spearman correlation heatmap between libraries
     - pca                      # the PCA plot of the read counts
     - predictions              # ORF predictions plus a combined updated annotation
-    # - differential_expression  # xtail, riborex and deltaTE; needs RNA-seq libraries
-                                 # and at least two conditions
+    # - differential_expression  # xTail, RiboRex, deltaTE, a cross-condition
+                                 # overview and browser tracks; needs RNA-seq
+                                 # libraries and at least two conditions
     - overview                 # the combined overview spreadsheet
   #
   # predictions, differential_expression and overview need Ribo-seq libraries and

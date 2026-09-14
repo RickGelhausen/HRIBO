@@ -122,6 +122,7 @@ if DIFFEXPRESS:
     include: "rules/diffex_xtail.smk"
     include: "rules/diffex_riborex.smk"
     include: "rules/diffex_deltate.smk"
+    include: "rules/diffex_summary.smk"
 
 if DEEPRIBO:
     #deepribo
@@ -181,6 +182,7 @@ if "differential_expression" in STAGES:
     hribo_output.extend(f"contrasts/{contrast}" for contrast in CONTRASTS)
     for tool in ("xtail", "riborex", "deltate"):
         hribo_output.extend(f"{tool}/{contrast}_sorted.xlsx" for contrast in CONTRASTS)
+    hribo_output.extend(rules.conditionOverview.output)
 
 if "overview" in STAGES:
     hribo_output.extend(rules.createOverviewTable.output)

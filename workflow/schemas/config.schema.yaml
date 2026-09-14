@@ -149,6 +149,27 @@ properties:
         description: >
           Applied as >= log2fcCutoff for upregulated and <= -log2fcCutoff for
           downregulated features, so it is given as a non-negative number.
+      detectionMinCPM:
+        type: number
+        minimum: 0
+        default: 1
+        description: >
+          Minimum CPM per replicate to call a feature detected in the
+          cross-condition overview. Does not change differential-expression tests.
+      detectionMinCount:
+        type: integer
+        minimum: 1
+        default: 10
+        description: >
+          Minimum raw count per replicate to call a feature detected in the
+          cross-condition overview. Does not change differential-expression tests.
+      detectionMinReplicates:
+        type: integer
+        minimum: 1
+        default: 2
+        description: >
+          Minimum number of qualifying replicates needed for a detection call.
+          Conditions with fewer replicates cannot be classified as not detected.
       xtailBins:
         type: integer
         minimum: 1

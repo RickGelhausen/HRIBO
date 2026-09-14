@@ -53,9 +53,10 @@ types are:
    * - ORF predictions
      - ``auxiliary/predictions_*.xlsx``
      - Review REPARATION and optional DeepRibo candidates.
-   * - Differential translation
-     - ``xtail/``, ``riborex/``, and ``deltate/``
-     - Compare matched Ribo-seq and RNA-seq conditions.
+   * - Differential translation and condition overview
+     - ``diffex_summary/``, ``xtail/``, ``riborex/``, and ``deltate/``
+     - Scan condition-specific detection and RNA, RIBO, or TE changes, then
+       inspect detailed contrast results.
    * - Combined overview
      - ``auxiliary/overview.xlsx``
      - Explore annotation, abundance, prediction, and differential evidence in
@@ -81,6 +82,7 @@ answers and which files are primary results rather than supporting data.
 
    outputs
    table-reference
+   differential-summary
    metagene-profiling
    tis-advisor
 

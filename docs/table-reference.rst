@@ -246,6 +246,69 @@ contrasts are inferred, every pair of eligible conditions is generated in a
 deterministic order.  A missing tool/feature/contrast result leaves blank
 cells; the columns are not removed.
 
+Cross-condition summary tables
+------------------------------
+
+The ``differential_expression`` stage also writes a searchable report at
+``diffex_summary/condition_overview.html`` and three tab-separated companion
+tables.  See :doc:`differential-summary` for the visual interpretation and
+browser-track guide.  The summary is independent of the prediction-dependent
+``overview`` stage.
+
+``diffex_summary/condition_matrix.tsv`` has one feature/condition/assay row
+for RNA or RIBO detection, with columns in this order:
+
+.. code-block:: text
+
+   feature_id, genome, start, end, strand, feature_type, name,
+   condition, assay, state, replicates, passing_replicates,
+   mean_count, mean_cpm, sample_counts, sample_cpms
+
+``state`` is ``detected``, ``not_detected``, or ``uncertain``.  A replicate
+passes when both its raw count and CPM meet the configured minimums.
+``detected`` requires at least ``detectionMinReplicates`` passing replicates;
+``not_detected`` requires none passing and at least that many usable
+replicates.  Other cases are ``uncertain``.  ``replicates`` counts samples
+with a non-zero assay-wide count total; zero-depth samples have undefined
+CPM and are not counted.  ``passing_replicates`` counts those meeting both
+thresholds.  ``sample_counts`` and ``sample_cpms`` contain semicolon-separated
+``<sample>=<value>`` entries so individual replicate values are not hidden by
+the means.
+
+``diffex_summary/contrast_matrix.tsv`` has one feature/contrast/assay row,
+with columns in this order:
+
+.. code-block:: text
+
+   feature_id, genome, start, end, strand, feature_type, name,
+   contrast, assay, state, log2fc, padj, method,
+   xtail_te_log2fc, xtail_te_padj,
+   riborex_te_log2fc, riborex_te_padj
+
+``assay`` is RNA, RIBO, or TE.  ``state`` is ``up``, ``down``,
+``not_significant``, or ``not_tested``.  The ``log2fc`` direction is left
+minus right.  Up/down calls require both ``padj <= padjCutoff`` and a fold
+change at least ``log2fcCutoff`` in the matching direction.  The three
+primary assay states use deltaTE statistics; the xTail and RiboRex columns
+are supplemental TE-only results, not combined p-values or extra votes in
+the ``state`` field.  ``not_significant`` is the machine-readable name for
+"no directional call under both thresholds"; its adjusted p-value may still
+be below the configured cutoff when the effect-size boundary is not met.
+``not_tested`` means an effect estimate or adjusted p-value is missing.
+
+``diffex_summary/browser_tracks.tsv`` indexes the generated GFF3 tracks:
+
+.. code-block:: text
+
+   path, kind, condition, contrast, assay, direction, feature_count
+
+``kind`` separates condition-detection from contrast-change tracks.
+``feature_count`` is the number of selected features in that track.  A
+missing feature in a GFF3 track may be ``uncertain``, ``not_significant``, or
+``not_tested`` rather than absent; look up its TSV row before interpreting
+the omission.  ``diffex_summary/browser/tracks_manifest.json`` also records
+the track files and feature IDs that lack browser coordinates.
+
 Differential-expression workbooks
 ---------------------------------
 

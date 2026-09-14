@@ -51,8 +51,11 @@ Stage catalogue
      - REPARATION and optional DeepRibo workbooks plus
        ``tracks/updated_annotation.gff``.
    * - ``differential_expression``
-     - Which features change at RNA, footprint, or translation-efficiency level?
-     - Per-contrast xTail, RiboRex, and deltaTE workbooks.
+     - Which features are detected by condition, and which change at RNA,
+       footprint, or translation-efficiency level?
+     - Cross-condition HTML report, TSV matrices, and browser GFF3 tracks in
+       ``diffex_summary/``, plus per-contrast xTail, RiboRex, and deltaTE
+       workbooks.
    * - ``overview``
      - How can annotation, abundance, predictions, and differential evidence be
        reviewed together?
@@ -98,6 +101,8 @@ For a smaller custom analysis, provide a list.  Some useful patterns are:
      - ``qc``, ``pca``, ``correlation``, ``differential_expression``,
        ``overview``
 
+The cross-condition report belongs to ``differential_expression`` and does
+not require ``overview`` or predictions; see :doc:`differential-summary`.
 ``overview`` is not a lightweight summary-only stage.  It builds the
 prediction results it combines, including DeepRibo when enabled.  When
 differential expression is selected, it also collects those contrast results.

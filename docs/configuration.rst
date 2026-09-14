@@ -135,12 +135,24 @@ deltaTE.  Configure it under ``differentialExpressionSettings``:
    Non-negative absolute log2-fold-change threshold used for the filtered
    ``up`` and ``down`` sheets.  Values equal to either boundary are included.
 
+``detectionMinCPM``, ``detectionMinCount``, and ``detectionMinReplicates``
+   Thresholds for the cross-condition detection report, with defaults of 1
+   count per million, 10 raw reads, and 2 biological replicates.  RNA and
+   RIBO are evaluated separately.  A replicate passes only when it meets
+   both count and CPM thresholds; a feature is ``detected`` if enough
+   replicates pass, ``not_detected`` if none pass and enough usable replicates
+   were available, and ``uncertain`` otherwise.  Zero-depth samples have
+   undefined CPM and are not usable.  These are evidence thresholds,
+   not statistical tests.  They do not change xTail, RiboRex, or deltaTE.
+
 ``xtailBins`` and ``xtailMinMeanCount``
    xTail density resolution and minimum mean RNA/RPF count.  Higher bin counts
    take longer.  Change these only as part of a documented analysis choice.
 
-The required library design is described in :doc:`samples`, and workbook
-fields and sheet names are explained in :doc:`table-reference`.
+The required library design is described in :doc:`samples`.  The visual
+cross-condition report and its browser tracks are explained in
+:doc:`differential-summary`; workbook fields and sheet names are explained in
+:doc:`table-reference`.
 
 Read lengths and metagene profiles
 ----------------------------------
