@@ -15,12 +15,13 @@ rule conditionOverview:
         ]
     output:
         html="diffex_summary/condition_overview.html",
+        xlsx="diffex_summary/condition_overview.xlsx",
         condition_matrix="diffex_summary/condition_matrix.tsv",
         contrast_matrix="diffex_summary/contrast_matrix.tsv",
         browser_manifest="diffex_summary/browser_tracks.tsv",
         browser=directory("diffex_summary/browser")
     conda:
-        "../envs/pytools.yaml"
+        "../envs/excel.yaml"
     threads: 1
     resources:
         mem_mb=8000,

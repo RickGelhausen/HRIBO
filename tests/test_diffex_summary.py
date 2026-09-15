@@ -166,6 +166,8 @@ def test_end_to_end_report_and_browser_tracks_are_consistent(tmp_path):
     assert "RNA detection" in page and "TE change" in page
     assert "No directional call" in page
     assert "condition_matrix.tsv" in page
+    assert "condition_overview.xlsx" in page
+    assert (out / "condition_overview.xlsx").is_file()
     assert '"aliases":["geneA","b0001","A"]' in page
 
 
@@ -181,6 +183,31 @@ def test_output_is_deterministic(tmp_path):
     summary.main([*arguments, "--output_dir", str(second)])
     for filename in ("condition_matrix.tsv", "contrast_matrix.tsv", "browser_tracks.tsv", "condition_overview.html"):
         assert (first / filename).read_bytes() == (second / filename).read_bytes()
+
+
+def test_html_sorting_is_state_aware_stable_and_precedes_pagination(tmp_path):
+    page_path = tmp_path / "condition_overview.html"
+    settings = SimpleNamespace(
+        min_cpm=1, min_count=10, min_replicates=2,
+        padj_cutoff=0.05, log2fc_cutoff=1,
+    )
+
+    summary.write_html(
+        page_path, [], {}, ["WT", "Mut"], ["Mut-WT"], settings,
+    )
+    page = page_path.read_text()
+
+    assert "columns.append(sortHeader('Feature','feature','feature'))" in page
+    assert "columns.append(sortHeader(col,cellSortKey(assay,kind,col)))" in page
+    assert "th.setAttribute('aria-sort'" in page
+    assert "indicator.className='sort-indicator'" in page
+    assert "?'▲':'▼'):'↕'" in page
+    assert "sortDirection=sortDirection==='asc'?'desc':'asc'" in page
+    assert "const stateRank={condition:" in page
+    assert "leftCall.mean_cpm" in page
+    assert "Math.abs(leftCall.log2fc)" in page
+    assert "return order||left.index-right.index" in page
+    assert page.index("sortRows(chooseRows(") < page.index("selected.slice(")
 
 
 def test_annotation_names_cannot_break_out_of_json_script(tmp_path):

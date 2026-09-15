@@ -22,6 +22,9 @@ Notable changes since 1.8.1 include:
   PCA rank handling, hard failure validation for external engines, and
   annotation-aware feature selection that warns and skips unavailable optional
   feature types;
+- added a cross-condition differential-expression summary with sortable HTML,
+  matching multi-sheet Excel views, long-form TSV data, and browser-ready GFF3
+  tracks;
 - hardened Reparation, DeepRibo, and deltaTE container boundaries with pinned
   artifacts, atomic output contracts, recovery receipts, and production CI
   smokes;

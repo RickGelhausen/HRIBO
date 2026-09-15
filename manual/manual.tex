@@ -554,6 +554,7 @@ Interactive sample grouping and count diagnostics. \\
 ORF calls, scores, supporting libraries, and browser annotation. \\
 \file{differential_expression} &
 \file{diffex_summary/condition_overview.html},
+\file{diffex_summary/condition_overview.xlsx},
 \file{xtail/<contrast>_sorted.xlsx},
 \file{riborex/<contrast>_sorted.xlsx},
 \file{deltate/<contrast>_sorted.xlsx} &
@@ -664,10 +665,17 @@ workbooks when reporting which predictor supported an ORF.
 
 \subsection{Differential results}
 
-Open \file{diffex_summary/condition_overview.html} to scan a searchable
-feature-by-condition matrix of RNA and RIBO detection and a separate
+Open \file{diffex_summary/condition_overview.html} to scan a searchable,
+sortable feature-by-condition matrix of RNA and RIBO detection and a separate
 feature-by-contrast matrix of RNA, RIBO, and translation-efficiency (TE)
-changes. The adjacent \file{condition_matrix.tsv},
+changes. Click a column heading to sort on its biological state and underlying
+quantitative value; click it again to reverse the direction. The adjacent
+\file{condition_overview.xlsx} contains the same five views in
+\file{RNA_detection}, \file{RIBO_detection}, \file{RNA_change},
+\file{RIBO_change}, and \file{TE_change} sheets, with frozen panes, native
+Excel filters, and the same \file{Feature}-plus-matrix layout. Its directional
+cells remain numeric so Excel sorts their signed log2 fold changes correctly.
+The adjacent \file{condition_matrix.tsv},
 \file{contrast_matrix.tsv}, and \file{browser_tracks.tsv} retain the tabular
 results. Selected detected features and up/down contrasts are exported as
 separate \file{diffex_summary/browser/*.gff3} tracks. Load these alongside

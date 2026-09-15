@@ -82,6 +82,7 @@ def test_diffex_stage_requests_condition_overview_without_predictions(
     assert result.returncode == 0, rendered
     assert "rule conditionOverview:" in rendered
     assert "diffex_summary/condition_overview.html" in rendered
+    assert "diffex_summary/condition_overview.xlsx" in rendered
     assert "diffex_summary/condition_matrix.tsv" in rendered
     assert "diffex_summary/contrast_matrix.tsv" in rendered
     assert "diffex_summary/browser_tracks.tsv" in rendered
@@ -160,6 +161,7 @@ def test_condition_overview_rule_executes_from_existing_diffex_inputs(
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert (workdir / "diffex_summary" / "condition_matrix.tsv").is_file()
+    assert (workdir / "diffex_summary" / "condition_overview.xlsx").is_file()
     assert (workdir / "diffex_summary" / "contrast_matrix.tsv").is_file()
     assert (workdir / "diffex_summary" / "browser_tracks.tsv").is_file()
     assert (workdir / "diffex_summary" / "browser" / "tracks_manifest.json").is_file()

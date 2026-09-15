@@ -249,11 +249,40 @@ cells; the columns are not removed.
 Cross-condition summary tables
 ------------------------------
 
-The ``differential_expression`` stage also writes a searchable report at
-``diffex_summary/condition_overview.html`` and three tab-separated companion
+The ``differential_expression`` stage also writes searchable, sortable reports
+at ``diffex_summary/condition_overview.html`` and
+``diffex_summary/condition_overview.xlsx``, plus three tab-separated companion
 tables.  See :doc:`differential-summary` for the visual interpretation and
 browser-track guide.  The summary is independent of the prediction-dependent
 ``overview`` stage.
+
+The Excel workbook contains these sheets, in order:
+
+.. code-block:: text
+
+   RNA_detection, RIBO_detection, RNA_change, RIBO_change, TE_change, README
+
+The five visual sheets correspond to the five choices in the HTML report.
+The workbook opens on ``RNA_detection``.  Every visual sheet has columns in
+this order:
+
+.. code-block:: text
+
+   Feature, <one column per condition or contrast>
+
+The ``Feature`` value matches the HTML table; the remaining columns are
+conditions on the detection sheets and contrasts on the change sheets.
+Detection cells display ``Detected``,
+``Not detected``, or ``Uncertain``.  Change cells display an up/down arrow and
+the absolute log2 fold change for directional calls, ``No directional call``,
+or ``Not tested``.  A directional cell stores the signed log2 fold change as a
+number, so native Excel sorting remains quantitative despite the arrow display.
+Labels and colours match the HTML report.  The header and feature column are
+frozen, and filters are enabled for native Excel filtering and sorting.
+``README`` records the report thresholds and state definitions.  Detailed
+counts, CPM, fold changes, and adjusted p-values remain in the TSV files below
+rather than being duplicated throughout the workbook, keeping large reports
+practical to open.
 
 ``diffex_summary/condition_matrix.tsv`` has one feature/condition/assay row
 for RNA or RIBO detection, with columns in this order:

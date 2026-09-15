@@ -5,8 +5,9 @@ The cross-condition report provides a visual overview when several conditions
 are compared with the same control.  It is part of the
 ``differential_expression`` stage and does **not** require ``overview`` or
 ORF predictions.  Open ``diffex_summary/condition_overview.html`` in a web
-browser after the run.  The report is local to your analysis directory; no
-data need to be uploaded.
+browser after the run, or use ``diffex_summary/condition_overview.xlsx`` for
+the same five matrix views in Excel.  Both reports are local to your analysis
+directory; no data need to be uploaded.
 
 Add ``differential_expression`` to your existing
 ``workflowSettings.stages`` list.  For several treatments against wildtype,
@@ -30,9 +31,14 @@ The report has two complementary feature-level views:
 * The **contrast matrix** shows RNA, RIBO, and translation-efficiency (TE)
   changes for each configured contrast.  Each cell is ``up``, ``down``,
   ``not_significant`` (displayed as "No directional call"), or ``not_tested``.
-  Search and filters help narrow the
-  display to a feature or a response pattern without searching across several
-  workbooks.
+  Search, filters, and sortable column headings help narrow the display to a
+  feature or response pattern without searching across several workbooks.
+
+In the HTML report, click a feature, condition, or contrast heading to sort
+the current view; click it again to reverse the order.  State columns use the
+biological state first and the underlying CPM or log2 fold change to break
+ties.  The sort applies after the current search and ``Show`` filter, and the
+arrow in the heading shows its direction.
 
 The two views answer different questions.  ``not_detected`` means that a
 feature did not meet the report's read-count and normalized-abundance
@@ -76,7 +82,19 @@ from detection.
 Files for analysis and genome browsing
 --------------------------------------
 
-The report is accompanied by three tab-separated files:
+The HTML report is accompanied by an Excel workbook and three tab-separated
+files:
+
+``diffex_summary/condition_overview.xlsx``
+   A spreadsheet version of all five selectable HTML views.  The
+   ``RNA_detection``, ``RIBO_detection``, ``RNA_change``, ``RIBO_change``, and
+   ``TE_change`` sheets use the same labels and colours as the HTML matrix.
+   Each has a ``Feature`` column followed by one column per condition or
+   contrast, exactly as in the HTML view.  The header and feature column are
+   frozen, and Excel's native filters can sort or select rows.  The workbook
+   opens on ``RNA_detection``; a final ``README`` sheet records the thresholds
+   and interpretation notes.  The two TSV matrices below retain the detailed
+   long-form data without making the workbook prohibitively large.
 
 ``diffex_summary/condition_matrix.tsv``
    Per-feature RNA and RIBO detection by condition, with supporting count

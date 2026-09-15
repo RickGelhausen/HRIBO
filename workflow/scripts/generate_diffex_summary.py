@@ -17,6 +17,8 @@ from collections import defaultdict
 from pathlib import Path
 from urllib.parse import unquote
 
+import xlsxwriter
+
 from lib.diffex_browser import export_tracks
 
 
@@ -350,6 +352,110 @@ def write_browser_table(path, manifest):
     _write_tsv(path, TRACK_FIELDS, tracks)
 
 
+def write_excel(path, rows, coordinates, conditions, contrasts, args):
+    """Write the five HTML matrix views as native, sortable Excel sheets."""
+    if len(rows) > 1_048_575:
+        raise ValueError(
+            "The cross-condition matrix exceeds Excel's 1,048,575 data-row limit; "
+            "use the TSV files instead."
+        )
+    if max(len(conditions), len(contrasts)) > 16_383:
+        raise ValueError(
+            "The cross-condition matrix exceeds Excel's 16,383 data-column limit; "
+            "use the TSV files instead."
+        )
+    workbook = xlsxwriter.Workbook(path, {"constant_memory": True})
+    header = workbook.add_format({
+        "bold": True, "font_color": "#FFFFFF", "bg_color": "#142744",
+        "border": 1, "border_color": "#D9E2ED", "align": "center",
+    })
+    text_header = workbook.add_format({
+        "bold": True, "font_color": "#FFFFFF", "bg_color": "#142744",
+        "border": 1, "border_color": "#D9E2ED", "align": "left",
+    })
+    state_formats = {
+        "detected": workbook.add_format({"bg_color": "#BCE8D3", "font_color": "#06422A", "align": "center"}),
+        "not_detected": workbook.add_format({"bg_color": "#E5EAF0", "font_color": "#4B5563", "align": "center"}),
+        "uncertain": workbook.add_format({"bg_color": "#FFF0BC", "font_color": "#6B4700", "align": "center"}),
+        "up": workbook.add_format({
+            "bg_color": "#F7C8C4", "font_color": "#8C1919", "align": "center",
+            "num_format": '"↑ "0.0;"↓ "0.0',
+        }),
+        "down": workbook.add_format({
+            "bg_color": "#C7DCFA", "font_color": "#123F88", "align": "center",
+            "num_format": '"↑ "0.0;"↓ "0.0',
+        }),
+        "not_significant": workbook.add_format({"bg_color": "#F1F3F5", "font_color": "#56606A", "align": "center"}),
+        "not_tested": workbook.add_format({"bg_color": "#E7EAF0", "font_color": "#56606A", "align": "center"}),
+    }
+    labels = {
+        "detected": "Detected", "not_detected": "Not detected",
+        "uncertain": "Uncertain", "not_significant": "No directional call",
+        "not_tested": "Not tested",
+    }
+
+    sheet_specs = [
+        ("RNA_detection", "condition", "RNA", conditions),
+        ("RIBO_detection", "condition", "RIBO", conditions),
+        ("RNA_change", "contrast", "RNA", contrasts),
+        ("RIBO_change", "contrast", "RIBO", contrasts),
+        ("TE_change", "contrast", "TE", contrasts),
+    ]
+    for sheet_name, kind, assay, columns in sheet_specs:
+        worksheet = workbook.add_worksheet(sheet_name)
+        worksheet.freeze_panes(1, 1)
+        worksheet.set_column(0, 0, 48)
+        if columns:
+            worksheet.set_column(1, len(columns), 20)
+        worksheet.write_string(0, 0, "Feature", text_header)
+        for column, value in enumerate(columns, 1):
+            worksheet.write_string(0, column, value, header)
+        for row_number, row in enumerate(rows, 1):
+            metadata = _metadata(row["feature_id"], coordinates)
+            display = (
+                row["feature_id"] if metadata["name"] == row["feature_id"]
+                else f"{metadata['name']} · {row['feature_id']}"
+            )
+            # write_string prevents identifiers beginning with '=' from being
+            # interpreted as formulas by spreadsheet applications.
+            worksheet.write_string(row_number, 0, display)
+            calls = row["conditions" if kind == "condition" else "contrasts"]
+            for offset, label in enumerate(columns, 1):
+                call = calls[label][assay]
+                state = call["state"]
+                if state in {"up", "down"}:
+                    worksheet.write_number(
+                        row_number, offset, call["log2fc"], state_formats[state]
+                    )
+                else:
+                    worksheet.write_string(
+                        row_number, offset, labels[state], state_formats[state]
+                    )
+        last_row = max(len(rows), 1)
+        last_column = len(columns)
+        worksheet.autofilter(0, 0, last_row, last_column)
+
+    readme = workbook.add_worksheet("README")
+    readme.set_column(0, 0, 25)
+    readme.set_column(1, 1, 105)
+    readme.write_row(0, 0, ["Item", "Meaning"], text_header)
+    guidance = [
+        ("Workbook", "The five visual sheets mirror the selectable tables in condition_overview.html. Excel filters and native sorting are enabled."),
+        ("Detection", f"Detected requires at least {args.min_count} counts and {args.min_cpm} CPM in at least {args.min_replicates} usable replicates. Not detected means below these thresholds at this sequencing depth; uncertain is unresolved."),
+        ("Changes", f"Up/down requires adjusted p <= {args.padj_cutoff} and absolute log2FC >= {args.log2fc_cutoff}. Positive effects are higher in the left side of a contrast."),
+        ("No directional call", "The result did not meet both configured cutoffs. It does not prove no biological effect."),
+        ("Not tested", "No usable statistical result was available."),
+        ("Detailed values", "condition_matrix.tsv and contrast_matrix.tsv contain the exact values behind these matrix views."),
+    ]
+    for index, (item, meaning) in enumerate(guidance, 1):
+        readme.write_string(index, 0, item)
+        readme.write_string(index, 1, meaning)
+    readme.autofilter(0, 0, len(guidance), 1)
+    readme.freeze_panes(1, 0)
+
+    workbook.close()
+
+
 def write_html(path, rows, coordinates, conditions, contrasts, args):
     """Create a self-contained, searchable report; cap DOM rows by pagination."""
     report_rows = []
@@ -382,6 +488,8 @@ input,select,button{font:inherit;padding:.45rem;border:1px solid #98abc2;border-
 .scroller{overflow:auto;max-height:65vh}table{border-collapse:separate;border-spacing:0;width:100%}th,td{border-bottom:1px solid #dce4ee;padding:.45rem .6rem;text-align:left;white-space:nowrap}
 thead th{position:sticky;top:0;background:#eaf0f7;z-index:2}.feature{position:sticky;left:0;background:#fff;z-index:1;min-width:220px}
 thead .feature{z-index:3;background:#eaf0f7}.feature button{border:0;background:transparent;color:#145c91;text-align:left;padding:0;font-weight:600}
+.sort-button{display:flex;width:100%;gap:.4rem;align-items:center;border:0;background:transparent;color:inherit;padding:0;font-weight:700;text-align:left}
+.sort-indicator{min-width:1em;color:#145c91}.sort-button:hover,.sort-button:focus-visible{color:#145c91;text-decoration:underline}
 .state{text-align:center;font-weight:650;min-width:92px;border-left:2px solid #fff}.detected{background:#bce8d3;color:#06422a}.not_detected{background:#e5eaf0;color:#4b5563}
 .uncertain{background:#fff0bc;color:#6b4700}.up{background:#f7c8c4;color:#8c1919}.down{background:#c7dcfa;color:#123f88}
 .not_significant{background:#f1f3f5;color:#56606a}.not_tested{background:repeating-linear-gradient(45deg,#e7eaf0,#e7eaf0 6px,#f7f8fa 6px,#f7f8fa 12px);color:#56606a}
@@ -393,7 +501,7 @@ thead .feature{z-index:3;background:#eaf0f7}.feature button{border:0;background:
 <p>Only features in the differential-expression count matrix are shown. A predicted ORF not counted there is outside this report, not classified as absent or unchanged.</p>
 <p>RNA and RIBO detection are separate descriptive calls. CPM uses the total counts assigned to the selected features in each sample, separately by assay. A feature is detected when both the minimum raw count and CPM are met in at least the configured number of usable replicates. A zero-assigned-count sample is unusable. “Not detected” means below these thresholds at this sequencing depth; “uncertain” includes discordant or insufficient replicates.</p>
 <p>Change calls compare the left condition with the right condition in each contrast. Red is higher in the left condition; blue is lower. “No directional call” means the result did not meet both configured significance and effect-size cutoffs; it does not mean unchanged. “Not tested” includes missing or NA model results. RNA, RIBO, and translation efficiency (TE) calls use deltaTE; xTail and RiboRex TE estimates are shown in the feature details but are not combined into a new p-value.</p>
-<p id="thresholds" class="small"></p><p class="links"><a href="condition_matrix.tsv">Condition table (TSV)</a><a href="contrast_matrix.tsv">Contrast table (TSV)</a><a href="browser_tracks.tsv">Genome-browser tracks (TSV)</a></p></section>
+<p id="thresholds" class="small"></p><p class="links"><a href="condition_overview.xlsx">Open the same views in Excel</a><a href="condition_matrix.tsv">Condition table (TSV)</a><a href="contrast_matrix.tsv">Contrast table (TSV)</a><a href="browser_tracks.tsv">Genome-browser tracks (TSV)</a></p></section>
 <section class="card"><div class="controls"><label>Search feature or name<input id="search" type="search" placeholder="Gene name or coordinate"></label>
 <label>View<select id="view"><option value="RNA:condition">RNA detection</option><option value="RIBO:condition">RIBO detection</option><option value="RNA:contrast">RNA change</option><option value="RIBO:contrast">RIBO change</option><option value="TE:contrast">TE change</option></select></label>
 <label>Show<select id="filter"><option value="all">All features</option><option value="variable">Different states across columns</option><option value="specific">Detected in exactly one condition</option><option value="changed">Up or down in any contrast</option></select></label></div>
@@ -405,7 +513,8 @@ const data=JSON.parse(document.getElementById('report-data').textContent);
 const search=document.getElementById('search'),view=document.getElementById('view'),filter=document.getElementById('filter');
 const matrix=document.getElementById('matrix'),columns=document.getElementById('columns'),summary=document.getElementById('summary');
 const detail=document.getElementById('detail'),legend=document.getElementById('legend'),pageLabel=document.getElementById('page');
-let page=0;const pageSize=100;const labels={detected:'Detected',not_detected:'Not detected',uncertain:'Uncertain',up:'Up',down:'Down',not_significant:'No directional call',not_tested:'Not tested'};
+let page=0;let sortKey=null;let sortDirection='asc';const pageSize=100;const labels={detected:'Detected',not_detected:'Not detected',uncertain:'Uncertain',up:'Up',down:'Down',not_significant:'No directional call',not_tested:'Not tested'};
+const stateRank={condition:{not_tested:0,not_detected:1,uncertain:2,detected:3},contrast:{not_tested:0,not_significant:1,down:2,up:3}};
 document.getElementById('thresholds').textContent=`Detection: ≥${data.thresholds.min_count} counts and ≥${data.thresholds.min_cpm} CPM in ≥${data.thresholds.min_replicates} replicates. Change: adjusted p ≤${data.thresholds.padj_cutoff} and |log₂FC| ≥${data.thresholds.log2fc_cutoff}.`;
 function stateOf(row,column,assay,kind){return ((kind==='condition'?row.conditions:row.contrasts)[column]||{})[assay]?.state||'not_tested'}
 function chooseRows(assay,kind,cols){const query=search.value.trim().toLowerCase();return data.features.filter(row=>{
@@ -416,6 +525,18 @@ function chooseRows(assay,kind,cols){const query=search.value.trim().toLowerCase
  if(filter.value==='changed')return kind==='contrast'&&states.some(x=>x==='up'||x==='down');
  return true;
 })}
+function cellOf(row,column,assay,kind){return ((kind==='condition'?row.conditions:row.contrasts)[column]||{})[assay]||{}}
+function textOrder(left,right){return String(left??'').localeCompare(String(right??''),'en',{numeric:true,sensitivity:'base'})}
+function numericOrder(left,right,direction){const leftMissing=!Number.isFinite(left),rightMissing=!Number.isFinite(right);if(leftMissing!==rightMissing)return leftMissing?1:-1;if(leftMissing)return 0;return direction*(left-right)}
+function cellSortKey(assay,kind,column){return `cell:${assay}:${kind}:${column}`}
+function sortRows(rows,assay,kind,cols){const sortedColumn=cols.find(column=>sortKey===cellSortKey(assay,kind,column));if(sortKey!=='feature'&&!sortedColumn)return rows;
+ const direction=sortDirection==='asc'?1:-1;return rows.map((row,index)=>({row,index})).sort((left,right)=>{let order=0;
+  if(sortKey==='feature'){order=textOrder(left.row.name,right.row.name)||textOrder(left.row.id,right.row.id);order*=direction}else{const leftCall=cellOf(left.row,sortedColumn,assay,kind),rightCall=cellOf(right.row,sortedColumn,assay,kind);order=direction*((stateRank[kind][leftCall.state||'not_tested']??-1)-(stateRank[kind][rightCall.state||'not_tested']??-1));
+   if(!order){const leftValue=kind==='condition'?leftCall.mean_cpm:Number.isFinite(leftCall.log2fc)?Math.abs(leftCall.log2fc):null,rightValue=kind==='condition'?rightCall.mean_cpm:Number.isFinite(rightCall.log2fc)?Math.abs(rightCall.log2fc):null;order=numericOrder(leftValue,rightValue,direction)}}
+  return order||left.index-right.index;
+ }).map(item=>item.row)}
+function changeSort(key){if(sortKey===key)sortDirection=sortDirection==='asc'?'desc':'asc';else{sortKey=key;sortDirection=key==='feature'?'asc':'desc'}page=0;render()}
+function sortHeader(label,key,className=''){const th=document.createElement('th');th.className=className;th.scope='col';const active=sortKey===key;const currentDirection=sortDirection==='asc'?'ascending':'descending';if(active)th.setAttribute('aria-sort',currentDirection);const button=document.createElement('button');button.type='button';button.className='sort-button';const nextDirection=active&&sortDirection==='asc'?'descending':'ascending';button.title=active?`Sorted ${currentDirection}; activate for ${nextDirection}`:`Sort by ${label}`;button.setAttribute('aria-label',active?`${label}, sorted ${currentDirection}. Activate for ${nextDirection}.`:`Sort by ${label}`);button.onclick=()=>changeSort(key);const text=document.createElement('span');text.textContent=label;const indicator=document.createElement('span');indicator.className='sort-indicator';indicator.setAttribute('aria-hidden','true');indicator.textContent=active?(sortDirection==='asc'?'▲':'▼'):'↕';button.append(text,indicator);th.append(button);return th}
 function showFeature(row){const lines=[`${row.name} (${row.id})`,row.feature_type,''];
  for(const condition of data.conditions){lines.push(condition);for(const assay of ['RNA','RIBO']){const call=row.conditions[condition]?.[assay];if(!call)continue;
   const samples=call.samples.map(s=>`${s.sample}: ${s.count} counts, ${s.cpm===null?'NA':s.cpm.toFixed(2)} CPM`).join('; ');
@@ -424,9 +545,9 @@ function showFeature(row){const lines=[`${row.name} (${row.id})`,row.feature_typ
   lines.push(`  ${assay} (deltaTE): ${labels[call.state]}, log₂FC ${call.log2fc??'NA'}, padj ${call.padj??'NA'}`);
   if(assay==='TE')lines.push(`    xTail: log₂FC ${call.xtail_te_log2fc??'NA'}, padj ${call.xtail_te_padj??'NA'}; RiboRex: log₂FC ${call.riborex_te_log2fc??'NA'}, padj ${call.riborex_te_padj??'NA'}`);
  }}detail.textContent=lines.join('\n')}
-function render(){const [assay,kind]=view.value.split(':');const cols=kind==='condition'?data.conditions:data.contrasts;const selected=chooseRows(assay,kind,cols);const maxPage=Math.max(0,Math.ceil(selected.length/pageSize)-1);page=Math.min(page,maxPage);
- columns.replaceChildren();const first=document.createElement('th');first.className='feature';first.textContent='Feature';columns.append(first);
- for(const col of cols){const th=document.createElement('th');th.textContent=col;columns.append(th)}matrix.replaceChildren();
+function render(){const [assay,kind]=view.value.split(':');const cols=kind==='condition'?data.conditions:data.contrasts;const selected=sortRows(chooseRows(assay,kind,cols),assay,kind,cols);const maxPage=Math.max(0,Math.ceil(selected.length/pageSize)-1);page=Math.min(page,maxPage);
+ columns.replaceChildren();columns.append(sortHeader('Feature','feature','feature'));
+ for(const col of cols)columns.append(sortHeader(col,cellSortKey(assay,kind,col)));matrix.replaceChildren();
  for(const row of selected.slice(page*pageSize,(page+1)*pageSize)){const tr=document.createElement('tr');const lead=document.createElement('td');lead.className='feature';const button=document.createElement('button');button.textContent=row.name===row.id?row.id:`${row.name} · ${row.id}`;button.onclick=()=>showFeature(row);lead.append(button);tr.append(lead);
   for(const col of cols){const call=(kind==='condition'?row.conditions:row.contrasts)[col]?.[assay]||{};const state=call.state||'not_tested';const td=document.createElement('td');td.className=`state ${state}`;
    if(kind==='contrast'&&(state==='up'||state==='down'))td.textContent=`${state==='up'?'↑':'↓'} ${Math.abs(call.log2fc).toFixed(1)}`;else td.textContent=labels[state];
@@ -456,6 +577,10 @@ def run(args):
     output_dir.mkdir(parents=True, exist_ok=True)
     _write_tsv(output_dir / "condition_matrix.tsv", CONDITION_FIELDS, condition_table)
     _write_tsv(output_dir / "contrast_matrix.tsv", CONTRAST_FIELDS, contrast_table)
+    write_excel(
+        output_dir / "condition_overview.xlsx", rows, coordinates, conditions,
+        contrasts, args,
+    )
     export_tracks(rows, output_dir / "browser", conditions, contrasts, coordinates)
     manifest = json.loads((output_dir / "browser" / "tracks_manifest.json").read_text())
     write_browser_table(output_dir / "browser_tracks.tsv", manifest)
