@@ -53,6 +53,10 @@ are:
   list of names from :doc:`stages`.
 * Differential analysis is selected with the ``differential_expression``
   stage rather than an on/off key.  The ``full`` preset includes it.
+* RiboRex is now an opt-in supplementary analysis.  The new
+  ``differentialExpressionSettings.riborex`` setting defaults to ``"off"``;
+  migrated configurations without this setting also resolve to ``"off"``.
+  Set it to ``"on"`` only when the additional RiboRex results are wanted.
 * ``differentialExpressionSettings.contrasts`` is a YAML list such as
   ``["Treated-Control"]``.  Positive effects mean higher signal in the
   condition on the left.

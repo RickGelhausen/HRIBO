@@ -138,7 +138,7 @@ matching annotation and can produce:
         ratios for matched libraries;
   \item read-length summaries, metagene profiles, and data-driven TIS advice;
   \item REPARATION and optional DeepRibo ORF predictions;
-  \item PCA, correlation, xTail, RiboRex, and deltaTE results; and
+  \item PCA, correlation, xTail and deltaTE results, with optional RiboRex; and
   \item a combined feature-level overview in spreadsheet, TSV, and GFF formats.
 \end{itemize}
 
@@ -334,7 +334,7 @@ predictions.
 \setting{correlation} & Compare binned genomic coverage between libraries. \\
 \setting{pca} & Inspect sample grouping using normalized counts. \\
 \setting{predictions} & Run REPARATION and, when enabled, DeepRibo. \\
-\file{differential_expression} & Run xTail, RiboRex, and deltaTE and build a cross-condition report for valid contrasts. \\
+\file{differential_expression} & Run xTail and deltaTE, optionally run RiboRex, and build a cross-condition report for valid contrasts. \\
 \setting{overview} & Combine annotation, abundance, predictions, and enabled differential results. \\
 \bottomrule
 \end{longtable}
@@ -375,10 +375,15 @@ predictions. HRIBO never applies it automatically.
 \setting{differentialExpressionSettings.features} contains case-sensitive
 feature types from annotation column 3. If some requested types are absent,
 HRIBO warns and counts those that exist; if none are present, it stops with an
-error. A contrast such as \setting{Treated-Control} is left minus right, so a
-positive log2 fold change means higher signal in \setting{Treated}. The
-filtered workbook sheets use the configured \setting{padjCutoff} and inclusive
-\setting{log2fcCutoff} boundaries. The cross-condition report uses separate
+error. \setting{differentialExpressionSettings.}\allowbreak\setting{riborex}
+is \setting{off} by
+default. Set it to \setting{on} to create the optional RiboRex workbooks and
+include its TE estimate as supplementary evidence; it does not change the RNA,
+RIBO, or TE states called from deltaTE. A contrast such as
+\setting{Treated-Control} is left minus right, so a positive log2 fold change
+means higher signal in \setting{Treated}. The filtered workbook sheets use the
+configured \setting{padjCutoff} and inclusive \setting{log2fcCutoff}
+boundaries. The cross-condition report uses separate
 \setting{detectionMinCPM}, \setting{detectionMinCount}, and
 \setting{detectionMinReplicates} thresholds (defaults: 1 CPM, 10 reads, 2
 replicates). A replicate passes detection only when both CPM and raw count
@@ -556,8 +561,8 @@ ORF calls, scores, supporting libraries, and browser annotation. \\
 \file{diffex_summary/condition_overview.html},
 \file{diffex_summary/condition_overview.xlsx},
 \file{xtail/<contrast>_sorted.xlsx},
-\file{riborex/<contrast>_sorted.xlsx},
-\file{deltate/<contrast>_sorted.xlsx} &
+\file{deltate/<contrast>_sorted.xlsx}, and optional
+\file{riborex/<contrast>_sorted.xlsx} &
 Visual condition detection and contrast changes, browser tracks, and detailed
 RNA, footprint, and translation-efficiency statistics. \\
 \setting{overview} &
@@ -690,20 +695,20 @@ absence. Contrast states are up, down, no directional call, or not tested.
 The machine value \setting{not\_significant} means that both directional
 thresholds were not met; it does not establish a high adjusted p-value or
 zero effect, and is not interchangeable with not detected. The RNA, RIBO, and
-TE contrast states come from deltaTE; xTail and RiboRex TE estimates are
-supplemental evidence rather than votes in a combined test. See the
+TE contrast states come from deltaTE; xTail and, when enabled, RiboRex TE
+estimates are supplemental evidence rather than votes in a combined test. See the
 \href{https://hribo.readthedocs.io/en/stable/differential-summary.html}{online
 cross-condition report guide} for interpretation and browser-track use.
 
 For \file{<left>-<right>}, positive log2 fold changes mean higher signal in the
-left condition. Each xTail, RiboRex, and deltaTE workbook has an
-\setting{all} sheet and prefiltered up/down sheets. deltaTE separates RNA,
-RIBO, and TE effects.
+left condition. Each xTail and deltaTE workbook has an \setting{all} sheet and
+prefiltered up/down sheets; the same applies to the RiboRex workbook when that
+optional analysis is enabled. deltaTE separates RNA, RIBO, and TE effects.
 
 Always inspect effect size and adjusted p-value together, using the cutoffs
-recorded in the configuration. The three tools model translation differently;
-agreement and disagreement are informative, and similarly named columns are
-not automatically interchangeable.
+recorded in the configuration. The enabled tools do not produce interchangeable
+statistics; use xTail and optional RiboRex as supplementary evidence rather
+than extra votes in the deltaTE calls.
 
 \subsection{Combined overview}
 

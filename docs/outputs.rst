@@ -91,8 +91,8 @@ Primary result map
      - ``diffex_summary/condition_overview.html``,
        ``diffex_summary/condition_overview.xlsx``,
        ``xtail/<contrast>_sorted.xlsx``,
-       ``riborex/<contrast>_sorted.xlsx``, and
-       ``deltate/<contrast>_sorted.xlsx``
+       ``deltate/<contrast>_sorted.xlsx``, and, when enabled,
+       ``riborex/<contrast>_sorted.xlsx``
      - Searchable, sortable condition-detection and contrast-change matrices
        in HTML and Excel, TSV companions and browser GFF3 tracks, plus detailed
        per-feature RNA, footprint, and/or translation-efficiency statistics and
@@ -127,7 +127,8 @@ omitted):
    ├── diffex_summary/condition_overview.html
    ├── diffex_summary/condition_overview.xlsx
    ├── diffex_summary/browser/*.gff3
-   ├── xtail/ ... riborex/ ... deltate/
+   ├── xtail/ ... deltate/
+   ├── riborex/                    # only when RiboRex is enabled
    └── logs/
 
 Quality control and alignments
@@ -243,8 +244,9 @@ Each tool-specific workbook contains an ``all`` sheet and filtered sheets such
 as ``TE_up`` and ``TE_down``.  deltaTE additionally separates RNA, RIBO, and TE
 changes.  The filtered sheets use ``padjCutoff`` and ``log2fcCutoff`` from the
 configuration; always inspect the effect size and adjusted p-value together.
-The three tools model translation differently, so review agreement and
-disagreement rather than treating one column as interchangeable across tools.
+deltaTE supplies the primary RNA, RIBO, and TE calls.  xTail and optional
+RiboRex estimates are supplementary: inspect them separately rather than
+treating them as additional votes or interchangeable statistics.
 
 For a cross-condition overview, open
 ``diffex_summary/condition_overview.html``.  It separates the RNA and RIBO

@@ -112,8 +112,10 @@ cause preflight to stop because DeepRibo cannot encode them safely.
 Differential expression and translation
 ---------------------------------------
 
-Select the ``differential_expression`` stage to run xTail, RiboRex, and
-deltaTE.  Configure it under ``differentialExpressionSettings``:
+Select the ``differential_expression`` stage to run xTail and deltaTE and to
+build the cross-condition report.  RiboRex is available as an optional
+supplementary analysis.  Configure these under
+``differentialExpressionSettings``:
 
 ``features``
    Case-sensitive feature types from annotation column 3 to count, by default
@@ -126,6 +128,13 @@ deltaTE.  Configure it under ``differentialExpressionSettings``:
    direction: a positive log2 fold change means higher signal in ``Treated``.
    An empty list requests every pairwise comparison between eligible matched
    conditions.
+
+``riborex``
+   Whether to run the optional RiboRex analysis.  It is ``"off"`` by default;
+   set it to ``"on"`` to create the additional per-contrast RiboRex workbook
+   and include its TE estimate as supplementary evidence in the reports.  The
+   RiboRex result never changes the RNA, RIBO, or TE states called from
+   deltaTE.
 
 ``padjCutoff``
    Adjusted-p-value threshold used to populate the filtered workbook sheets.
@@ -143,7 +152,8 @@ deltaTE.  Configure it under ``differentialExpressionSettings``:
    replicates pass, ``not_detected`` if none pass and enough usable replicates
    were available, and ``uncertain`` otherwise.  Zero-depth samples have
    undefined CPM and are not usable.  These are evidence thresholds,
-   not statistical tests.  They do not change xTail, RiboRex, or deltaTE.
+   not statistical tests.  They do not change xTail, deltaTE, or RiboRex when
+   it is enabled.
 
 ``xtailBins`` and ``xtailMinMeanCount``
    xTail density resolution and minimum mean RNA/RPF count.  Higher bin counts

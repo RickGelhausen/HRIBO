@@ -770,15 +770,16 @@ def _check_diffex_feasibility(
             items=sorted(set(unknown)),
         )
 
-    # xtail, riborex and deltaTE all compute translational efficiency, which
-    # needs a matched RNA-seq library for every Ribo-seq library.
+    # xTail and deltaTE (plus optional RiboRex) compute translational
+    # efficiency, which needs matched RNA-seq and Ribo-seq libraries.
     if "RIBO" in methods and "RNA" not in methods:
         report.error(
             "DIFFEX_NO_RNA",
             "Differential expression is enabled but the sample sheet contains no RNA libraries",
             detail=(
-                "xtail, riborex and deltaTE all compare Ribo-seq against RNA-seq to derive "
-                "translational efficiency; none of them can run on Ribo-seq alone."
+                "xTail and deltaTE compare Ribo-seq against RNA-seq to derive "
+                "translational efficiency; neither can run on Ribo-seq alone. "
+                "The same requirement applies when optional RiboRex is enabled."
             ),
             hint="Add the matching RNA-seq libraries, or turn differential expression off.",
         )
@@ -799,7 +800,7 @@ def _check_diffex_feasibility(
                     "DIFFEX_SINGLE_REPLICATE",
                     f"Only {count} {method} replicate for condition {condition!r}",
                     detail=(
-                        "DESeq2, which underlies deltaTE and riborex, cannot estimate "
+                        "The DESeq2-based differential-expression models cannot estimate "
                         "dispersion from a single replicate. HRIBO does not schedule "
                         "differential-expression tools for an unsupported design."
                     ),
@@ -825,8 +826,9 @@ def _check_diffex_feasibility(
                     "DIFFEX_UNMATCHED_REPLICATES",
                     f"Condition {condition!r} has {ribo_count} RIBO but {rna_count} RNA replicates",
                     detail=(
-                        "Riborex reuses the RIBO condition vector for the RNA matrix, so "
-                        "unequal table widths would mislabel samples or fail inside R."
+                        "xTail uses one shared condition vector for the RIBO and RNA "
+                        "matrices, so unequal table widths would mislabel samples or fail "
+                        "inside R. The optional RiboRex input has the same constraint."
                     ),
                     hint="Provide the same number of RIBO and RNA biological replicates for each contrasted condition.",
                 )

@@ -54,8 +54,9 @@ Stage catalogue
      - Which features are detected by condition, and which change at RNA,
        footprint, or translation-efficiency level?
      - Cross-condition HTML and Excel reports, TSV matrices, and browser GFF3
-       tracks in ``diffex_summary/``, plus per-contrast xTail, RiboRex, and
-       deltaTE workbooks.
+       tracks in ``diffex_summary/``, plus per-contrast xTail and deltaTE
+       workbooks.  An additional RiboRex workbook is created when
+       ``differentialExpressionSettings.riborex`` is ``"on"``.
    * - ``overview``
      - How can annotation, abundance, predictions, and differential evidence be
        reviewed together?

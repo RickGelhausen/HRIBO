@@ -3,8 +3,9 @@
 
 The two questions are deliberately kept separate. Detection is a descriptive,
 replicate-aware threshold on within-assay counts per million (CPM); differential
-calls come from deltaTE's RNA, RIBO, and TE models. xTail and RiboRex TE values
-remain visible as supplementary estimates, never combined into a new p-value.
+calls come from deltaTE's RNA, RIBO, and TE models. xTail TE values, and optional
+RiboRex values when that analysis is enabled, remain supplementary estimates
+and are never combined into a new p-value.
 """
 
 from __future__ import annotations
@@ -46,7 +47,10 @@ def parse_args(argv=None):
     parser.add_argument("--counts", type=Path, required=True)
     parser.add_argument("--annotation", type=Path, required=True)
     parser.add_argument("--xtail", type=Path, required=True)
-    parser.add_argument("--riborex", type=Path, required=True)
+    parser.add_argument(
+        "--riborex", type=Path,
+        help="Optional pooled RiboRex results; omit when RiboRex was not run",
+    )
     parser.add_argument("--deltate", type=Path, required=True)
     parser.add_argument("--contrasts", nargs="+", required=True)
     parser.add_argument("--output_dir", type=Path, required=True)
@@ -469,6 +473,8 @@ def write_html(path, rows, coordinates, conditions, contrasts, args):
         })
     payload = json.dumps({
         "conditions": conditions, "contrasts": contrasts, "features": report_rows,
+        "methods": {"deltate": True, "xtail": True,
+                    "riborex": getattr(args, "riborex", None) is not None},
         "thresholds": {
             "min_count": args.min_count, "min_cpm": args.min_cpm,
             "min_replicates": args.min_replicates,
@@ -500,7 +506,7 @@ thead .feature{z-index:3;background:#eaf0f7}.feature button{border:0;background:
 <main><section class="card"><h2>How to read this report</h2>
 <p>Only features in the differential-expression count matrix are shown. A predicted ORF not counted there is outside this report, not classified as absent or unchanged.</p>
 <p>RNA and RIBO detection are separate descriptive calls. CPM uses the total counts assigned to the selected features in each sample, separately by assay. A feature is detected when both the minimum raw count and CPM are met in at least the configured number of usable replicates. A zero-assigned-count sample is unusable. “Not detected” means below these thresholds at this sequencing depth; “uncertain” includes discordant or insufficient replicates.</p>
-<p>Change calls compare the left condition with the right condition in each contrast. Red is higher in the left condition; blue is lower. “No directional call” means the result did not meet both configured significance and effect-size cutoffs; it does not mean unchanged. “Not tested” includes missing or NA model results. RNA, RIBO, and translation efficiency (TE) calls use deltaTE; xTail and RiboRex TE estimates are shown in the feature details but are not combined into a new p-value.</p>
+<p>Change calls compare the left condition with the right condition in each contrast. Red is higher in the left condition; blue is lower. “No directional call” means the result did not meet both configured significance and effect-size cutoffs; it does not mean unchanged. “Not tested” includes missing or NA model results. RNA, RIBO, and translation efficiency (TE) calls use deltaTE; __SUPPLEMENTARY_METHODS__</p>
 <p id="thresholds" class="small"></p><p class="links"><a href="condition_overview.xlsx">Open the same views in Excel</a><a href="condition_matrix.tsv">Condition table (TSV)</a><a href="contrast_matrix.tsv">Contrast table (TSV)</a><a href="browser_tracks.tsv">Genome-browser tracks (TSV)</a></p></section>
 <section class="card"><div class="controls"><label>Search feature or name<input id="search" type="search" placeholder="Gene name or coordinate"></label>
 <label>View<select id="view"><option value="RNA:condition">RNA detection</option><option value="RIBO:condition">RIBO detection</option><option value="RNA:contrast">RNA change</option><option value="RIBO:contrast">RIBO change</option><option value="TE:contrast">TE change</option></select></label>
@@ -543,7 +549,7 @@ function showFeature(row){const lines=[`${row.name} (${row.id})`,row.feature_typ
   lines.push(`  ${assay}: ${labels[call.state]} — ${call.passing_replicates}/${call.replicates} usable replicates pass; mean ${call.mean_cpm===null?'NA':call.mean_cpm.toFixed(2)} CPM`);lines.push(`    ${samples||'No samples'}`);
  }}lines.push('');for(const contrast of data.contrasts){lines.push(contrast);for(const assay of ['RNA','RIBO','TE']){const call=row.contrasts[contrast]?.[assay];if(!call)continue;
   lines.push(`  ${assay} (deltaTE): ${labels[call.state]}, log₂FC ${call.log2fc??'NA'}, padj ${call.padj??'NA'}`);
-  if(assay==='TE')lines.push(`    xTail: log₂FC ${call.xtail_te_log2fc??'NA'}, padj ${call.xtail_te_padj??'NA'}; RiboRex: log₂FC ${call.riborex_te_log2fc??'NA'}, padj ${call.riborex_te_padj??'NA'}`);
+  if(assay==='TE'){let supplemental=`    xTail: log₂FC ${call.xtail_te_log2fc??'NA'}, padj ${call.xtail_te_padj??'NA'}`;__RIBOREX_DETAIL__lines.push(supplemental)}
  }}detail.textContent=lines.join('\n')}
 function render(){const [assay,kind]=view.value.split(':');const cols=kind==='condition'?data.conditions:data.contrasts;const selected=sortRows(chooseRows(assay,kind,cols),assay,kind,cols);const maxPage=Math.max(0,Math.ceil(selected.length/pageSize)-1);page=Math.min(page,maxPage);
  columns.replaceChildren();columns.append(sortHeader('Feature','feature','feature'));
@@ -559,15 +565,37 @@ function render(){const [assay,kind]=view.value.split(':');const cols=kind==='co
 for(const control of [search,view,filter])control.addEventListener(control===search?'input':'change',()=>{page=0;render()});
 document.getElementById('previous').onclick=()=>{page--;render()};document.getElementById('next').onclick=()=>{page++;render()};render();
 </script></body></html>'''
-    path.write_text(template.replace("__DATA__", payload), encoding="utf-8")
+    supplementary = (
+        "xTail and RiboRex TE estimates are shown in the feature details but "
+        "are not combined into a new p-value."
+        if getattr(args, "riborex", None) is not None
+        else "xTail TE estimates are shown in the feature details but are not "
+        "combined into a new p-value."
+    )
+    riborex_detail = (
+        "supplemental+=`; RiboRex: log₂FC "
+        "${call.riborex_te_log2fc??'NA'}, padj "
+        "${call.riborex_te_padj??'NA'}`;"
+        if getattr(args, "riborex", None) is not None
+        else ""
+    )
+    path.write_text(
+        template.replace("__SUPPLEMENTARY_METHODS__", supplementary)
+        .replace("__RIBOREX_DETAIL__", riborex_detail)
+        .replace("__DATA__", payload),
+        encoding="utf-8",
+    )
 
 
 def run(args):
     counts, labels, totals = read_counts(args.counts)
     coordinates = read_annotation(args.annotation)
     effects = {
-        method: read_effects(getattr(args, method), method)
-        for method in ("xtail", "riborex", "deltate")
+        "xtail": read_effects(args.xtail, "xtail"),
+        "riborex": (
+            read_effects(args.riborex, "riborex") if args.riborex else {}
+        ),
+        "deltate": read_effects(args.deltate, "deltate"),
     }
     contrasts = list(dict.fromkeys(args.contrasts))
     rows, conditions, condition_table, contrast_table = build_summary(

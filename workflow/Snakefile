@@ -81,6 +81,15 @@ STAGES = resolve_stages(
     has_ribo_like=hasRiboLike,
 )
 DIFFEXPRESS = "differential_expression" in STAGES
+RIBOREX_ENABLED = (
+    config["differentialExpressionSettings"].get("riborex", "off").lower()
+    == "on"
+)
+DIFFEX_METHODS = (
+    ("xtail", "riborex", "deltate")
+    if RIBOREX_ENABLED
+    else ("xtail", "deltate")
+)
 
 print("Requested stages: " + ", ".join(STAGES), file=sys.stderr)
 
@@ -120,7 +129,8 @@ include: "rules/readcounting.smk"
 if DIFFEXPRESS:
     include: "rules/diffex_contrast.smk"
     include: "rules/diffex_xtail.smk"
-    include: "rules/diffex_riborex.smk"
+    if RIBOREX_ENABLED:
+        include: "rules/diffex_riborex.smk"
     include: "rules/diffex_deltate.smk"
     include: "rules/diffex_summary.smk"
 
@@ -180,7 +190,7 @@ if "predictions" in STAGES:
 
 if "differential_expression" in STAGES:
     hribo_output.extend(f"contrasts/{contrast}" for contrast in CONTRASTS)
-    for tool in ("xtail", "riborex", "deltate"):
+    for tool in DIFFEX_METHODS:
         hribo_output.extend(f"{tool}/{contrast}_sorted.xlsx" for contrast in CONTRASTS)
     hribo_output.extend(rules.conditionOverview.output)
 

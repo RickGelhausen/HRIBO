@@ -169,6 +169,26 @@ def test_end_to_end_report_and_browser_tracks_are_consistent(tmp_path):
     assert "condition_overview.xlsx" in page
     assert (out / "condition_overview.xlsx").is_file()
     assert '"aliases":["geneA","b0001","A"]' in page
+    assert '"riborex":true' in page
+    assert "RiboRex:" in page
+
+
+def test_report_runs_without_optional_riborex(tmp_path):
+    counts, annotation, xtail, _, deltate, _ = _write_fixture(tmp_path)
+    out = tmp_path / "report without riborex"
+    summary.main([
+        "--counts", str(counts), "--annotation", str(annotation),
+        "--xtail", str(xtail), "--deltate", str(deltate),
+        "--contrasts", "Mut-WT", "--output_dir", str(out),
+    ])
+
+    contrast_rows = _read_tsv(out / "contrast_matrix.tsv")
+    assert contrast_rows
+    assert all(row["riborex_te_log2fc"] == "" for row in contrast_rows)
+    assert all(row["riborex_te_padj"] == "" for row in contrast_rows)
+    page = (out / "condition_overview.html").read_text()
+    assert '"riborex":false' in page
+    assert "RiboRex:" not in page
 
 
 def test_output_is_deterministic(tmp_path):
@@ -213,7 +233,9 @@ def test_html_sorting_is_state_aware_stable_and_precedes_pagination(tmp_path):
 def test_annotation_names_cannot_break_out_of_json_script(tmp_path):
     counts, annotation, xtail, riborex, deltate, _ = _write_fixture(tmp_path)
     annotation.write_text(annotation.read_text().replace(
-        "Name=geneA", "Name=%3C%2FScRiPt%3E%3Cscript%3Ealert(1)%3C%2Fscript%3E"
+        "Name=geneA",
+        "Name=__SUPPLEMENTARY_METHODS____RIBOREX_DETAIL__"
+        "%3C%2FScRiPt%3E%3Cscript%3Ealert(1)%3C%2Fscript%3E",
     ))
     out = tmp_path / "report"
     summary.main([
@@ -226,6 +248,7 @@ def test_annotation_names_cannot_break_out_of_json_script(tmp_path):
     page = (out / "condition_overview.html").read_text()
     assert "</ScRiPt>" not in page
     assert "\\u003c/ScRiPt>" in page
+    assert "__SUPPLEMENTARY_METHODS____RIBOREX_DETAIL__\\u003c/ScRiPt>" in page
 
 
 def test_five_treatments_against_wildtype_share_one_condition_axis():

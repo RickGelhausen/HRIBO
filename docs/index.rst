@@ -54,7 +54,8 @@ types are:
      - ``auxiliary/predictions_*.xlsx``
      - Review REPARATION and optional DeepRibo candidates.
    * - Differential translation and condition overview
-     - ``diffex_summary/``, ``xtail/``, ``riborex/``, and ``deltate/``
+     - ``diffex_summary/``, ``xtail/``, ``deltate/``, and optional
+       ``riborex/``
      - Scan condition-specific detection and RNA, RIBO, or TE changes, then
        inspect detailed contrast results.
    * - Combined overview

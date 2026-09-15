@@ -56,8 +56,8 @@ in a contrast named ``<left>-<right>``.  For example, ``Treated-Control``
 size, adjusted p-value, and replicate counts before interpreting any pattern.
 The report keeps RNA, RIBO, and TE separate; it does not average p-values
 across methods or contrasts.  The RNA, RIBO, and TE contrast states come from
-deltaTE.  xTail and RiboRex TE results remain supplemental method evidence,
-not votes in a combined significance call.
+deltaTE.  xTail and, when enabled, RiboRex TE results remain supplemental
+method evidence, not votes in a combined significance call.
 
 Detection and differential thresholds
 -------------------------------------
@@ -128,6 +128,7 @@ filenames include a short hash to keep similarly named conditions distinct,
 so use the track index or manifest to choose the right file.
 
 The browser tracks are visual selections, not replacement annotations.  Keep
-the original reference annotation and the per-contrast xTail, RiboRex, and
-deltaTE workbooks for detailed statistical review.  See :doc:`outputs` for
-the other result locations and :doc:`table-reference` for table conventions.
+the original reference annotation and the per-contrast xTail and deltaTE
+workbooks for detailed statistical review, together with the RiboRex workbook
+when that optional analysis was enabled.  See :doc:`outputs` for the other
+result locations and :doc:`table-reference` for table conventions.

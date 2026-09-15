@@ -124,7 +124,7 @@ def _write_diffex_config(
         }
     )
     config["differentialExpressionSettings"].update(
-        {"contrasts": [CONTRAST], "xtailBins": 1000}
+        {"contrasts": [CONTRAST], "xtailBins": 1000, "riborex": "on"}
     )
     config["predictionSettings"]["deepribo"] = "off"
     config["workflowSettings"]["stages"] = ["differential_expression"]

@@ -30,7 +30,7 @@ STAGE_DESCRIPTIONS = {
     "correlation": "the Spearman correlation heatmap between libraries",
     "pca": "the PCA plot of the read counts",
     "predictions": "annotation-independent ORF predictions and a combined updated annotation",
-    "differential_expression": "xtail, riborex and deltaTE contrasts plus a cross-condition report and browser tracks",
+    "differential_expression": "xTail and deltaTE contrasts, optional RiboRex, plus a cross-condition report and browser tracks",
     "overview": "the combined overview spreadsheet",
 }
 

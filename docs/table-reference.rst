@@ -218,7 +218,10 @@ Dynamic differential columns
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For every resolved ``<contrast>``, the overview reserves these columns in
-xTail, RiboRex, then deltaTE blocks:
+xTail, RiboRex, then deltaTE blocks.  RiboRex cells remain blank when
+``differentialExpressionSettings.riborex`` is ``"off"``; retaining the
+reserved columns keeps the machine-readable overview schema stable between
+runs:
 
 .. code-block:: text
 
@@ -317,10 +320,11 @@ with columns in this order:
 ``assay`` is RNA, RIBO, or TE.  ``state`` is ``up``, ``down``,
 ``not_significant``, or ``not_tested``.  The ``log2fc`` direction is left
 minus right.  Up/down calls require both ``padj <= padjCutoff`` and a fold
-change at least ``log2fcCutoff`` in the matching direction.  The three
-primary assay states use deltaTE statistics; the xTail and RiboRex columns
-are supplemental TE-only results, not combined p-values or extra votes in
-the ``state`` field.  ``not_significant`` is the machine-readable name for
+change at least ``log2fcCutoff`` in the matching direction.  The three primary
+assay states use deltaTE statistics; the xTail and optional RiboRex columns are
+supplemental TE-only results, not combined p-values or extra votes in the
+``state`` field.  The RiboRex fields are blank when that analysis is disabled.
+``not_significant`` is the machine-readable name for
 "no directional call under both thresholds"; its adjusted p-value may still
 be below the configured cutoff when the effect-size boundary is not met.
 ``not_tested`` means an effect estimate or adjusted p-value is missing.
@@ -349,7 +353,7 @@ denotes their relative change.  Differential ``TE_log2FC`` columns are log2
 effects and must not be confused with the non-logarithmic direct ``*_TE``
 ratios described above.
 
-All three workbooks begin with:
+Every generated differential-expression workbook begins with:
 
 .. code-block:: text
 
@@ -362,11 +366,12 @@ and end with:
    Length, Codon_count, Start_codon, Stop_codon,
    Nucleotide_seq, Aminoacid_seq
 
-RiboRex
-~~~~~~~
+Optional RiboRex
+~~~~~~~~~~~~~~~~
 
 ``riborex/<contrast>_sorted.xlsx`` has ``all``, ``TE_up``, and ``TE_down``
-sheets.  Between the common blocks it contains:
+sheets.  It is created only when ``differentialExpressionSettings.riborex``
+is ``"on"``.  Between the common blocks it contains:
 
 .. code-block:: text
 
@@ -422,10 +427,11 @@ location.
 Up/down sheets
 ~~~~~~~~~~~~~~
 
-``TE_up`` and ``TE_down`` in the RiboRex and xTail workbooks use ``log2FC``
-and ``log2FC_TE_final``, respectively.  Each deltaTE component sheet uses the
-matching component's ``*_log2FC`` and ``*_pvalue_adjusted``.  A row is included
-when its adjusted p-value is at most ``padjCutoff`` and its fold change is at
+``TE_up`` and ``TE_down`` in the optional RiboRex and standard xTail workbooks
+use ``log2FC`` and ``log2FC_TE_final``, respectively.  Each deltaTE component
+sheet uses the matching component's ``*_log2FC`` and
+``*_pvalue_adjusted``.  A row is included when its adjusted p-value is at most
+``padjCutoff`` and its fold change is at
 least ``log2fcCutoff`` (up) or at most its negative (down).  Both boundaries
 are inclusive.  An empty selection remains a header-only sheet.
 

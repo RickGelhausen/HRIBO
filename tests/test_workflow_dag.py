@@ -128,12 +128,14 @@ def test_full_preset_constructs_every_analysis_branch(
         "reparation",
         "prepareDeltaTEScript",
         "xtail",
-        "riborex",
         "deltate",
         "createOverviewTable",
         "updatedAnnotation",
     ):
         assert f"rule {rule}" in rendered
+    assert "rule prepareRiborexInput" not in rendered
+    assert "rule riborex" not in rendered
+    assert "riborex/" not in rendered
     assert "logs/A1-1_reparation.log" in rendered
     assert "reparation/annotation.gtf" in rendered
     assert "deltate/DTEG.R" in rendered

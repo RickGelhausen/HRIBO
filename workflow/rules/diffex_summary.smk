@@ -1,13 +1,21 @@
 """Cross-condition detection and differential-expression overview."""
 
 
+def condition_overview_inputs():
+    sources = {
+        "counts": "readcounts/differential_expression_read_counts.csv",
+        "annotation": "readcounts/independant_annotation.gff",
+        "xtail": "xtail/xtail_all.csv",
+        "deltate": "deltate/deltate_all.csv",
+    }
+    if RIBOREX_ENABLED:
+        sources["riborex"] = "riborex/riborex_all.csv"
+    return sources
+
+
 rule conditionOverview:
     input:
-        counts="readcounts/differential_expression_read_counts.csv",
-        annotation="readcounts/independant_annotation.gff",
-        xtail="xtail/xtail_all.csv",
-        riborex="riborex/riborex_all.csv",
-        deltate="deltate/deltate_all.csv",
+        **condition_overview_inputs(),
         script=str(SCRIPTS / "generate_diffex_summary.py"),
         script_deps=[
             str(SCRIPTS / "lib" / "__init__.py"),
@@ -32,7 +40,12 @@ rule conditionOverview:
         min_count=config["differentialExpressionSettings"].get("detectionMinCount", 10),
         min_replicates=config["differentialExpressionSettings"].get("detectionMinReplicates", 2),
         padj_cutoff=config["differentialExpressionSettings"]["padjCutoff"],
-        log2fc_cutoff=config["differentialExpressionSettings"]["log2fcCutoff"]
+        log2fc_cutoff=config["differentialExpressionSettings"]["log2fcCutoff"],
+        riborex=(
+            ["--riborex", "riborex/riborex_all.csv"]
+            if RIBOREX_ENABLED
+            else []
+        )
     log:
         "logs/diffex_summary.log"
     shell:
@@ -41,7 +54,7 @@ rule conditionOverview:
             --counts {input.counts:q} \
             --annotation {input.annotation:q} \
             --xtail {input.xtail:q} \
-            --riborex {input.riborex:q} \
+            {params.riborex:q} \
             --deltate {input.deltate:q} \
             --contrasts {params.contrasts:q} \
             --output_dir diffex_summary \

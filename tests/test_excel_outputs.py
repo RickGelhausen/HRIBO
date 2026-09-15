@@ -259,6 +259,30 @@ def test_overview_honors_explicit_contrast_orientation(inputs, tmp_path):
     assert sheets["all"]["xtail_B-A_TE_log2FC"].notna().any()
 
 
+def test_overview_without_riborex_keeps_reserved_columns_blank(inputs, tmp_path):
+    """Disabling RiboRex keeps the documented machine-table schema stable."""
+    output = tmp_path / "overview_without_riborex.xlsx"
+    argv = command("overview", inputs, output)
+    riborex_flag = argv.index("--riborex")
+    del argv[riborex_flag:riborex_flag + 2]
+
+    result = subprocess.run(
+        argv, capture_output=True, text=True, cwd=str(SCRIPTS)
+    )
+    assert result.returncode == 0, result.stderr
+
+    workbook = excel_snapshot.read_workbook(output)["all"]
+    tsv = pd.read_csv(output.with_suffix(".tsv"), sep="\t")
+    riborex_columns = [
+        column for column in workbook.columns if column.startswith("riborex_")
+    ]
+    assert riborex_columns
+    assert workbook[riborex_columns].isna().all().all()
+    assert tsv[riborex_columns].isna().all().all()
+    assert workbook["xtail_B-A_TE_log2FC"].notna().any()
+    assert workbook["deltaTE_B-A_TE_log2FC"].notna().any()
+
+
 def test_overview_infers_pairwise_contrasts_when_none_are_passed(inputs, tmp_path):
     """Standalone use without -c retains the deterministic pairwise fallback."""
     output = run("overview", inputs, tmp_path, overview_contrasts=None)

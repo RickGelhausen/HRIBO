@@ -130,9 +130,10 @@ After the workflow completes, use the following order:
 5. Review ``auxiliary/predictions_reparation.xlsx`` and
    ``auxiliary/predictions_deepribo.xlsx`` separately before interpreting their
    combined evidence in ``auxiliary/overview.xlsx``.
-6. For each contrast, compare the xTail, RiboRex, and deltaTE workbooks.  Check
-   both effect size and adjusted p-value, and keep the contrast direction in
-   view.
+6. For each contrast, review the deltaTE and xTail workbooks.  Check both
+   effect size and adjusted p-value, and keep the contrast direction in view.
+   If RiboRex was enabled, use its workbook as supplementary method evidence,
+   not as an additional vote in the deltaTE calls.
 
 The complete result map and interpretation guidance are in
 :doc:`../outputs`; exact workbook columns and sheets are in

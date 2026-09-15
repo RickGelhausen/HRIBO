@@ -37,6 +37,12 @@ differentialExpressionSettings:
   # Whether differential expression runs at all is decided by the
   # "differential_expression" stage in workflowSettings.stages below.
 
+  # RiboRex is retained as an optional supplementary analysis. deltaTE is the
+  # primary source of RNA, RIBO and TE calls, while xTail supplies the standard
+  # supplementary TE analysis and plots. Set this to "on" only when you also
+  # want the additional RiboRex tables; it never changes the summary calls.
+  riborex: "off"
+
   # Feature types from annotation column 3 used for differential expression.
   # Matching is case-sensitive. Missing types are skipped with a warning as long
   # as at least one requested type is present; the run stops if none are present.
@@ -202,9 +208,9 @@ workflowSettings:
     - correlation              # the Spearman correlation heatmap between libraries
     - pca                      # the PCA plot of the read counts
     - predictions              # ORF predictions plus a combined updated annotation
-    # - differential_expression  # xTail, RiboRex, deltaTE, a cross-condition
-                                 # overview and browser tracks; needs RNA-seq
-                                 # libraries and at least two conditions
+    # - differential_expression  # xTail, deltaTE, optional RiboRex, a
+                                 # cross-condition overview and browser tracks;
+                                 # needs RNA-seq libraries and two conditions
     - overview                 # the combined overview spreadsheet
   #
   # predictions, differential_expression and overview need Ribo-seq libraries and

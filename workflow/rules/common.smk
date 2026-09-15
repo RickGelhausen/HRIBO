@@ -319,8 +319,9 @@ def overview_sources():
         sources["deepribo"] = "readcounts/deepribo_annotation.gff"
     if DIFFEXPRESS:
         sources["xtail"] = "xtail/xtail_all.csv"
-        sources["riborex"] = "riborex/riborex_all.csv"
         sources["deltate"] = "deltate/deltate_all.csv"
+        if RIBOREX_ENABLED:
+            sources["riborex"] = "riborex/riborex_all.csv"
     return sources
 
 

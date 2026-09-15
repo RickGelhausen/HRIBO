@@ -120,6 +120,13 @@ properties:
       - log2fcCutoff
     additionalProperties: false
     properties:
+      riborex:
+        type: string
+        pattern: "^([Oo][Nn]|[Oo][Ff][Ff])$"
+        default: "off"
+        description: >
+          Whether to run the optional supplementary RiboRex analysis. deltaTE
+          remains the source of cross-condition RNA, RIBO, and TE calls.
       features:
         type: array
         minItems: 1

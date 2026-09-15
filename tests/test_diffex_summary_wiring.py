@@ -6,6 +6,7 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
 import yaml
 
 
@@ -32,8 +33,18 @@ def test_detection_thresholds_are_shipped_and_validated():
         assert field["default"] == expected
         assert key not in settings_schema["required"]
 
+    riborex = settings_schema["properties"]["riborex"]
+    assert settings["riborex"] == "off"
+    assert riborex["default"] == "off"
+    assert riborex["pattern"] == "^([Oo][Nn]|[Oo][Ff][Ff])$"
+    assert "riborex" not in settings_schema["required"]
 
+
+@pytest.mark.parametrize(
+    "riborex", [None, "off", "on"], ids=["missing-setting", "default", "opt-in"]
+)
 def test_diffex_stage_requests_condition_overview_without_predictions(
+    riborex,
     snakemake_command,
     genome_file,
     annotation_file,
@@ -55,6 +66,10 @@ def test_diffex_stage_requests_condition_overview_without_predictions(
     )
     config["workflowSettings"]["stages"] = ["differential_expression"]
     config["differentialExpressionSettings"]["contrasts"] = ["A-B"]
+    if riborex is None:
+        config["differentialExpressionSettings"].pop("riborex")
+    else:
+        config["differentialExpressionSettings"]["riborex"] = riborex
     config_path = workdir / "config.yaml"
     config_path.write_text(yaml.safe_dump(config, sort_keys=False))
 
@@ -92,8 +107,21 @@ def test_diffex_stage_requests_condition_overview_without_predictions(
     assert "--min_count 10" in rendered
     assert "--min_replicates 2" in rendered
     assert "rule poolxtail:" in rendered
-    assert "rule poolriborex:" in rendered
     assert "rule pooldeltate:" in rendered
+    if riborex == "on":
+        assert "rule prepareRiborexInput:" in rendered
+        assert "rule riborex:" in rendered
+        assert "rule riborexxlsx:" in rendered
+        assert "rule poolriborex:" in rendered
+        assert "riborex/A-B_sorted.xlsx" in rendered
+        assert "--riborex riborex/riborex_all.csv" in rendered
+    else:
+        assert "rule prepareRiborexInput:" not in rendered
+        assert "rule riborex:" not in rendered
+        assert "rule riborexxlsx:" not in rendered
+        assert "rule poolriborex:" not in rendered
+        assert "riborex/A-B_sorted.xlsx" not in rendered
+        assert "--riborex" not in rendered
     assert "rule createOverviewTable:" not in rendered
     assert "rule asiteOccupancy:" not in rendered
     assert "rule reparation:" not in rendered
@@ -165,3 +193,5 @@ def test_condition_overview_rule_executes_from_existing_diffex_inputs(
     assert (workdir / "diffex_summary" / "contrast_matrix.tsv").is_file()
     assert (workdir / "diffex_summary" / "browser_tracks.tsv").is_file()
     assert (workdir / "diffex_summary" / "browser" / "tracks_manifest.json").is_file()
+    page = (workdir / "diffex_summary" / "condition_overview.html").read_text()
+    assert "RiboRex:" not in page

@@ -25,6 +25,9 @@ Notable changes since 1.8.1 include:
 - added a cross-condition differential-expression summary with sortable HTML,
   matching multi-sheet Excel views, long-form TSV data, and browser-ready GFF3
   tracks;
+- made RiboRex an explicitly opt-in supplementary analysis, disabled by
+  default; deltaTE remains the source of RNA, RIBO, and TE summary calls and
+  xTail remains the standard supplementary TE analysis;
 - hardened Reparation, DeepRibo, and deltaTE container boundaries with pinned
   artifacts, atomic output contracts, recovery receipts, and production CI
   smokes;
