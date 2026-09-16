@@ -63,6 +63,19 @@ def test_count_reader_ignores_other_mapped_library_types(tmp_path):
     assert totals == {"RNA-WT-1": 10, "RIBO-WT-1": 20}
 
 
+def test_explicit_locus_tag_beats_gene_id_fallback_in_either_row_order(tmp_path):
+    gene = "chr\tHRIBO\tgene\t1\t90\t.\t+\t.\tID=gene;locus_tag=parent_tag\n"
+    cds = "chr\tHRIBO\tCDS\t1\t90\t.\t+\t.\tID=cds;gene_id=fallback_id\n"
+
+    for index, records in enumerate(((gene, cds), (cds, gene))):
+        annotation = tmp_path / f"annotation-{index}.gff"
+        annotation.write_text("##gff-version 3\n" + "".join(records))
+        coordinates = summary.read_annotation(annotation)
+        assert summary._metadata("chr:1-90:+", coordinates)["locus_tag"] == (
+            "parent_tag"
+        )
+
+
 def _write_fixture(tmp_path):
     count_path = tmp_path / "counts.csv"
     samples = [
@@ -88,7 +101,7 @@ def _write_fixture(tmp_path):
         "#hribo-gff-read-counts-v1\tRNA-WT-1\n"
         "chr\tHRIBO\tCDS\t1\t90\t.\t+\t.\tID=A;Name=geneA;locus_tag=b0001\t10\n"
         "chr\tHRIBO\tCDS\t101\t190\t.\t-\t.\tID=B;Name=geneB\t10\n"
-        "chr\tHRIBO\tCDS\t201\t290\t.\t+\t.\tID=C;Name=geneC\t10\n"
+        "chr\tHRIBO\tCDS\t201\t290\t.\t+\t.\tID=C;Name=geneC;gene_id=gidC\t10\n"
     )
     deltate = tmp_path / "deltate.csv"
     with deltate.open("w", newline="") as handle:
@@ -140,16 +153,29 @@ def test_end_to_end_report_and_browser_tracks_are_consistent(tmp_path):
 
     condition_rows = _read_tsv(out / "condition_matrix.tsv")
     assert len(condition_rows) == 12
+    assert list(condition_rows[0])[:8] == [
+        "feature_id", "locus_tag", "genome", "start", "end", "strand",
+        "feature_type", "name",
+    ]
     keyed = {(r["feature_id"], r["condition"], r["assay"]): r for r in condition_rows}
     assert keyed[(ids[0], "WT", "RNA")]["state"] == "detected"
+    assert keyed[(ids[0], "WT", "RNA")]["locus_tag"] == "b0001"
+    assert keyed[(ids[0], "WT", "RNA")]["name"] == "geneA"
+    assert keyed[(ids[1], "WT", "RNA")]["locus_tag"] == ""
+    assert keyed[(ids[2], "WT", "RNA")]["locus_tag"] == "gidC"
     assert keyed[(ids[0], "Mut", "RNA")]["state"] == "not_detected"
     assert keyed[(ids[2], "WT", "RNA")]["state"] == "uncertain"
     assert "RNA-WT-1=20" in keyed[(ids[0], "WT", "RNA")]["sample_counts"]
 
     contrast_rows = _read_tsv(out / "contrast_matrix.tsv")
     assert len(contrast_rows) == 9
+    assert list(contrast_rows[0])[:8] == [
+        "feature_id", "locus_tag", "genome", "start", "end", "strand",
+        "feature_type", "name",
+    ]
     effect = {(r["feature_id"], r["assay"]): r for r in contrast_rows}
     assert effect[(ids[0], "RNA")]["state"] == "down"
+    assert effect[(ids[0], "RNA")]["locus_tag"] == "b0001"
     assert effect[(ids[0], "TE")]["state"] == "not_significant"
     assert effect[(ids[1], "TE")]["state"] == "up"
     assert effect[(ids[1], "TE")]["xtail_te_log2fc"] == "1.7"
@@ -169,6 +195,8 @@ def test_end_to_end_report_and_browser_tracks_are_consistent(tmp_path):
     assert "condition_overview.xlsx" in page
     assert (out / "condition_overview.xlsx").is_file()
     assert '"aliases":["geneA","b0001","A"]' in page
+    assert '"id":"chr:1-90:+","locus_tag":"b0001","name":"geneA"' in page
+    assert '"id":"chr:101-190:-","locus_tag":"","name":"geneB"' in page
     assert '"riborex":true' in page
     assert "RiboRex:" in page
 
@@ -217,7 +245,9 @@ def test_html_sorting_is_state_aware_stable_and_precedes_pagination(tmp_path):
     )
     page = page_path.read_text()
 
-    assert "columns.append(sortHeader('Feature','feature','feature'))" in page
+    assert "sortHeader('Locus tag','locus_tag','identity locus-tag')" in page
+    assert "sortHeader('Identifier','identifier','identity identifier')" in page
+    assert "sortHeader('Feature'" not in page
     assert "columns.append(sortHeader(col,cellSortKey(assay,kind,col)))" in page
     assert "th.setAttribute('aria-sort'" in page
     assert "indicator.className='sort-indicator'" in page
@@ -226,6 +256,12 @@ def test_html_sorting_is_state_aware_stable_and_precedes_pagination(tmp_path):
     assert "const stateRank={condition:" in page
     assert "leftCall.mean_cpm" in page
     assert "Math.abs(leftCall.log2fc)" in page
+    assert "sortKey==='locus_tag'||sortKey==='identifier'" in page
+    assert "left.row.locus_tag" in page
+    assert "left.row.id" in page
+    assert "`${row.locus_tag} ${row.id} ${row.name}" in page
+    assert "@media (max-width:600px)" in page
+    assert "Display label:" in page
     assert "return order||left.index-right.index" in page
     assert page.index("sortRows(chooseRows(") < page.index("selected.slice(")
 

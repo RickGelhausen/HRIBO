@@ -34,11 +34,22 @@ The report has two complementary feature-level views:
   Search, filters, and sortable column headings help narrow the display to a
   feature or response pattern without searching across several workbooks.
 
-In the HTML report, click a feature, condition, or contrast heading to sort
-the current view; click it again to reverse the order.  State columns use the
-biological state first and the underlying CPM or log2 fold change to break
-ties.  The sort applies after the current search and ``Show`` filter, and the
-arrow in the heading shows its direction.
+Every HTML view starts with separate ``Locus tag`` and ``Identifier`` columns,
+so either value can be copied, searched, or sorted without separating a
+combined label first.  ``Locus tag`` uses the annotation's ``locus_tag``
+attribute, falls back to ``gene_id`` when necessary, and is blank when neither
+attribute is available.  ``Identifier`` is the exact key used in the
+differential count and result tables, normally
+``<sequence>:<start>-<end>:<strand>``.
+
+In the HTML report, click the locus-tag, identifier, condition, or contrast
+heading to sort the current view; click it again to reverse the order.  The two
+identifying columns remain frozen while the matrix is scrolled on wider
+screens.  On narrow screens only ``Locus tag`` remains frozen, leaving room to
+scroll the result columns into view.  State columns use the biological state
+first and the underlying CPM or log2 fold change to break ties.  The sort
+applies after the current search and ``Show`` filter, and the arrow in the
+heading shows its direction.
 
 The two views answer different questions.  ``not_detected`` means that a
 feature did not meet the report's read-count and normalized-abundance
@@ -89,21 +100,24 @@ files:
    A spreadsheet version of all five selectable HTML views.  The
    ``RNA_detection``, ``RIBO_detection``, ``RNA_change``, ``RIBO_change``, and
    ``TE_change`` sheets use the same labels and colours as the HTML matrix.
-   Each has a ``Feature`` column followed by one column per condition or
-   contrast, exactly as in the HTML view.  The header and feature column are
-   frozen, and Excel's native filters can sort or select rows.  The workbook
-   opens on ``RNA_detection``; a final ``README`` sheet records the thresholds
-   and interpretation notes.  The two TSV matrices below retain the detailed
+   Each has separate ``Locus tag`` and ``Identifier`` columns followed by one
+   column per condition or contrast, exactly as in the HTML view.  The header
+   and both identifying columns are frozen.  Excel's native filters can sort or
+   select either identifier as well as the matrix values.  The workbook opens
+   on ``RNA_detection``; a final ``README`` sheet records the thresholds and
+   interpretation notes.  The two TSV matrices below retain the detailed
    long-form data without making the workbook prohibitively large.
 
 ``diffex_summary/condition_matrix.tsv``
    Per-feature RNA and RIBO detection by condition, with supporting count
-   information.  Use this to reproduce or filter the detection matrix in a
-   spreadsheet or script.
+   information.  It retains ``feature_id`` as the machine-readable identifier
+   and adds ``locus_tag`` as a separate field.  Use this to reproduce or filter
+   the detection matrix in a spreadsheet or script.
 
 ``diffex_summary/contrast_matrix.tsv``
    Per-feature RNA, RIBO, and TE states by contrast, alongside the available
-   differential statistics.  Use it when you need the exact values behind a
+   differential statistics.  It likewise keeps ``feature_id`` and
+   ``locus_tag`` separate.  Use it when you need the exact values behind a
    coloured cell.
 
 ``diffex_summary/browser_tracks.tsv``

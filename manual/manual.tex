@@ -673,17 +673,27 @@ workbooks when reporting which predictor supported an ORF.
 Open \file{diffex_summary/condition_overview.html} to scan a searchable,
 sortable feature-by-condition matrix of RNA and RIBO detection and a separate
 feature-by-contrast matrix of RNA, RIBO, and translation-efficiency (TE)
-changes. Click a column heading to sort on its biological state and underlying
-quantitative value; click it again to reverse the direction. The adjacent
+changes. Every view starts with separate \setting{Locus tag} and
+\setting{Identifier} columns. The locus tag comes from the annotation's
+\setting{locus_tag} attribute, falls back to \setting{gene_id}, and is blank
+when neither is available. The identifier is the exact differential-table key,
+normally \file{<sequence>:<start>-<end>:<strand>}. Click either identifying
+heading or a condition or contrast heading to sort; click it again to reverse
+the direction. Both identifying columns remain frozen on wider screens; on
+narrow screens only the locus tag remains frozen so result columns can be
+scrolled into view. The adjacent
 \file{condition_overview.xlsx} contains the same five views in
 \file{RNA_detection}, \file{RIBO_detection}, \file{RNA_change},
 \file{RIBO_change}, and \file{TE_change} sheets, with frozen panes, native
-Excel filters, and the same \file{Feature}-plus-matrix layout. Its directional
-cells remain numeric so Excel sorts their signed log2 fold changes correctly.
+Excel filters, and the same two-identifiers-plus-matrix layout. Both identifying
+columns and all matrix columns can be sorted. Its directional cells remain
+numeric so Excel sorts their signed log2 fold changes correctly.
 The adjacent \file{condition_matrix.tsv},
 \file{contrast_matrix.tsv}, and \file{browser_tracks.tsv} retain the tabular
-results. Selected detected features and up/down contrasts are exported as
-separate \file{diffex_summary/browser/*.gff3} tracks. Load these alongside
+results. The two feature-level TSVs retain \setting{feature_id} and add
+\setting{locus_tag} as a separate field. Selected detected features and
+up/down contrasts are exported as separate
+\file{diffex_summary/browser/*.gff3} tracks. Load these alongside
 the final BAM or BigWig tracks for locus inspection. The report is part of
 \file{differential_expression}; it does not require the prediction-dependent
 \setting{overview} stage.

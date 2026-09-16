@@ -26,14 +26,15 @@ from lib.diffex_browser import export_tracks
 ASSAYS = ("RNA", "RIBO")
 EFFECT_ASSAYS = ("RNA", "RIBO", "TE")
 CONDITION_FIELDS = (
-    "feature_id", "genome", "start", "end", "strand", "feature_type", "name",
-    "condition", "assay", "state", "replicates", "passing_replicates",
-    "mean_count", "mean_cpm", "sample_counts", "sample_cpms",
+    "feature_id", "locus_tag", "genome", "start", "end", "strand",
+    "feature_type", "name", "condition", "assay", "state", "replicates",
+    "passing_replicates", "mean_count", "mean_cpm", "sample_counts",
+    "sample_cpms",
 )
 CONTRAST_FIELDS = (
-    "feature_id", "genome", "start", "end", "strand", "feature_type", "name",
-    "contrast", "assay", "state", "log2fc", "padj", "method",
-    "xtail_te_log2fc", "xtail_te_padj", "riborex_te_log2fc",
+    "feature_id", "locus_tag", "genome", "start", "end", "strand",
+    "feature_type", "name", "contrast", "assay", "state", "log2fc", "padj",
+    "method", "xtail_te_log2fc", "xtail_te_padj", "riborex_te_log2fc",
     "riborex_te_padj",
 )
 TRACK_FIELDS = (
@@ -146,6 +147,8 @@ def read_annotation(path):
             record = {
                 "seqid": seqid, "start": int(start), "end": int(end),
                 "strand": strand, "type": feature_type,
+                "locus_tag": attrs.get("locus_tag") or "",
+                "gene_id": attrs.get("gene_id") or "",
                 "name": (attrs.get("Name") or attrs.get("gene_name")
                          or attrs.get("locus_tag") or attrs.get("gene_id")
                          or attrs.get("ID") or feature_id),
@@ -159,11 +162,28 @@ def read_annotation(path):
             # The unambiguous annotation can contain a gene and a counted
             # feature at identical coordinates. Prefer the feature-level row.
             prior = coordinates.get(feature_id)
-            if prior is None or (
+            replace_prior = prior is None or (
                 prior["type"] in {"gene", "pseudogene", "exon"}
                 and feature_type not in {"gene", "pseudogene", "exon"}
-            ):
+            )
+            if replace_prior:
+                if prior is not None:
+                    if not record["locus_tag"]:
+                        record["locus_tag"] = prior["locus_tag"]
+                    if not record["gene_id"]:
+                        record["gene_id"] = prior["gene_id"]
+                    record["aliases"] = list(dict.fromkeys(
+                        [*record["aliases"], *prior["aliases"]]
+                    ))
                 coordinates[feature_id] = record
+            elif prior is not None:
+                if not prior["locus_tag"] and record["locus_tag"]:
+                    prior["locus_tag"] = record["locus_tag"]
+                if not prior["gene_id"] and record["gene_id"]:
+                    prior["gene_id"] = record["gene_id"]
+                prior["aliases"] = list(dict.fromkeys(
+                    [*prior["aliases"], *record["aliases"]]
+                ))
     return coordinates
 
 
@@ -257,9 +277,11 @@ def _write_tsv(path, fields, rows):
 def _metadata(feature_id, coordinates):
     item = coordinates.get(feature_id, {})
     return {
-        "feature_id": feature_id, "genome": item.get("seqid", ""),
-        "start": item.get("start", ""), "end": item.get("end", ""),
-        "strand": item.get("strand", ""), "feature_type": item.get("type", ""),
+        "feature_id": feature_id,
+        "locus_tag": item.get("locus_tag") or item.get("gene_id", ""),
+        "genome": item.get("seqid", ""), "start": item.get("start", ""),
+        "end": item.get("end", ""), "strand": item.get("strand", ""),
+        "feature_type": item.get("type", ""),
         "name": item.get("name", feature_id),
     }
 
@@ -363,9 +385,9 @@ def write_excel(path, rows, coordinates, conditions, contrasts, args):
             "The cross-condition matrix exceeds Excel's 1,048,575 data-row limit; "
             "use the TSV files instead."
         )
-    if max(len(conditions), len(contrasts)) > 16_383:
+    if max(len(conditions), len(contrasts)) > 16_382:
         raise ValueError(
-            "The cross-condition matrix exceeds Excel's 16,383 data-column limit; "
+            "The cross-condition matrix exceeds Excel's 16,382 data-column limit; "
             "use the TSV files instead."
         )
     workbook = xlsxwriter.Workbook(path, {"constant_memory": True})
@@ -407,24 +429,23 @@ def write_excel(path, rows, coordinates, conditions, contrasts, args):
     ]
     for sheet_name, kind, assay, columns in sheet_specs:
         worksheet = workbook.add_worksheet(sheet_name)
-        worksheet.freeze_panes(1, 1)
-        worksheet.set_column(0, 0, 48)
+        worksheet.freeze_panes(1, 2)
+        worksheet.set_column(0, 0, 20)
+        worksheet.set_column(1, 1, 38)
         if columns:
-            worksheet.set_column(1, len(columns), 20)
-        worksheet.write_string(0, 0, "Feature", text_header)
-        for column, value in enumerate(columns, 1):
+            worksheet.set_column(2, len(columns) + 1, 20)
+        worksheet.write_string(0, 0, "Locus tag", text_header)
+        worksheet.write_string(0, 1, "Identifier", text_header)
+        for column, value in enumerate(columns, 2):
             worksheet.write_string(0, column, value, header)
         for row_number, row in enumerate(rows, 1):
             metadata = _metadata(row["feature_id"], coordinates)
-            display = (
-                row["feature_id"] if metadata["name"] == row["feature_id"]
-                else f"{metadata['name']} · {row['feature_id']}"
-            )
-            # write_string prevents identifiers beginning with '=' from being
+            # write_string prevents identity values beginning with '=' from being
             # interpreted as formulas by spreadsheet applications.
-            worksheet.write_string(row_number, 0, display)
+            worksheet.write_string(row_number, 0, metadata["locus_tag"])
+            worksheet.write_string(row_number, 1, row["feature_id"])
             calls = row["conditions" if kind == "condition" else "contrasts"]
-            for offset, label in enumerate(columns, 1):
+            for offset, label in enumerate(columns, 2):
                 call = calls[label][assay]
                 state = call["state"]
                 if state in {"up", "down"}:
@@ -436,7 +457,7 @@ def write_excel(path, rows, coordinates, conditions, contrasts, args):
                         row_number, offset, labels[state], state_formats[state]
                     )
         last_row = max(len(rows), 1)
-        last_column = len(columns)
+        last_column = len(columns) + 1
         worksheet.autofilter(0, 0, last_row, last_column)
 
     readme = workbook.add_worksheet("README")
@@ -445,6 +466,7 @@ def write_excel(path, rows, coordinates, conditions, contrasts, args):
     readme.write_row(0, 0, ["Item", "Meaning"], text_header)
     guidance = [
         ("Workbook", "The five visual sheets mirror the selectable tables in condition_overview.html. Excel filters and native sorting are enabled."),
+        ("Identity columns", "Locus tag is annotation metadata (falling back to gene_id); Identifier is the exact coordinate-style key used to join counts and differential results."),
         ("Detection", f"Detected requires at least {args.min_count} counts and {args.min_cpm} CPM in at least {args.min_replicates} usable replicates. Not detected means below these thresholds at this sequencing depth; uncertain is unresolved."),
         ("Changes", f"Up/down requires adjusted p <= {args.padj_cutoff} and absolute log2FC >= {args.log2fc_cutoff}. Positive effects are higher in the left side of a contrast."),
         ("No directional call", "The result did not meet both configured cutoffs. It does not prove no biological effect."),
@@ -466,7 +488,8 @@ def write_html(path, rows, coordinates, conditions, contrasts, args):
     for row in rows:
         metadata = _metadata(row["feature_id"], coordinates)
         report_rows.append({
-            "id": row["feature_id"], "name": metadata["name"],
+            "id": row["feature_id"], "locus_tag": metadata["locus_tag"],
+            "name": metadata["name"],
             "feature_type": metadata["feature_type"],
             "aliases": coordinates.get(row["feature_id"], {}).get("aliases", []),
             "conditions": row["conditions"], "contrasts": row["contrasts"],
@@ -485,15 +508,15 @@ def write_html(path, rows, coordinates, conditions, contrasts, args):
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HRIBO cross-condition report</title>
 <style>
-:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#17243b;background:#f5f8fc}
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#17243b;background:#f5f8fc;--locus-width:180px}
 body{margin:0}header{background:#142744;color:#fff;padding:1.5rem max(1rem,calc((100vw - 1400px)/2))}
 h1{font-size:1.7rem;margin:.2rem 0}h2{font-size:1.2rem}p{line-height:1.5}main{max-width:1400px;margin:auto;padding:1rem}
 .card{background:#fff;border:1px solid #d9e2ed;border-radius:10px;padding:1rem;margin-bottom:1rem;box-shadow:0 2px 8px #15294c0c}
 .links a{margin-right:1rem}.controls{display:flex;gap:.7rem;flex-wrap:wrap;align-items:end}.controls label{display:grid;gap:.3rem;font-weight:600;font-size:.9rem}
 input,select,button{font:inherit;padding:.45rem;border:1px solid #98abc2;border-radius:5px;background:#fff}button{cursor:pointer;background:#e8f0ff}
 .scroller{overflow:auto;max-height:65vh}table{border-collapse:separate;border-spacing:0;width:100%}th,td{border-bottom:1px solid #dce4ee;padding:.45rem .6rem;text-align:left;white-space:nowrap}
-thead th{position:sticky;top:0;background:#eaf0f7;z-index:2}.feature{position:sticky;left:0;background:#fff;z-index:1;min-width:220px}
-thead .feature{z-index:3;background:#eaf0f7}.feature button{border:0;background:transparent;color:#145c91;text-align:left;padding:0;font-weight:600}
+thead th{position:sticky;top:0;background:#eaf0f7;z-index:2}.identity{position:sticky;background:#fff;z-index:1}.locus-tag{left:0;box-sizing:border-box;width:var(--locus-width);min-width:var(--locus-width);max-width:var(--locus-width);overflow:hidden;text-overflow:ellipsis}.identifier{left:var(--locus-width);min-width:250px}
+thead .identity{z-index:3;background:#eaf0f7}.identity button{border:0;background:transparent;color:#145c91;text-align:left;padding:0;font-weight:600;user-select:text}.missing{color:#77808b}
 .sort-button{display:flex;width:100%;gap:.4rem;align-items:center;border:0;background:transparent;color:inherit;padding:0;font-weight:700;text-align:left}
 .sort-indicator{min-width:1em;color:#145c91}.sort-button:hover,.sort-button:focus-visible{color:#145c91;text-decoration:underline}
 .state{text-align:center;font-weight:650;min-width:92px;border-left:2px solid #fff}.detected{background:#bce8d3;color:#06422a}.not_detected{background:#e5eaf0;color:#4b5563}
@@ -501,6 +524,7 @@ thead .feature{z-index:3;background:#eaf0f7}.feature button{border:0;background:
 .not_significant{background:#f1f3f5;color:#56606a}.not_tested{background:repeating-linear-gradient(45deg,#e7eaf0,#e7eaf0 6px,#f7f8fa 6px,#f7f8fa 12px);color:#56606a}
 .legend span{display:inline-block;padding:.25rem .55rem;border-radius:4px;margin:.15rem}.muted{color:#52637a}.pager{display:flex;gap:.8rem;align-items:center;margin-top:.8rem}
 #detail{white-space:pre-wrap;line-height:1.5;max-height:38vh;overflow:auto}.small{font-size:.88rem}
+@media (max-width:600px){:root{--locus-width:120px}.identifier{position:static;left:auto;box-sizing:border-box;width:150px;min-width:150px;max-width:150px;overflow:hidden;text-overflow:ellipsis}thead .identifier{position:sticky;top:0}}
 </style></head><body>
 <header><h1>Cross-condition expression and translation</h1><p>Explore feature detection and changes across conditions. Detection is not proof of biological presence or absence.</p></header>
 <main><section class="card"><h2>How to read this report</h2>
@@ -508,12 +532,12 @@ thead .feature{z-index:3;background:#eaf0f7}.feature button{border:0;background:
 <p>RNA and RIBO detection are separate descriptive calls. CPM uses the total counts assigned to the selected features in each sample, separately by assay. A feature is detected when both the minimum raw count and CPM are met in at least the configured number of usable replicates. A zero-assigned-count sample is unusable. “Not detected” means below these thresholds at this sequencing depth; “uncertain” includes discordant or insufficient replicates.</p>
 <p>Change calls compare the left condition with the right condition in each contrast. Red is higher in the left condition; blue is lower. “No directional call” means the result did not meet both configured significance and effect-size cutoffs; it does not mean unchanged. “Not tested” includes missing or NA model results. RNA, RIBO, and translation efficiency (TE) calls use deltaTE; __SUPPLEMENTARY_METHODS__</p>
 <p id="thresholds" class="small"></p><p class="links"><a href="condition_overview.xlsx">Open the same views in Excel</a><a href="condition_matrix.tsv">Condition table (TSV)</a><a href="contrast_matrix.tsv">Contrast table (TSV)</a><a href="browser_tracks.tsv">Genome-browser tracks (TSV)</a></p></section>
-<section class="card"><div class="controls"><label>Search feature or name<input id="search" type="search" placeholder="Gene name or coordinate"></label>
+<section class="card"><div class="controls"><label>Search locus tag, identifier, or name<input id="search" type="search" placeholder="Locus tag, name, or coordinate"></label>
 <label>View<select id="view"><option value="RNA:condition">RNA detection</option><option value="RIBO:condition">RIBO detection</option><option value="RNA:contrast">RNA change</option><option value="RIBO:contrast">RIBO change</option><option value="TE:contrast">TE change</option></select></label>
 <label>Show<select id="filter"><option value="all">All features</option><option value="variable">Different states across columns</option><option value="specific">Detected in exactly one condition</option><option value="changed">Up or down in any contrast</option></select></label></div>
 <p id="summary" class="muted"></p><div class="legend" id="legend"></div><div class="scroller"><table><thead><tr id="columns"></tr></thead><tbody id="matrix"></tbody></table></div>
 <div class="pager"><button id="previous">Previous</button><span id="page"></span><button id="next">Next</button></div></section>
-<section class="card"><h2>Selected feature</h2><div id="detail" class="muted">Select a gene in the matrix to inspect replicate counts and each method's effect estimates.</div></section>
+<section class="card"><h2>Selected feature</h2><div id="detail" class="muted">Select an identifier in the matrix to inspect replicate counts and each method's effect estimates.</div></section>
 </main><script type="application/json" id="report-data">__DATA__</script><script>
 const data=JSON.parse(document.getElementById('report-data').textContent);
 const search=document.getElementById('search'),view=document.getElementById('view'),filter=document.getElementById('filter');
@@ -524,7 +548,7 @@ const stateRank={condition:{not_tested:0,not_detected:1,uncertain:2,detected:3},
 document.getElementById('thresholds').textContent=`Detection: ≥${data.thresholds.min_count} counts and ≥${data.thresholds.min_cpm} CPM in ≥${data.thresholds.min_replicates} replicates. Change: adjusted p ≤${data.thresholds.padj_cutoff} and |log₂FC| ≥${data.thresholds.log2fc_cutoff}.`;
 function stateOf(row,column,assay,kind){return ((kind==='condition'?row.conditions:row.contrasts)[column]||{})[assay]?.state||'not_tested'}
 function chooseRows(assay,kind,cols){const query=search.value.trim().toLowerCase();return data.features.filter(row=>{
- if(query&&!`${row.id} ${row.name} ${row.feature_type} ${row.aliases.join(' ')}`.toLowerCase().includes(query))return false;
+ if(query&&!`${row.locus_tag} ${row.id} ${row.name} ${row.feature_type} ${row.aliases.join(' ')}`.toLowerCase().includes(query))return false;
  const states=cols.map(col=>stateOf(row,col,assay,kind));
  if(filter.value==='variable')return new Set(states).size>1;
  if(filter.value==='specific')return kind==='condition'&&states.filter(x=>x==='detected').length===1&&states.every(x=>x==='detected'||x==='not_detected');
@@ -535,15 +559,17 @@ function cellOf(row,column,assay,kind){return ((kind==='condition'?row.condition
 function textOrder(left,right){return String(left??'').localeCompare(String(right??''),'en',{numeric:true,sensitivity:'base'})}
 function numericOrder(left,right,direction){const leftMissing=!Number.isFinite(left),rightMissing=!Number.isFinite(right);if(leftMissing!==rightMissing)return leftMissing?1:-1;if(leftMissing)return 0;return direction*(left-right)}
 function cellSortKey(assay,kind,column){return `cell:${assay}:${kind}:${column}`}
-function sortRows(rows,assay,kind,cols){const sortedColumn=cols.find(column=>sortKey===cellSortKey(assay,kind,column));if(sortKey!=='feature'&&!sortedColumn)return rows;
+function sortRows(rows,assay,kind,cols){const sortedColumn=cols.find(column=>sortKey===cellSortKey(assay,kind,column));const identitySort=sortKey==='locus_tag'||sortKey==='identifier';if(!identitySort&&!sortedColumn)return rows;
  const direction=sortDirection==='asc'?1:-1;return rows.map((row,index)=>({row,index})).sort((left,right)=>{let order=0;
-  if(sortKey==='feature'){order=textOrder(left.row.name,right.row.name)||textOrder(left.row.id,right.row.id);order*=direction}else{const leftCall=cellOf(left.row,sortedColumn,assay,kind),rightCall=cellOf(right.row,sortedColumn,assay,kind);order=direction*((stateRank[kind][leftCall.state||'not_tested']??-1)-(stateRank[kind][rightCall.state||'not_tested']??-1));
+  if(sortKey==='locus_tag'){const leftMissing=!left.row.locus_tag,rightMissing=!right.row.locus_tag;if(leftMissing!==rightMissing)order=leftMissing?1:-1;else order=direction*(textOrder(left.row.locus_tag,right.row.locus_tag)||textOrder(left.row.id,right.row.id))}
+  else if(sortKey==='identifier')order=direction*textOrder(left.row.id,right.row.id);
+  else{const leftCall=cellOf(left.row,sortedColumn,assay,kind),rightCall=cellOf(right.row,sortedColumn,assay,kind);order=direction*((stateRank[kind][leftCall.state||'not_tested']??-1)-(stateRank[kind][rightCall.state||'not_tested']??-1));
    if(!order){const leftValue=kind==='condition'?leftCall.mean_cpm:Number.isFinite(leftCall.log2fc)?Math.abs(leftCall.log2fc):null,rightValue=kind==='condition'?rightCall.mean_cpm:Number.isFinite(rightCall.log2fc)?Math.abs(rightCall.log2fc):null;order=numericOrder(leftValue,rightValue,direction)}}
   return order||left.index-right.index;
  }).map(item=>item.row)}
-function changeSort(key){if(sortKey===key)sortDirection=sortDirection==='asc'?'desc':'asc';else{sortKey=key;sortDirection=key==='feature'?'asc':'desc'}page=0;render()}
+function changeSort(key){if(sortKey===key)sortDirection=sortDirection==='asc'?'desc':'asc';else{sortKey=key;sortDirection=key==='locus_tag'||key==='identifier'?'asc':'desc'}page=0;render()}
 function sortHeader(label,key,className=''){const th=document.createElement('th');th.className=className;th.scope='col';const active=sortKey===key;const currentDirection=sortDirection==='asc'?'ascending':'descending';if(active)th.setAttribute('aria-sort',currentDirection);const button=document.createElement('button');button.type='button';button.className='sort-button';const nextDirection=active&&sortDirection==='asc'?'descending':'ascending';button.title=active?`Sorted ${currentDirection}; activate for ${nextDirection}`:`Sort by ${label}`;button.setAttribute('aria-label',active?`${label}, sorted ${currentDirection}. Activate for ${nextDirection}.`:`Sort by ${label}`);button.onclick=()=>changeSort(key);const text=document.createElement('span');text.textContent=label;const indicator=document.createElement('span');indicator.className='sort-indicator';indicator.setAttribute('aria-hidden','true');indicator.textContent=active?(sortDirection==='asc'?'▲':'▼'):'↕';button.append(text,indicator);th.append(button);return th}
-function showFeature(row){const lines=[`${row.name} (${row.id})`,row.feature_type,''];
+function showFeature(row){const lines=[`Locus tag: ${row.locus_tag||'Not available'}`,`Identifier: ${row.id}`,`Display label: ${row.name||'Not available'}`,`Feature type: ${row.feature_type||'Not available'}`,''];
  for(const condition of data.conditions){lines.push(condition);for(const assay of ['RNA','RIBO']){const call=row.conditions[condition]?.[assay];if(!call)continue;
   const samples=call.samples.map(s=>`${s.sample}: ${s.count} counts, ${s.cpm===null?'NA':s.cpm.toFixed(2)} CPM`).join('; ');
   lines.push(`  ${assay}: ${labels[call.state]} — ${call.passing_replicates}/${call.replicates} usable replicates pass; mean ${call.mean_cpm===null?'NA':call.mean_cpm.toFixed(2)} CPM`);lines.push(`    ${samples||'No samples'}`);
@@ -552,9 +578,9 @@ function showFeature(row){const lines=[`${row.name} (${row.id})`,row.feature_typ
   if(assay==='TE'){let supplemental=`    xTail: log₂FC ${call.xtail_te_log2fc??'NA'}, padj ${call.xtail_te_padj??'NA'}`;__RIBOREX_DETAIL__lines.push(supplemental)}
  }}detail.textContent=lines.join('\n')}
 function render(){const [assay,kind]=view.value.split(':');const cols=kind==='condition'?data.conditions:data.contrasts;const selected=sortRows(chooseRows(assay,kind,cols),assay,kind,cols);const maxPage=Math.max(0,Math.ceil(selected.length/pageSize)-1);page=Math.min(page,maxPage);
- columns.replaceChildren();columns.append(sortHeader('Feature','feature','feature'));
+ columns.replaceChildren();columns.append(sortHeader('Locus tag','locus_tag','identity locus-tag'));columns.append(sortHeader('Identifier','identifier','identity identifier'));
  for(const col of cols)columns.append(sortHeader(col,cellSortKey(assay,kind,col)));matrix.replaceChildren();
- for(const row of selected.slice(page*pageSize,(page+1)*pageSize)){const tr=document.createElement('tr');const lead=document.createElement('td');lead.className='feature';const button=document.createElement('button');button.textContent=row.name===row.id?row.id:`${row.name} · ${row.id}`;button.onclick=()=>showFeature(row);lead.append(button);tr.append(lead);
+ for(const row of selected.slice(page*pageSize,(page+1)*pageSize)){const tr=document.createElement('tr');const locus=document.createElement('td');locus.className='identity locus-tag';locus.textContent=row.locus_tag||'—';locus.title=row.locus_tag||'No locus tag available';if(!row.locus_tag)locus.classList.add('missing');tr.append(locus);const identifier=document.createElement('td');identifier.className='identity identifier';const button=document.createElement('button');button.textContent=row.id;button.title=`Open details for ${row.locus_tag||row.name||row.id}`;button.onclick=()=>showFeature(row);identifier.append(button);tr.append(identifier);
   for(const col of cols){const call=(kind==='condition'?row.conditions:row.contrasts)[col]?.[assay]||{};const state=call.state||'not_tested';const td=document.createElement('td');td.className=`state ${state}`;
    if(kind==='contrast'&&(state==='up'||state==='down'))td.textContent=`${state==='up'?'↑':'↓'} ${Math.abs(call.log2fc).toFixed(1)}`;else td.textContent=labels[state];
    td.title=kind==='condition'?`${call.passing_replicates??0}/${call.replicates??0} replicates pass; mean CPM ${call.mean_cpm===null?'NA':call.mean_cpm?.toFixed(2)??'NA'}`:`log₂FC ${call.log2fc??'NA'}; padj ${call.padj??'NA'}`;tr.append(td)}matrix.append(tr)}

@@ -146,6 +146,8 @@ def test_condition_overview_rule_executes_from_existing_diffex_inputs(
 
     readcounts = workdir / "readcounts"
     readcounts.mkdir()
+    auxiliary = workdir / "auxiliary"
+    auxiliary.mkdir()
     labels = [
         f"{assay}-{condition}-{replicate}"
         for assay in ("RNA", "RIBO")
@@ -156,9 +158,10 @@ def test_condition_overview_rule_executes_from_existing_diffex_inputs(
     (readcounts / "differential_expression_read_counts.csv").write_text(
         "Identifier," + ",".join(labels) + "\n" + feature_id + "," + ",".join(["20"] * 8) + "\n"
     )
-    (readcounts / "independant_annotation.gff").write_text(
-        "#hribo-gff-read-counts-v1\t...\n"
-        "NC_000913.3\tHRIBO\tCDS\t200\t499\t.\t+\t.\tID=gene1;Name=gene1\t20\n"
+    (auxiliary / "enriched_annotation.gff").write_text(
+        "##gff-version 3\n"
+        "NC_000913.3\tHRIBO\tCDS\t200\t499\t.\t+\t.\t"
+        "ID=gene1;Name=gene1;locus_tag=b0001\n"
     )
     for tool, header, values in (
         ("xtail", "log2FC_TE_final,pvalue_adjusted", "1.3,0.02"),
@@ -195,3 +198,4 @@ def test_condition_overview_rule_executes_from_existing_diffex_inputs(
     assert (workdir / "diffex_summary" / "browser" / "tracks_manifest.json").is_file()
     page = (workdir / "diffex_summary" / "condition_overview.html").read_text()
     assert "RiboRex:" not in page
+    assert '"locus_tag":"b0001"' in page

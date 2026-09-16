@@ -255,9 +255,11 @@ TE **differential** state in each contrast.  Search, filter, and sort the
 matrices to find condition-specific or shared patterns, then inspect the
 underlying counts, fold changes, and adjusted p-values.  The companion
 ``diffex_summary/condition_overview.xlsx`` workbook provides the same five
-matrix views with a frozen header and feature column plus native Excel filters;
-the companion TSVs retain the underlying long-form values.  Detection depends
-on a stated read-count and CPM threshold across biological replicates;
+matrix views with separate, frozen ``Locus tag`` and ``Identifier`` columns
+plus native Excel filters and sorting; the HTML headings are sortable as well.
+The companion TSVs retain ``feature_id`` and add ``locus_tag`` as a separate
+long-form field.  Detection depends on a stated read-count and CPM threshold
+across biological replicates;
 ``not_detected`` is not proof of biological absence.  The ``not_significant``
 machine state means no directional call under both statistical cutoffs, not
 necessarily a high adjusted p-value or zero effect.  The adjacent workbook,

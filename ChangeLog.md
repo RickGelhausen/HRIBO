@@ -25,6 +25,9 @@ Notable changes since 1.8.1 include:
 - added a cross-condition differential-expression summary with sortable HTML,
   matching multi-sheet Excel views, long-form TSV data, and browser-ready GFF3
   tracks;
+- split the cross-condition report's combined feature label into independently
+  sortable `Locus tag` and `Identifier` columns in HTML and Excel, and added
+  `locus_tag` to the long-form TSVs while retaining `feature_id`;
 - made RiboRex an explicitly opt-in supplementary analysis, disabled by
   default; deltaTE remains the source of RNA, RIBO, and TE summary calls and
   xTail remains the standard supplementary TE analysis;

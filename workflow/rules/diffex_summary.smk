@@ -4,7 +4,7 @@
 def condition_overview_inputs():
     sources = {
         "counts": "readcounts/differential_expression_read_counts.csv",
-        "annotation": "readcounts/independant_annotation.gff",
+        "annotation": "auxiliary/enriched_annotation.gff",
         "xtail": "xtail/xtail_all.csv",
         "deltate": "deltate/deltate_all.csv",
     }

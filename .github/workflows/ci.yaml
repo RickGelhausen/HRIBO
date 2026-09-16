@@ -81,7 +81,7 @@ jobs:
           mkdir -p .ci-results
           pytest -q --junitxml=.ci-results/pytest.xml
           python .github/scripts/assert_no_pytest_skips.py \
-            .ci-results/pytest.xml --expected-tests 759
+            .ci-results/pytest.xml --expected-tests 760
 
   docs:
     name: Documentation

@@ -271,17 +271,22 @@ this order:
 
 .. code-block:: text
 
-   Feature, <one column per condition or contrast>
+   Locus tag, Identifier, <one column per condition or contrast>
 
-The ``Feature`` value matches the HTML table; the remaining columns are
-conditions on the detection sheets and contrasts on the change sheets.
+The two identifying columns match the HTML table.  ``Locus tag`` uses the
+annotation ``locus_tag`` attribute, falls back to ``gene_id``, and is blank
+when neither is available.  ``Identifier`` is the exact key retained from the
+differential count and result tables, normally
+``<sequence>:<start>-<end>:<strand>``.  The remaining columns are conditions on
+the detection sheets and contrasts on the change sheets.
 Detection cells display ``Detected``,
 ``Not detected``, or ``Uncertain``.  Change cells display an up/down arrow and
 the absolute log2 fold change for directional calls, ``No directional call``,
 or ``Not tested``.  A directional cell stores the signed log2 fold change as a
 number, so native Excel sorting remains quantitative despite the arrow display.
-Labels and colours match the HTML report.  The header and feature column are
-frozen, and filters are enabled for native Excel filtering and sorting.
+Labels and colours match the HTML report.  The header and both identifying
+columns are frozen, and filters are enabled for native Excel filtering and
+sorting of either identifier and every matrix column.
 ``README`` records the report thresholds and state definitions.  Detailed
 counts, CPM, fold changes, and adjusted p-values remain in the TSV files below
 rather than being duplicated throughout the workbook, keeping large reports
@@ -292,10 +297,13 @@ for RNA or RIBO detection, with columns in this order:
 
 .. code-block:: text
 
-   feature_id, genome, start, end, strand, feature_type, name,
+   feature_id, locus_tag, genome, start, end, strand, feature_type, name,
    condition, assay, state, replicates, passing_replicates,
    mean_count, mean_cpm, sample_counts, sample_cpms
 
+``feature_id`` is retained for compatibility as the exact differential-table
+identifier.  ``locus_tag`` is the annotation ``locus_tag``, falls back to
+``gene_id``, and is blank when unavailable.
 ``state`` is ``detected``, ``not_detected``, or ``uncertain``.  A replicate
 passes when both its raw count and CPM meet the configured minimums.
 ``detected`` requires at least ``detectionMinReplicates`` passing replicates;
@@ -312,7 +320,7 @@ with columns in this order:
 
 .. code-block:: text
 
-   feature_id, genome, start, end, strand, feature_type, name,
+   feature_id, locus_tag, genome, start, end, strand, feature_type, name,
    contrast, assay, state, log2fc, padj, method,
    xtail_te_log2fc, xtail_te_padj,
    riborex_te_log2fc, riborex_te_padj
