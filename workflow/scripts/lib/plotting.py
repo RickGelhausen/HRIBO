@@ -41,6 +41,9 @@ def _enrichment_ceiling(*matrices) -> float:
     if not values:
         return ENRICHMENT_CEILING_BOUNDS[0]
     pooled = np.concatenate([m.ravel() for m in values])
+    pooled = pooled[np.isfinite(pooled)]
+    if not pooled.size:
+        return ENRICHMENT_CEILING_BOUNDS[0]
     ceiling = float(np.quantile(pooled, ENRICHMENT_CEILING_QUANTILE))
     return float(np.clip(ceiling, *ENRICHMENT_CEILING_BOUNDS))
 
@@ -84,6 +87,7 @@ def plot_metagene_heatmap(
     read_end="fiveprime",
     anchor="start",
     site="P",
+    background_references=None,
 ):
     """Read length against position, for the start and stop codon windows.
 
@@ -96,12 +100,27 @@ def plot_metagene_heatmap(
 
     start_enrichment = _row_enrichment(start_matrix)
     stop_enrichment = _row_enrichment(stop_matrix)
+    if background_references is not None:
+        calibrated_matrix = stop_matrix if anchor == "stop" else start_matrix
+        references = np.array([background_references.get(length, 0.0) for length in lengths])[:, None]
+        calibrated_enrichment = np.divide(
+            calibrated_matrix, references, out=np.full_like(calibrated_matrix, np.nan), where=references > 0
+        )
+        if anchor == "stop":
+            stop_enrichment = calibrated_enrichment
+        else:
+            start_enrichment = calibrated_enrichment
     ceiling = _enrichment_ceiling(start_enrichment, stop_enrichment)
 
     fig = make_subplots(
         rows=1,
         cols=2,
-        subplot_titles=("Relative to start codon", "Relative to stop codon"),
+        subplot_titles=tuple(
+            f"Relative to {boundary} codon" + (
+                " (scored)" if boundary == anchor else " (diagnostic)"
+            ) if background_references is not None else f"Relative to {boundary} codon"
+            for boundary in ("start", "stop")
+        ),
         horizontal_spacing=0.08,
         shared_yaxes=True,
     )
@@ -111,24 +130,31 @@ def plot_metagene_heatmap(
     ):
         if matrix.size == 0:
             continue
+        raw_matrix = start_matrix if panel_anchor == "start" else stop_matrix
+        background_label = "upstream site background" if (
+            background_references is not None and panel_anchor == anchor
+        ) else "whole-window median (diagnostic)" if background_references is not None else "this length's background"
         fig.add_trace(
             go.Heatmap(
                 z=matrix,
                 x=frame["coordinates"],
                 y=lengths,
+                customdata=raw_matrix,
                 colorscale=theme.SEQUENTIAL_BLUE,
                 zmin=1,
                 zmax=ceiling,
                 showscale=column == 2,
                 colorbar=dict(
-                    title=dict(text=ENRICHMENT_LABEL, font=dict(size=10)),
+                    title=dict(text=ENRICHMENT_LABEL if background_references is None else
+                               "Enrichment<br>(x panel background)", font=dict(size=10)),
                     thickness=12,
                     len=0.85,
                     tickfont=dict(size=9),
                 ),
                 hovertemplate=(
                     f"read length %{{y}} nt<br>%{{x}} nt from {panel_anchor} codon"
-                    "<br>%{z:.1f}x this length's background<extra></extra>"
+                    f"<br>%{{z:.1f}}x {background_label}"
+                    "<br>%{customdata:.0f} aligned read ends<extra></extra>"
                 ),
             ),
             row=1,

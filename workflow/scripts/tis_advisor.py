@@ -91,39 +91,33 @@ def parse_arguments(argv=None):
 def build_profiles(args):
     """Start and stop metagene profiles per read end, plus library read totals.
 
-    The alignment is read once and reused for every read end; the annotation
-    filtering and metagene mapping are redone per end, because both depend on
-    which end of a read is being counted.
+    Alignment and annotation filtering are shared by both read ends, so their
+    offset consistency is compared on exactly the same retained genes.
     """
     genome_lengths = io.parse_genome_lengths(args.genome_file_path)
     read_lengths = io.parse_read_lengths(args.read_lengths)
-    library_type = library_type_from_name(
-        args.alignment_file_path.stem, getattr(args, "library_type", "auto")
-    )
 
     reader = IntervalReader(args.alignment_file_path)
     read_intervals, total_counts = reader.output()
 
+    # Initiation 5' ends lie before the CDS; termination 3' ends lie after it.
+    # Gene abundance belongs to overlapping footprints, not a selected end.
+    start_codons, stop_codons = ann.retrieve_annotation_positions(
+        args.annotation_file_path,
+        read_intervals,
+        total_counts,
+        genome_lengths,
+        args.filtering_methods,
+        "global",
+        args.rpkm_threshold,
+        args.neighboring_genes_distance,
+        args.positions_out_ORF,
+        args.positions_in_ORF,
+        args.length_cutoff,
+    )
+
     profiles_by_end = {}
     for mapping_method in args.mapping_methods:
-        # Termination reads overlap the CDS while their 3' ends fall beyond it.
-        # Count overlapping footprints for TTS abundance filtering so that the
-        # selected endpoint cannot remove the very stop signal being measured.
-        filtering_mapping = "global" if library_type == "TTS" else mapping_method
-        start_codons, stop_codons = ann.retrieve_annotation_positions(
-            args.annotation_file_path,
-            read_intervals,
-            total_counts,
-            genome_lengths,
-            args.filtering_methods,
-            filtering_mapping,
-            args.rpkm_threshold,
-            args.neighboring_genes_distance,
-            args.positions_out_ORF,
-            args.positions_in_ORF,
-            args.length_cutoff,
-        )
-
         start_coverage = mg.metagene_mapping_start(
             start_codons, read_intervals, args.positions_out_ORF,
             args.positions_in_ORF, mapping_method
@@ -357,6 +351,8 @@ def scores_to_tsv(scores, path, read_end="fiveprime", anchor="start", site="P"):
         "background", "sharpness", "z_score", "frame_0", "frame_1", "frame_2",
         "frame_bias", "periodicity", "usable", "reasons",
         "read_end", "anchor", "site", "p_site_offset", "a_site_offset",
+        "background_reference", "background_positions",
+        "frame_reads",
     ]
     with open(path, "w") as handle:
         handle.write("\t".join(header) + "\n")
@@ -382,6 +378,8 @@ def scores_to_tsv(scores, path, read_end="fiveprime", anchor="start", site="P"):
                 read_end, anchor, site,
                 str(p_offsets.get(score.read_length, "")),
                 str(a_offsets.get(score.read_length, "")),
+                f"{score.background_reference:.6f}", str(score.background_positions),
+                "" if score.frame_reads is None else f"{score.frame_reads:.0f}",
             ]) + "\n")
 
 
@@ -488,6 +486,14 @@ def render_report(library, best, comparisons, figures, asite_advice, path,
         parts.append("<h2>How the read lengths were chosen</h2><ul>")
         parts.extend(f"<li>{line}</li>" for line in recommendation.rationale)
         parts.append("</ul>")
+    parts.append(
+        "<p>Selection starts with the strongest single-length peak/background enrichment, "
+        "then adds a length only if it improves that same pooled metric by at least 2%. "
+        "Raw peak depth, enrichment, and coding-body reading frames are separate measurements. "
+        "The evidence tables and scored heatmap panel use the same upstream background "
+        "relative to the calibrated site; the other panel is a diagnostic normalized "
+        "by its whole-window median. Hover over the heatmap for exact enrichment and read counts.</p>"
+    )
 
     for comparison in comparisons:
         end_label = "5'" if comparison.read_end == "fiveprime" else "3'"
@@ -574,7 +580,9 @@ def _scores_table(scores, site="P"):
     rows = [
         "<div class='table-wrap'><table><thead><tr>"
         f"<th>Read length</th><th>Share of reads</th><th>{site}-site offset (nt)</th>"
-        "<th>Peak vs background</th><th>Dominant frame</th><th>Periodicity</th>"
+        "<th>Peak read ends</th><th>Background read ends/bin</th>"
+        "<th>Peak vs background</th><th>Body read ends</th><th>Frame 0</th>"
+        "<th>Dominant frame</th><th>Periodicity</th>"
         "<th>Usable</th><th>Notes</th></tr></thead><tbody>"
     ]
     for score in scores:
@@ -586,7 +594,11 @@ def _scores_table(scores, site="P"):
             f"<td class='num'>{score.read_length}</td>"
             f"<td class='num'>{score.abundance:.1%}</td>"
             f"<td class='num'>{'-' if score.offset is None else score.offset}</td>"
+            f"<td class='num'>{score.peak_height:.0f}</td>"
+            f"<td class='num'>{score.background_reference:.2f}</td>"
             f"<td class='num'>{score.sharpness:.1f}x</td>"
+            f"<td class='num'>{'-' if score.frame_reads is None else f'{score.frame_reads:.0f}'}</td>"
+            f"<td class='num'>{score.frame_fractions[0]:.0%}</td>"
             f"<td class='num'>{frame}</td>"
             f"<td class='num'>{score.periodicity:.0%}</td>"
             f"<td>{'yes' if score.usable else 'no'}</td>"
@@ -643,7 +655,8 @@ def main():
         ("Read length against position", plotting.plot_metagene_heatmap(
             df_start, df_stop, read_lengths, "Metagene profile",
             f"{end_label} mapping, enrichment over each read length's own background",
-            significant_offsets, read_end=chosen, anchor=anchor, site=site)),
+            significant_offsets, read_end=chosen, anchor=anchor, site=site,
+            background_references={s.read_length: s.background_reference for s in scores})),
         ("Library composition", plotting.plot_read_length_distribution(
             scores, "Read length distribution",
             f"Which read lengths carry a usable {signal} signal under {end_label} mapping",

@@ -44,9 +44,14 @@ convention before interpreting termination offsets.
 How a recommendation is made
 ----------------------------
 
-For every configured read end, the advisor builds transcript-oriented start-
-and stop-codon profiles from the final unique BAM.  It evaluates the selected
-boundary independently for each configured read length:
+The advisor filters the annotation once, then builds transcript-oriented
+start- and stop-codon profiles from the final unique BAM for every configured
+read end.  All evaluated ends use the same retained CDSs.  The RPKM filter
+counts footprints that overlap the CDS for every library type, so initiation
+5' ends upstream of the start and termination 3' ends downstream of the stop
+do not exclude an otherwise expressed gene.  Profile counts still use the
+requested 5' or 3' end.  The selected boundary is evaluated independently for
+each configured read length:
 
 * the read length must represent at least 0.5% of reads within the evaluated
   length range;
@@ -67,35 +72,61 @@ automatically.  Disome-based TTS profiling is demonstrated by
 `Froschauer et al. (2025)
 <https://www.nature.com/articles/s41467-025-58329-w>`_.
 
-For starts, background is measured 100--30 nt upstream of the first start
-base.  For stops, it is measured 100--40 nt upstream of the first stop base,
-inside the coding region.  Comparing with coding coverage helps avoid treating
-ordinary elongation coverage as a termination peak merely because downstream
-coverage is low.  Ribosome queues can raise this background and make TTS
-advice more conservative.
-The peak search window is excluded from the stop background, including when
-long 5' footprints place it within the nominal upstream interval.
-The TTS annotation RPKM filter counts footprints
-that overlap the CDS, even when their selected read end lies downstream of
-the stop; profile counts still use the requested 5' or 3' end.
+Background is measured after converting read-end coordinates to calibrated
+site coordinates: add the offset for 5' mapping or subtract it for 3' mapping.
+The start/P-site background spans -100 through -30 nt; the stop/A-site
+background spans -100 through -40 nt, inside the coding region.  Comparing
+stop peaks with coding coverage helps avoid treating ordinary elongation
+coverage as a termination peak merely because downstream coverage is low.
+Ribosome queues can raise this background and make TTS advice more conservative.
 
-Usable lengths are ranked by peak sharpness, frame bias, and abundance.  The
-strongest starts the recommendation; another length is added only when it
-improves the pooled, offset-corrected boundary peak by at least 2%.  This
-prevents a marginal length from diluting a clear signal.
+At least ten observed background positions must be available.  During pooling,
+zero-filled positions introduced by offset correction are excluded from the
+background wherever any contributing profile lacks an observed position.
+The enrichment divisor, ``background_reference``, is the background median
+when positive, otherwise the background mean, and finally the observed-profile
+mean if the entire background is zero.  Per-length evidence and pooled metrics
+use this same background definition in site coordinates.  Their numerical
+ratios can differ from older reports that measured background in unshifted
+read-end coordinates.
+
+Peak/background enrichment is scored without an upper cap.  Selection begins
+with the usable length having the strongest single-length, offset-corrected
+boundary peak relative to background.  At each step the advisor tries adding
+each remaining usable length, selects the one giving the largest improvement
+in that same pooled metric, and includes it only if the gain is at least 2%.
+It stops when none meets that threshold.  Evidence supporting annotated frame 0
+and read abundance only break enrichment ties; they cannot outweigh a stronger
+peak.  The procedure evaluates one addition at a time.
 
 When both ends are evaluated, the advisor prefers the end whose estimated
 offset varies least across usable read lengths.  That consistency identifies
-the read end the protocol defines most precisely.  Frame bias, fraction of
-evaluated reads covered, and finally a substantial peak-sharpness difference
+the read end the protocol defines most precisely.  Supported frame-0 fraction,
+fraction of evaluated reads covered, and finally a substantial peak-sharpness difference
 break ties.  Evidence for the other end remains in the report and JSON.
 
 Three-nucleotide periodicity and reading-frame composition are measured
 inside the coding body: downstream of a start or upstream of a stop,
-excluding the boundary peak.  Frame bias contributes to the confidence label.
-Weak periodicity alone does not reject a bacterial Ribo-seq length or lower
-that label.  A clear boundary peak can therefore receive a usable
-recommendation with a warning that sub-codon assignment remains uncertain.
+excluding the boundary peak.  Only positions observed within the configured
+output axis for every contributing profile are used; alignment padding cannot
+create frame or periodicity evidence.  The number of read ends supporting these frame
+fractions is reported as ``frame_reads``.  High confidence requires a pooled
+peak at least five times background, at least 50% of coding-body read ends
+in the annotated frame 0, and at least 30 coding-body read ends contributing
+to the frame fractions.  A dominant off-frame signal cannot promote a
+recommendation to high confidence.  Weak
+periodicity alone does not reject a bacterial Ribo-seq length or lower the
+confidence label.  A clear boundary peak with sparse or weak frame evidence
+can still receive usable advice, with a warning that its offsets rest on the
+boundary peak alone.
+
+The heatmap's scored boundary panel uses the exact ``background_reference``
+shown in the evidence table.  The other panel is labeled diagnostic and is
+normalized by its whole-window median (or mean when the median is zero).
+Hover over either panel for the enrichment value and raw read-end counts.
+Compare the scored panel with
+the table when judging recommended lengths; the diagnostic panel uses a
+different denominator.
 
 Interpreting offsets
 --------------------
@@ -135,7 +166,8 @@ aligned footprints and codons separated by three nucleotides.  TTS advice
 uses an A-site table; it does not present termination offsets as pasteable
 ORFBounder ``psiteOffsets``.
 
-The confidence label is based on the pooled boundary peak and frame bias.
+The confidence label is based on the pooled boundary peak and supported
+annotated-frame-0 evidence.
 Coverage and periodicity are reported separately and can add warnings, but do
 not directly lower the label.  Read those warnings as part of the result.  An
 off-frame dominant signal can mean that offsets or annotated boundary
@@ -188,16 +220,21 @@ For ``<library>``, HRIBO writes:
    ``recommendation`` contains selected lengths, generic ``offsets`` to the
    calibrated site, explicit ``p_site_offsets`` and ``a_site_offsets``,
    ``anchor``, ``site``, confidence, rationale, warnings, pooled metrics,
-   and covered fraction.  The other site's offsets are derived by the
-   three-nucleotide conversion above.  ``read_ends`` retains scores and
-   recommendations for every evaluated end.  ``deepribo_a_site`` contains
-   separate DeepRibo advice or the reason none was made; ``applied`` is always
+   ``frame_reads``, and covered fraction.  The other site's offsets are derived
+   by the three-nucleotide conversion above.  ``read_ends`` retains scores and
+   recommendations for every evaluated end.  Per-length scores include
+   ``background_reference``, ``background_positions``, and ``frame_reads``
+   so enrichment and frame support can be reviewed explicitly.
+   ``deepribo_a_site`` contains separate DeepRibo advice or the reason none
+   was made; ``applied`` is always
    ``false``.
 
 ``tis_advice/<library>/read_length_evidence.tsv``
    One row per evaluated length for the chosen end, or for the first configured
    end when no recommendation exists.  It includes abundance, peak and
-   background measurements, generic ``offset``, frame fractions, periodicity,
+   background measurements, ``background_reference`` (the enrichment divisor),
+   ``background_positions`` (observed positions supporting the baseline),
+   generic ``offset``, frame fractions, ``frame_reads``, periodicity,
    a ``usable`` flag, and rejection reasons.  ``read_end``, ``anchor``, and
    ``site`` identify the calibration; ``p_site_offset`` and ``a_site_offset``
    make the directly estimated and derived distances explicit.

@@ -15,7 +15,7 @@ coding body before the stop, excluding the terminal peak.
 
 A deliberate caveat runs through the scoring: three-nucleotide periodicity is
 frequently weak or absent in bacterial Ribo-seq, far more so than in eukaryotes.
-Periodicity is therefore reported and scored, but a read length is not rejected
+Periodicity is therefore reported, but a read length is not rejected
 for lacking it, and the confidence attached to a recommendation says which of
 the two lines of evidence it rests on.
 
@@ -149,6 +149,8 @@ def psite_offset(
 # A read length carrying less than this share of the library is too sparse to
 # base an offset on, however clean its profile looks.
 MIN_ABUNDANCE_FRACTION = 0.005
+MIN_BACKGROUND_POSITIONS = 10
+MIN_FRAME_READS = 30
 
 # A read length joins the recommended set only if it improves the pooled peak by
 # at least this much, relatively. Accepting any improvement at all lets a read
@@ -181,6 +183,40 @@ def _body_mask(psite_positions: np.ndarray, body_length: int, anchor: str) -> np
     if anchor == "stop":
         return (psite_positions >= -15 - body_length) & (psite_positions < -15)
     return (psite_positions >= 15) & (psite_positions < 15 + body_length)
+
+
+def _observed_site_mask(coordinates, site_positions, valid_mask=None):
+    """Keep observations that survive alignment onto the configured output axis."""
+    coordinates = np.asarray(coordinates)
+    if not coordinates.size:
+        return np.zeros(0, dtype=bool)
+    valid = (site_positions >= coordinates[0]) & (site_positions <= coordinates[-1])
+    if valid_mask is not None:
+        valid &= np.asarray(valid_mask, dtype=bool)
+    return valid
+
+
+def background_statistics(profile, site_coordinates, anchor="start", valid_mask=None):
+    """Measure the same observed site-coordinate background for every metric.
+
+    Zero-filled bins introduced by aligning profiles are not observations.
+    A zero median falls back to the background mean, then the observed profile
+    mean for a genuinely empty baseline, keeping enrichment finite.
+    """
+    _validate_anchor(anchor)
+    profile = np.asarray(profile, dtype=float)
+    site_coordinates = np.asarray(site_coordinates)
+    valid = np.ones(profile.size, dtype=bool) if valid_mask is None else np.asarray(valid_mask, dtype=bool)
+    values = profile[valid & _window_slice(site_coordinates, *_background_window(anchor))]
+    if values.size < MIN_BACKGROUND_POSITIONS:
+        return 0.0, 0.0, 0.0, 0.0, int(values.size)
+    median = float(np.median(values))
+    mean = float(values.mean())
+    sd = float(values.std())
+    reference = median if median > 0 else mean
+    if reference <= 0:
+        reference = float(profile[valid].mean()) if valid.any() else 0.0
+    return median, mean, sd, reference, int(values.size)
 
 
 # How far above the background a peak must stand, in background standard
@@ -217,22 +253,14 @@ class ReadLengthScore:
     reasons: list[str] = field(default_factory=list)
     anchor: str = "start"
     site: str = "P"
+    background_reference: float = 0.0
+    background_positions: int = 0
+    frame_reads: float | None = None
 
     @property
     def score(self) -> float:
-        """Combined desirability of this read length for boundary profiling.
-
-        Sharpness of the boundary peak dominates, because that is the signal
-        used for boundary profiling and the one that survives in bacterial data. Frame
-        bias contributes when present. Abundance breaks ties, on a log scale so
-        that a very deep read length cannot outweigh a clean one.
-        """
-        if not self.usable:
-            return 0.0
-        sharpness_term = min(self.sharpness / 10.0, 1.0)
-        frame_term = max(0.0, (self.frame_bias - 1 / 3) / (1 - 1 / 3))
-        abundance_term = min(1.0, np.log10(1 + self.abundance * 100) / 2.0)
-        return float(0.55 * sharpness_term + 0.30 * frame_term + 0.15 * abundance_term)
+        """Peak/background enrichment, without a ceiling that erases differences."""
+        return float(self.sharpness) if self.usable else 0.0
 
 
 def _window_slice(coordinates: np.ndarray, low: int, high: int) -> np.ndarray:
@@ -249,6 +277,8 @@ class PeakEstimate:
     background_sd: float
     sharpness: float
     z_score: float
+    background_reference: float = 0.0
+    background_positions: int = 0
 
     @property
     def is_significant(self) -> bool:
@@ -286,24 +316,11 @@ def estimate_offset(
     peak_position = int(search_positions[int(np.argmax(search_values))])
     peak_height = float(search_values.max())
 
-    background_mask = _window_slice(coordinates, *_background_window(anchor))
-    if anchor == "stop":
-        # Long 5' termination footprints can put the calibrated peak inside
-        # the nominal upstream body window. Do not count it as background.
-        background_mask &= ~search
-    if background_mask.any():
-        background_values = profile[background_mask]
-        # Median for the ratio, since it is robust to a neighbouring gene
-        # leaking into the upstream window; mean and sd for the z-score.
-        background = float(np.median(background_values))
-        background_mean = float(background_values.mean())
-        background_sd = float(background_values.std())
-    else:
-        background = background_mean = background_sd = 0.0
-
-    # A flat-zero background would make every peak infinitely sharp; fall back to
-    # the profile's own mean so that sharpness stays comparable across lengths.
-    reference = background if background > 0 else float(profile.mean())
+    offset = read_end.offset_from_peak(peak_position)
+    site_coordinates = coordinates + read_end.site_shift(offset)
+    background, background_mean, background_sd, reference, background_positions = background_statistics(
+        profile, site_coordinates, anchor, _observed_site_mask(coordinates, site_coordinates)
+    )
     sharpness = float(peak_height / reference) if reference > 0 else 0.0
 
     # Counts are Poisson-like, so the variance is at least the mean; use that as
@@ -311,11 +328,11 @@ def estimate_offset(
     spread = max(background_sd, np.sqrt(max(background_mean, 0.0)), 1.0)
     z_score = float((peak_height - background_mean) / spread)
 
-    offset = read_end.offset_from_peak(peak_position)
-    if not read_end.is_plausible(offset):
+    if not read_end.is_plausible(offset) or background_positions < MIN_BACKGROUND_POSITIONS:
         offset = None
 
-    return PeakEstimate(offset, peak_height, background, background_sd, sharpness, z_score)
+    return PeakEstimate(offset, peak_height, background, background_sd, sharpness, z_score,
+                        reference, background_positions)
 
 
 def frame_fractions(
@@ -325,6 +342,7 @@ def frame_fractions(
     read_end: ReadEnd = DEFAULT_READ_END,
     body_length: int = 90,
     anchor: str = "start",
+    valid_mask: np.ndarray | None = None,
 ) -> tuple[float, float, float]:
     """Share of P-sites falling in each reading frame inside the ORF body.
 
@@ -337,7 +355,10 @@ def frame_fractions(
     coordinates = np.asarray(coordinates)
 
     psite_positions = coordinates + read_end.site_shift(psite_offset(offset, read_end, anchor))
-    body = _body_mask(psite_positions, body_length, anchor)
+    site_positions = coordinates + read_end.site_shift(offset)
+    body = _body_mask(psite_positions, body_length, anchor) & _observed_site_mask(
+        coordinates, site_positions, valid_mask
+    )
     if not body.any():
         return (0.0, 0.0, 0.0)
 
@@ -352,6 +373,23 @@ def frame_fractions(
     return tuple(float(c / total) for c in counts)
 
 
+def frame_read_count(profile, coordinates, offset, read_end=DEFAULT_READ_END,
+                     body_length=90, anchor="start", valid_mask=None):
+    """Observed coding-body read ends underlying the frame fractions."""
+    _validate_anchor(anchor)
+    coordinates = np.asarray(coordinates)
+    positions = coordinates + read_end.site_shift(psite_offset(offset, read_end, anchor))
+    site_positions = coordinates + read_end.site_shift(offset)
+    body = _body_mask(positions, body_length, anchor) & _observed_site_mask(
+        coordinates, site_positions, valid_mask
+    )
+    return float(np.asarray(profile)[body].sum())
+
+
+def _supported_frame_zero(fractions, frame_reads=None):
+    return fractions[0] if frame_reads is None or frame_reads >= MIN_FRAME_READS else 0.0
+
+
 def periodicity_score(
     profile: np.ndarray,
     coordinates: np.ndarray,
@@ -359,6 +397,7 @@ def periodicity_score(
     read_end: ReadEnd = DEFAULT_READ_END,
     body_length: int = 90,
     anchor: str = "start",
+    valid_mask: np.ndarray | None = None,
 ) -> float:
     """Strength of the 3-nt component of the elongation signal, in [0, 1].
 
@@ -371,7 +410,10 @@ def periodicity_score(
     coordinates = np.asarray(coordinates)
 
     psite_positions = coordinates + read_end.site_shift(psite_offset(offset, read_end, anchor))
-    body = _body_mask(psite_positions, body_length, anchor)
+    site_positions = coordinates + read_end.site_shift(offset)
+    body = _body_mask(psite_positions, body_length, anchor) & _observed_site_mask(
+        coordinates, site_positions, valid_mask
+    )
     values = profile[body]
     if values.size < 9 or values.sum() <= 0:
         return 0.0
@@ -441,17 +483,25 @@ def score_read_lengths(
 
         if estimate.offset is None:
             usable = False
-            reasons.append(
-                f"no {signal} peak within "
-                f"{length_read_end.plausible[0]}-{length_read_end.plausible[1]} nt of the {anchor} codon"
-            )
+            if estimate.peak_height > 0 and estimate.background_positions < MIN_BACKGROUND_POSITIONS:
+                reasons.append(
+                    f"insufficient observed background ({estimate.background_positions} positions; "
+                    f"at least {MIN_BACKGROUND_POSITIONS} are required); widen the profile window"
+                )
+            else:
+                reasons.append(
+                    f"no {signal} peak within "
+                    f"{length_read_end.plausible[0]}-{length_read_end.plausible[1]} nt of the {anchor} codon"
+                )
 
         if offset is None:
             fractions = (0.0, 0.0, 0.0)
             periodicity = 0.0
+            frame_reads = 0.0
         else:
             fractions = frame_fractions(profile, coordinates, offset, read_end, anchor=anchor)
             periodicity = periodicity_score(profile, coordinates, offset, read_end, anchor=anchor)
+            frame_reads = frame_read_count(profile, coordinates, offset, read_end, anchor=anchor)
             if not estimate.is_significant:
                 usable = False
                 reasons.append(
@@ -477,6 +527,9 @@ def score_read_lengths(
                 reasons=reasons,
                 anchor=anchor,
                 site=_site_for_anchor(anchor),
+                background_reference=estimate.background_reference,
+                background_positions=estimate.background_positions,
+                frame_reads=frame_reads,
             )
         )
 
@@ -507,6 +560,7 @@ class Recommendation:
     warnings: list[str] = field(default_factory=list)
     anchor: str = "start"
     site: str = "P"
+    frame_reads: float | None = None
 
     @property
     def has_recommendation(self) -> bool:
@@ -526,6 +580,8 @@ def shift_profile(profile: np.ndarray, offset: int) -> np.ndarray:
     if offset == 0:
         return profile.copy()
     shifted = np.zeros_like(profile)
+    if abs(offset) >= profile.size:
+        return shifted
     if offset > 0:
         shifted[offset:] = profile[: profile.size - offset]
     else:
@@ -566,16 +622,29 @@ def _evaluate_combination(
     at_boundary = pooled[coordinates == 0]
     peak = float(at_boundary[0]) if at_boundary.size else 0.0
 
-    background_mask = _window_slice(coordinates, *_background_window(anchor))
-    background = float(np.median(pooled[background_mask])) if background_mask.any() else 0.0
-    reference = background if background > 0 else float(pooled.mean())
+    valid = _combination_valid_mask(pooled.size, offsets, read_lengths, read_end)
+    _, _, _, reference, _ = background_statistics(pooled, coordinates, anchor, valid)
     sharpness = float(peak / reference) if reference > 0 else 0.0
 
     # A-site-aligned termination profiles still need the 3-nt P-site correction
     # when evaluating coding-body evidence.
-    fractions = frame_fractions(pooled, coordinates, 0, read_end, anchor=anchor)
-    periodicity = periodicity_score(pooled, coordinates, 0, read_end, anchor=anchor)
+    fractions = frame_fractions(pooled, coordinates, 0, read_end, anchor=anchor, valid_mask=valid)
+    periodicity = periodicity_score(pooled, coordinates, 0, read_end, anchor=anchor, valid_mask=valid)
     return sharpness, fractions, periodicity
+
+
+def _combination_valid_mask(size, offsets, read_lengths, read_end):
+    """Positions observed for every member of an aligned pool."""
+    valid = np.ones(size, dtype=bool)
+    for length in read_lengths:
+        valid &= shift_profile(np.ones(size), read_end.site_shift(offsets[length])).astype(bool)
+    return valid
+
+
+def _combination_frame_read_count(profiles, coordinates, offsets, read_lengths, read_end, anchor):
+    pooled = pool_profiles(profiles, offsets, read_lengths, read_end)
+    valid = _combination_valid_mask(pooled.size, offsets, read_lengths, read_end)
+    return frame_read_count(pooled, coordinates, 0, read_end, anchor=anchor, valid_mask=valid)
 
 
 def recommend_read_lengths(
@@ -587,15 +656,15 @@ def recommend_read_lengths(
 ) -> Recommendation:
     """Choose read lengths and calibrated-site offsets for boundary profiling.
 
-    Read lengths are added greedily, best first, and a length is kept only if it
-    improves the pooled boundary peak. That is preferable to taking every
-    usable length: a length with a marginal peak dilutes the signal even though
-    it passes on its own.
+    Start with the strongest single-length enrichment. At each step choose the
+    remaining length with the largest gain in that same pooled metric. Frame 0
+    support and read abundance only break enrichment ties. A marginal length
+    must not dilute a clear peak merely because its coding-body frame is strong.
     """
     read_end = _read_end_for_anchor(read_end, anchor)
     signal = _signal_for_anchor(anchor)
     coordinates = np.asarray(coordinates)
-    usable = sorted([s for s in scores if s.usable], key=lambda s: s.score, reverse=True)
+    usable = [s for s in scores if s.usable]
 
     if not usable:
         return _no_recommendation(scores, read_end, anchor)
@@ -603,38 +672,57 @@ def recommend_read_lengths(
     offsets = {s.read_length: s.offset for s in usable}
     total_reads = sum(s.total_reads for s in scores) or 1
 
+    single_metrics = {
+        score.read_length: _evaluate_combination(
+            start_profiles, coordinates, offsets, [score.read_length], read_end, anchor
+        ) for score in usable
+    }
+    usable.sort(key=lambda s: (single_metrics[s.read_length][0],
+                              _supported_frame_zero(s.frame_fractions, s.frame_reads),
+                              s.total_reads, -s.read_length), reverse=True)
     selected = [usable[0].read_length]
-    best_sharpness, best_fractions, best_periodicity = _evaluate_combination(
-        start_profiles, coordinates, offsets, selected, read_end, anchor
-    )
+    best_sharpness, best_fractions, best_periodicity = single_metrics[selected[0]]
 
     rationale = [
         f"read length {usable[0].read_length} has the strongest {signal} peak "
-        f"({usable[0].sharpness:.1f}x background at offset {usable[0].offset})"
+        f"({best_sharpness:.1f}x background at offset {usable[0].offset}); "
+        "reading-frame bias does not override peak enrichment"
     ]
 
-    for candidate in usable[1:]:
-        trial = selected + [candidate.read_length]
-        sharpness, fractions, periodicity = _evaluate_combination(
-            start_profiles, coordinates, offsets, trial, read_end, anchor
+    remaining = usable[1:]
+    while remaining:
+        trials = [(candidate, _evaluate_combination(
+            start_profiles, coordinates, offsets, selected + [candidate.read_length], read_end, anchor
+        ), _combination_frame_read_count(
+            start_profiles, coordinates, offsets, selected + [candidate.read_length], read_end, anchor
+        )) for candidate in remaining]
+        candidate, metrics, _ = max(trials, key=lambda trial: (
+            trial[1][0], _supported_frame_zero(trial[1][1], trial[2]),
+            trial[0].total_reads, -trial[0].read_length
+        ))
+        sharpness, fractions, periodicity = metrics
+        if sharpness < best_sharpness * (1 + MIN_RELATIVE_GAIN):
+            for excluded, (trial_sharpness, _, _), _ in trials:
+                rationale.append(
+                    f"read length {excluded.read_length} was left out: it moves the pooled "
+                    f"peak from {best_sharpness:.1f}x to {trial_sharpness:.1f}x, short of the "
+                    f"{MIN_RELATIVE_GAIN:.0%} gain required to include it"
+                )
+            break
+        selected.append(candidate.read_length)
+        remaining.remove(candidate)
+        best_sharpness, best_fractions, best_periodicity = metrics
+        rationale.append(
+            f"adding read length {candidate.read_length} (offset {candidate.offset}) "
+            f"raises the pooled peak to {sharpness:.1f}x"
         )
-        if sharpness > best_sharpness * (1 + MIN_RELATIVE_GAIN):
-            selected = trial
-            best_sharpness, best_fractions, best_periodicity = sharpness, fractions, periodicity
-            rationale.append(
-                f"adding read length {candidate.read_length} (offset {candidate.offset}) "
-                f"raises the pooled peak to {sharpness:.1f}x"
-            )
-        else:
-            rationale.append(
-                f"read length {candidate.read_length} was left out: it moves the pooled "
-                f"peak from {best_sharpness:.1f}x to {sharpness:.1f}x, short of the "
-                f"{MIN_RELATIVE_GAIN:.0%} gain required to include it"
-            )
 
     covered = sum(s.total_reads for s in scores if s.read_length in selected) / total_reads
+    frame_reads = _combination_frame_read_count(
+        start_profiles, coordinates, offsets, selected, read_end, anchor
+    )
     confidence, warnings = _assess_confidence(
-        best_sharpness, best_fractions, best_periodicity, covered, anchor
+        best_sharpness, best_fractions, best_periodicity, covered, anchor, frame_reads
     )
 
     return Recommendation(
@@ -651,6 +739,7 @@ def recommend_read_lengths(
         warnings=warnings,
         anchor=anchor,
         site=_site_for_anchor(anchor),
+        frame_reads=frame_reads,
     )
 
 
@@ -712,6 +801,7 @@ def _assess_confidence(
     periodicity: float,
     covered: float,
     anchor: str = "start",
+    frame_reads: float | None = None,
 ) -> tuple[str, list[str]]:
     """Grade a recommendation, and say which evidence it rests on."""
     frame_bias = max(fractions) if any(fractions) else 0.0
@@ -719,15 +809,16 @@ def _assess_confidence(
     warnings: list[str] = []
     signal = _signal_for_anchor(anchor)
 
-    if sharpness >= 5.0 and frame_bias >= 0.5:
+    if sharpness >= 5.0 and _supported_frame_zero(fractions, frame_reads) >= 0.5:
         confidence = "high"
     elif sharpness >= 5.0:
         confidence = "medium"
-        warnings.append(
-            f"The {signal} peak is clear ({sharpness:.1f}x) but the reading frame bias is "
-            f"weak ({frame_bias:.0%} in the dominant frame). This is common in bacterial "
-            f"Ribo-seq; the offsets rest on the {anchor}-codon peak alone."
-        )
+        if in_frame < 0.5:
+            warnings.append(
+                f"The {signal} peak is clear ({sharpness:.1f}x) but reading frame bias in frame 0 is "
+                f"weak ({in_frame:.0%}). This is common in bacterial "
+                f"Ribo-seq; the offsets rest on the {anchor}-codon peak alone."
+            )
     elif sharpness >= 3.0:
         confidence = "medium"
     else:
@@ -742,6 +833,12 @@ def _assess_confidence(
         warnings.append(
             f"The dominant reading frame is {dominant}, not 0. The estimated offsets may be "
             f"off by {dominant} nt, or the annotated {anchor} codons may be shifted."
+        )
+
+    if frame_reads is not None and frame_reads < MIN_FRAME_READS:
+        warnings.append(
+            f"Only {frame_reads:.0f} coding-body read ends support the frame fractions; "
+            f"at least {MIN_FRAME_READS} are required to use frame bias for high confidence."
         )
 
     if covered < 0.3:
@@ -810,7 +907,10 @@ class EndComparison:
         if not self.recommendation.has_recommendation:
             return 0.0
         sharpness = min(np.log10(max(self.recommendation.sharpness, 1.0)) / 2.0, 1.0)
-        frame = max(0.0, (self.recommendation.frame_bias - 1 / 3) / (1 - 1 / 3))
+        frame_zero = _supported_frame_zero(
+            self.recommendation.frame_fractions, self.recommendation.frame_reads
+        )
+        frame = max(0.0, (frame_zero - 1 / 3) / (1 - 1 / 3))
         covered = min(self.recommendation.covered_fraction / 0.5, 1.0)
         return float(0.6 * sharpness + 0.25 * frame + 0.15 * covered)
 
@@ -836,7 +936,8 @@ def prefer_read_end(a: "EndComparison", b: "EndComparison") -> int:
     if spread_a is not None and spread_b is not None and spread_a != spread_b:
         return -1 if spread_a < spread_b else 1
 
-    frame_a, frame_b = a.recommendation.frame_bias, b.recommendation.frame_bias
+    frame_a = _supported_frame_zero(a.recommendation.frame_fractions, a.recommendation.frame_reads)
+    frame_b = _supported_frame_zero(b.recommendation.frame_fractions, b.recommendation.frame_reads)
     if abs(frame_a - frame_b) > FRAME_TIE_MARGIN:
         return -1 if frame_a > frame_b else 1
 
