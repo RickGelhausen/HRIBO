@@ -37,6 +37,11 @@ boundary crossed when leaving the CDS.  It is not a strand-specific reversal.
 For both strands, moving right in either plot means moving downstream along the
 transcript.
 
+The separate :doc:`tis-advisor` shifts stop-profile coordinates by +3 nt so its
+stop/A-site offsets use the first stop-codon base as coordinate 0, matching the
+start/P-site convention.  The metagene outputs described here retain the
+CDS-boundary axis above.
+
 Mapping methods
 ---------------
 
@@ -134,6 +139,10 @@ signal with the experimental design rather than assuming one universal
 offset.  Start and stop profiles should be interpreted together and, when
 replicates exist, the length-specific pattern should be reproducible between
 replicates.
+
+For TTS libraries, inspect the stop enrichment and the advisor's A-site
+recommendation.  Start enrichment in a termination library is a diagnostic
+feature and does not determine its recommended offsets; see :doc:`tis-advisor`.
 
 A broad, weak, shifted, or multi-modal aggregate is a reason to inspect the
 library, but it is not by itself a diagnosis.  Common explanations include

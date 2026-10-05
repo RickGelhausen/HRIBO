@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-Recommend a translation initiation site caller setup for one library.
+Recommend read lengths and site offsets for initiation or termination peaks.
 
 Given an alignment and an annotation, this works out which read lengths carry a
-usable initiation signal, how far each of them sits from the P-site, and whether
+usable boundary signal, how far each of them sits from the occupied site, and whether
 the evidence is strong enough to act on. The result is written as a readable
 HTML report, a machine-readable JSON document, and a TSV of the per-read-length
 evidence.
@@ -43,7 +43,7 @@ DEEPRIBO_SINGLE_LENGTH_READ_SUPPORT = 0.80
 
 def parse_arguments(argv=None):
     parser = argparse.ArgumentParser(
-        description="Recommend read lengths and P-site offsets for a TIS caller.",
+        description="Recommend read lengths and P-site (TIS) or A-site (TTS) offsets.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("-b", "--alignment_file_path", type=Path, required=True,
@@ -56,14 +56,18 @@ def parse_arguments(argv=None):
                         help="Directory for the report, JSON and TSV.")
     parser.add_argument("-r", "--read_lengths", type=str, default="22-40",
                         help="Read lengths to consider.")
+    parser.add_argument("--library_type", choices=["auto", "RIBO", "TIS", "TTS"],
+                        default="auto", help="TTS evaluates stop peaks and A-site offsets; "
+                        "RIBO/TIS evaluate start peaks and P-site offsets. Auto uses "
+                        "the BAM filename's method prefix, defaulting to RIBO.")
     parser.add_argument("--mapping_methods", nargs="+", default=["fiveprime", "threeprime"],
                         choices=["fiveprime", "threeprime"],
                         help="Read ends to evaluate. Both are analysed by default and the "
-                             "one with the stronger initiation signal is recommended, "
+                             "one with the more consistent boundary offsets is recommended, "
                              "because which end is sharper is organism and protocol "
                              "dependent.")
     parser.add_argument("--positions_out_ORF", type=int, default=100,
-                        help="Nucleotides upstream of the start codon to profile.")
+                        help="Nucleotides outside each ORF boundary to profile.")
     parser.add_argument("--positions_in_ORF", type=int, default=150,
                         help="Nucleotides inside the ORF to profile.")
     parser.add_argument("--length_cutoff", type=int, default=50,
@@ -93,19 +97,26 @@ def build_profiles(args):
     """
     genome_lengths = io.parse_genome_lengths(args.genome_file_path)
     read_lengths = io.parse_read_lengths(args.read_lengths)
+    library_type = library_type_from_name(
+        args.alignment_file_path.stem, getattr(args, "library_type", "auto")
+    )
 
     reader = IntervalReader(args.alignment_file_path)
     read_intervals, total_counts = reader.output()
 
     profiles_by_end = {}
     for mapping_method in args.mapping_methods:
+        # Termination reads overlap the CDS while their 3' ends fall beyond it.
+        # Count overlapping footprints for TTS abundance filtering so that the
+        # selected endpoint cannot remove the very stop signal being measured.
+        filtering_mapping = "global" if library_type == "TTS" else mapping_method
         start_codons, stop_codons = ann.retrieve_annotation_positions(
             args.annotation_file_path,
             read_intervals,
             total_counts,
             genome_lengths,
             args.filtering_methods,
-            mapping_method,
+            filtering_mapping,
             args.rpkm_threshold,
             args.neighboring_genes_distance,
             args.positions_out_ORF,
@@ -180,6 +191,38 @@ def metagene_coordinates(positions_out_ORF, positions_in_ORF):
     return start, stop
 
 
+def library_type_from_name(library, requested="auto"):
+    """Resolve workflow sample methods and standalone BAM overrides."""
+    if requested != "auto":
+        return requested
+    method = library.split("-", 1)[0].upper()
+    return method if method in {"RIBO", "TIS", "TTS"} else "RIBO"
+
+
+def site_offsets(offsets, read_end, site):
+    """Distances to the first bases of adjacent P- and A-site codons."""
+    direction = psite.READ_ENDS[read_end].sign
+    if site == "A":
+        a_offsets = dict(offsets)
+        p_offsets = {length: offset - direction * 3 for length, offset in offsets.items()}
+    else:
+        p_offsets = dict(offsets)
+        a_offsets = {length: offset + direction * 3 for length, offset in offsets.items()}
+    return p_offsets, a_offsets
+
+
+def recommendation_payload(recommendation):
+    p_offsets, a_offsets = site_offsets(
+        recommendation.offsets, recommendation.read_end, recommendation.site
+    )
+    return {
+        **asdict(recommendation),
+        "offsets": {str(k): v for k, v in recommendation.offsets.items()},
+        "p_site_offsets": {str(k): v for k, v in p_offsets.items()},
+        "a_site_offsets": {str(k): v for k, v in a_offsets.items()},
+    }
+
+
 # --------------------------------------------------------------------------
 # Output
 # --------------------------------------------------------------------------
@@ -187,6 +230,8 @@ def metagene_coordinates(positions_out_ORF, positions_in_ORF):
 
 def orfbounder_config(recommendation):
     """A config block that can be pasted straight into an ORFBounder run."""
+    if recommendation.anchor == "stop":
+        return "# Termination offsets are reported in the A-site table; no TIS setup is suggested."
     if not recommendation.has_recommendation:
         return "# No usable initiation signal was found; no setup is suggested."
     read_end = "5'" if recommendation.read_end == "fiveprime" else "3'"
@@ -204,7 +249,8 @@ def orfbounder_config(recommendation):
     )
 
 
-def deepribo_asite_advice(library, comparisons, total_reads, current_offset):
+def deepribo_asite_advice(library, comparisons, total_reads, current_offset,
+                         library_type=None):
     """Suggest a DeepRibo scalar only when usable 3' peaks agree across reads.
 
     DeepRibo currently uses one 3'-to-A-site offset for the RIBO reads it accepts.
@@ -223,7 +269,9 @@ def deepribo_asite_advice(library, comparisons, total_reads, current_offset):
         "read_support_fraction": 0.0,
         "reason": "",
     }
-    if not library.startswith("RIBO-"):
+    if (library_type is not None and library_type != "RIBO") or (
+        library_type is None and not library.startswith("RIBO-")
+    ):
         advice["reason"] = "DeepRibo uses RIBO libraries; this is not a RIBO library."
         return advice
 
@@ -303,15 +351,20 @@ def deepribo_asite_advice(library, comparisons, total_reads, current_offset):
     return advice
 
 
-def scores_to_tsv(scores, path):
+def scores_to_tsv(scores, path, read_end="fiveprime", anchor="start", site="P"):
     header = [
         "read_length", "total_reads", "abundance", "offset", "peak_height",
         "background", "sharpness", "z_score", "frame_0", "frame_1", "frame_2",
         "frame_bias", "periodicity", "usable", "reasons",
+        "read_end", "anchor", "site", "p_site_offset", "a_site_offset",
     ]
     with open(path, "w") as handle:
         handle.write("\t".join(header) + "\n")
         for score in scores:
+            p_offsets, a_offsets = site_offsets(
+                {score.read_length: score.offset} if score.offset is not None else {},
+                read_end, site,
+            )
             handle.write("\t".join([
                 str(score.read_length),
                 str(score.total_reads),
@@ -326,13 +379,20 @@ def scores_to_tsv(scores, path):
                 f"{score.periodicity:.4f}",
                 "yes" if score.usable else "no",
                 "; ".join(score.reasons),
+                read_end, anchor, site,
+                str(p_offsets.get(score.read_length, "")),
+                str(a_offsets.get(score.read_length, "")),
             ]) + "\n")
 
 
 def render_report(library, best, comparisons, figures, asite_advice, path,
-                  include_plotly_js="integrated"):
+                  include_plotly_js="integrated", library_type="RIBO"):
     """The human-facing report: verdict first, then the evidence behind it."""
     recommendation = best.recommendation if best else comparisons[0].recommendation
+    anchor = recommendation.anchor
+    site = recommendation.site
+    signal = "termination" if anchor == "stop" else "initiation"
+    advice_label = "TTS peak advice" if anchor == "stop" else "TIS caller advice"
     colour = theme.CONFIDENCE_COLORS.get(recommendation.confidence, theme.INK_MUTED)
 
     parts = ['<div class="verdict">']
@@ -344,60 +404,85 @@ def render_report(library, best, comparisons, figures, asite_advice, path,
             f'<span class="pill" style="background:{colour}">{recommendation.confidence} confidence</span>'
         )
         parts.append(
-            f"<p>The pooled initiation peak is {recommendation.sharpness:.1f} times the "
+            f"<p>The pooled {signal} peak is {recommendation.sharpness:.1f} times the "
             f"upstream background, built from {recommendation.covered_fraction:.0%} of the "
             f"library. The dominant reading frame holds {recommendation.frame_bias:.0%} of "
-            "P-sites.</p>"
+            f"{site}-sites.</p>"
         )
     else:
         parts.append(
-            "<strong>No TIS caller setup is recommended for this library</strong>"
+            f"<strong>No {'TTS peak setup' if anchor == 'stop' else 'TIS caller setup'} "
+            "is recommended for this library</strong>"
             f'<span class="pill" style="background:{colour}">no recommendation</span>'
         )
     parts.append("</div>")
 
-    for line in psite.describe_end_choice(best, comparisons):
+    for line in psite.describe_end_choice(best, comparisons, anchor=anchor):
         parts.append(f"<p>{line}</p>")
 
     for warning in recommendation.warnings:
         parts.append(f'<p class="warn">{warning}</p>')
 
-    parts.append("<h2>Suggested configuration</h2>")
-    parts.append(f"<pre><code>{orfbounder_config(recommendation)}</code></pre>")
-
-    parts.append("<h2>DeepRibo A-site offset advice</h2>")
-    suggested = asite_advice["suggested_offset"]
-    current = asite_advice["current_offset"]
-    if suggested is None:
-        parts.append("<p>No single DeepRibo offset is suggested for this library.</p>")
-    elif suggested == current:
-        parts.append(f"<p>The suggested DeepRibo A-site offset is {suggested} nt, "
-                     "matching the current configuration.</p>")
-    else:
-        parts.append(f"<p>The suggested DeepRibo A-site offset is {suggested} nt; "
-                     f"the current configuration is {current} nt.</p>")
-        parts.append("<p>In the existing <code>predictionSettings</code> block, "
-                     "change only this line if the advice is appropriate:</p>")
-        parts.append(f"<pre><code>  deepriboASiteOffset: {suggested}</code></pre>")
-    parts.append(f"<p>{asite_advice['reason']}</p>")
-    if asite_advice["per_length_offsets"]:
-        values = ", ".join(
-            f"{length} nt → {offset} nt"
-            for length, offset in sorted(
-                asite_advice["per_length_offsets"].items(),
-                key=lambda item: int(item[0]),
-            )
-        )
-        parts.append(f"<p>Usable 3' read-length candidates: {values}.</p>")
+    parts.append("<h2>Site offsets</h2>")
     parts.append(
-        "<p>This is advice only: HRIBO does not change DeepRibo automatically. "
-        "The estimate assumes the A-site is one codon downstream of the P-site. "
-        "DeepRibo uses one global offset, so compare advice across RIBO "
-        "libraries before changing the setting and rerunning predictions.</p>"
+        f"<p>This {library_type} library is scored at the {anchor} codon. "
+        f"Reported offsets measure the distance to the first nucleotide of the {site}-site codon "
+        "from the inclusive mapped read end. From a 5' end, move downstream; "
+        "from a 3' end, move upstream, in transcript direction on either strand.</p>"
     )
+    if anchor == "stop":
+        parts.append(
+            "<p>Apidaecin termination complexes place the stop codon in the A-site. "
+            "The P-site is one codon (3 nt) upstream: a 5'-to-P-site distance is "
+            "the A-site offset minus 3; a 3'-to-P-site distance is the A-site offset plus 3. "
+            "These are termination-peak settings.</p>"
+            "<p>Interpret termination enrichment with the protocol in mind: apidaecin can "
+            "also produce upstream ribosome queues and stop-codon readthrough. "
+            "For disome footprints, include their lengths in the configured range and "
+            "interpret the estimate as the leading terminating ribosome's site.</p>"
+            '<p>Scientific basis: <a href="https://www.nature.com/articles/s41467-025-58329-w">'
+            'Froschauer et al. (2025)</a> and '
+            '<a href="https://elifesciences.org/articles/62655">Mangano et al. (2020)</a>.</p>'
+        )
+        parts.append(_site_offsets_table(recommendation))
+    else:
+        parts.append("<h2>Suggested configuration</h2>")
+        parts.append(f"<pre><code>{orfbounder_config(recommendation)}</code></pre>")
+
+    if anchor == "start":
+        parts.append("<h2>DeepRibo A-site offset advice</h2>")
+        suggested = asite_advice["suggested_offset"]
+        current = asite_advice["current_offset"]
+        if suggested is None:
+            parts.append("<p>No single DeepRibo offset is suggested for this library.</p>")
+        elif suggested == current:
+            parts.append(f"<p>The suggested DeepRibo A-site offset is {suggested} nt, "
+                         "matching the current configuration.</p>")
+        else:
+            parts.append(f"<p>The suggested DeepRibo A-site offset is {suggested} nt; "
+                         f"the current configuration is {current} nt.</p>")
+            parts.append("<p>In the existing <code>predictionSettings</code> block, "
+                         "change only this line if the advice is appropriate:</p>")
+            parts.append(f"<pre><code>  deepriboASiteOffset: {suggested}</code></pre>")
+        parts.append(f"<p>{asite_advice['reason']}</p>")
+        if asite_advice["per_length_offsets"]:
+            values = ", ".join(
+                f"{length} nt → {offset} nt"
+                for length, offset in sorted(
+                    asite_advice["per_length_offsets"].items(),
+                    key=lambda item: int(item[0]),
+                )
+            )
+            parts.append(f"<p>Usable 3' read-length candidates: {values}.</p>")
+        parts.append(
+            "<p>This is advice only: HRIBO does not change DeepRibo automatically. "
+            "The estimate assumes the A-site is one codon downstream of the P-site. "
+            "DeepRibo uses one global offset, so compare advice across RIBO "
+            "libraries before changing the setting and rerunning predictions.</p>"
+        )
 
     parts.append("<h2>5' against 3' mapping</h2>")
-    parts.append(_end_comparison_table(comparisons, best))
+    parts.append(_end_comparison_table(comparisons, best, site=site))
 
     if recommendation.rationale:
         parts.append("<h2>How the read lengths were chosen</h2><ul>")
@@ -407,7 +492,7 @@ def render_report(library, best, comparisons, figures, asite_advice, path,
     for comparison in comparisons:
         end_label = "5'" if comparison.read_end == "fiveprime" else "3'"
         parts.append(f"<h2>Evidence per read length, {end_label} mapping</h2>")
-        parts.append(_scores_table(comparison.scores))
+        parts.append(_scores_table(comparison.scores, site=site))
 
     parts.append("<h2>Figures</h2>")
     js_mode = {"integrated": True, "online": "cdn", "local": "directory"}.get(include_plotly_js, True)
@@ -429,19 +514,34 @@ def render_report(library, best, comparisons, figures, asite_advice, path,
     ends = " and ".join(c.read_end for c in comparisons)
     Path(path).write_text(
         theme.page(
-            f"TIS caller advice: {library}",
-            f"Both {ends} mapping were evaluated. Offsets are the distance from the "
-            "mapped read end to the P-site.",
+            f"{advice_label}: {library}",
+            f"Evaluated read ends: {ends}. {signal.capitalize()} peaks at {anchor} codons; "
+            f"offsets run from the mapped read end to the {site}-site.",
             "\n".join(parts),
         )
     )
 
 
-def _end_comparison_table(comparisons, best):
+def _site_offsets_table(recommendation):
+    p_offsets, a_offsets = site_offsets(
+        recommendation.offsets, recommendation.read_end, recommendation.site
+    )
+    rows = ["<div class='table-wrap'><table><thead><tr><th>Read length</th>"
+            "<th>A-site offset (nt)</th><th>Derived P-site offset (nt)</th>"
+            "</tr></thead><tbody>"]
+    rows.extend(
+        f"<tr><td>{length}</td><td>{a_offsets[length]}</td><td>{p_offsets[length]}</td></tr>"
+        for length in sorted(recommendation.read_lengths)
+    )
+    rows.append("</tbody></table></div>")
+    return "\n".join(rows)
+
+
+def _end_comparison_table(comparisons, best, site="P"):
     """Side by side summary, so the losing end is visible rather than discarded."""
     rows = [
         "<div class='table-wrap'><table><thead><tr>"
-        "<th>Read end</th><th>Chosen</th><th>Read lengths</th><th>Offsets</th>"
+        f"<th>Read end</th><th>Chosen</th><th>Read lengths</th><th>{site}-site offsets (nt)</th>"
         "<th>Peak vs background</th><th>Dominant frame</th><th>Periodicity</th>"
         "<th>Library covered</th><th>Confidence</th></tr></thead><tbody>"
     ]
@@ -470,10 +570,10 @@ def _end_comparison_table(comparisons, best):
     return "\n".join(rows)
 
 
-def _scores_table(scores):
+def _scores_table(scores, site="P"):
     rows = [
         "<div class='table-wrap'><table><thead><tr>"
-        "<th>Read length</th><th>Share of reads</th><th>Offset</th>"
+        f"<th>Read length</th><th>Share of reads</th><th>{site}-site offset (nt)</th>"
         "<th>Peak vs background</th><th>Dominant frame</th><th>Periodicity</th>"
         "<th>Usable</th><th>Notes</th></tr></thead><tbody>"
     ]
@@ -501,18 +601,29 @@ def main():
     args = parse_arguments()
     args.output_dir_path.mkdir(parents=True, exist_ok=True)
     library = args.alignment_file_path.stem
+    library_type = library_type_from_name(library, args.library_type)
+    anchor = "stop" if library_type == "TTS" else "start"
+    site = "A" if anchor == "stop" else "P"
+    signal = "termination" if anchor == "stop" else "initiation"
 
     start_coordinates, stop_coordinates = metagene_coordinates(
         args.positions_out_ORF, args.positions_in_ORF
     )
+    # The legacy stop axis places the three stop bases at -3, -2, -1.
+    # Offset distances must use the FIRST stop base, just like start distances.
+    stop_coordinates = stop_coordinates + 3
     profiles_by_end, totals, total_reads = build_profiles(args)
 
-    start_by_end = {end: start for end, (start, _) in profiles_by_end.items()}
+    boundary_by_end = {
+        end: stop if anchor == "stop" else start
+        for end, (start, stop) in profiles_by_end.items()
+    }
+    coordinates = stop_coordinates if anchor == "stop" else start_coordinates
     best, comparisons = psite.compare_read_ends(
-        start_by_end, start_coordinates, totals
+        boundary_by_end, coordinates, totals, anchor=anchor
     )
     asite_advice = deepribo_asite_advice(
-        library, comparisons, total_reads, args.deepribo_asite_offset
+        library, comparisons, total_reads, args.deepribo_asite_offset, library_type
     )
 
     # Figures follow the chosen end; the other end's numbers stay in the tables.
@@ -532,44 +643,47 @@ def main():
         ("Read length against position", plotting.plot_metagene_heatmap(
             df_start, df_stop, read_lengths, "Metagene profile",
             f"{end_label} mapping, enrichment over each read length's own background",
-            significant_offsets, read_end=chosen)),
+            significant_offsets, read_end=chosen, anchor=anchor, site=site)),
         ("Library composition", plotting.plot_read_length_distribution(
             scores, "Read length distribution",
-            f"Which read lengths carry a usable initiation signal under {end_label} mapping")),
+            f"Which read lengths carry a usable {signal} signal under {end_label} mapping",
+            anchor=anchor)),
         ("Reading frame", plotting.plot_frame_composition(
             scores, "Reading frame composition",
-            "Share of P-sites per frame, after offset correction")),
+            f"Share of {site}-sites per frame inside the ORF, after offset correction",
+            site=site)),
     ]
     if recommendation.has_recommendation:
         pooled = psite.pool_profiles(
-            start_profiles, recommendation.offsets, recommendation.read_lengths,
+            boundary_by_end[chosen], recommendation.offsets, recommendation.read_lengths,
             psite.READ_ENDS[chosen]
         )
         figures.append(("Pooled, offset corrected", plotting.plot_pooled_profile(
-            pooled, start_coordinates, "Pooled P-site profile",
+            pooled, coordinates, f"Pooled {site}-site profile",
             f"{end_label} mapping, read lengths "
-            f"{', '.join(str(length) for length in recommendation.read_lengths)}")))
+            f"{', '.join(str(length) for length in recommendation.read_lengths)}",
+            anchor=anchor, site=site)))
 
     render_report(library, best, comparisons, figures, asite_advice,
-                  args.output_dir_path / "tis_recommendation.html", args.include_plotly_js)
-    scores_to_tsv(scores, args.output_dir_path / "read_length_evidence.tsv")
+                  args.output_dir_path / "tis_recommendation.html", args.include_plotly_js,
+                  library_type=library_type)
+    scores_to_tsv(scores, args.output_dir_path / "read_length_evidence.tsv",
+                  chosen, anchor, site)
 
     payload = {
         "library": library,
+        "library_type": library_type,
+        "anchor": anchor,
+        "site": site,
+        "offset_reference": "first nucleotide of the site codon, from the inclusive mapped read end",
         "evaluated_read_ends": list(profiles_by_end),
         "chosen_read_end": chosen if best else None,
         "deepribo_a_site": asite_advice,
-        "recommendation": {
-            **asdict(recommendation),
-            "offsets": {str(k): v for k, v in recommendation.offsets.items()},
-        },
+        "recommendation": recommendation_payload(recommendation),
         "read_ends": {
             comparison.read_end: {
                 "quality": comparison.quality,
-                "recommendation": {
-                    **asdict(comparison.recommendation),
-                    "offsets": {str(k): v for k, v in comparison.recommendation.offsets.items()},
-                },
+                "recommendation": recommendation_payload(comparison.recommendation),
                 "read_lengths": [asdict(score) for score in comparison.scores],
             }
             for comparison in comparisons
@@ -579,9 +693,9 @@ def main():
 
     if recommendation.has_recommendation:
         print(f"{library}: {chosen} mapping, read lengths {recommendation.read_lengths}, "
-              f"offsets {recommendation.offsets}, {recommendation.confidence} confidence")
+              f"{site}-site offsets {recommendation.offsets}, {recommendation.confidence} confidence")
     else:
-        print(f"{library}: no usable initiation signal on either read end, no recommendation")
+        print(f"{library}: no usable {signal} signal on the evaluated read ends, no recommendation")
 
 
 if __name__ == "__main__":

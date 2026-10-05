@@ -82,6 +82,8 @@ def plot_metagene_heatmap(
     subtitle="",
     offsets=None,
     read_end="fiveprime",
+    anchor="start",
+    site="P",
 ):
     """Read length against position, for the start and stop codon windows.
 
@@ -104,7 +106,7 @@ def plot_metagene_heatmap(
         shared_yaxes=True,
     )
 
-    for column, (matrix, frame, anchor) in enumerate(
+    for column, (matrix, frame, panel_anchor) in enumerate(
         ((start_enrichment, df_start, "start"), (stop_enrichment, df_stop, "stop")), start=1
     ):
         if matrix.size == 0:
@@ -125,7 +127,7 @@ def plot_metagene_heatmap(
                     tickfont=dict(size=9),
                 ),
                 hovertemplate=(
-                    f"read length %{{y}} nt<br>%{{x}} nt from {anchor} codon"
+                    f"read length %{{y}} nt<br>%{{x}} nt from {panel_anchor} codon"
                     "<br>%{z:.1f}x this length's background<extra></extra>"
                 ),
             ),
@@ -140,13 +142,11 @@ def plot_metagene_heatmap(
             col=column,
         )
 
-    # Direct-label the estimated offset for each read length, so the number a TIS
-    # caller needs is readable off the figure instead of inferred from the colour.
+    # Mark the calibrated site offset on the corresponding boundary panel.
     if offsets and read_end in {"fiveprime", "threeprime"}:
         marked = [(length, offset) for length, offset in sorted(offsets.items()) if offset is not None]
         if marked:
-            # The plotted coordinate is the mapped end's position relative to
-            # the start codon: upstream for 5' offsets, downstream for 3'.
+            # The mapped end lies upstream for 5' offsets and downstream for 3'.
             direction = -1 if read_end == "fiveprime" else 1
             fig.add_trace(
                 go.Scatter(
@@ -158,12 +158,12 @@ def plot_metagene_heatmap(
                         size=11,
                         line=dict(color=theme.STATUS["serious"], width=2),
                     ),
-                    name="estimated P-site offset",
+                    name=f"estimated {site}-site offset",
                     hovertemplate="read length %{y} nt<br>offset %{customdata} nt<extra></extra>",
                     customdata=[offset for _, offset in marked],
                 ),
                 row=1,
-                col=1,
+                col=1 if anchor == "start" else 2,
             )
 
     fig.update_xaxes(title_text="Distance from start codon (nt)", row=1, col=1)
@@ -259,8 +259,8 @@ def plot_read_length_profiles(
     return fig
 
 
-def plot_frame_composition(scores, title, subtitle=""):
-    """Share of P-sites in each reading frame, per read length.
+def plot_frame_composition(scores, title, subtitle="", site="P"):
+    """Share of calibrated sites in each reading frame, per read length.
 
     Grouped rather than stacked: the question is whether one frame stands above
     the 1/3 line, and grouped bars put every frame on the same baseline. The
@@ -308,7 +308,7 @@ def plot_frame_composition(scores, title, subtitle=""):
     )
 
     fig.update_xaxes(title_text="Read length (nt)", type="category")
-    fig.update_yaxes(title_text="Share of P-sites", tickformat=".0%", range=[0, 1.08])
+    fig.update_yaxes(title_text=f"Share of {site}-sites", tickformat=".0%", range=[0, 1.08])
 
     theme.apply(fig, title, subtitle)
     fig.update_layout(
@@ -321,7 +321,7 @@ def plot_frame_composition(scores, title, subtitle=""):
     return fig
 
 
-def plot_read_length_distribution(scores, title, subtitle=""):
+def plot_read_length_distribution(scores, title, subtitle="", anchor="start"):
     """Library composition by read length, with the usable ones picked out."""
     if not scores:
         return None
@@ -329,7 +329,8 @@ def plot_read_length_distribution(scores, title, subtitle=""):
     # Two traces rather than one with per-bar colours, so that usability is
     # carried by a legend entry and not by colour alone.
     groups = (
-        ("usable for TIS calling", True, theme.CATEGORICAL[0]),
+        ("usable for TIS calling" if anchor == "start" else "usable for TTS peaks",
+         True, theme.CATEGORICAL[0]),
         ("not usable", False, theme.INK_MUTED),
     )
 
@@ -362,8 +363,8 @@ def plot_read_length_distribution(scores, title, subtitle=""):
     return fig
 
 
-def plot_pooled_profile(pooled, coordinates, title, subtitle=""):
-    """The offset-corrected, pooled profile a TIS caller would actually see."""
+def plot_pooled_profile(pooled, coordinates, title, subtitle="", anchor="start", site="P"):
+    """The offset-corrected, pooled profile of the selected boundary."""
     fig = go.Figure(
         go.Scatter(
             x=coordinates,
@@ -372,19 +373,19 @@ def plot_pooled_profile(pooled, coordinates, title, subtitle=""):
             line=dict(color=theme.CATEGORICAL[0], width=2),
             fill="tozeroy",
             fillcolor="rgba(42,120,214,0.12)",
-            name="pooled P-sites",
+            name=f"pooled {site}-sites",
             showlegend=False,
-            hovertemplate="%{x} nt from start<br>%{y:.0f} P-sites<extra></extra>",
+            hovertemplate=f"%{{x}} nt from {anchor}<br>%{{y:.0f}} {site}-sites<extra></extra>",
         )
     )
     fig.add_vline(
         x=0,
         line=dict(color=theme.STATUS["serious"], width=1.5),
-        annotation=dict(text="start codon", font=dict(size=9, color=theme.STATUS["serious"])),
+        annotation=dict(text=f"{anchor} codon", font=dict(size=9, color=theme.STATUS["serious"])),
         annotation_position="top right",
     )
-    fig.update_xaxes(title_text="Distance from start codon (nt), after offset correction")
-    fig.update_yaxes(title_text="Pooled P-sites")
+    fig.update_xaxes(title_text=f"Distance from {anchor} codon (nt), after offset correction")
+    fig.update_yaxes(title_text=f"Pooled {site}-sites")
 
     theme.apply(fig, title, subtitle)
     fig.update_layout(height=340)

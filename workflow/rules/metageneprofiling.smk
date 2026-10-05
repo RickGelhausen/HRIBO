@@ -122,7 +122,7 @@ rule tisAdvisor:
         report_html=report(
             "tis_advice/{method}-{condition}-{replicate}/tis_recommendation.html",
             caption="../report/tisadvice.rst",
-            category="TIS caller advice",
+            category="TIS/TTS peak advice",
             labels={"library": "{method}-{condition}-{replicate}"}
         ),
         recommendation="tis_advice/{method}-{condition}-{replicate}/tis_recommendation.json",
@@ -155,6 +155,7 @@ rule tisAdvisor:
             -g {input.genome:q} \
             -o {params.outdir:q} \
             -r {params.readlengths:q} \
+            --library_type {wildcards.method:q} \
             --mapping_methods {params.mappingMethods:q} \
             --positions_in_ORF {params.positionsInORF:q} \
             --positions_out_ORF {params.positionsOutORF:q} \

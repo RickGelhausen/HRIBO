@@ -47,9 +47,9 @@ types are:
    * - Counts and abundance
      - ``auxiliary/*.xlsx``
      - Compare feature counts, RPKM values, and direct TE ratios.
-   * - Metagene and TIS reports
+   * - Metagene and TIS/TTS reports
      - ``metageneprofiling/`` and ``tis_advice/``
-     - Assess read lengths, start/stop profiles, and P-site offsets.
+     - Assess read lengths, start/stop profiles, and P-/A-site offsets.
    * - ORF predictions
      - ``auxiliary/predictions_*.xlsx``
      - Review REPARATION and optional DeepRibo candidates.

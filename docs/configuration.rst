@@ -208,13 +208,17 @@ for metagene profiles.
 Review the biological meaning of these choices in
 :doc:`metagene-profiling`.  ``tisAdvisorSettings`` independently selects the
 read lengths and the ``fiveprime`` and/or ``threeprime`` ends evaluated for
-P-site advice:
+start/P-site advice in RIBO/TIS libraries or stop/A-site advice in TTS libraries:
 
 .. code-block:: yaml
 
    tisAdvisorSettings:
      readLengths: "22-40"
      mappingMethods: ["fiveprime", "threeprime"]
+
+The sample-sheet method selects the advisor's boundary automatically.  For
+disome TTS libraries, include the longer footprint lengths explicitly (for
+example ``50-80``); the advisor does not expand the configured range.
 
 Validate changes
 ----------------

@@ -1,15 +1,17 @@
 """
-P-site offset estimation and read length scoring for TIS calling.
+Ribosomal-site offset estimation and read length scoring at translation boundaries.
 
 A translation initiation site caller such as ORFBounder needs to know which read
 lengths carry a usable initiation signal, and by how much to shift each of them
 so that a read is attributed to the codon its ribosome actually occupied. This
 module derives both from the metagene profiles the workflow already computes.
 
-The central quantity is the offset: the distance from the mapped end of a read
-to the P-site of the ribosome that produced it. With 5' mapping, a ribosome
-whose P-site sits on the start codon puts the read's 5' end `offset` nucleotides
-upstream of it, so the offset is read off the position of the start-codon peak.
+The offset is the distance from the mapped read end to the calibrated ribosomal
+site: the P-site at initiation and the A-site at termination. All coordinates
+run in the direction of translation, with zero at the first nucleotide of the
+selected start or stop codon. For a stop-codon A-site calibration, the P-site is
+three nucleotides upstream; frame and periodicity evidence is taken from the
+coding body before the stop, excluding the terminal peak.
 
 A deliberate caveat runs through the scoring: three-nucleotide periodicity is
 frequently weak or absent in bacterial Ribo-seq, far more so than in eukaryotes.
@@ -36,13 +38,13 @@ class ReadEnd:
     5' end, while the reverse holds elsewhere. Both are therefore first class
     here rather than one being assumed.
 
-    sign             +1 when the mapped end lies upstream of the P-site (5'),
+    sign             +1 when the mapped end lies upstream of the site (5'),
                      -1 when it lies downstream (3')
-    search_window    where the initiation peak is looked for, relative to the
-                     start codon. A 5' end peaks upstream of it, a 3' end
+    search_window    where the boundary peak is looked for, relative to the
+                     selected codon. A 5' end peaks upstream of it, a 3' end
                      downstream, roughly a read length away
     plausible        offsets outside this range indicate noise rather than a
-                     genuine initiation peak
+                     genuine boundary peak
     """
 
     name: str
@@ -51,12 +53,16 @@ class ReadEnd:
     plausible: tuple[int, int]
 
     def offset_from_peak(self, peak_position: int) -> int:
-        """Convert the peak's position into a positive distance to the P-site."""
+        """Convert the peak's position into a positive distance to the site."""
         return -self.sign * peak_position
 
-    def psite_shift(self, offset: int) -> int:
-        """How far to move a profile so that it is indexed by P-site position."""
+    def site_shift(self, offset: int) -> int:
+        """Move a profile onto the site used to calibrate its offset."""
         return self.sign * offset
+
+    def psite_shift(self, offset: int) -> int:
+        """Historical alias for a start-codon P-site calibration's shift."""
+        return self.site_shift(offset)
 
     def is_plausible(self, offset: int) -> bool:
         return self.plausible[0] <= offset <= self.plausible[1]
@@ -72,6 +78,73 @@ READ_ENDS = {
 }
 
 DEFAULT_READ_END = READ_ENDS["fiveprime"]
+
+# The A-site lies three nucleotides downstream of the P-site. The corresponding
+# distances from a 5' end grow by three; distances from a 3' end shrink by three.
+# Search windows retain a margin to diagnose an implausible maximum, rather
+# than choosing a smaller incidental peak inside the accepted offset range.
+STOP_READ_ENDS = {
+    "fiveprime": ReadEnd("fiveprime", 1, (-28, 5), (8, 23)),
+    "threeprime": ReadEnd("threeprime", -1, (-5, 29), (2, 25)),
+}
+
+
+def _validate_anchor(anchor: str) -> None:
+    if anchor not in {"start", "stop"}:
+        raise ValueError("anchor must be 'start' or 'stop'")
+
+
+def _read_end_for_anchor(
+    read_end: ReadEnd, anchor: str, read_length: int | None = None
+) -> ReadEnd:
+    _validate_anchor(anchor)
+    if anchor == "start":
+        return read_end
+    if read_length is not None and read_length >= 50 and read_end.name == "fiveprime":
+        # Long termination footprints can span a queued ribosome pair. The
+        # terminating ribosome remains near the 3' end; mirror its 3' A-site
+        # distances to search for that same site from the distant 5' end.
+        low = read_length - 1 - STOP_READ_ENDS["threeprime"].plausible[1]
+        high = read_length - 1 - STOP_READ_ENDS["threeprime"].plausible[0]
+        return ReadEnd("fiveprime", 1, (-high - 5, -low + 5), (low, high))
+    # Preserve explicitly supplied geometry, including the length-dependent
+    # disome window chosen by the caller above.
+    return STOP_READ_ENDS[read_end.name] if read_end == READ_ENDS[read_end.name] else read_end
+
+
+def read_end_for_anchor(
+    name: str, anchor: str = "start", read_length: int | None = None
+) -> ReadEnd:
+    """Return read-end geometry for a start/P-site or stop/A-site calibration.
+
+    Stop footprints of at least 50 nt use a 5' window consistent with a queued
+    ribosome pair and the same terminating-ribosome 3' offset bounds. This does
+    not establish whether a long footprint actually represents a disome.
+    """
+    return _read_end_for_anchor(READ_ENDS[name], anchor, read_length)
+
+
+def _site_for_anchor(anchor: str) -> str:
+    _validate_anchor(anchor)
+    return "A" if anchor == "stop" else "P"
+
+
+def _signal_for_anchor(anchor: str) -> str:
+    _validate_anchor(anchor)
+    return "termination" if anchor == "stop" else "initiation"
+
+
+def psite_offset(
+    offset: int, read_end: ReadEnd = DEFAULT_READ_END, anchor: str = "start"
+) -> int:
+    """Convert a calibrated offset into the corresponding P-site distance.
+
+    Stop profiles calibrate the A-site: a 5' P-site distance is A - 3, and a 3'
+    P-site distance is A + 3. Start profiles already calibrate the P-site.
+    """
+    _validate_anchor(anchor)
+    return offset - read_end.sign * 3 if anchor == "stop" else offset
+
 
 # A read length carrying less than this share of the library is too sparse to
 # base an offset on, however clean its profile looks.
@@ -96,6 +169,19 @@ FRAME_TIE_MARGIN = 0.05
 # Region treated as background when judging how far the peak stands out. Taken
 # well upstream of the start codon, where little initiation signal is expected.
 BACKGROUND_WINDOW = (-100, -30)
+STOP_BACKGROUND_WINDOW = (-100, -40)
+
+
+def _background_window(anchor: str) -> tuple[int, int]:
+    return STOP_BACKGROUND_WINDOW if anchor == "stop" else BACKGROUND_WINDOW
+
+
+def _body_mask(psite_positions: np.ndarray, body_length: int, anchor: str) -> np.ndarray:
+    """Exclude the boundary peak and select coding-body positions."""
+    if anchor == "stop":
+        return (psite_positions >= -15 - body_length) & (psite_positions < -15)
+    return (psite_positions >= 15) & (psite_positions < 15 + body_length)
+
 
 # How far above the background a peak must stand, in background standard
 # deviations. A ratio alone is not enough: in a shallow profile the largest
@@ -129,13 +215,15 @@ class ReadLengthScore:
 
     usable: bool
     reasons: list[str] = field(default_factory=list)
+    anchor: str = "start"
+    site: str = "P"
 
     @property
     def score(self) -> float:
-        """Combined desirability of this read length for TIS calling.
+        """Combined desirability of this read length for boundary profiling.
 
-        Sharpness of the initiation peak dominates, because that is the signal a
-        TIS caller acts on and the one that survives in bacterial data. Frame
+        Sharpness of the boundary peak dominates, because that is the signal
+        used for boundary profiling and the one that survives in bacterial data. Frame
         bias contributes when present. Abundance breaks ties, on a log scale so
         that a very deep read length cannot outweigh a clean one.
         """
@@ -153,7 +241,7 @@ def _window_slice(coordinates: np.ndarray, low: int, high: int) -> np.ndarray:
 
 @dataclass
 class PeakEstimate:
-    """The initiation peak of one profile, and how convincing it is."""
+    """The boundary peak of one profile, and how convincing it is."""
 
     offset: int | None
     peak_height: float
@@ -176,13 +264,15 @@ def estimate_offset(
     coordinates: np.ndarray,
     read_end: ReadEnd = DEFAULT_READ_END,
     search_window: tuple[int, int] | None = None,
+    anchor: str = "start",
 ) -> PeakEstimate:
-    """Locate the initiation peak and describe how well it stands out.
+    """Locate a start/P-site or stop/A-site peak and assess its evidence.
 
-    The offset is the positive distance from the mapped read end to the start
-    codon, and is None when the tallest value in the search window does not fall
-    at a plausible offset.
+    Coordinates must be relative to the first base of the chosen codon. The
+    offset is the positive distance from the mapped read end to that codon, and
+    is None when the search-window maximum falls at an implausible offset.
     """
+    read_end = _read_end_for_anchor(read_end, anchor)
     profile = np.asarray(profile, dtype=float)
     coordinates = np.asarray(coordinates)
     search_window = search_window or read_end.search_window
@@ -196,7 +286,11 @@ def estimate_offset(
     peak_position = int(search_positions[int(np.argmax(search_values))])
     peak_height = float(search_values.max())
 
-    background_mask = _window_slice(coordinates, *BACKGROUND_WINDOW)
+    background_mask = _window_slice(coordinates, *_background_window(anchor))
+    if anchor == "stop":
+        # Long 5' termination footprints can put the calibrated peak inside
+        # the nominal upstream body window. Do not count it as background.
+        background_mask &= ~search
     if background_mask.any():
         background_values = profile[background_mask]
         # Median for the ratio, since it is robust to a neighbouring gene
@@ -230,18 +324,20 @@ def frame_fractions(
     offset: int,
     read_end: ReadEnd = DEFAULT_READ_END,
     body_length: int = 90,
+    anchor: str = "start",
 ) -> tuple[float, float, float]:
     """Share of P-sites falling in each reading frame inside the ORF body.
 
-    Frame 0 is the frame of the start codon. The first codons are skipped: the
-    initiation peak itself is far larger than the elongation signal and would
-    otherwise decide the answer on its own.
+    Frame 0 is the frame of the first base of the selected boundary codon. The
+    body lies downstream of a start or upstream of a stop, excluding the peak.
+    Stop-calibrated A-site offsets are converted to P-site positions first.
     """
+    _validate_anchor(anchor)
     profile = np.asarray(profile, dtype=float)
     coordinates = np.asarray(coordinates)
 
-    psite_positions = coordinates + read_end.psite_shift(offset)
-    body = (psite_positions >= 15) & (psite_positions < 15 + body_length)
+    psite_positions = coordinates + read_end.site_shift(psite_offset(offset, read_end, anchor))
+    body = _body_mask(psite_positions, body_length, anchor)
     if not body.any():
         return (0.0, 0.0, 0.0)
 
@@ -262,6 +358,7 @@ def periodicity_score(
     offset: int,
     read_end: ReadEnd = DEFAULT_READ_END,
     body_length: int = 90,
+    anchor: str = "start",
 ) -> float:
     """Strength of the 3-nt component of the elongation signal, in [0, 1].
 
@@ -269,11 +366,12 @@ def periodicity_score(
     nucleotides, which is less sensitive to a single dominant codon than the
     frame fractions are.
     """
+    _validate_anchor(anchor)
     profile = np.asarray(profile, dtype=float)
     coordinates = np.asarray(coordinates)
 
-    psite_positions = coordinates + read_end.psite_shift(offset)
-    body = (psite_positions >= 15) & (psite_positions < 15 + body_length)
+    psite_positions = coordinates + read_end.site_shift(psite_offset(offset, read_end, anchor))
+    body = _body_mask(psite_positions, body_length, anchor)
     values = profile[body]
     if values.size < 9 or values.sum() <= 0:
         return 0.0
@@ -299,8 +397,15 @@ def score_read_lengths(
     coordinates: np.ndarray,
     read_totals: dict[int, int] | None = None,
     read_end: ReadEnd = DEFAULT_READ_END,
+    anchor: str = "start",
 ) -> list[ReadLengthScore]:
-    """Score every read length in a start-codon metagene profile."""
+    """Score every read length in the selected boundary's metagene profile.
+
+    The historical ``start_profiles`` argument also accepts stop profiles when
+    ``anchor='stop'``; coordinates must then use the first stop base as zero.
+    """
+    read_end = _read_end_for_anchor(read_end, anchor)
+    signal = _signal_for_anchor(anchor)
     if read_totals is None:
         read_totals = {
             length: int(np.asarray(profile).sum()) for length, profile in start_profiles.items()
@@ -313,7 +418,9 @@ def score_read_lengths(
         total = int(read_totals.get(read_length, 0))
         abundance = total / library_total
 
-        estimate = estimate_offset(profile, coordinates, read_end)
+        length_read_end = _read_end_for_anchor(read_end, anchor, read_length)
+        estimate = estimate_offset(profile, coordinates, length_read_end, anchor=anchor)
+        offset = estimate.offset
 
         reasons: list[str] = []
         usable = True
@@ -324,17 +431,27 @@ def score_read_lengths(
                 f"carries only {abundance:.2%} of the library, below the {MIN_ABUNDANCE_FRACTION:.1%} minimum"
             )
 
+        if offset is not None and offset >= read_length:
+            usable = False
+            reasons.append(
+                f"the estimated {_site_for_anchor(anchor)}-site offset {offset} nt lies "
+                f"outside a {read_length}-nt read (offset must be less than read length)"
+            )
+            offset = None
+
         if estimate.offset is None:
             usable = False
             reasons.append(
-                "no initiation peak within "
-                f"{read_end.plausible[0]}-{read_end.plausible[1]} nt of the start codon"
+                f"no {signal} peak within "
+                f"{length_read_end.plausible[0]}-{length_read_end.plausible[1]} nt of the {anchor} codon"
             )
+
+        if offset is None:
             fractions = (0.0, 0.0, 0.0)
             periodicity = 0.0
         else:
-            fractions = frame_fractions(profile, coordinates, estimate.offset, read_end)
-            periodicity = periodicity_score(profile, coordinates, estimate.offset, read_end)
+            fractions = frame_fractions(profile, coordinates, offset, read_end, anchor=anchor)
+            periodicity = periodicity_score(profile, coordinates, offset, read_end, anchor=anchor)
             if not estimate.is_significant:
                 usable = False
                 reasons.append(
@@ -348,7 +465,7 @@ def score_read_lengths(
                 read_length=read_length,
                 total_reads=total,
                 abundance=abundance,
-                offset=estimate.offset,
+                offset=offset,
                 peak_height=estimate.peak_height,
                 background=estimate.background,
                 sharpness=estimate.sharpness,
@@ -358,6 +475,8 @@ def score_read_lengths(
                 periodicity=periodicity,
                 usable=usable,
                 reasons=reasons,
+                anchor=anchor,
+                site=_site_for_anchor(anchor),
             )
         )
 
@@ -371,7 +490,7 @@ def score_read_lengths(
 
 @dataclass
 class Recommendation:
-    """A suggested TIS caller setup, and how much to trust it."""
+    """Suggested boundary profiling parameters, and how much to trust them."""
 
     read_lengths: list[int]
     offsets: dict[int, int]
@@ -386,6 +505,8 @@ class Recommendation:
     confidence: str
     rationale: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    anchor: str = "start"
+    site: str = "P"
 
     @property
     def has_recommendation(self) -> bool:
@@ -396,10 +517,10 @@ class Recommendation:
 
 
 def shift_profile(profile: np.ndarray, offset: int) -> np.ndarray:
-    """Shift a profile so that it is indexed by P-site rather than read end.
+    """Shift a profile from read-end coordinates onto a calibrated site.
 
-    A read end at coordinate c belongs to a ribosome whose P-site is at c +
-    offset, so the profile moves `offset` positions to the right, zero filled.
+    A read end at c is attributed to c + offset. The profile moves ``offset``
+    positions to the right, zero filled. The offset is signed here.
     """
     profile = np.asarray(profile, dtype=float)
     if offset == 0:
@@ -422,7 +543,7 @@ def pool_profiles(
     pooled = None
     for read_length in read_lengths:
         shifted = shift_profile(
-            profiles[read_length], read_end.psite_shift(offsets[read_length])
+            profiles[read_length], read_end.site_shift(offsets[read_length])
         )
         pooled = shifted if pooled is None else pooled + shifted
     if pooled is None:
@@ -436,22 +557,24 @@ def _evaluate_combination(
     offsets: dict[int, int],
     read_lengths: list[int],
     read_end: ReadEnd = DEFAULT_READ_END,
+    anchor: str = "start",
 ) -> tuple[float, tuple[float, float, float], float]:
     """Sharpness, frame fractions and periodicity of a pooled set of lengths."""
     pooled = pool_profiles(profiles, offsets, read_lengths, read_end)
 
-    # After offset correction the initiation peak sits at coordinate 0.
-    at_start = pooled[coordinates == 0]
-    peak = float(at_start[0]) if at_start.size else 0.0
+    # Offset correction aligns the selected boundary's P- or A-site at zero.
+    at_boundary = pooled[coordinates == 0]
+    peak = float(at_boundary[0]) if at_boundary.size else 0.0
 
-    background_mask = _window_slice(coordinates, *BACKGROUND_WINDOW)
+    background_mask = _window_slice(coordinates, *_background_window(anchor))
     background = float(np.median(pooled[background_mask])) if background_mask.any() else 0.0
     reference = background if background > 0 else float(pooled.mean())
     sharpness = float(peak / reference) if reference > 0 else 0.0
 
-    # The pooled profile is already indexed by P-site, so no further shift.
-    fractions = frame_fractions(pooled, coordinates, 0, read_end)
-    periodicity = periodicity_score(pooled, coordinates, 0, read_end)
+    # A-site-aligned termination profiles still need the 3-nt P-site correction
+    # when evaluating coding-body evidence.
+    fractions = frame_fractions(pooled, coordinates, 0, read_end, anchor=anchor)
+    periodicity = periodicity_score(pooled, coordinates, 0, read_end, anchor=anchor)
     return sharpness, fractions, periodicity
 
 
@@ -460,37 +583,40 @@ def recommend_read_lengths(
     start_profiles: dict[int, np.ndarray],
     coordinates: np.ndarray,
     read_end: ReadEnd = DEFAULT_READ_END,
+    anchor: str = "start",
 ) -> Recommendation:
-    """Choose the read lengths and offsets a TIS caller should be given.
+    """Choose read lengths and calibrated-site offsets for boundary profiling.
 
     Read lengths are added greedily, best first, and a length is kept only if it
-    improves the pooled initiation peak. That is preferable to taking every
+    improves the pooled boundary peak. That is preferable to taking every
     usable length: a length with a marginal peak dilutes the signal even though
     it passes on its own.
     """
+    read_end = _read_end_for_anchor(read_end, anchor)
+    signal = _signal_for_anchor(anchor)
     coordinates = np.asarray(coordinates)
     usable = sorted([s for s in scores if s.usable], key=lambda s: s.score, reverse=True)
 
     if not usable:
-        return _no_recommendation(scores, read_end)
+        return _no_recommendation(scores, read_end, anchor)
 
     offsets = {s.read_length: s.offset for s in usable}
     total_reads = sum(s.total_reads for s in scores) or 1
 
     selected = [usable[0].read_length]
     best_sharpness, best_fractions, best_periodicity = _evaluate_combination(
-        start_profiles, coordinates, offsets, selected, read_end
+        start_profiles, coordinates, offsets, selected, read_end, anchor
     )
 
     rationale = [
-        f"read length {usable[0].read_length} has the strongest initiation peak "
+        f"read length {usable[0].read_length} has the strongest {signal} peak "
         f"({usable[0].sharpness:.1f}x background at offset {usable[0].offset})"
     ]
 
     for candidate in usable[1:]:
         trial = selected + [candidate.read_length]
         sharpness, fractions, periodicity = _evaluate_combination(
-            start_profiles, coordinates, offsets, trial, read_end
+            start_profiles, coordinates, offsets, trial, read_end, anchor
         )
         if sharpness > best_sharpness * (1 + MIN_RELATIVE_GAIN):
             selected = trial
@@ -507,7 +633,9 @@ def recommend_read_lengths(
             )
 
     covered = sum(s.total_reads for s in scores if s.read_length in selected) / total_reads
-    confidence, warnings = _assess_confidence(best_sharpness, best_fractions, best_periodicity, covered)
+    confidence, warnings = _assess_confidence(
+        best_sharpness, best_fractions, best_periodicity, covered, anchor
+    )
 
     return Recommendation(
         read_lengths=sorted(selected),
@@ -521,31 +649,46 @@ def recommend_read_lengths(
         confidence=confidence,
         rationale=rationale,
         warnings=warnings,
+        anchor=anchor,
+        site=_site_for_anchor(anchor),
     )
 
 
 def _no_recommendation(
-    scores: list[ReadLengthScore], read_end: ReadEnd = DEFAULT_READ_END
+    scores: list[ReadLengthScore], read_end: ReadEnd = DEFAULT_READ_END,
+    anchor: str = "start",
 ) -> Recommendation:
     """Explain why no read length is usable instead of inventing a setup."""
+    signal = _signal_for_anchor(anchor)
+    target = "TTS profiling" if anchor == "stop" else "TIS caller"
     warnings = [
-        "No read length shows a usable translation initiation signal, so no TIS caller "
+        f"No read length shows a usable translation {signal} signal, so no {target} "
         "setup is suggested."
     ]
     if not scores:
         warnings.append("No reads were found in the metagene window at all.")
     else:
         best = max(scores, key=lambda s: s.sharpness, default=None)
-        if best is not None and best.sharpness > 0:
+        if best is not None and best.sharpness > 0 and (
+            best.sharpness < MIN_PEAK_RATIO or best.z_score < MIN_PEAK_Z
+        ):
             warnings.append(
                 f"The closest candidate was read length {best.read_length} at "
                 f"{best.sharpness:.1f}x background ({best.z_score:.1f} standard deviations), "
                 f"below the required {MIN_PEAK_RATIO:.0f}x and {MIN_PEAK_Z:.0f}."
             )
+        elif best is not None and best.reasons:
+            warnings.append(
+                f"The closest candidate was read length {best.read_length}: "
+                + "; ".join(best.reasons)
+                + "."
+            )
         warnings.append(
             "Common causes: the library is RNA-seq rather than Ribo-seq, the reads are "
-            "dominated by rRNA or tRNA, or the annotation start codons are inaccurate."
+            f"dominated by rRNA or tRNA, or the annotated {anchor} codons are inaccurate."
         )
+    if anchor == "stop":
+        warnings.append(_termination_caveat())
     return Recommendation(
         read_lengths=[],
         offsets={},
@@ -558,6 +701,8 @@ def _no_recommendation(
         confidence="none",
         rationale=[],
         warnings=warnings,
+        anchor=anchor,
+        site=_site_for_anchor(anchor),
     )
 
 
@@ -566,27 +711,29 @@ def _assess_confidence(
     fractions: tuple[float, float, float],
     periodicity: float,
     covered: float,
+    anchor: str = "start",
 ) -> tuple[str, list[str]]:
     """Grade a recommendation, and say which evidence it rests on."""
     frame_bias = max(fractions) if any(fractions) else 0.0
     in_frame = fractions[0] if any(fractions) else 0.0
     warnings: list[str] = []
+    signal = _signal_for_anchor(anchor)
 
     if sharpness >= 5.0 and frame_bias >= 0.5:
         confidence = "high"
     elif sharpness >= 5.0:
         confidence = "medium"
         warnings.append(
-            f"The initiation peak is clear ({sharpness:.1f}x) but the reading frame bias is "
+            f"The {signal} peak is clear ({sharpness:.1f}x) but the reading frame bias is "
             f"weak ({frame_bias:.0%} in the dominant frame). This is common in bacterial "
-            "Ribo-seq; the offsets rest on the start-codon peak alone."
+            f"Ribo-seq; the offsets rest on the {anchor}-codon peak alone."
         )
     elif sharpness >= 3.0:
         confidence = "medium"
     else:
         confidence = "low"
         warnings.append(
-            f"The pooled initiation peak is only {sharpness:.1f}x background. Treat the "
+            f"The pooled {signal} peak is only {sharpness:.1f}x background. Treat the "
             "offsets as provisional and inspect the metagene plots before relying on them."
         )
 
@@ -594,7 +741,7 @@ def _assess_confidence(
         dominant = int(np.argmax(fractions))
         warnings.append(
             f"The dominant reading frame is {dominant}, not 0. The estimated offsets may be "
-            f"off by {dominant} nt, or the annotated start codons may be shifted."
+            f"off by {dominant} nt, or the annotated {anchor} codons may be shifted."
         )
 
     if covered < 0.3:
@@ -606,10 +753,21 @@ def _assess_confidence(
     if periodicity < 0.15 and confidence != "low":
         warnings.append(
             f"Three-nucleotide periodicity is weak ({periodicity:.0%} of spectral power). "
-            "Sub-codon assignment will be unreliable even though the initiation signal is good."
+            f"Sub-codon assignment will be unreliable even though the {signal} signal is good."
         )
 
+    if anchor == "stop":
+        warnings.append(_termination_caveat())
+
     return confidence, warnings
+
+
+def _termination_caveat() -> str:
+    return (
+        "Termination peaks calibrate the stop codon in the A-site; the P-site is 3 nt "
+        "upstream. Queued ribosomes, long footprints, and stop-codon readthrough can "
+        "produce additional peaks; inspect the stop metagene before using the offsets."
+    )
 
 
 # --------------------------------------------------------------------------
@@ -698,8 +856,9 @@ def compare_read_ends(
     profiles_by_end: dict[str, dict[int, np.ndarray]],
     coordinates: np.ndarray,
     read_totals: dict[int, int] | None = None,
+    anchor: str = "start",
 ) -> tuple[EndComparison | None, list[EndComparison]]:
-    """Score every read end and pick the one with the better initiation signal.
+    """Score every read end and choose one for the selected boundary signal.
 
     Which end is sharper is organism and protocol dependent, so both are analysed
     and the loser is reported alongside the winner rather than discarded: seeing
@@ -708,16 +867,17 @@ def compare_read_ends(
     Returns (best, all_comparisons). `best` is None when no end yields a usable
     recommendation.
     """
+    _validate_anchor(anchor)
     comparisons = []
     for name, profiles in profiles_by_end.items():
-        read_end = READ_ENDS[name]
+        read_end = read_end_for_anchor(name, anchor)
         if not profiles:
             comparisons.append(
-                EndComparison(name, [], _no_recommendation([], read_end))
+                EndComparison(name, [], _no_recommendation([], read_end, anchor))
             )
             continue
-        scores = score_read_lengths(profiles, coordinates, read_totals, read_end)
-        recommendation = recommend_read_lengths(scores, profiles, coordinates, read_end)
+        scores = score_read_lengths(profiles, coordinates, read_totals, read_end, anchor)
+        recommendation = recommend_read_lengths(scores, profiles, coordinates, read_end, anchor)
         comparisons.append(EndComparison(name, scores, recommendation))
 
     comparisons.sort(key=functools.cmp_to_key(prefer_read_end))
@@ -725,10 +885,13 @@ def compare_read_ends(
     return best, comparisons
 
 
-def describe_end_choice(best: EndComparison | None, comparisons: list[EndComparison]) -> list[str]:
+def describe_end_choice(
+    best: EndComparison | None, comparisons: list[EndComparison], anchor: str = "start"
+) -> list[str]:
     """Explain, in words, why one read end was preferred over the other."""
+    signal = _signal_for_anchor(anchor)
     if best is None:
-        return ["Neither read end produced a usable initiation signal."]
+        return [f"Neither read end produced a usable {signal} signal."]
 
     spread = best.offset_spread
     if spread is not None:

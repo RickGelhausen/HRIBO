@@ -17,7 +17,7 @@ For a typical analysis, review the results in this order:
    Biological replicates should normally resemble each other, while unexpected
    grouping can reveal a sample-label or quality problem.
 3. Review read-length distributions and start/stop metagene profiles for each
-   Ribo-like library.  Read the TIS-advisor confidence and warnings together
+   Ribo-like library.  Read the TIS/TTS-advisor confidence and warnings together
    with its recommended offsets.
 4. Load the final BAM, BigWig, and GFF files in a genome browser to inspect
    individual loci.
@@ -71,7 +71,8 @@ Primary result map
        source tables, and figures.
    * - ``tis_advisor``
      - ``tis_advice/<library>/tis_recommendation.html``
-     - Recommended mapped end, usable read lengths, per-length P-site offsets,
+     - Recommended mapped end, usable read lengths, per-length P-site offsets
+       for RIBO/TIS or A-site offsets for TTS,
        confidence, warnings, evidence, advisory DeepRibo A-site guidance for
        RIBO libraries, and machine-readable companions.
    * - ``correlation``
@@ -202,8 +203,8 @@ RPKM values use the mapped total across the complete library, including all
 contigs.  A direct ``*_TE`` value is the Ribo-like RPKM divided by its matched
 RNA-like RPKM.  It is a ratio, not a log2 fold change.
 
-Metagene profiles and TIS advice
---------------------------------
+Metagene profiles and TIS/TTS advice
+-------------------------------------
 
 ``metageneprofiling/read_length_fractions.html`` compares fragment-length
 composition across libraries.  Each per-library directory then contains
@@ -211,12 +212,15 @@ start- and stop-centred profiles for the requested read ends, normalizations,
 and plot formats.  Use :doc:`metagene-profiling` to interpret the axes,
 normalizations, peaks, and valid zero profiles.
 
-For TIS advice, begin with
+For TIS/TTS advice, begin with
 ``tis_advice/<library>/tis_recommendation.html``.  It provides the human-facing
 recommendation and diagnostic plots.  The adjacent JSON preserves the complete
 machine-readable result, and ``read_length_evidence.tsv`` provides one row per
-evaluated length.  No recommendation can be a valid result when the data do not
-contain a trustworthy initiation peak; see :doc:`tis-advisor`.
+evaluated length.  RIBO/TIS libraries are evaluated at starts for P-site
+offsets; TTS libraries are evaluated at stops for A-site offsets.  JSON and TSV
+identify the anchor and site explicitly, alongside converted P-/A-site
+distances.  No recommendation can be a valid result when the data do not
+contain a trustworthy peak at the expected boundary; see :doc:`tis-advisor`.
 
 ORF predictions
 ---------------

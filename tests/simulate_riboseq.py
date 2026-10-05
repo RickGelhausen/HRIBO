@@ -1,9 +1,10 @@
-"""Simulate a Ribo-seq BAM with a known P-site offset, for end-to-end testing.
+"""Simulate a Ribo-seq BAM with a known ribosomal site, for end-to-end testing.
 
 Reads are placed so that their 5' end sits PLANTED_OFFSET nt upstream of each
 annotated start codon (the initiation peak), plus an elongation background along
 the ORF body, plus uniform noise. Read lengths in GOOD_LENGTHS get the signal;
-the rest get noise only.
+the rest get noise only. ``peak="stop"`` instead plants a termination peak with
+the A-site on the first base of the annotated stop codon.
 """
 
 import random
@@ -16,6 +17,9 @@ PLANTED_OFFSET = 12
 # Used when anchoring on the 3' end: the 3' end sits this far downstream of the
 # start codon, so the 5' end is the one that spreads out by read length.
 PLANTED_THREE_PRIME_OFFSET = 15
+# A terminating ribosome has its A-site one codon downstream of its P-site.
+PLANTED_TTS_A_SITE_OFFSET = PLANTED_OFFSET + 3
+PLANTED_TTS_THREE_PRIME_A_SITE_OFFSET = PLANTED_THREE_PRIME_OFFSET - 3
 GOOD_LENGTHS = {28, 29, 30}
 ALL_LENGTHS = list(range(24, 36))
 CONTIGS = {"NC_000913.3": 60000, "pPlasmid1": 20000}
@@ -57,13 +61,29 @@ def write_genome(path):
 
 
 def write_bam(path, periodic=True, signal=True, seed=0, anchor="fiveprime",
-              three_prime_offset=PLANTED_THREE_PRIME_OFFSET):
-    """anchor: which read end is placed at a fixed distance from the start codon.
+              three_prime_offset=None, peak="start", five_prime_offset=None,
+              strands=("+", "-"), body_count=64, noise=True):
+    """Plant a start P-site or stop A-site peak at a defined read end.
 
     "fiveprime" mimics a protocol where the 5' end is precisely defined, so the 3'
     end spreads out by read length. "threeprime" is the opposite, which is the
     case in many bacteria where nuclease digestion trims the 3' end sharply.
+    Stop-codon coordinates are calculated directly from GFF CDS bounds, without
+    using the advisor's metagene axis or offset conversion code.
     """
+    if peak not in {"start", "stop"}:
+        raise ValueError("peak must be 'start' or 'stop'")
+    if anchor not in {"fiveprime", "threeprime"}:
+        raise ValueError("anchor must be 'fiveprime' or 'threeprime'")
+    if five_prime_offset is None:
+        five_prime_offset = (
+            PLANTED_TTS_A_SITE_OFFSET if peak == "stop" else PLANTED_OFFSET
+        )
+    if three_prime_offset is None:
+        three_prime_offset = (
+            PLANTED_TTS_THREE_PRIME_A_SITE_OFFSET
+            if peak == "stop" else PLANTED_THREE_PRIME_OFFSET
+        )
     rng = random.Random(seed)
     header = {
         "HD": {"VN": "1.6", "SO": "coordinate"},
@@ -72,47 +92,53 @@ def write_bam(path, periodic=True, signal=True, seed=0, anchor="fiveprime",
     records = []
 
     for name, feature, start, end, strand, _ in genes():
-        if feature != "CDS":
+        if feature != "CDS" or strand not in strands:
             continue
         # GFF is 1-based inclusive; pysam positions are 0-based.
         cds_start = start - 1
         cds_end = end - 1
+        if peak == "stop":
+            # The stop codon occupies the final three bases in transcript order;
+            # its FIRST base is end-2 on '+' and beginning+2 on '-'.
+            target = cds_end - 2 if strand == "+" else cds_start + 2
+        else:
+            target = cds_start if strand == "+" else cds_end
+
+        def read_position(site, read_length, read_end):
+            if read_end == "fiveprime":
+                if strand == "+":
+                    return site - five_prime_offset
+                return site + five_prime_offset - read_length + 1
+            if strand == "+":
+                return site + three_prime_offset - read_length + 1
+            return site - three_prime_offset
 
         for read_length in ALL_LENGTHS:
             carries_signal = signal and read_length in GOOD_LENGTHS
 
             if carries_signal:
-                # initiation peak, anchored on whichever end the protocol defines
+                # Boundary peak, anchored on whichever end the protocol defines.
                 for _ in range(rng.randint(14, 22)):
-                    if anchor == "fiveprime":
-                        # 5' end sits PLANTED_OFFSET upstream of the start codon
-                        if strand == "+":
-                            pos = cds_start - PLANTED_OFFSET
-                        else:
-                            pos = cds_end + PLANTED_OFFSET - read_length + 1
-                    else:
-                        # 3' end sits three_prime_offset downstream of it
-                        if strand == "+":
-                            pos = cds_start + three_prime_offset - read_length + 1
-                        else:
-                            pos = cds_end - three_prime_offset
+                    pos = read_position(target, read_length, anchor)
                     records.append((name, pos, read_length, strand))
 
                 # elongation signal along the body
-                for codon in range(6, 70):
+                for codon in range(6, 6 + body_count):
                     if periodic and rng.random() > 0.55:
                         continue
                     if not periodic and rng.random() > 0.18:
                         continue
                     body = codon * 3 + (0 if periodic else rng.randint(0, 2))
-                    if strand == "+":
-                        pos = cds_start + body - PLANTED_OFFSET
-                    else:
-                        pos = cds_end - body + PLANTED_OFFSET - read_length + 1
+                    if peak == "stop":
+                        body = -body
+                    site = target + body if strand == "+" else target - body
+                    # Preserve the legacy start fixture's elongation background.
+                    body_read_end = anchor if peak == "stop" else "fiveprime"
+                    pos = read_position(site, read_length, body_read_end)
                     records.append((name, pos, read_length, strand))
 
             # uniform noise across the whole locus, for every read length
-            for _ in range(rng.randint(2, 6)):
+            for _ in range(rng.randint(2, 6) if noise else 0):
                 pos = rng.randint(cds_start - 150, cds_end + 150)
                 records.append((name, pos, read_length, strand))
 

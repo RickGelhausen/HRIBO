@@ -26,7 +26,7 @@ STAGE_DESCRIPTIONS = {
     "genome_tracks": "start, stop, alternative start codon and RBS GFF tracks",
     "readcounts": "read count and annotation spreadsheets",
     "metagene": "metagene profiles and read length statistics",
-    "tis_advisor": "read length and P-site offset advice for a TIS caller",
+    "tis_advisor": "read length and P-site (TIS) or A-site (TTS) offset advice",
     "correlation": "the Spearman correlation heatmap between libraries",
     "pca": "the PCA plot of the read counts",
     "predictions": "annotation-independent ORF predictions and a combined updated annotation",

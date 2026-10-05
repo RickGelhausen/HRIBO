@@ -99,10 +99,10 @@ Work backwards through the report and logs:
 Correct the input or configuration, then rerun with ``--rerun-incomplete``.
 Do not insert a fake mapped-read total into a generated summary.
 
-Empty metagene or TIS results
------------------------------
+Empty metagene or TIS/TTS results
+-----------------------------------
 
-An all-zero metagene profile or ``confidence: none`` TIS recommendation can be
+An all-zero metagene profile or ``confidence: none`` TIS/TTS recommendation can be
 a valid result rather than a workflow failure.  Confirm that the rule completed
 without an error, then inspect:
 
@@ -111,7 +111,7 @@ without an error, then inspect:
 * the metagene overlap, length, and RPKM filters;
 * annotation start/stop positions; and
 * whether the library preparation is expected to produce a sharp initiation
-  signal.
+  (RIBO/TIS) or termination (TTS) signal.
 
 See :doc:`metagene-profiling` and :doc:`tis-advisor` before widening filters or
 assigning an offset manually.

@@ -93,7 +93,8 @@ predictionSettings:
   # ribosome preparations and nuclease digestion protocols shift the footprint,
   # so check it rather than assuming it transfers.
   #
-  # The TIS advisor measures P-site offsets from both 5' and 3' read ends. For
+  # The TIS/TTS advisor measures P-site offsets at starts and A-site offsets at
+  # stops, from both 5' and 3' read ends. For
   # RIBO libraries, its report may suggest a separate 3'-to-A-site DeepRibo
   # value when the usable 3' read lengths agree. It does not change this setting
   # automatically. Compare advice across libraries before changing this one
@@ -157,18 +158,19 @@ metageneSettings:
   # order. Short lists cycle; an empty list uses the color-blind-friendly theme.
   colorList: []
 
-# TIS caller advice
-##################
+# TIS/TTS peak advice
+#####################
 
 tisAdvisorSettings:
   # Whether the advisor runs at all is decided by the "tis_advisor" stage in
-  # workflowSettings.stages below. It suggests read lengths and P-site offsets
-  # for a TIS caller such as ORFBounder. For RIBO libraries, it may also suggest
-  # a DeepRibo A-site offset for manual review.
+  # workflowSettings.stages below. RIBO/TIS use start peaks and P-site offsets;
+  # TTS uses stop peaks and A-site offsets, with derived P-site distances.
+  # For RIBO libraries, it may also suggest a DeepRibo A-site offset for review.
 
-  # Read lengths examined when looking for an initiation signal. Keep this wider
+  # Read lengths examined when looking for the library's boundary signal. Keep this wider
   # than the metagene readLengths so that a usable length outside the expected
   # range is still found.
+  # Include longer lengths explicitly for TTS disome footprints (e.g. "22-80").
   readLengths: "22-40"
 
   # Read ends to evaluate. Both are analysed by default and the one whose offsets
@@ -204,7 +206,7 @@ workflowSettings:
     - genome_tracks            # start, stop, alternative start codon and RBS tracks
     - readcounts               # read count and annotation spreadsheets
     - metagene                 # metagene profiles and read length statistics
-    - tis_advisor              # read length and P-site offset advice for a TIS caller
+    - tis_advisor              # start/P-site (RIBO/TIS) or stop/A-site (TTS) advice
     - correlation              # the Spearman correlation heatmap between libraries
     - pca                      # the PCA plot of the read counts
     - predictions              # ORF predictions plus a combined updated annotation

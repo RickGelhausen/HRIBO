@@ -62,8 +62,9 @@ are:
   condition on the left.
 * ``predictionSettings.deepriboASiteOffset`` explicitly sets the distance from
   the 3' read end to the A-site.  It is not the P-site offset reported by the
-  TIS advisor.
-* Metagene and TIS-advisor read lengths, mapping methods, filters, and plotting
+  advisor's RIBO/TIS recommendation.  TTS advice instead measures A-site
+  offsets at stop codons, separately per read length.
+* Metagene and TIS/TTS-advisor read lengths, mapping methods, filters, and plotting
   choices are explicit in the configuration.
 
 The sample-sheet headers remain:

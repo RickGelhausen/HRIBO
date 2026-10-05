@@ -289,6 +289,9 @@ properties:
 
   tisAdvisorSettings:
     type: object
+    description: >
+      Read lengths and ends for start/P-site advice in RIBO/TIS libraries or
+      stop/A-site advice in TTS libraries. Include disome lengths explicitly.
     required: [readLengths, mappingMethods]
     additionalProperties: false
     properties:

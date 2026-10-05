@@ -38,7 +38,8 @@ Stage catalogue
      - Which read lengths and start/stop patterns characterize each library?
      - Interactive reports, figures, and workbooks in ``metageneprofiling/``.
    * - ``tis_advisor``
-     - Which mapped end, read lengths, and P-site offsets have usable evidence?
+     - Which mapped end, read lengths, and start/P-site or stop/A-site offsets
+       have usable evidence for this library type?
      - HTML, JSON, and TSV reports in ``tis_advice/<library>/``.
    * - ``correlation``
      - Do related libraries have similar binned genomic coverage profiles?

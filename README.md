@@ -9,7 +9,7 @@
 
 HRIBO (High-throughput annotation by Ribo-seq) is a reproducible Snakemake
 workflow for bacterial ribosome-profiling data. It provides read processing and
-quality control, strand-aware coverage tracks, metagene analysis and TIS advice,
+quality control, strand-aware coverage tracks, metagene analysis and TIS/TTS advice,
 feature counting, Reparation and optional DeepRibo ORF prediction, matched
 RNA/Ribo differential analysis, and consolidated result tables.
 
@@ -54,7 +54,7 @@ requires a valid matched differential-expression design.
 After a typical run, start with `qc/multi/multiqc_report.html` for quality
 control and `auxiliary/overview.xlsx` for the combined feature-level results.
 The selected stages also produce final BAMs, BigWig/GFF browser tracks,
-metagene and TIS reports, ORF prediction workbooks, and differential-analysis
+metagene and TIS/TTS reports, ORF prediction workbooks, and differential-analysis
 tables as applicable.
 
 For SLURM, activate the launcher environment, configure
@@ -73,6 +73,7 @@ Start with:
 - [configuration](docs/configuration.rst)
 - [choosing analyses and results](docs/stages.rst)
 - [understanding the results](docs/outputs.rst)
+- [TIS/TTS peak and offset advice](docs/tis-advisor.rst)
 - [result-table reference](docs/table-reference.rst)
 - [troubleshooting](docs/troubleshooting.rst)
 - [migration from HRIBO 1.8](docs/migration-1.8-to-2.0.rst)

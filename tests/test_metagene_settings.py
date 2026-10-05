@@ -529,7 +529,9 @@ def snakemake_command():
     pytest.skip("Snakemake is not available for the metagene rule dry-run")
 
 
+@pytest.mark.parametrize("library_method", ["RIBO", "TIS", "TTS"])
 def test_metagene_settings_render_safely_in_a_dry_run(
+    library_method,
     snakemake_command,
     genome_file,
     annotation_file,
@@ -538,9 +540,9 @@ def test_metagene_settings_render_safely_in_a_dry_run(
 ):
     workflow_config = yaml.safe_load((REPO / "config" / "config.yaml").read_text())
     sample_path = tmp_path / "samples.tsv"
-    samples[samples["method"] == "RIBO"].iloc[[0]].fillna("").to_csv(
-        sample_path, sep="\t", index=False
-    )
+    library = samples[samples["method"] == "RIBO"].iloc[[0]].copy()
+    library["method"] = library_method
+    library.fillna("").to_csv(sample_path, sep="\t", index=False)
     workflow_config["biologySettings"].update(
         {
             "genome": str(genome_file),
@@ -582,6 +584,7 @@ def test_metagene_settings_render_safely_in_a_dry_run(
     assert result.returncode == 0, rendered
     assert str(REPO / "workflow" / "scripts" / "tis_advisor.py") in rendered
     assert str(REPO / "workflow" / "scripts" / "metagene_profiling.py") in rendered
+    assert f"--library_type {library_method}" in rendered
     assert rendered.count("--length_cutoff 175") == 2
     assert "--filtering_methods overlap length rpkm" in rendered
     assert re.search(r"--filtering_method(?!s)", rendered) is None

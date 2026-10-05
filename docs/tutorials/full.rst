@@ -3,7 +3,7 @@ Recipe: complete matched analysis
 
 This recipe requests every HRIBO stage for two conditions with two Ribo-seq
 and two matched RNA-seq biological replicates per condition.  It produces QC,
-coverage, metagene and TIS reports, ORF predictions, differential results, and
+coverage, metagene and TIS/TTS reports, ORF predictions, differential results, and
 the combined overview.
 
 Complete the smaller :doc:`minimal` recipe first if the checkout, project
@@ -70,7 +70,8 @@ contrast direction explicitly:
 For ``Treated-Control``, positive log2 fold changes mean higher signal in the
 treated condition.  The shown DeepRibo offset is the template default from its
 published *E. coli* setup; verify it for the organism and protocol.  It is not
-the P-site offset produced by the TIS advisor.  When DeepRibo is enabled, the
+the P-site offset produced by the advisor for these RIBO libraries.  TTS
+libraries instead receive stop-codon A-site advice.  When DeepRibo is enabled, the
 FASTA sequence must use uppercase ``A``, ``C``, ``G``, ``T``, and ``N`` only.
 
 Review all adapter, read-length, metagene-filter, and plotting choices in

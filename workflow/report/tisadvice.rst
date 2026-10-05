@@ -1,9 +1,10 @@
-Recommended read lengths and P-site offsets for a translation initiation site
-caller, derived from this library's own metagene profile.
+Recommended read lengths and site offsets for translation initiation or
+termination peaks, derived from this library's own metagene profiles.
 
 For each read length the report gives the distance from the mapped read end to
-the P-site, how far the initiation peak stands above the upstream background,
-and the reading frame distribution. A recommendation is only made when the
-evidence supports one; when no read length carries a usable initiation signal
-the report says so and explains the likely reasons rather than suggesting a
-setup.
+the first nucleotide of the P-site codon for RIBO/TIS start peaks, or the A-site
+codon for TTS stop peaks. TTS advice includes the derived P-site distances and
+does not provide an initiation-caller configuration. The report also shows
+peak enrichment, reading frames, and periodicity. A recommendation is only
+made when the corresponding boundary signal supports one; otherwise the
+report explains why no setup is suggested.
