@@ -494,6 +494,13 @@ def render_report(library, best, comparisons, figures, asite_advice, path,
         "relative to the calibrated site; the other panel is a diagnostic normalized "
         "by its whole-window median. Hover over the heatmap for exact enrichment and read counts.</p>"
     )
+    parts.append(
+        "<p>The 3-nt FFT score describes the coding-body metagene away from the boundary peak. "
+        "It measures the share of non-DC FFT power in the bin nearest a three-nucleotide period. "
+        "It is not a percentage of correctly assigned reads or a statistical significance test. "
+        "A low score alone does not invalidate bacterial start- or stop-codon offsets; "
+        "window length, coverage shape, and nuclease bias affect this diagnostic.</p>"
+    )
 
     for comparison in comparisons:
         end_label = "5'" if comparison.read_end == "fiveprime" else "3'"
@@ -548,7 +555,7 @@ def _end_comparison_table(comparisons, best, site="P"):
     rows = [
         "<div class='table-wrap'><table><thead><tr>"
         f"<th>Read end</th><th>Chosen</th><th>Read lengths</th><th>{site}-site offsets (nt)</th>"
-        "<th>Peak vs background</th><th>Dominant frame</th><th>Periodicity</th>"
+        "<th>Peak vs background</th><th>Dominant frame</th><th>3-nt FFT score</th>"
         "<th>Library covered</th><th>Confidence</th></tr></thead><tbody>"
     ]
     for comparison in comparisons:
@@ -582,7 +589,7 @@ def _scores_table(scores, site="P"):
         f"<th>Read length</th><th>Share of reads</th><th>{site}-site offset (nt)</th>"
         "<th>Peak read ends</th><th>Background read ends/bin</th>"
         "<th>Peak vs background</th><th>Body read ends</th><th>Frame 0</th>"
-        "<th>Dominant frame</th><th>Periodicity</th>"
+        "<th>Dominant frame</th><th>3-nt FFT score</th>"
         "<th>Usable</th><th>Notes</th></tr></thead><tbody>"
     ]
     for score in scores:

@@ -151,6 +151,8 @@ def psite_offset(
 MIN_ABUNDANCE_FRACTION = 0.005
 MIN_BACKGROUND_POSITIONS = 10
 MIN_FRAME_READS = 30
+# A descriptive notice trigger, not a validated bacterial QC or accuracy cutoff.
+LOW_PERIODICITY_NOTICE_THRESHOLD = 0.15
 
 # A read length joins the recommended set only if it improves the pooled peak by
 # at least this much, relatively. Accepting any improvement at all lets a read
@@ -399,11 +401,12 @@ def periodicity_score(
     anchor: str = "start",
     valid_mask: np.ndarray | None = None,
 ) -> float:
-    """Strength of the 3-nt component of the elongation signal, in [0, 1].
+    """Descriptive 3-nt FFT component of the coding-body metagene, in [0, 1].
 
-    Computed as the share of the spectrum's power that sits at a period of three
-    nucleotides, which is less sensitive to a single dominant codon than the
-    frame fractions are.
+    Divide the squared rFFT magnitude in the bin nearest 1/3 cycles/nt by
+    the sum of squared magnitudes in all non-DC bins, after mean subtraction.
+    This is phase-blind and sensitive to window length and coverage shape;
+    it is not a significance test or an estimate of site-assignment accuracy.
     """
     _validate_anchor(anchor)
     profile = np.asarray(profile, dtype=float)
@@ -847,10 +850,13 @@ def _assess_confidence(
             "read length distribution for a broader usable range."
         )
 
-    if periodicity < 0.15 and confidence != "low":
+    if periodicity < LOW_PERIODICITY_NOTICE_THRESHOLD and confidence != "low":
         warnings.append(
-            f"Three-nucleotide periodicity is weak ({periodicity:.0%} of spectral power). "
-            f"Sub-codon assignment will be unreliable even though the {signal} signal is good."
+            f"Coding-body 3-nt FFT score is low ({periodicity:.0%}). Weak metagene periodicity "
+            "is common in bacterial Ribo-seq, especially in MNase-based protocols. This descriptive "
+            "score alone does not establish nucleotide-level accuracy or invalidate the "
+            f"{anchor}-codon {_site_for_anchor(anchor)}-site calibration. Inspect peak shape "
+            "and read-length offsets, and compare replicates."
         )
 
     if anchor == "stop":

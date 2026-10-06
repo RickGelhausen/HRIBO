@@ -128,6 +128,50 @@ Compare the scored panel with
 the table when judging recommended lengths; the diagnostic panel uses a
 different denominator.
 
+Interpreting the 3-nt FFT score
+-------------------------------
+
+The ``periodicity`` field is a descriptive spectrum ratio from the raw,
+count-weighted metagene, rather than the fraction of correctly positioned
+reads.  Each retained CDS contributes its read-end counts; genes are not
+given equal weights.  After offset calibration, a 90-nt coding-body window
+is selected in P-site coordinates: +15 through +104 relative to a start,
+or -105 through -16 relative to a stop.  The termination A-site offset is
+converted to a P-site offset first.  Only observed positions within the
+configured axis are used, so a clipped window can contain fewer than 90 bins.
+
+For the observed count vector ``x``, the advisor subtracts its mean, computes
+``abs(rfft(x - mean(x)))**2``, and divides the power in the frequency bin
+nearest 1/3 cycles per nucleotide by the sum of all nonzero-frequency bins.
+The implementation sums the returned one-sided squared magnitudes directly,
+without doubling interior frequency bins.  It returns zero for fewer than
+nine observed bins, zero total counts, a flat vector, or zero non-DC power.
+
+This score has no significance test, RNA-seq control, or replicate calibration.
+It discards the phase of the triplet signal and therefore cannot distinguish
+annotated frame 0 from frames 1 and 2; the separate frame fractions provide
+that information.  Coverage gradients, individual pauses, and spectral
+leakage when a clipped window is not a multiple of three affect the ratio.
+A score of 13% is not a 13% probability of translation or correct nucleotide
+assignment.  The below-15% notice is an internal descriptive heuristic,
+not a published bacterial quality or accuracy threshold.  It does not alter
+length selection, offsets, or confidence.
+
+Weak metagene periodicity is common in bacterial MNase-based Ribo-seq, and
+even a visible triplet pattern can arise from nuclease sequence preference
+and codon composition.  Stronger reading-frame signals are possible with
+protocols such as RelE-assisted profiling, with their own sequence biases.
+See `Mohammad et al. (2019)
+<https://pmc.ncbi.nlm.nih.gov/articles/PMC6377232/>`_ and
+`Hwang and Buskirk (2017)
+<https://academic.oup.com/nar/article/45/1/327/2290904>`_.
+These observations do not make weak body periodicity a universal failure
+criterion.  In TIS/TTS libraries, boundary peak position and shape,
+read-length offset consistency, and agreement between replicates provide
+distinct evidence for start/P-site or stop/A-site calibration.  An offset
+calibrated on stalled boundary ribosomes is not, by itself, validation of
+nucleotide assignments to all elongating ribosomes.
+
 Interpreting offsets
 --------------------
 

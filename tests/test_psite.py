@@ -238,6 +238,15 @@ def test_weak_periodicity_is_reported_not_fatal():
     assert recommendation.has_recommendation
     assert set(recommendation.read_lengths) <= {29, 30}
     assert any("periodicity" in w.lower() or "frame" in w.lower() for w in recommendation.warnings)
+    assert not any("will be unreliable" in w for w in recommendation.warnings)
+    # A low descriptive FFT ratio must not overrule supported frame-0 evidence.
+    for anchor in ("start", "stop"):
+        confidence, warnings = psite._assess_confidence(
+            10, (0.6, 0.2, 0.2), 0.13, 0.5, anchor=anchor, frame_reads=1000
+        )
+        assert confidence == "high"
+        assert any("13%" in w and "descriptive" in w for w in warnings)
+        assert not any("will be unreliable" in w for w in warnings)
 
 
 def test_offset_table_is_sorted():
