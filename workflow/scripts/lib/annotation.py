@@ -7,6 +7,26 @@ import interlap
 import pandas as pd
 import lib.misc as misc
 
+
+SELECTION_COLUMNS = [
+    "contig", "start", "end", "strand", "feature_id", "length_nt", "status", "reason"
+]
+
+
+def _cds_feature_id(row):
+    """Prefer GFF ID, then locus_tag, with a stable coordinate fallback."""
+    attributes = {}
+    if len(row) > 8 and not pd.isna(row[8]):
+        for field in str(row[8]).split(";"):
+            key, separator, value = field.strip().partition("=")
+            if separator:
+                attributes.setdefault(key, value.strip())
+    for key in ("ID", "locus_tag"):
+        if attributes.get(key) not in (None, "", "."):
+            return attributes[key]
+    return f"{row[0]}:{int(row[3])}-{int(row[4])}:{row[6]}"
+
+
 def create_annotation_intervals_dict(annotation_df):
     """
     Create interlap instances for each chrom / strand in the annotation
@@ -98,6 +118,10 @@ def retrieve_annotation_positions(
     positions_out_ORF,
     positions_in_ORF,
     length_cutoff=None,
+    *,
+    cds_max_length=None,
+    return_selection=False,
+    required_anchors=("start", "stop"),
 ):
     """
     Retrieve start/stop positions of annotated genes.
@@ -106,10 +130,40 @@ def retrieve_annotation_positions(
         - gene length (the larger of the in-ORF window and length cutoff)
         - gene type
         - rpkm threshold
+
+    ``cds_max_length`` selects CDSs strictly shorter than the specified number
+    of nucleotides, before applying the configured filters.  Neighboring CDSs
+    are always indexed from the full annotation.  The optional selection table
+    uses zero-based, inclusive ``start`` and ``end`` coordinates and contains
+    the first exclusion reason for every CDS.  In selection mode, exact CDS
+    duplicates (contig, coordinates, strand) are profiled and reported once,
+    with their distinct identifiers joined by commas.  The default two-value
+    return and legacy duplicate handling are preserved for existing callers.
+    ``required_anchors`` controls which profile windows must fit the contig;
+    both are required by default, while start-only analyses can require only
+    the start window.
     """
 
-    annotation_df = pd.read_csv(annotation_file_path, sep="\t", comment="#", header=None)
+    required_anchors = tuple(required_anchors)
+    if not required_anchors or any(anchor not in ("start", "stop") for anchor in required_anchors):
+        raise ValueError("required_anchors must contain 'start' and/or 'stop'")
+
+    try:
+        annotation_df = pd.read_csv(annotation_file_path, sep="\t", comment="#", header=None)
+    except pd.errors.EmptyDataError:
+        annotation_df = pd.DataFrame(columns=range(9))
     annotation_intervals_dict = create_annotation_intervals_dict(annotation_df)
+
+    feature_ids = {}
+    if return_selection:
+        for row in annotation_df.itertuples(index=False):
+            if str(row[2]).lower() != "cds":
+                continue
+            key = (row[0], int(row[3]) - 1, int(row[4]) - 1, row[6])
+            identifiers = feature_ids.setdefault(key, [])
+            identifier = _cds_feature_id(row)
+            if identifier not in identifiers:
+                identifiers.append(identifier)
 
     library_total = None
     if "rpkm" in filtering_methods:
@@ -121,37 +175,71 @@ def retrieve_annotation_positions(
     start_codon_dict = {"-" : {}, "+" : {}}
     stop_codon_dict = {"-" : {}, "+" : {}}
 
-    excluded_genes = { "overlap" : (0, []), "length" : (0, []), "rpkm" : (0, []), "type" : (0, []), "error" : (0, []) }
-    included_genes = (0, [])
+    excluded_genes = dict.fromkeys(
+        ("cohort", "overlap", "length", "rpkm", "boundary", "type", "error"), 0
+    )
+    included_genes = 0
+    selection_records = []
+    seen_coordinates = set()
+
+    def exclude(reason, record):
+        excluded_genes[reason] += 1
+        if return_selection:
+            selection_records.append({**record, "status": "excluded", "reason": reason})
+
     for row in annotation_df.itertuples(index=False):
         chromosome = row[0]
-        type = row[2]
+        feature_type = row[2]
         beginning = int(row[3]) - 1
         end = int(row[4]) - 1
         strand = row[6]
 
         # check type condition
-        if type.lower() != "cds":
-            excluded_genes["type"] = (excluded_genes["type"][0] + 1, excluded_genes["type"][1] + [row])
+        if str(feature_type).lower() != "cds":
+            excluded_genes["type"] += 1
+            continue
+
+        coordinate_key = (chromosome, beginning, end, strand)
+        if return_selection:
+            if coordinate_key in seen_coordinates:
+                continue
+            seen_coordinates.add(coordinate_key)
+
+        gene_length = end - beginning + 1
+        record = {
+            "contig": chromosome,
+            "start": beginning,
+            "end": end,
+            "strand": strand,
+            "feature_id": ",".join(feature_ids[coordinate_key]) if return_selection else "",
+            "length_nt": gene_length,
+        }
+
+        if cds_max_length is not None and gene_length >= cds_max_length:
+            exclude("cohort", record)
             continue
 
         if "overlap" in filtering_methods:
             # check overlap condition
             if (chromosome, strand) in annotation_intervals_dict:
-                if len(list(annotation_intervals_dict[(chromosome, strand)].find((beginning-overlap_distance, end+overlap_distance)))) > 1:
-                    excluded_genes["overlap"] = (excluded_genes["overlap"][0] + 1, excluded_genes["overlap"][1] + [row])
+                neighbors = list(annotation_intervals_dict[(chromosome, strand)].find(
+                    (beginning-overlap_distance, end+overlap_distance)
+                ))
+                if return_selection:
+                    # Duplicate annotations of this CDS are not another gene.
+                    neighbors = set(neighbors)
+                if len(neighbors) > 1:
+                    exclude("overlap", record)
                     continue
             else:
-                excluded_genes["error"] = (excluded_genes["error"][0] + 1, excluded_genes["error"][1] + [row])
+                exclude("error", record)
                 continue
 
         # check length condition
-        gene_length = end - beginning + 1
-
         if "length" in filtering_methods:
             minimum_gene_length = max(positions_in_ORF, length_cutoff or 0)
             if gene_length < minimum_gene_length:
-                excluded_genes["length"] = (excluded_genes["length"][0] + 1, excluded_genes["length"][1] + [row])
+                exclude("length", record)
                 continue
 
         # check rpkm condition
@@ -159,19 +247,20 @@ def retrieve_annotation_positions(
             if (chromosome, strand) in read_intervals_dict:
                 gene_read_counts = misc.count_reads(read_intervals_dict, chromosome, strand, beginning, end, mapping_method)
             else:
-                excluded_genes["rpkm"] = (excluded_genes["rpkm"][0] + 1, excluded_genes["rpkm"][1] + [row])
-                gene_read_counts = 0
+                exclude("rpkm", record)
                 continue
             rpkm = misc.calculate_rpkm(
                 gene_length, gene_read_counts, library_total
             )
             if rpkm < rpkm_threshold:
-                excluded_genes["rpkm"] = (excluded_genes["rpkm"][0] + 1, excluded_genes["rpkm"][1] + [row])
+                exclude("rpkm", record)
                 continue
 
-        # Remove boundary cases.  A retained feature must support both the
-        # start- and stop-codon profile without inventing positions before zero
-        # or beyond the contig's last valid zero-based coordinate.
+        # Every required profile window must lie on the contig; start-only
+        # analyses need not support an undisplayed stop window.
+        if chromosome not in genome_length_dict or strand not in ("+", "-"):
+            exclude("error", record)
+            continue
         profile_windows = metagene_window_bounds(
             beginning,
             end,
@@ -180,8 +269,10 @@ def retrieve_annotation_positions(
             positions_in_ORF,
         )
         if not metagene_windows_fit_contig(
-            profile_windows, genome_length_dict[chromosome]
+            {anchor: profile_windows[anchor] for anchor in required_anchors},
+            genome_length_dict[chromosome],
         ):
+            exclude("boundary", record)
             continue
 
         if strand == "+":
@@ -206,11 +297,17 @@ def retrieve_annotation_positions(
             else:
                 stop_codon_dict[strand][chromosome].append((beginning, beginning+2))
 
-        included_genes = (included_genes[0] + 1, included_genes[1] + [row])
+        included_genes += 1
+        if return_selection:
+            selection_records.append({**record, "status": "retained", "reason": ""})
 
     print("Excluded genes:")
     for key, val in excluded_genes.items():
-        print(f">>Entry removal based on {key}: {val[0]}")
-    print(f"Included genes: {included_genes[0]}")
+        print(f">>Entry removal based on {key}: {val}")
+    print(f"Included genes: {included_genes}")
 
+    if return_selection:
+        return start_codon_dict, stop_codon_dict, pd.DataFrame(
+            selection_records, columns=SELECTION_COLUMNS
+        )
     return start_codon_dict, stop_codon_dict

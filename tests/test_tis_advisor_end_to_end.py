@@ -84,6 +84,10 @@ def test_no_recommendation_without_signal(reference, tmp_path):
     assert recommendation["read_lengths"] == []
     assert recommendation["confidence"] == "none"
     assert recommendation["warnings"]
+    exports = tmp_path / "out" / "orfbounder"
+    assert (exports / "manifest.json").is_file()
+    assert not list(exports.glob("*/read_lengths.json"))
+    assert not list(exports.glob("*/offsets.json"))
 
 
 def test_outputs_are_written(reference, tmp_path):
@@ -101,15 +105,38 @@ def test_outputs_are_written(reference, tmp_path):
     assert [int(line.split("\t", 1)[0]) for line in evidence[1:]] == sim.ALL_LENGTHS
 
 
-def test_report_contains_a_pasteable_config(reference, tmp_path):
+def test_report_links_valid_orfbounder_json_exports(reference, tmp_path):
     bam = tmp_path / "RIBO-A-1.bam"
     sim.write_bam(bam, periodic=True, signal=True, seed=1)
     out = tmp_path / "out"
-    run_advisor(reference, bam, out)
+    payload = run_advisor(reference, bam, out)
 
     html = (out / "tis_recommendation.html").read_text()
-    assert "psiteOffsets" in html
-    assert "readLengths" in html
+    assert "psiteOffsets:" not in html
+    assert "readLengths:" not in html
+    assert "orfbounder/" in html
+    assert "read_lengths.json" in html
+    assert "offsets.json" in html
+    assert (out / "orfbounder/manifest.json").is_file()
+    for read_end, comparison in payload["read_ends"].items():
+        recommendation = comparison["recommendation"]
+        directory = out / "orfbounder" / read_end
+        if not recommendation["read_lengths"]:
+            assert not (directory / "read_lengths.json").exists()
+            assert not (directory / "offsets.json").exists()
+            continue
+        expected_lengths = ",".join(str(length) for length in sorted(recommendation["read_lengths"]))
+        assert json.loads((directory / "read_lengths.json").read_text()) == {
+            bam.stem: expected_lengths
+        }
+        direction = -1 if read_end == "fiveprime" else 1
+        expected_offsets = {
+            length: direction * offset
+            for length, offset in recommendation["offsets"].items()
+        }
+        assert json.loads((directory / "offsets.json").read_text()) == {
+            bam.stem: expected_offsets
+        }
 
 
 # --------------------------------------------------------------------------
@@ -173,3 +200,6 @@ def test_both_read_ends_are_kept_in_the_output(reference, tmp_path):
 
     html = (out / "tis_recommendation.html").read_text()
     assert "fiveprime" in html and "threeprime" in html
+    assert "<th>P-site offset (nt)</th>" in html
+    assert "<th>Derived A-site offset (nt)</th>" in html
+    assert "<th>Derived P-site offset (nt)</th>" not in html

@@ -501,6 +501,67 @@ run from ``-positionsInORF`` through ``positionsOutsideORF - 1``.  Values use
 the containing directory's ``raw``, ``cpm``, or ``window`` normalization.
 Configured but unobserved lengths remain explicit zero columns.
 
+The additional sORF group, when enabled by ``metageneSettings.sorfMaxLength``,
+writes start workbooks under
+``metageneprofiling/<library>/sorfs/<normalization>/`` with the same coordinate
+and read-length columns. The fixed window may continue downstream of a short
+CDS's stop codon. The group uses reference CDSs with span
+``end - start + 1 < sorfMaxLength`` and omits the length filter; see
+:doc:`metagene-profiling`.
+
+Each group root (``metageneprofiling/<library>/`` or its ``sorfs/`` directory)
+also contains three tab-separated support tables. Identical CDS coordinates
+on the same contig and strand are consolidated before filtering and counting;
+their feature identifiers are joined in ``feature_id``. Duplicate annotation
+records therefore contribute only once, including in the general profile.
+
+``candidates.tsv``
+   CDS eligibility and exclusion reasons for each mapping method. Size
+   eligibility describes the group's CDS-span selection; retention also
+   requires the remaining configured annotation filters and usable windows.
+   Columns are:
+
+   .. code-block:: text
+
+      mapping_method, contig, start, end, strand, feature_id, length_nt, status, reason
+
+   ``start`` and ``end`` are 0-based inclusive genomic coordinates;
+   ``length_nt`` is ``end - start + 1``. The first failed eligibility or
+   filtering check supplies the exclusion reason.
+
+``candidate_counts.tsv``
+   Counts of input, size-eligible, and retained CDSs by contig and mapping
+   method. These are annotation counts, not read counts.
+   Columns start with:
+
+   .. code-block:: text
+
+      mapping_method, contig, input_cds, cohort_cds, retained_cds
+
+   ``cohort_cds`` counts size-eligible CDSs. Additional ``excluded_<reason>``
+   columns count first-failure exclusions, so a CDS is counted against only
+   one exclusion reason for each mapping method. ``contig=[all contigs]`` rows
+   summarize the complete library.
+
+``candidate_support.tsv``
+   Retained and actually contributing CDS counts and summed raw profile
+   counts by contig, mapping method, anchor, and configured read length.
+   A retained CDS contributes when it has nonzero profile counts for that
+   combination. Point-mapping counts describe mapped read ends; ``global``
+   counts describe overlapped aligned nucleotide positions. These values
+   remain raw regardless of the requested profile normalizations.
+   Columns are:
+
+   .. code-block:: text
+
+      mapping_method, contig, anchor, read_length, retained_cds, contributing_cds, raw_count_contributions
+
+   ``anchor`` identifies the start or stop window. The sORF group reports only
+   start support. Rows with ``read_length=all_selected`` pool the configured
+   lengths; their contributing-CDS count counts each contributing CDS once.
+   ``contig=[all contigs]`` rows pool the contigs without changing the
+   read-length or anchor grouping.
+
 Undefined and empty values
 --------------------------
 

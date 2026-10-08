@@ -12,6 +12,14 @@ dominant fragment lengths across libraries.  Then open
 to compare start and stop profiles.  Use the adjacent Excel workbooks when
 exact values are needed.
 
+When ``metageneSettings.sorfMaxLength`` is positive, an additional start-only
+profile is written under
+``metageneprofiling/<library>/sorfs/<normalization>/``. It uses annotated CDSs
+shorter than that exclusive nucleotide limit; the shipped template uses
+``300``. Setting ``0``, or leaving the field out of an older configuration,
+disables this additional group. The general start/stop profiles retain their
+existing filters and coordinate conventions.
+
 Coordinate convention
 ---------------------
 
@@ -63,8 +71,15 @@ Mapping methods
 Annotation filtering
 --------------------
 
-Only CDS features contribute.  The configured filters are applied before
-aggregation:
+Only CDS features contribute.
+
+CDS records with identical contig, start, end, and strand are consolidated into
+one candidate before filtering and counting. Their feature identifiers are
+joined in the candidate table. This prevents duplicate annotation records from
+counting the same CDS and its read contributions more than once in either
+group.
+
+The configured filters are applied before aggregation:
 
 ``overlap``
    Remove a CDS when another same-strand CDS lies within
@@ -83,6 +98,38 @@ A CDS is also omitted when either its start or stop window would extend beyond
 the contig.  This keeps the two anchors comparable and avoids inventing
 out-of-range positions.  The profile is an aggregate over all retained CDSs;
 it is not divided by the number of retained genes.
+
+Separate sORF profiles
+----------------------
+
+The sORF group uses the same supplied reference annotation as the general
+profile. Predictor calls are not added to its input automatically. Eligibility
+is based on the annotated CDS span, ``end - start + 1``, including the annotated
+stop codon. A span equal to the configured ``sorfMaxLength`` is excluded. The
+default ``<300 nt`` definition describes this analysis group; it is not an
+exact 100-amino-acid boundary or a universal definition of a small protein.
+
+Within this group, the ``length`` filter is omitted even when selected in
+``filteringMethods``. Neither ``lengthCutoff`` nor ``positionsInORF`` therefore
+imposes a minimum CDS length. The configured ``overlap`` and ``rpkm`` filters
+still apply, using the same annotation context and complete-library read
+denominator as the general group.
+
+The profile retains the fixed start axis from ``-positionsOutsideORF`` through
+``positionsInORF - 1`` and the same selected read lengths, mapping methods,
+normalizations, and output formats. For a CDS shorter than
+``positionsInORF``, the positive-coordinate window extends beyond its stop
+codon into downstream sequence. Read these profiles as nucleotide windows
+around initiation sites, not as coverage constrained to the short coding
+sequence. Only start profiles are plotted for this group.
+The complete start window must fit within the contig; a stop window is not
+required for sORF eligibility. The general profile and advisor continue to
+require both start and stop windows to fit.
+
+Each group records eligible and retained CDSs together with the CDSs that
+actually contribute reads. The interactive report and figure titles include
+these counts, so an aggregate can be interpreted alongside its underlying
+annotation and read support.
 
 Normalization
 -------------
@@ -179,6 +226,31 @@ annotation filter.  The cross-library files
 ``read_length_fractions.xlsx``, and ``read_length_counts.xlsx`` provide the
 separate read-length composition summary.
 
+When the sORF group is enabled,
+``metageneprofiling/<library>/sorfs/<normalization>/`` contains its start-count
+workbooks and requested start figures. The interactive report uses the same
+``interactive_metagene_profiling.html`` filename. Its start coordinate and
+read-length columns follow the conventions above.
+
+At each group root, ``metageneprofiling/<library>/`` and, when enabled,
+``metageneprofiling/<library>/sorfs/``, three tab-separated tables provide
+support independent of the chosen display normalization:
+
+* ``candidates.tsv`` records annotated CDS eligibility and exclusion reasons;
+* ``candidate_counts.tsv`` summarizes input, size-eligible, and retained CDS
+  counts by contig and mapping method; and
+* ``candidate_support.tsv`` records retained CDSs, CDSs contributing reads, and
+  raw profile counts by contig, mapping method, anchor, and configured read
+  length.
+
+The count and support tables also include ``[all contigs]`` rows summarizing
+the complete library. CDS counts refer to the distinct coordinate candidates
+after duplicate annotation records have been consolidated.
+
+These tables distinguish a short-CDS group with few eligible annotations from
+a retained group whose selected lengths have little or no read support. See
+:doc:`table-reference` for their field conventions.
+
 Zero and ``no_evidence`` profiles
 ---------------------------------
 
@@ -194,4 +266,6 @@ workbooks remain structurally comparable.
 Before accepting a zero result, inspect the workflow log and then check the
 configured read-length range, the filtering summary, ``rpkmThreshold``, CDS
 lengths and overlaps, boundary exclusions, and the mapped-read depth on that
-contig.
+contig. The candidate tables show whether a zero sORF profile follows from
+size eligibility, annotation filtering, or a lack of reads at the selected
+lengths.

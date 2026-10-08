@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import html
 from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
@@ -33,6 +34,7 @@ import lib.plotting as plotting
 import lib.psite as psite
 import lib.theme as theme
 from lib.alignment import IntervalReader, LengthCounter
+from lib.orfbounder import export_orfbounder_inputs, recommendation_inputs
 
 
 DEEPRIBO_DEFAULT_A_SITE_OFFSET = 12
@@ -222,24 +224,17 @@ def recommendation_payload(recommendation):
 # --------------------------------------------------------------------------
 
 
-def orfbounder_config(recommendation):
-    """A config block that can be pasted straight into an ORFBounder run."""
-    if recommendation.anchor == "stop":
-        return "# Termination offsets are reported in the A-site table; no TIS setup is suggested."
+def orfbounder_config(recommendation, library):
+    """Preview the two actual ORFBounder JSON inputs and their mapping method."""
     if not recommendation.has_recommendation:
-        return "# No usable initiation signal was found; no setup is suggested."
-    read_end = "5'" if recommendation.read_end == "fiveprime" else "3'"
-    offsets = "\n".join(
-        f"    {length}: {offset}" for length, offset in recommendation.offset_table()
+        return "No supported calibration; input JSON files are not exported."
+    lengths, offsets = recommendation_inputs(
+        library.split("_", 1)[0], recommendation_payload(recommendation), recommendation.read_end
     )
     return (
-        "# Suggested ORFBounder settings, derived from this library.\n"
-        f"readLengths: [{', '.join(str(length) for length in recommendation.read_lengths)}]\n"
-        f"mappingMethod: \"{recommendation.read_end}\"\n"
-        "# Offsets are measured from the "
-        f"{read_end} end of the read.\n"
-        "psiteOffsets:\n"
-        f"{offsets}\n"
+        f"mapping_method: {recommendation.read_end}\n\n"
+        f"read_lengths.json:\n{json.dumps(lengths, indent=2)}\n\n"
+        f"offsets.json:\n{json.dumps(offsets, indent=2)}\n"
     )
 
 
@@ -442,10 +437,28 @@ def render_report(library, best, comparisons, figures, asite_advice, path,
             'Froschauer et al. (2025)</a> and '
             '<a href="https://elifesciences.org/articles/62655">Mangano et al. (2020)</a>.</p>'
         )
-        parts.append(_site_offsets_table(recommendation))
-    else:
-        parts.append("<h2>Suggested configuration</h2>")
-        parts.append(f"<pre><code>{orfbounder_config(recommendation)}</code></pre>")
+    parts.append(_site_offsets_table(recommendation))
+    parts.append("<h2>ORFBounder JSON inputs</h2>")
+    parts.append(
+        "<p>The separate read-length and offset JSON files use this library's "
+        "supported calibration for each mapped end. ORFBounder uses one "
+        "<code>mapping_method</code> for every assay in a run. Exported 5' offsets "
+        "are negative and 3' offsets positive, aligning to the first nucleotide "
+        f"of the calibrated {site}-site codon. These files prepare inputs; they "
+        "do not run ORFBounder.</p>"
+        '<p><a href="orfbounder/manifest.json">Export availability and calibration metadata</a></p>'
+    )
+    for comparison in comparisons:
+        proposed = comparison.recommendation
+        if not proposed.has_recommendation:
+            continue
+        end = comparison.read_end
+        parts.append(f"<h3>{end}" + (" (recommended end)" if best and end == best.read_end else "") + "</h3>")
+        parts.append(
+            f'<p><a href="orfbounder/{end}/read_lengths.json">read_lengths.json</a> · '
+            f'<a href="orfbounder/{end}/offsets.json">offsets.json</a></p>'
+        )
+        parts.append(f"<pre><code>{html.escape(orfbounder_config(proposed, library))}</code></pre>")
 
     if anchor == "start":
         parts.append("<h2>DeepRibo A-site offset advice</h2>")
@@ -539,11 +552,19 @@ def _site_offsets_table(recommendation):
     p_offsets, a_offsets = site_offsets(
         recommendation.offsets, recommendation.read_end, recommendation.site
     )
+    if recommendation.site == "P":
+        measured_site, derived_site = "P", "A"
+        measured_offsets, derived_offsets = p_offsets, a_offsets
+    else:
+        measured_site, derived_site = "A", "P"
+        measured_offsets, derived_offsets = a_offsets, p_offsets
     rows = ["<div class='table-wrap'><table><thead><tr><th>Read length</th>"
-            "<th>A-site offset (nt)</th><th>Derived P-site offset (nt)</th>"
+            f"<th>{measured_site}-site offset (nt)</th>"
+            f"<th>Derived {derived_site}-site offset (nt)</th>"
             "</tr></thead><tbody>"]
     rows.extend(
-        f"<tr><td>{length}</td><td>{a_offsets[length]}</td><td>{p_offsets[length]}</td></tr>"
+        f"<tr><td>{length}</td><td>{measured_offsets[length]}</td>"
+        f"<td>{derived_offsets[length]}</td></tr>"
         for length in sorted(recommendation.read_lengths)
     )
     rows.append("</tbody></table></div>")
@@ -710,6 +731,7 @@ def main():
         },
     }
     (args.output_dir_path / "tis_recommendation.json").write_text(json.dumps(payload, indent=2))
+    export_orfbounder_inputs([payload], args.output_dir_path / "orfbounder")
 
     if recommendation.has_recommendation:
         print(f"{library}: {chosen} mapping, read lengths {recommendation.read_lengths}, "

@@ -175,6 +175,7 @@ if "metagene" in STAGES:
 
 if "tis_advisor" in STAGES:
     hribo_output.extend(expand("tis_advice/{method}-{condition}-{replicate}/tis_recommendation.html", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]))
+    hribo_output.append("tis_advice/orfbounder")
 
 if "correlation" in STAGES:
     hribo_output.append("figures/heatmap_SpearmanCorr_readCounts.pdf")

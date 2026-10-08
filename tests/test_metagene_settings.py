@@ -483,10 +483,15 @@ def test_metagene_rules_quote_settings_and_run_scripts_through_python():
                 "io.py",
                 "metagene.py",
                 "misc.py",
+                "orfbounder.py",
                 "plotting.py",
                 "psite.py",
                 "theme.py",
             ),
+        ),
+        "exportOrfbounderInputs": (
+            "export_orfbounder_inputs.py",
+            ("orfbounder.py",),
         ),
     }
     for rule_name, (script, dependencies) in expected_code_inputs.items():
@@ -502,9 +507,9 @@ def test_metagene_rules_quote_settings_and_run_scripts_through_python():
         for dependency in dependencies:
             assert f'str(SCRIPTS / "lib" / "{dependency}")' in input_block
 
-    assert RULES.count("python3 {input.script:q}") == 3
+    assert RULES.count("python3 {input.script:q}") == 4
     assert "params.script" not in RULES
-    assert RULES.count("> {log:q} 2>&1") == 3
+    assert RULES.count("> {log:q} 2>&1") == 4
     assert RULES.count("--length_cutoff") == 2
     assert "--filtering_methods" in RULES
     assert re.search(r"--filtering_method(?!s)", RULES) is None
@@ -584,6 +589,8 @@ def test_metagene_settings_render_safely_in_a_dry_run(
     assert result.returncode == 0, rendered
     assert str(REPO / "workflow" / "scripts" / "tis_advisor.py") in rendered
     assert str(REPO / "workflow" / "scripts" / "metagene_profiling.py") in rendered
+    assert str(REPO / "workflow" / "scripts" / "export_orfbounder_inputs.py") in rendered
+    assert "--output-dir tis_advice/orfbounder" in rendered
     assert f"--library_type {library_method}" in rendered
     assert rendered.count("--length_cutoff 175") == 2
     assert "--filtering_methods overlap length rpkm" in rendered

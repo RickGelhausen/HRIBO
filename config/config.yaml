@@ -129,8 +129,16 @@ metageneSettings:
   # Filter ORFs based on RPKM threshold
   rpkmThreshold: 10.0
 
-  # Minimum length of considered ORFs. ORFs smaller than positionsInORF are filtered automatically.
+  # Minimum CDS length when the length filter is selected. Its effective
+  # minimum for the general profile is the larger of this and positionsInORF.
   lengthCutoff: 50
+
+  # Also create a separate start-codon profile for annotated CDSs shorter than
+  # this exclusive nucleotide limit. Set 0 to disable; older configs without
+  # this field keep it disabled. CDS spans include the annotated stop codon.
+  # The sORF profile skips the length filter and keeps the configured fixed
+  # windows, which may extend beyond a short CDS. Other chosen filters apply.
+  sorfMaxLength: 300
 
   # Mapping methods to be considered (fiveprime, threeprime, centered, global)
   mappingMethods: ["fiveprime", "threeprime"]

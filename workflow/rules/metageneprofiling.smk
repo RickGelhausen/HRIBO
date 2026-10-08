@@ -67,6 +67,7 @@ rule metageneProfiling:
         neighboringGenesDistance=config["metageneSettings"]["neighboringGenesDistance"],
         rpkmThreshold=config["metageneSettings"]["rpkmThreshold"],
         lengthCutoff=config["metageneSettings"]["lengthCutoff"],
+        sorfMaxLength=config["metageneSettings"].get("sorfMaxLength", 0),
         mappingMethods=config["metageneSettings"]["mappingMethods"],
         normalizationMethods=config["metageneSettings"]["normalizationMethods"],
         outputFormats=config["metageneSettings"]["outputFormats"],
@@ -93,6 +94,7 @@ rule metageneProfiling:
             --neighboring_genes_distance {params.neighboringGenesDistance:q} \
             --rpkm_threshold {params.rpkmThreshold:q} \
             --length_cutoff {params.lengthCutoff:q} \
+            --sorf_max_length {params.sorfMaxLength:q} \
             --output_formats {params.outputFormats:q} \
             --include_plotly_js {params.includePlotlyJS:q} \
             {params.colorArgs:q} \
@@ -114,6 +116,7 @@ rule tisAdvisor:
             str(SCRIPTS / "lib" / "io.py"),
             str(SCRIPTS / "lib" / "metagene.py"),
             str(SCRIPTS / "lib" / "misc.py"),
+            str(SCRIPTS / "lib" / "orfbounder.py"),
             str(SCRIPTS / "lib" / "plotting.py"),
             str(SCRIPTS / "lib" / "psite.py"),
             str(SCRIPTS / "lib" / "theme.py"),
@@ -126,7 +129,8 @@ rule tisAdvisor:
             labels={"library": "{method}-{condition}-{replicate}"}
         ),
         recommendation="tis_advice/{method}-{condition}-{replicate}/tis_recommendation.json",
-        evidence="tis_advice/{method}-{condition}-{replicate}/read_length_evidence.tsv"
+        evidence="tis_advice/{method}-{condition}-{replicate}/read_length_evidence.tsv",
+        orfbounder=directory("tis_advice/{method}-{condition}-{replicate}/orfbounder")
     conda:
         "../envs/metageneprofiling.yaml"
     threads: 1
@@ -165,5 +169,33 @@ rule tisAdvisor:
             --length_cutoff {params.lengthCutoff:q} \
             --include_plotly_js {params.includePlotlyJS:q} \
             --deepribo_asite_offset {params.deepriboASiteOffset:q} \
+            > {log:q} 2>&1
+        """
+
+
+rule exportOrfbounderInputs:
+    input:
+        recommendations=expand("tis_advice/{method}-{condition}-{replicate}/tis_recommendation.json", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]),
+        per_library_exports=expand("tis_advice/{method}-{condition}-{replicate}/orfbounder", zip, method=samples_metagene["method"], condition=samples_metagene["condition"], replicate=samples_metagene["replicate"]),
+        script=str(SCRIPTS / "export_orfbounder_inputs.py"),
+        script_deps=[
+            str(SCRIPTS / "lib" / "__init__.py"),
+            str(SCRIPTS / "lib" / "orfbounder.py"),
+        ]
+    output:
+        exports=directory("tis_advice/orfbounder")
+    conda:
+        "../envs/metageneprofiling.yaml"
+    threads: 1
+    resources:
+        mem_mb=1000,
+        runtime=10
+    log:
+        "logs/export_orfbounder_inputs.log"
+    shell:
+        """
+        python3 {input.script:q} \
+            --recommendations {input.recommendations:q} \
+            --output-dir {output.exports:q} \
             > {log:q} 2>&1
         """

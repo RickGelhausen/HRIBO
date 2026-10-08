@@ -206,9 +206,10 @@ both the directly estimated A-site offset and a derived P-site offset:
 
 For RIBO/TIS estimates, the reverse conversion gives ``A = P + 3`` from a
 5' end or ``A = P - 3`` from a 3' end.  These conversions assume simple
-aligned footprints and codons separated by three nucleotides.  TTS advice
-uses an A-site table; it does not present termination offsets as pasteable
-ORFBounder ``psiteOffsets``.
+aligned footprints and codons separated by three nucleotides. TTS advice
+directly estimates A-site distances and derives P-site distances.
+ORFBounder JSON exports retain the directly calibrated site
+and convert the offset sign as described below.
 
 The confidence label is based on the pooled boundary peak and supported
 annotated-frame-0 evidence.
@@ -251,10 +252,9 @@ For ``<library>``, HRIBO writes:
 
 ``tis_advice/<library>/tis_recommendation.html``
    Human-facing verdict, comparison of evaluated read ends, per-length
-   evidence, and diagnostic figures.  RIBO/TIS reports include pasteable
-   ORFBounder-style configuration; TTS reports include A-site offsets and
-   derived P-site offsets.  RIBO reports can additionally suggest a separate
-   DeepRibo A-site setting.
+   evidence, diagnostic figures, and guidance for the adjacent ORFBounder JSON
+   exports. TTS reports include A-site offsets and derived P-site offsets.
+   RIBO reports can additionally suggest a separate DeepRibo A-site setting.
 
 ``tis_advice/<library>/tis_recommendation.json``
    Complete machine-readable result.  ``library_type`` records the resolved
@@ -282,6 +282,81 @@ For ``<library>``, HRIBO writes:
    a ``usable`` flag, and rejection reasons.  ``read_end``, ``anchor``, and
    ``site`` identify the calibration; ``p_site_offset`` and ``a_site_offset``
    make the directly estimated and derived distances explicit.
+
+ORFBounder JSON exports
+-----------------------
+
+The ``tis_advisor`` stage also prepares JSON inputs for a later ORFBounder
+analysis. It does not install or execute ORFBounder, or apply its settings to
+any HRIBO analysis.
+
+Each ``tis_advice/<library>/orfbounder/`` directory contains ``manifest.json``.
+For each evaluated read end with a supported recommendation, it also contains
+``<read_end>/read_lengths.json`` and ``<read_end>/offsets.json``. Both ends are
+exported when both have usable advice, each with its own selected lengths and
+offsets; the exports are not restricted to the preferred end.
+
+The combined ``tis_advice/orfbounder/`` directory uses the same layout and
+collects library entries separately under ``fiveprime/`` and ``threeprime/``.
+It preserves every library's calibration rather than averaging conditions or
+replicates. Each manifest records the available recommendations, calibrated
+sites, confidence, preferred read ends, and reasons for missing advice.
+
+The consumable files contain only sample-keyed values. For example, one
+five-prime export may contain:
+
+.. code-block:: json
+
+   {"TIS-WT-1": "28,30", "RIBO-WT-1": "28,30"}
+
+and the corresponding offsets file:
+
+.. code-block:: json
+
+   {
+     "TIS-WT-1": {"28": -12, "30": -13},
+     "RIBO-WT-1": {"28": -12, "30": -13}
+   }
+
+These numbers illustrate the format. Read-length selections are
+comma-separated strings, and each canonical decimal length key maps to an
+integer nucleotide offset. ORFBounder shifts endpoints using the opposite
+sign convention to the advisor's positive distances: ``fiveprime`` exports
+``-distance`` and ``threeprime`` exports ``+distance``. This moves a 5' endpoint
+downstream or a 3' endpoint upstream on either strand. Exports use the directly
+estimated P-site distances for RIBO/TIS and the directly estimated A-site
+distances for TTS, measured to the first nucleotide of that codon. The generic
+advisor JSON continues to report positive distances and both P-/A-site tables.
+
+Sample keys match the alignment filename stem before its first underscore.
+HRIBO's ``METHOD-condition-replicate.bam`` names therefore retain their exact
+method, condition, and replicate in both files. ORFBounder accepts one
+``mapping_method`` per command or batch row, shared by all supplied assays.
+Choose the matching end-specific files and calibrated input libraries manually;
+the manifest is guidance, not another ORFBounder input file. Paired TIS/TTS/RIBO
+inputs must all have usable advice for the selected end. ORFBounder calling
+requires at least one TIS or TTS input; RIBO calibrations can accompany those
+assays.
+
+Libraries without a supported recommendation for an end are omitted from that
+end's files, with their reasons retained in the manifest. If no library has
+advice for an end, its two input files are absent. No fallback ``default``
+entries or guessed zero offsets are written. Supplying an omitted library to
+ORFBounder would require a separate reviewed calibration, because its input
+validation requires every supplied calling sample to be covered by the JSONs.
+
+Existing advisor results can be converted without rerunning metagene profiling
+or the advisor. From the analysis directory, run the bundled converter with
+the path to your HRIBO checkout:
+
+.. code-block:: bash
+
+   python3 /path/to/HRIBO/workflow/scripts/export_orfbounder_inputs.py \
+     --recommendations tis_advice/*/tis_recommendation.json \
+     --output-dir tis_advice/orfbounder
+
+This writes the combined end-specific input pairs and manifest. It leaves the
+source recommendation files unchanged.
 
 DeepRibo advice is separate from boundary advice
 ------------------------------------------------

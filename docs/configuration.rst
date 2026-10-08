@@ -196,6 +196,10 @@ for metagene profiles.
      - Distance used by the overlap filter.
    * - ``lengthCutoff`` / ``rpkmThreshold``
      - Minimum CDS length and abundance used by the corresponding filters.
+   * - ``sorfMaxLength``
+     - Exclusive CDS-span limit in nucleotides for an additional start-only
+       sORF profile. The template uses ``300``; ``0`` or an omitted field
+       disables it. The sORF group skips the length filter.
    * - ``outputFormats``
      - ``interactive``, ``svg``, ``pdf``, ``png``, and/or ``jpg``.
    * - ``includePlotlyJS``
@@ -204,6 +208,15 @@ for metagene profiles.
    * - ``colorList``
      - Optional series colours in read-length order; leave empty for the
        built-in colour-blind-friendly palette.
+
+The sORF profile uses the same reference annotation, read lengths, mapping
+methods, normalizations, and configured overlap/RPKM filters as the general
+profile. Its fixed start window can extend beyond a short CDS; its coordinates
+are not scaled to CDS length. A CDS of exactly ``sorfMaxLength`` nucleotides is
+excluded from this group. CDS length means ``end - start + 1`` and includes
+the annotated stop codon, so this setting defines a nucleotide-span group
+rather than an exact amino-acid cutoff. See :doc:`metagene-profiling` for its
+outputs and candidate-support tables.
 
 Review the biological meaning of these choices in
 :doc:`metagene-profiling`.  ``tisAdvisorSettings`` independently selects the

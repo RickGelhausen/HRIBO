@@ -133,6 +133,9 @@ def test_reports_label_measured_a_site_and_derived_p_site(reference, tmp_path, r
     assert (out / "tis_recommendation.json").is_file()
     html = (out / "tis_recommendation.html").read_text()
     assert "TTS peak advice" in html
+    assert "<th>A-site offset (nt)</th>" in html
+    assert "<th>Derived P-site offset (nt)</th>" in html
+    assert "<th>Derived A-site offset (nt)</th>" not in html
     assert "A-site" in html
     assert "stop codon" in html.lower()
     assert "psiteOffsets:" not in html
@@ -142,6 +145,25 @@ def test_reports_label_measured_a_site_and_derived_p_site(reference, tmp_path, r
     assert payload["deepribo_a_site"]["applied"] is False
     recommendation = payload["recommendation"]
     assert recommendation["a_site_offsets"] == recommendation["offsets"]
+    assert (out / "orfbounder/manifest.json").is_file()
+    assert "orfbounder/" in html
+    for end, comparison in payload["read_ends"].items():
+        end_recommendation = comparison["recommendation"]
+        directory = out / "orfbounder" / end
+        if not end_recommendation["read_lengths"]:
+            assert not (directory / "offsets.json").exists()
+            continue
+        assert json.loads((directory / "read_lengths.json").read_text()) == {
+            bam.stem: ",".join(str(length) for length in sorted(end_recommendation["read_lengths"]))
+        }
+        direction = -1 if end == "fiveprime" else 1
+        # Termination exports use the measured A-site without deriving a P-site.
+        assert json.loads((directory / "offsets.json").read_text()) == {
+            bam.stem: {
+                length: direction * offset
+                for length, offset in end_recommendation["offsets"].items()
+            }
+        }
 
     with (out / "read_length_evidence.tsv").open() as handle:
         reader = csv.DictReader(handle, delimiter="\t")

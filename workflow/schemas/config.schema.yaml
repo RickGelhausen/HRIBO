@@ -253,6 +253,14 @@ properties:
       lengthCutoff:
         type: integer
         minimum: 0
+      sorfMaxLength:
+        type: integer
+        minimum: 0
+        default: 0
+        description: >
+          Exclusive annotated-CDS length limit in nucleotides for a separate
+          start-only sORF profile. Zero disables the profile. The sORF group
+          skips the length filter and uses the configured fixed windows.
       mappingMethods:
         type: array
         minItems: 1

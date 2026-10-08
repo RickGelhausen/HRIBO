@@ -214,6 +214,8 @@ def plot_read_length_profiles(
     read_end="fiveprime",
     color_list=None,
     max_panels=12,
+    candidate_support=None,
+    value_label="Reads",
 ):
     """One panel per read length, sharing an x axis.
 
@@ -241,7 +243,14 @@ def plot_read_length_profiles(
         cols=1,
         shared_xaxes=True,
         vertical_spacing=0.012,
-        subplot_titles=[f"{length} nt" for length in lengths],
+        subplot_titles=[
+            f"{length} nt" + (
+                f" · {candidate_support[length]['contributing_cds']} contributing CDSs"
+                f" · {candidate_support[length]['raw_count_contributions']} raw count contributions"
+                if candidate_support is not None and length in candidate_support else ""
+            )
+            for length in lengths
+        ],
     )
 
     for index, (length, row_values) in enumerate(zip(lengths, matrix), start=1):
@@ -255,7 +264,7 @@ def plot_read_length_profiles(
                 fill="tozeroy",
                 name=f"{length} nt",
                 showlegend=False,
-                hovertemplate="%{x} nt from start<br>%{y:.0f} reads<extra></extra>",
+                hovertemplate=f"%{{x}} nt from start<br>%{{y:.3g}} {value_label}<extra></extra>",
             ),
             row=index,
             col=1,
@@ -277,7 +286,7 @@ def plot_read_length_profiles(
             )
 
     fig.update_xaxes(title_text="Distance from start codon (nt)", row=len(lengths), col=1)
-    fig.update_yaxes(title_text="Reads", row=max(1, len(lengths) // 2), col=1)
+    fig.update_yaxes(title_text=value_label, row=max(1, len(lengths) // 2), col=1)
     fig.update_annotations(font_size=10)
 
     theme.apply(fig, title, subtitle)

@@ -70,11 +70,13 @@ Primary result map
      - Read-length composition plus start- and stop-centred aggregate profiles,
        source tables, and figures.
    * - ``tis_advisor``
-     - ``tis_advice/<library>/tis_recommendation.html``
+     - ``tis_advice/<library>/tis_recommendation.html`` and
+       ``tis_advice/orfbounder/``
      - Recommended mapped end, usable read lengths, per-length P-site offsets
        for RIBO/TIS or A-site offsets for TTS,
        confidence, warnings, evidence, advisory DeepRibo A-site guidance for
-       RIBO libraries, and machine-readable companions.
+       RIBO libraries, machine-readable companions, and per-library/combined
+       ORFBounder JSON input exports. ORFBounder is not run.
    * - ``correlation``
      - ``figures/heatmap_SpearmanCorr_readCounts.pdf``
      - Pairwise Spearman correlation of binned genomic coverage and its source
@@ -123,6 +125,7 @@ omitted):
    ├── tracks/updated_annotation.gff
    ├── metageneprofiling/<library>/
    ├── tis_advice/<library>/
+   ├── tis_advice/orfbounder/         # combined JSON input exports
    ├── figures/heatmap_SpearmanCorr_readCounts.pdf
    ├── pca/PCA_3D.html
    ├── diffex_summary/condition_overview.html
@@ -221,6 +224,16 @@ offsets; TTS libraries are evaluated at stops for A-site offsets.  JSON and TSV
 identify the anchor and site explicitly, alongside converted P-/A-site
 distances.  No recommendation can be a valid result when the data do not
 contain a trustworthy peak at the expected boundary; see :doc:`tis-advisor`.
+
+``tis_advice/<library>/orfbounder/`` and the combined
+``tis_advice/orfbounder/`` contain ``manifest.json`` plus
+``fiveprime/read_lengths.json``, ``fiveprime/offsets.json`` and the analogous
+``threeprime/`` files when that end has usable advice. Libraries retain their
+exact ``METHOD-condition-replicate`` keys. Each end uses its own recommendation,
+including usable advice for an end that was not preferred. Uncalibrated
+libraries are omitted; an end with no supported libraries has no input-file
+pair. Review the manifest and choose one calibrated read end for all assays in
+a later ORFBounder run. These exports prepare JSON inputs only.
 
 ORF predictions
 ---------------

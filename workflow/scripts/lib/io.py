@@ -100,7 +100,7 @@ def excel_writer(output_path, data_frames):
             worksheet.set_column(idx, idx, max_len)
     writer.close()
 
-def write_plots_to_file(fig_list, output_format, include_plotly_js, alignment_file_name, meta_dir, fig_width=1400, fig_height=600):
+def write_plots_to_file(fig_list, output_format, include_plotly_js, alignment_file_name, meta_dir, fig_width=1400, fig_height=600, report_html="", report_subtitle=None):
     """
     Write plots to requested file formats
     """
@@ -114,9 +114,9 @@ def write_plots_to_file(fig_list, output_format, include_plotly_js, alignment_fi
                 )
 
     if "interactive" in output_format:
-        create_interactive_html(fig_list, alignment_file_name, f"{meta_dir}/interactive_metagene_profiling.html", include_plotly_js)
+        create_interactive_html(fig_list, alignment_file_name, f"{meta_dir}/interactive_metagene_profiling.html", include_plotly_js, report_html, report_subtitle)
 
-def create_interactive_html(fig_list, alignment_file_name, output_file, include_plotly_js):
+def create_interactive_html(fig_list, alignment_file_name, output_file, include_plotly_js, report_html="", report_subtitle=None):
     """Render every figure into one standalone page.
 
     plotly.js is emitted once for the whole page rather than once per figure,
@@ -133,7 +133,7 @@ def create_interactive_html(fig_list, alignment_file_name, output_file, include_
 
     js_mode = {"integrated": True, "online": "cdn", "local": "directory"}.get(include_plotly_js, True)
 
-    parts = []
+    parts = [report_html] if report_html else []
     seen_headings = []
     for index, (name, mapping_method, fig) in enumerate(fig_list):
         heading = mapping_labels.get(mapping_method, mapping_method)
@@ -157,8 +157,10 @@ def create_interactive_html(fig_list, alignment_file_name, output_file, include_
         handle.write(
             theme.page(
                 f"Metagene profiling: {alignment_file_name}",
-                "Enrichment is shown relative to each read length's own background, "
-                "so that a sparse read length stays legible beside a deep one.",
+                report_subtitle if report_subtitle is not None else (
+                    "Enrichment is shown relative to each read length's own background, "
+                    "so that a sparse read length stays legible beside a deep one."
+                ),
                 "\n".join(parts),
             )
         )

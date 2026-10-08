@@ -847,14 +847,19 @@ def _check_metagene_settings(report: ValidationReport, metagene: dict, methods: 
 
     positions_in_orf = metagene.get("positionsInORF")
     length_cutoff = metagene.get("lengthCutoff")
-    if isinstance(positions_in_orf, int) and isinstance(length_cutoff, int):
+    if (
+        "length" in metagene.get("filteringMethods", [])
+        and isinstance(positions_in_orf, int)
+        and isinstance(length_cutoff, int)
+    ):
         if length_cutoff < positions_in_orf:
             report.info(
                 "METAGENE_LENGTH_CUTOFF",
                 f"lengthCutoff ({length_cutoff}) is below positionsInORF ({positions_in_orf})",
                 detail=(
-                    "Genes shorter than positionsInORF are dropped regardless, so the effective "
-                    f"minimum gene length is {positions_in_orf} nt."
+                    "With the length filter enabled, the general profile and advisor "
+                    f"require a minimum gene length of {positions_in_orf} nt. "
+                    "The separate sORF profile omits this filter."
                 ),
             )
 
@@ -882,6 +887,8 @@ def check_metagene_annotation_coverage(
         return report
 
     metagene = config.get("metageneSettings", {})
+    if "length" not in metagene.get("filteringMethods", []):
+        return report
     positions_in_orf = metagene.get("positionsInORF")
     if not isinstance(positions_in_orf, int) or not gff_records:
         return report
@@ -890,21 +897,50 @@ def check_metagene_annotation_coverage(
     if not cds:
         return report
 
-    surviving = [r for r in cds if (r.end - r.start + 1) >= positions_in_orf]
+    length_cutoff = metagene.get("lengthCutoff", 0)
+    minimum_length = max(
+        positions_in_orf,
+        length_cutoff if isinstance(length_cutoff, int) else 0,
+    )
+    surviving = [r for r in cds if (r.end - r.start + 1) >= minimum_length]
     fraction = len(surviving) / len(cds)
 
     if not surviving:
-        report.error(
+        sorf_max_length = metagene.get("sorfMaxLength", 0)
+        has_sorf_candidates = (
+            "metagene" in stages
+            and isinstance(sorf_max_length, int)
+            and sorf_max_length > 0
+            and any((r.end - r.start + 1) < sorf_max_length for r in cds)
+        )
+        severity = report.warning if has_sorf_candidates else report.error
+        detail = (
+            "The general metagene group has no length-eligible CDSs. "
+            "The separate sORF group has size-eligible annotations and will "
+            "apply its remaining filters without a minimum CDS length."
+            if has_sorf_candidates
+            else "Metagene profiling would run on an empty gene set and produce empty plots."
+        )
+        if has_sorf_candidates and "tis_advisor" in stages:
+            detail += (
+                " The advisor uses the general CDS filters, so it also has no "
+                "length-eligible CDSs; the sORF group does not supply its candidates."
+            )
+        severity(
             "METAGENE_NO_GENES_SURVIVE",
-            f"No CDS is at least positionsInORF ({positions_in_orf} nt) long",
-            detail="Metagene profiling would run on an empty gene set and produce empty plots.",
-            hint="Lower metageneSettings.positionsInORF.",
+            f"No CDS meets the general metagene minimum length ({minimum_length} nt)",
+            detail=detail,
+            hint=(
+                "Review positionsInORF and lengthCutoff to retain CDSs in the general group."
+                if has_sorf_candidates
+                else "Lower metageneSettings.positionsInORF or lengthCutoff."
+            ),
         )
     elif fraction < 0.1:
         report.warning(
             "METAGENE_FEW_GENES_SURVIVE",
             f"Only {len(surviving)} of {len(cds)} CDS ({fraction:.1%}) are long enough for the metagene window",
-            detail=f"positionsInORF is {positions_in_orf} nt.",
+            detail=f"The effective minimum CDS length is {minimum_length} nt.",
             hint="Consider lowering metageneSettings.positionsInORF to retain more genes.",
         )
     else:
