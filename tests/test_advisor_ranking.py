@@ -30,7 +30,7 @@ def test_stronger_peak_wins_over_stronger_body_frame(anchor, read_end):
     recommendation = psite.recommend_read_lengths(scores, profiles, coordinates, geometry, anchor)
     assert recommendation.read_lengths == [32]
     assert recommendation.sharpness == pytest.approx(200)
-    assert "read length 32 has the strongest" in recommendation.rationale[0]
+    assert "read length 32 is the coverage-supported reference" in recommendation.rationale[0]
 
 
 def test_zero_padding_is_not_part_of_the_measured_background():

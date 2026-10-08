@@ -90,14 +90,37 @@ use this same background definition in site coordinates.  Their numerical
 ratios can differ from older reports that measured background in unshifted
 read-end coordinates.
 
-Peak/background enrichment is scored without an upper cap.  Selection begins
-with the usable length having the strongest single-length, offset-corrected
-boundary peak relative to background.  At each step the advisor tries adding
-each remaining usable length, selects the one giving the largest improvement
-in that same pooled metric, and includes it only if the gain is at least 2%.
-It stops when none meets that threshold.  Evidence supporting annotated frame 0
-and read abundance only break enrichment ties; they cannot outweigh a stronger
-peak.  The procedure evaluates one addition at a time.
+Selection balances supported read coverage with boundary enrichment. Among
+the individually usable lengths, the advisor chooses an anchor that maximizes
+``read_fraction * log(1 + enrichment)``. Read fractions come from accepted
+mapped reads within the evaluated length range, while enrichment is the
+offset-corrected boundary peak relative to its observed background. Ranking
+by read count instead of fraction gives the same anchor because the denominator
+is shared across lengths. The logarithm reduces the influence of
+an extreme enrichment ratio at a rare length. It does not cap the reported
+enrichment or interpret all reads of that length as translated footprints.
+
+The enrichment floor is the larger of ``2`` and
+``minRelativeEnrichment * anchor_enrichment``. The setting defaults to ``0.5``
+and can range from 0 to 1. Each included length must meet this floor, and the
+pooled, offset-corrected profile must also meet it, remain at least five
+background standard deviations above background, and retain at least ten
+observed background positions. Starting with the anchor, the advisor adds the
+feasible length carrying the most additional reads, reevaluating the remaining
+lengths after each addition. It stops when no addition preserves these quality
+requirements. Pooling may lower enrichment while including more supported
+reads; an increase in enrichment is no longer required.
+
+This is a deterministic greedy selection heuristic, rather than an exhaustive
+search or a validated biological enrichment cutoff. The anchor combines
+abundance and enrichment; the relative floor expresses how much anchor
+enrichment can be lost in exchange for read coverage. A rare extreme ratio or
+an abundant marginal signal can still influence that anchor. Inspect the
+reported anchor, floor, selected read fraction, and pooled quality alongside
+the metagene profiles and replicates. Increasing the setting makes the
+relative criterion stricter; setting it to zero retains the absolute quality
+requirements. Reading-frame and periodicity measurements remain separate
+diagnostics and confidence evidence.
 
 When both ends are evaluated, the advisor prefers the end whose estimated
 offset varies least across usable read lengths.  That consistency identifies
@@ -269,6 +292,17 @@ For ``<library>``, HRIBO writes:
    recommendations for every evaluated end.  Per-length scores include
    ``background_reference``, ``background_positions``, and ``frame_reads``
    so enrichment and frame support can be reviewed explicitly.
+   ``recommendation.selection`` records the selection strategy
+   (``coverage_with_quality_floor``), ``reference_read_length``,
+   ``reference_abundance``, ``reference_sharpness``, and ``reference_utility``
+   (the reference read fraction times ``log(1 + enrichment)``).
+   ``min_relative_enrichment`` records the configured setting;
+   ``minimum_sharpness`` is the resulting enrichment floor. ``eligible_fraction``
+   counts reads from all individually usable lengths before that relative
+   floor is applied. The selected fraction and pooled enrichment remain
+   ``recommendation.covered_fraction`` and ``recommendation.sharpness``.
+   These fractions use accepted reads within the evaluated length range as
+   their denominator. Selection metadata is separate from calibrated offsets.
    ``deepribo_a_site`` contains separate DeepRibo advice or the reason none
    was made; ``applied`` is always
    ``false``.

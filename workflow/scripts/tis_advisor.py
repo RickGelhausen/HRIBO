@@ -87,7 +87,15 @@ def parse_arguments(argv=None):
     parser.add_argument("--deepribo_asite_offset", type=int,
                         default=DEEPRIBO_DEFAULT_A_SITE_OFFSET,
                         help="Current DeepRibo 3'-to-A-site offset, shown for comparison only.")
-    return parser.parse_args(argv)
+    parser.add_argument("--min_relative_enrichment", type=float,
+                        default=psite.DEFAULT_MIN_RELATIVE_ENRICHMENT,
+                        help="Minimum fraction of the coverage-supported reference's "
+                        "enrichment retained by each length and the pooled profile (0 to 1). "
+                        "Lower values favor broader coverage; higher values favor peak quality.")
+    args = parser.parse_args(argv)
+    if not np.isfinite(args.min_relative_enrichment) or not 0 <= args.min_relative_enrichment <= 1:
+        parser.error("--min_relative_enrichment must be a finite number between 0 and 1")
+    return args
 
 
 def build_profiles(args):
@@ -398,7 +406,7 @@ def render_report(library, best, comparisons, figures, asite_advice, path,
         )
         parts.append(
             f"<p>The pooled {signal} peak is {recommendation.sharpness:.1f} times the "
-            f"upstream background, built from {recommendation.covered_fraction:.0%} of the "
+            f"upstream background, built from {recommendation.covered_fraction:.1%} of the "
             f"library. The dominant reading frame holds {recommendation.frame_bias:.0%} of "
             f"{site}-sites.</p>"
         )
@@ -500,8 +508,12 @@ def render_report(library, best, comparisons, figures, asite_advice, path,
         parts.extend(f"<li>{line}</li>" for line in recommendation.rationale)
         parts.append("</ul>")
     parts.append(
-        "<p>Selection starts with the strongest single-length peak/background enrichment, "
-        "then adds a length only if it improves that same pooled metric by at least 2%. "
+        "<p>Selection uses a reference ranked by read share times log(1 + enrichment), "
+        "then adds the largest available share of reads while each length and the pooled "
+        "profile meet the reported quality floor and the noise/background checks. "
+        "An addition can reduce enrichment while retaining a strong pooled peak. "
+        "The configurable relative floor is an analysis preference, not a validated "
+        "biological cutoff; the search adds one feasible length at a time. "
         "Raw peak depth, enrichment, and coding-body reading frames are separate measurements. "
         "The evidence tables and scored heatmap panel use the same upstream background "
         "relative to the calibrated site; the other panel is a diagnostic normalized "
@@ -518,7 +530,8 @@ def render_report(library, best, comparisons, figures, asite_advice, path,
     for comparison in comparisons:
         end_label = "5'" if comparison.read_end == "fiveprime" else "3'"
         parts.append(f"<h2>Evidence per read length, {end_label} mapping</h2>")
-        parts.append(_scores_table(comparison.scores, site=site))
+        parts.append(_scores_table(comparison.scores, site=site,
+                                   selected_lengths=comparison.recommendation.read_lengths))
 
     parts.append("<h2>Figures</h2>")
     js_mode = {"integrated": True, "online": "cdn", "local": "directory"}.get(include_plotly_js, True)
@@ -604,14 +617,15 @@ def _end_comparison_table(comparisons, best, site="P"):
     return "\n".join(rows)
 
 
-def _scores_table(scores, site="P"):
+def _scores_table(scores, site="P", selected_lengths=()):
+    selected = set(selected_lengths)
     rows = [
         "<div class='table-wrap'><table><thead><tr>"
         f"<th>Read length</th><th>Share of reads</th><th>{site}-site offset (nt)</th>"
         "<th>Peak read ends</th><th>Background read ends/bin</th>"
         "<th>Peak vs background</th><th>Body read ends</th><th>Frame 0</th>"
         "<th>Dominant frame</th><th>3-nt FFT score</th>"
-        "<th>Usable</th><th>Notes</th></tr></thead><tbody>"
+        "<th>Usable</th><th>Selected</th><th>Notes</th></tr></thead><tbody>"
     ]
     for score in scores:
         frame = "-" if not any(score.frame_fractions) else (
@@ -630,6 +644,7 @@ def _scores_table(scores, site="P"):
             f"<td class='num'>{frame}</td>"
             f"<td class='num'>{score.periodicity:.0%}</td>"
             f"<td>{'yes' if score.usable else 'no'}</td>"
+            f"<td>{'yes' if score.read_length in selected else 'no'}</td>"
             f"<td>{'; '.join(score.reasons)}</td>"
             "</tr>"
         )
@@ -660,7 +675,8 @@ def main():
     }
     coordinates = stop_coordinates if anchor == "stop" else start_coordinates
     best, comparisons = psite.compare_read_ends(
-        boundary_by_end, coordinates, totals, anchor=anchor
+        boundary_by_end, coordinates, totals, anchor=anchor,
+        min_relative_enrichment=args.min_relative_enrichment,
     )
     asite_advice = deepribo_asite_advice(
         library, comparisons, total_reads, args.deepribo_asite_offset, library_type

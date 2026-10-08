@@ -154,10 +154,9 @@ MIN_FRAME_READS = 30
 # A descriptive notice trigger, not a validated bacterial QC or accuracy cutoff.
 LOW_PERIODICITY_NOTICE_THRESHOLD = 0.15
 
-# A read length joins the recommended set only if it improves the pooled peak by
-# at least this much, relatively. Accepting any improvement at all lets a read
-# length with no real signal in on a rounding difference.
-MIN_RELATIVE_GAIN = 0.02
+# Retain this fraction of a coverage-supported reference length's enrichment.
+# This is an adjustable quality/coverage preference, not a biological cutoff.
+DEFAULT_MIN_RELATIVE_ENRICHMENT = 0.5
 
 # Two read ends whose pooled peaks are within this factor of each other are
 # treated as equally sharp. This is the normal case rather than the exception:
@@ -564,6 +563,7 @@ class Recommendation:
     anchor: str = "start"
     site: str = "P"
     frame_reads: float | None = None
+    selection: dict = field(default_factory=dict)
 
     @property
     def has_recommendation(self) -> bool:
@@ -622,18 +622,29 @@ def _evaluate_combination(
     pooled = pool_profiles(profiles, offsets, read_lengths, read_end)
 
     # Offset correction aligns the selected boundary's P- or A-site at zero.
-    at_boundary = pooled[coordinates == 0]
-    peak = float(at_boundary[0]) if at_boundary.size else 0.0
-
     valid = _combination_valid_mask(pooled.size, offsets, read_lengths, read_end)
-    _, _, _, reference, _ = background_statistics(pooled, coordinates, anchor, valid)
-    sharpness = float(peak / reference) if reference > 0 else 0.0
+    evidence = _pooled_peak_evidence(pooled, coordinates, anchor, valid)
 
     # A-site-aligned termination profiles still need the 3-nt P-site correction
     # when evaluating coding-body evidence.
     fractions = frame_fractions(pooled, coordinates, 0, read_end, anchor=anchor, valid_mask=valid)
     periodicity = periodicity_score(pooled, coordinates, 0, read_end, anchor=anchor, valid_mask=valid)
-    return sharpness, fractions, periodicity
+    return evidence.sharpness, fractions, periodicity
+
+
+def _pooled_peak_evidence(pooled, coordinates, anchor, valid):
+    """Assess the calibrated boundary at zero using only observed positions."""
+    at_boundary = pooled[coordinates == 0]
+    peak = float(at_boundary[0]) if at_boundary.size else 0.0
+    background, mean, sd, reference, positions = background_statistics(
+        pooled, coordinates, anchor, valid
+    )
+    spread = max(sd, np.sqrt(max(mean, 0.0)), 1.0)
+    return PeakEstimate(
+        0 if positions >= MIN_BACKGROUND_POSITIONS else None,
+        peak, background, sd, peak / reference if reference > 0 else 0.0,
+        (peak - mean) / spread, reference, positions,
+    )
 
 
 def _combination_valid_mask(size, offsets, read_lengths, read_end):
@@ -656,18 +667,32 @@ def recommend_read_lengths(
     coordinates: np.ndarray,
     read_end: ReadEnd = DEFAULT_READ_END,
     anchor: str = "start",
+    min_relative_enrichment: float = DEFAULT_MIN_RELATIVE_ENRICHMENT,
 ) -> Recommendation:
     """Choose read lengths and calibrated-site offsets for boundary profiling.
 
-    Start with the strongest single-length enrichment. At each step choose the
-    remaining length with the largest gain in that same pooled metric. Frame 0
-    support and read abundance only break enrichment ties. A marginal length
-    must not dilute a clear peak merely because its coding-body frame is strong.
+    Choose a reference by read coverage times log(1 + enrichment), then retain
+    more reads subject to individual and pooled boundary-quality constraints.
+    A rare extreme ratio cannot require every addition to improve that ratio.
+    The relative floor is an explicit analysis preference; frame composition
+    and periodicity remain diagnostics rather than bacterial inclusion gates.
     """
+    if (isinstance(min_relative_enrichment, bool)
+            or not np.isfinite(min_relative_enrichment)
+            or not 0 <= min_relative_enrichment <= 1):
+        raise ValueError("min_relative_enrichment must be a finite number between 0 and 1")
     read_end = _read_end_for_anchor(read_end, anchor)
     signal = _signal_for_anchor(anchor)
     coordinates = np.asarray(coordinates)
     usable = [s for s in scores if s.usable]
+
+    if not np.any(coordinates == 0):
+        recommendation = _no_recommendation(scores, read_end, anchor)
+        recommendation.warnings.insert(
+            0, "The configured profile axis does not contain the calibrated codon at "
+            "position zero. Widen the profile window before selecting read lengths.",
+        )
+        return recommendation
 
     if not usable:
         return _no_recommendation(scores, read_end, anchor)
@@ -680,44 +705,74 @@ def recommend_read_lengths(
             start_profiles, coordinates, offsets, [score.read_length], read_end, anchor
         ) for score in usable
     }
-    usable.sort(key=lambda s: (single_metrics[s.read_length][0],
-                              _supported_frame_zero(s.frame_fractions, s.frame_reads),
-                              s.total_reads, -s.read_length), reverse=True)
-    selected = [usable[0].read_length]
+    usable.sort(key=lambda s: (
+        s.total_reads * np.log1p(single_metrics[s.read_length][0]),
+        _supported_frame_zero(s.frame_fractions, s.frame_reads),
+        s.total_reads, -s.read_length,
+    ), reverse=True)
+    reference = usable[0]
+    selected = [reference.read_length]
     best_sharpness, best_fractions, best_periodicity = single_metrics[selected[0]]
+    minimum_sharpness = max(MIN_PEAK_RATIO, min_relative_enrichment * best_sharpness)
 
     rationale = [
-        f"read length {usable[0].read_length} has the strongest {signal} peak "
-        f"({best_sharpness:.1f}x background at offset {usable[0].offset}); "
-        "reading-frame bias does not override peak enrichment"
+        f"read length {reference.read_length} is the coverage-supported reference for the "
+        f"{signal} peak: {reference.total_reads / total_reads:.2%} of evaluated reads, "
+        f"{best_sharpness:.1f}x background at offset {reference.offset}; "
+        "reference ranking uses read share times log(1 + peak/background enrichment)",
+        f"Individual lengths and their pooled peak must retain at least "
+        f"{minimum_sharpness:.1f}x enrichment ({min_relative_enrichment:.0%} of the reference, "
+        f"with an absolute minimum of {MIN_PEAK_RATIO:.0f}x), supported background, "
+        f"and a pooled peak at least {MIN_PEAK_Z:.0f} background standard deviations above noise",
     ]
 
-    remaining = usable[1:]
+    remaining = []
+    for candidate in usable[1:]:
+        sharpness = single_metrics[candidate.read_length][0]
+        if sharpness < minimum_sharpness:
+            rationale.append(
+                f"read length {candidate.read_length} was left out: its own "
+                f"{sharpness:.1f}x enrichment is below the {minimum_sharpness:.1f}x quality floor, "
+                f"despite carrying {candidate.total_reads / total_reads:.2%} of evaluated reads"
+            )
+        else:
+            remaining.append(candidate)
+
     while remaining:
-        trials = [(candidate, _evaluate_combination(
-            start_profiles, coordinates, offsets, selected + [candidate.read_length], read_end, anchor
-        ), _combination_frame_read_count(
-            start_profiles, coordinates, offsets, selected + [candidate.read_length], read_end, anchor
-        )) for candidate in remaining]
-        candidate, metrics, _ = max(trials, key=lambda trial: (
-            trial[1][0], _supported_frame_zero(trial[1][1], trial[2]),
-            trial[0].total_reads, -trial[0].read_length
-        ))
-        sharpness, fractions, periodicity = metrics
-        if sharpness < best_sharpness * (1 + MIN_RELATIVE_GAIN):
-            for excluded, (trial_sharpness, _, _), _ in trials:
+        trials = []
+        for candidate in remaining:
+            proposed = selected + [candidate.read_length]
+            pooled = pool_profiles(start_profiles, offsets, proposed, read_end)
+            valid = _combination_valid_mask(pooled.size, offsets, proposed, read_end)
+            evidence = _pooled_peak_evidence(pooled, coordinates, anchor, valid)
+            trials.append((candidate, evidence))
+        feasible = [trial for trial in trials
+                    if trial[1].is_significant and trial[1].sharpness >= minimum_sharpness]
+        if not feasible:
+            for excluded, evidence in trials:
                 rationale.append(
                     f"read length {excluded.read_length} was left out: it moves the pooled "
-                    f"peak from {best_sharpness:.1f}x to {trial_sharpness:.1f}x, short of the "
-                    f"{MIN_RELATIVE_GAIN:.0%} gain required to include it"
+                    f"peak to {evidence.sharpness:.1f}x "
+                    f"({evidence.z_score:.1f} background standard deviations; "
+                    f"{evidence.background_positions} observed background positions), "
+                    "which does not meet the pooled quality requirements"
                 )
             break
+        candidate, _ = max(feasible, key=lambda trial: (
+            trial[0].total_reads, trial[1].sharpness,
+            _supported_frame_zero(trial[0].frame_fractions, trial[0].frame_reads),
+            -trial[0].read_length,
+        ))
         selected.append(candidate.read_length)
         remaining.remove(candidate)
-        best_sharpness, best_fractions, best_periodicity = metrics
+        best_sharpness, best_fractions, best_periodicity = _evaluate_combination(
+            start_profiles, coordinates, offsets, selected, read_end, anchor
+        )
+        covered = sum(s.total_reads for s in usable if s.read_length in selected) / total_reads
         rationale.append(
-            f"adding read length {candidate.read_length} (offset {candidate.offset}) "
-            f"raises the pooled peak to {sharpness:.1f}x"
+            f"adding read length {candidate.read_length} (offset {candidate.offset}) retains "
+            f"{covered:.2%} of evaluated reads with a {best_sharpness:.1f}x pooled peak, "
+            f"above the {minimum_sharpness:.1f}x quality floor"
         )
 
     covered = sum(s.total_reads for s in scores if s.read_length in selected) / total_reads
@@ -743,6 +798,17 @@ def recommend_read_lengths(
         anchor=anchor,
         site=_site_for_anchor(anchor),
         frame_reads=frame_reads,
+        selection={
+            "strategy": "coverage_with_quality_floor",
+            "reference_read_length": reference.read_length,
+            "reference_abundance": reference.total_reads / total_reads,
+            "reference_sharpness": single_metrics[reference.read_length][0],
+            "reference_utility": (reference.total_reads / total_reads
+                                  * float(np.log1p(single_metrics[reference.read_length][0]))),
+            "min_relative_enrichment": float(min_relative_enrichment),
+            "minimum_sharpness": minimum_sharpness,
+            "eligible_fraction": sum(s.total_reads for s in usable) / total_reads,
+        },
     )
 
 
@@ -936,8 +1002,8 @@ def prefer_read_end(a: "EndComparison", b: "EndComparison") -> int:
     # Offset spread leads, because it is the only criterion that reflects a real
     # difference between the ends. Per read length the 5' and 3' profiles are
     # shifted copies of each other and therefore equally sharp, so a difference
-    # in pooled sharpness mostly records how many read lengths each end's greedy
-    # search happened to pool, not which end is better.
+    # in pooled sharpness can reflect different read-length selections, rather
+    # than which end is better.
     spread_a, spread_b = a.offset_spread, b.offset_spread
     if spread_a is not None and spread_b is not None and spread_a != spread_b:
         return -1 if spread_a < spread_b else 1
@@ -964,6 +1030,7 @@ def compare_read_ends(
     coordinates: np.ndarray,
     read_totals: dict[int, int] | None = None,
     anchor: str = "start",
+    min_relative_enrichment: float = DEFAULT_MIN_RELATIVE_ENRICHMENT,
 ) -> tuple[EndComparison | None, list[EndComparison]]:
     """Score every read end and choose one for the selected boundary signal.
 
@@ -984,7 +1051,9 @@ def compare_read_ends(
             )
             continue
         scores = score_read_lengths(profiles, coordinates, read_totals, read_end, anchor)
-        recommendation = recommend_read_lengths(scores, profiles, coordinates, read_end, anchor)
+        recommendation = recommend_read_lengths(
+            scores, profiles, coordinates, read_end, anchor, min_relative_enrichment
+        )
         comparisons.append(EndComparison(name, scores, recommendation))
 
     comparisons.sort(key=functools.cmp_to_key(prefer_read_end))

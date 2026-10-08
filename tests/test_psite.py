@@ -188,18 +188,15 @@ def test_recommendation_selects_the_planted_read_lengths():
     assert all(offset == 12 for offset in recommendation.offsets.values())
 
 
-def test_recommendation_pools_and_sharpens():
-    """Pooling several good lengths should beat the best single length."""
+def test_recommendation_pools_good_lengths_within_the_quality_floor():
+    """Retain all planted good lengths while preserving supported enrichment."""
     profiles, totals = build_library(good_lengths=(28, 29, 30), offset=12)
     scores = psite.score_read_lengths(profiles, COORDINATES, totals)
     recommendation = psite.recommend_read_lengths(scores, profiles, COORDINATES)
 
-    single = max(
-        (s.sharpness for s in scores if s.usable and s.read_length == recommendation.read_lengths[0]),
-        default=0,
-    )
-    if len(recommendation.read_lengths) > 1:
-        assert recommendation.sharpness >= single
+    assert recommendation.read_lengths == [28, 29, 30]
+    assert recommendation.sharpness >= recommendation.selection["minimum_sharpness"]
+    assert recommendation.covered_fraction == pytest.approx(600000 / sum(totals.values()))
 
 
 def test_no_recommendation_when_nothing_is_usable():

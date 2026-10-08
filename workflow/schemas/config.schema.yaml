@@ -314,6 +314,15 @@ properties:
         description: >
           Read ends to evaluate. Listing both lets the advisor pick whichever the
           protocol defines more precisely.
+      minRelativeEnrichment:
+        type: number
+        minimum: 0
+        maximum: 1
+        default: 0.5
+        description: >
+          Minimum individual and pooled enrichment as a fraction of a supported
+          anchor length's enrichment. Lower values permit broader read coverage;
+          absolute peak and background support requirements still apply.
 
   workflowSettings:
     type: object

@@ -228,10 +228,20 @@ start/P-site advice in RIBO/TIS libraries or stop/A-site advice in TTS libraries
    tisAdvisorSettings:
      readLengths: "22-40"
      mappingMethods: ["fiveprime", "threeprime"]
+     minRelativeEnrichment: 0.5
 
 The sample-sheet method selects the advisor's boundary automatically.  For
 disome TTS libraries, include the longer footprint lengths explicitly (for
 example ``50-80``); the advisor does not expand the configured range.
+
+``minRelativeEnrichment`` accepts values from 0 to 1 and defaults to ``0.5``
+when omitted. It sets the minimum enrichment retained relative to a supported
+anchor read length, for both individual lengths and their pooled profile.
+Lower values permit more reads to be included; higher values preserve more
+anchor enrichment. Absolute peak, offset, and background-support checks still
+apply, including when this setting is zero. This quality/coverage tradeoff is
+a selection heuristic; see :doc:`tis-advisor` for its definition and reported
+selection evidence.
 
 Validate changes
 ----------------

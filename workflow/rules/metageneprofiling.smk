@@ -141,6 +141,7 @@ rule tisAdvisor:
         outdir=lambda wildcards, output: os.path.dirname(output.report_html),
         readlengths=config["tisAdvisorSettings"]["readLengths"],
         mappingMethods=config["tisAdvisorSettings"]["mappingMethods"],
+        minRelativeEnrichment=config["tisAdvisorSettings"].get("minRelativeEnrichment", 0.5),
         positionsInORF=config["metageneSettings"]["positionsInORF"],
         positionsOutORF=config["metageneSettings"]["positionsOutsideORF"],
         filteringMethods=config["metageneSettings"]["filteringMethods"],
@@ -161,6 +162,7 @@ rule tisAdvisor:
             -r {params.readlengths:q} \
             --library_type {wildcards.method:q} \
             --mapping_methods {params.mappingMethods:q} \
+            --min_relative_enrichment {params.minRelativeEnrichment:q} \
             --positions_in_ORF {params.positionsInORF:q} \
             --positions_out_ORF {params.positionsOutORF:q} \
             --filtering_methods {params.filteringMethods:q} \

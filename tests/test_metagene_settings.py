@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import numpy as np
+import jsonschema
 import pandas as pd
 import pytest
 import yaml
@@ -535,8 +536,10 @@ def snakemake_command():
 
 
 @pytest.mark.parametrize("library_method", ["RIBO", "TIS", "TTS"])
+@pytest.mark.parametrize("relative_enrichment", [None, 0.75])
 def test_metagene_settings_render_safely_in_a_dry_run(
     library_method,
+    relative_enrichment,
     snakemake_command,
     genome_file,
     annotation_file,
@@ -563,6 +566,10 @@ def test_metagene_settings_render_safely_in_a_dry_run(
             "colorList": ["#123456", "rgb(1, 2, 3)"],
         }
     )
+    if relative_enrichment is None:
+        workflow_config["tisAdvisorSettings"].pop("minRelativeEnrichment", None)
+    else:
+        workflow_config["tisAdvisorSettings"]["minRelativeEnrichment"] = relative_enrichment
 
     config_path = tmp_path / "config.yaml"
     config_path.write_text(yaml.safe_dump(workflow_config, sort_keys=False))
@@ -592,9 +599,37 @@ def test_metagene_settings_render_safely_in_a_dry_run(
     assert str(REPO / "workflow" / "scripts" / "export_orfbounder_inputs.py") in rendered
     assert "--output-dir tis_advice/orfbounder" in rendered
     assert f"--library_type {library_method}" in rendered
+    expected_relative = 0.5 if relative_enrichment is None else relative_enrichment
+    assert rendered.count(f"--min_relative_enrichment {expected_relative}") == 1
     assert rendered.count("--length_cutoff 175") == 2
     assert "--filtering_methods overlap length rpkm" in rendered
     assert re.search(r"--filtering_method(?!s)", rendered) is None
     assert "--output_formats interactive svg pdf png jpg" in rendered
     assert "#123456" in rendered
     assert "rgb(1, 2, 3)" in rendered
+
+
+@pytest.mark.parametrize("relative_enrichment", [None, 0, 0.5, 1])
+def test_advisor_relative_enrichment_schema_accepts_old_configs_and_bounds(
+    relative_enrichment,
+):
+    workflow_config = yaml.safe_load((REPO / "config" / "config.yaml").read_text())
+    schema = yaml.safe_load((REPO / "workflow" / "schemas" / "config.schema.yaml").read_text())
+    if relative_enrichment is None:
+        workflow_config["tisAdvisorSettings"].pop("minRelativeEnrichment", None)
+    else:
+        workflow_config["tisAdvisorSettings"]["minRelativeEnrichment"] = relative_enrichment
+
+    jsonschema.Draft202012Validator(schema).validate(workflow_config)
+
+
+@pytest.mark.parametrize("relative_enrichment", [-0.01, 1.01, "0.5", True])
+def test_advisor_relative_enrichment_schema_rejects_invalid_values(
+    relative_enrichment,
+):
+    workflow_config = yaml.safe_load((REPO / "config" / "config.yaml").read_text())
+    schema = yaml.safe_load((REPO / "workflow" / "schemas" / "config.schema.yaml").read_text())
+    workflow_config["tisAdvisorSettings"]["minRelativeEnrichment"] = relative_enrichment
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(schema).validate(workflow_config)

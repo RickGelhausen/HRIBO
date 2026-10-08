@@ -187,6 +187,14 @@ tisAdvisorSettings:
   # nuclease treatment, so it is worth letting the data decide.
   mappingMethods: ["fiveprime", "threeprime"]
 
+  # Retain at least this fraction of the enrichment of a supported anchor
+  # length chosen using read count * log(1 + enrichment). Individual lengths
+  # and their pooled profile must meet this floor and the absolute noise checks.
+  # Lower values permit broader read coverage; higher values preserve more
+  # anchor enrichment. This is a quality/coverage heuristic, not an accuracy
+  # estimate. Older configurations without this setting use 0.5.
+  minRelativeEnrichment: 0.5
+
 #####################
 # Workflow Settings #
 #####################
