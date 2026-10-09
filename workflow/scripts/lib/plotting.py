@@ -199,7 +199,9 @@ def plot_metagene_heatmap(
 
     theme.apply(fig, title, subtitle)
     fig.update_layout(
-        height=max(320, 26 * len(lengths) + 190),
+        height=max(360, 26 * len(lengths) + 230),
+        margin=dict(t=110),
+        title=dict(y=1, yanchor="top", pad=dict(t=12)),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
     return fig
@@ -290,7 +292,11 @@ def plot_read_length_profiles(
     fig.update_annotations(font_size=10)
 
     theme.apply(fig, title, subtitle)
-    fig.update_layout(height=max(300, 95 * len(lengths)))
+    fig.update_layout(
+        height=max(340, 95 * len(lengths) + 40),
+        margin=dict(t=110),
+        title=dict(y=1, yanchor="top", pad=dict(t=12)),
+    )
     return fig
 
 
