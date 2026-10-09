@@ -290,6 +290,7 @@ def create_metagene_figures(
                 offsets,
                 read_end=mapping_method,
             )
+            fig.update_layout(meta={"metagene_contig": chromosome})
             fig_list.append((chromosome, mapping_method, fig))
 
         value_label = {"raw": "Reads", "cpm": "CPM", "window": "Window-normalized counts"}[normalization_method]
@@ -304,6 +305,7 @@ def create_metagene_figures(
             start_only=start_only,
         )
         if overlaid is not None:
+            overlaid.update_layout(meta={"metagene_contig": chromosome})
             fig_list.append((f"{chromosome} (overlaid read lengths)", mapping_method, overlaid))
 
         profiles = plotting.plot_read_length_profiles(
@@ -319,6 +321,7 @@ def create_metagene_figures(
             value_label=value_label,
         )
         if profiles is not None:
+            profiles.update_layout(meta={"metagene_contig": chromosome})
             fig_list.append((f"{chromosome} (per read length)", mapping_method, profiles))
 
     io.create_excel_file(df_start_dict, meta_dir / f"{mapping_method}_readcounts_start.xlsx")
@@ -395,12 +398,34 @@ def profile_cohort(args, read_intervals, total_counts, genome_lengths, max_lengt
                 candidate_counts=method_counts, candidate_support=method_support,
                 start_only=is_sorf,
             ))
+        contig_reports = {}
+        contig_methods = {}
+        for name, method, fig in figures:
+            contig_methods.setdefault(io.metagene_contig(name, fig), set()).add(method)
+        if "interactive" in args.output_formats and len(contig_methods) > 1:
+            for contig, represented_methods in contig_methods.items():
+                support_contig = ALL_CONTIGS if contig == "no_evidence" else contig
+                contig_counts = counts[
+                    (counts["contig"] == support_contig)
+                    & counts["mapping_method"].isin(represented_methods)
+                ]
+                contig_support = support[
+                    (support["contig"] == support_contig)
+                    & support["mapping_method"].isin(represented_methods)
+                ]
+                scope = ("No profile evidence; counts summarize the full group for the displayed mapping methods."
+                         if contig == "no_evidence" else f"Contig: {contig}.")
+                contig_reports[contig] = candidate_report_html(
+                    contig_counts, contig_support,
+                    description + " " + scope + " Downloaded TSVs include all contigs in this group.",
+                )
         io.write_plots_to_file(
             figures, args.output_formats, args.include_plotly_js,
             args.alignment_file_path.stem + (" (sORFs)" if is_sorf else ""), meta_dir,
             report_html=report,
             report_subtitle=description + f" Normalization: {normalization_method}. "
                 + ("Start-codon read-end profiles." if is_sorf else "Heatmap colours show enrichment relative to each length's background; line profiles use the stated normalization."),
+            contig_reports=contig_reports,
         )
 
 

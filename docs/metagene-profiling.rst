@@ -9,8 +9,12 @@ plus- and minus-strand genes can be interpreted on the same axis.
 Begin with ``metageneprofiling/read_length_fractions.html`` to identify the
 dominant fragment lengths across libraries.  Then open
 ``metageneprofiling/<library>/<normalization>/interactive_metagene_profiling.html``
-to compare start and stop profiles.  Use the adjacent Excel workbooks when
-exact values are needed.
+to compare start and stop profiles. For libraries with several profiled
+contigs, this page is an index linking to a separate interactive report for
+each contig. Each contig page contains its configured mapping methods and plot
+views, plus candidate and support counts restricted to that contig. A library
+with only one profiled contig opens directly into its plots. Use the adjacent
+Excel workbooks when exact values are needed.
 
 The report keeps three complementary views: an enrichment heatmap, the
 original-style overlaid read-length lines, and individual start-profile
@@ -225,7 +229,8 @@ For every ``<library>`` and requested ``<normalization>``, the directory
 * ``<mapping>_readcounts_start.xlsx`` and
   ``<mapping>_readcounts_stop.xlsx``;
 * ``interactive_metagene_profiling.html`` when ``interactive`` output is
-  enabled; and
+  enabled, plus sibling ``interactive_metagene_profiling_contig_*.html`` pages
+  when several contigs are profiled; and
 * one ``<contig>_<mapping>.<format>`` heatmap, plus a per-read-length start
   profile figure and an overlaid read-length figure when data are available,
   for each requested static format. The additional filenames include
@@ -233,6 +238,12 @@ For every ``<library>`` and requested ``<normalization>``, the directory
 
 Static figures preserve their individual layout heights so that multi-panel
 profiles retain space for the data and support labels.
+
+Contig-page filenames contain a sanitized contig name and a stable identifier
+to avoid filename collisions. Open the main index to follow the links, and
+keep the sibling pages with it when moving or sharing the report directory.
+Integrated JavaScript is embedded once in each contig page. ``local`` mode
+writes a shared ``plotly.min.js`` beside the reports for offline use.
 
 Workbook sheets are named by contig.  Their first column is ``coordinates``,
 the following columns are exactly the lengths configured in
@@ -250,7 +261,10 @@ When the sORF group is enabled,
 ``metageneprofiling/<library>/sorfs/<normalization>/`` contains its start-count
 workbooks and requested start figures. The interactive report uses the same
 ``interactive_metagene_profiling.html`` filename. Its start coordinate and
-read-length columns follow the conventions above.
+read-length columns follow the conventions above. It uses the same per-contig
+navigation when several contigs are profiled. A mapping with no profile
+evidence retains its explicit zero-profile page and the aggregate support
+counts that explain it.
 
 At each group root, ``metageneprofiling/<library>/`` and, when enabled,
 ``metageneprofiling/<library>/sorfs/``, three tab-separated tables provide
