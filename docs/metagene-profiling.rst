@@ -18,8 +18,14 @@ panels. Overlaid lines show position on the x axis and the selected raw,
 CPM, or window-normalized values on the y axis, with a common scale for the
 start and stop panels. Each configured read length has the same colour and
 dash style in both panels; clicking its legend entry toggles both lines.
-Individual panels also show every configured length. The sORF report keeps
-both line views, using only the start anchor.
+Individual panels also show every configured length. Their y axes share a
+zero-based linear range by default, allowing amplitudes to be compared.
+In the interactive report, the ``Shared y-axis`` and ``Independent y-axes``
+buttons switch between comparable amplitudes and a separate scale for each
+profile. Weak lengths may appear flatter on the shared scale; use independent
+scales to inspect their shapes. Neither choice changes the plotted counts or
+normalization. Static exports use the shared scale. The sORF report keeps both
+line views, using only the start anchor.
 
 When ``metageneSettings.sorfMaxLength`` is positive, an additional start-only
 profile is written under

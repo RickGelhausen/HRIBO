@@ -303,7 +303,10 @@ def plot_read_length_profiles(
     candidate_support=None,
     value_label="Reads",
 ):
-    """One panel per read length, sharing an x axis.
+    """One panel per read length, with comparable y scales by default.
+
+    Shared y axes compare amplitudes across lengths. The interactive scale
+    buttons also offer independent axes for inspecting smaller profile shapes.
 
     User-supplied series colours are assigned in read-length order and cycle
     deterministically when fewer colours than panels are supplied.  An empty
@@ -375,7 +378,38 @@ def plot_read_length_profiles(
     fig.update_yaxes(title_text=value_label, row=max(1, len(lengths) // 2), col=1)
     fig.update_annotations(font_size=10)
 
-    _metagene_layout(fig, title, subtitle, max(180, body_height))
+    peak = float(matrix.max())
+    shared_range = [0, peak * 1.1 if peak > 0 else 1.0]
+    shared_axes, independent_axes = {}, {}
+    for index, values in enumerate(matrix, start=1):
+        axis = "yaxis" if index == 1 else f"yaxis{index}"
+        match = None if index == 1 else "y"
+        fig.update_yaxes(range=shared_range, autorange=False, matches=match, row=index, col=1)
+        shared_axes.update({
+            f"{axis}.matches": match,
+            f"{axis}.autorange": False,
+            f"{axis}.range": shared_range,
+        })
+        local_peak = float(values.max())
+        independent_axes.update({
+            f"{axis}.matches": None,
+            f"{axis}.autorange": False,
+            f"{axis}.range": [0, local_peak * 1.1 if local_peak > 0 else 1.0],
+        })
+
+    plot_height = max(180, body_height)
+    _metagene_layout(fig, title, subtitle, plot_height,
+                     bottom_margin=110 if len(lengths) > 1 else 70)
+    if len(lengths) > 1:
+        fig.update_layout(updatemenus=[dict(
+            type="buttons", direction="right", active=0,
+            x=0, xanchor="left", y=-70 / plot_height, yanchor="top",
+            font=dict(size=10),
+            buttons=[
+                dict(label="Shared y-axis", method="relayout", args=[shared_axes]),
+                dict(label="Independent y-axes", method="relayout", args=[independent_axes]),
+            ],
+        )])
     return fig
 
 

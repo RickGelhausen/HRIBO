@@ -101,3 +101,49 @@ def test_zero_evidence_overlay_preserves_zero_lines_on_a_usable_count_axis(start
     assert len(figure.data) == (1 if start_only else 2)
     assert all(not np.asarray(trace.y).any() for trace in figure.data)
     assert figure.layout.yaxis.range[0] <= 0 < figure.layout.yaxis.range[1]
+
+
+def assert_comparable_panel_scales(figure, shared_upper, local_uppers):
+    shared, independent = figure.layout.updatemenus[0].buttons
+    assert shared.method == independent.method == "relayout"
+    shared_args, independent_args = shared.args[0], independent.args[0]
+    for index, local_upper in enumerate(local_uppers, start=1):
+        axis_name = "yaxis" if index == 1 else f"yaxis{index}"
+        axis = figure.layout[axis_name]
+        matching_axis = None if index == 1 else "y"
+        assert axis.type in (None, "linear")
+        assert axis.range == pytest.approx([0, shared_upper])
+        assert axis.matches == matching_axis
+        assert shared_args[f"{axis_name}.range"] == pytest.approx([0, shared_upper])
+        assert shared_args[f"{axis_name}.matches"] == matching_axis
+        assert independent_args[f"{axis_name}.range"] == pytest.approx([0, local_upper])
+        assert independent_args[f"{axis_name}.matches"] is None
+
+
+def test_read_length_panels_preserve_varied_counts_with_shared_and_independent_scales():
+    frame = pd.DataFrame({
+        "coordinates": [-2, -1, 0, 1],
+        "30": [0, 100, 50, 0], "31": [0, 2, 1, 0], "32": [0, 0, 0, 0],
+    })
+    figure = plotting.plot_read_length_profiles(
+        frame, [30, 31, 32], "Comparable read lengths", value_label="CPM",
+    )
+    assert [trace.name for trace in figure.data] == ["30 nt", "31 nt", "32 nt"]
+    for trace, length in zip(figure.data, [30, 31, 32]):
+        assert list(trace.y) == frame[str(length)].tolist()
+        assert "CPM" in trace.hovertemplate
+    assert_comparable_panel_scales(figure, 110, [110, 2.2, 1])
+
+
+def test_capped_read_length_panels_ignore_hidden_extreme_counts_in_all_scale_controls():
+    frame = pd.DataFrame({
+        "coordinates": [-2, -1, 0, 1],
+        "30": [0, 100, 50, 0], "31": [0, 2, 1, 0], "32": [1_000_000] * 4,
+    })
+    figure = plotting.plot_read_length_profiles(
+        frame, [30, 31, 32], "Two displayed lengths", max_panels=2,
+    )
+    assert [trace.name for trace in figure.data] == ["30 nt", "31 nt"]
+    assert_comparable_panel_scales(figure, 110, [110, 2.2])
+    for button in figure.layout.updatemenus[0].buttons:
+        assert not any(key.startswith("yaxis3.") for key in button.args[0])
