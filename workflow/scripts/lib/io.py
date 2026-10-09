@@ -225,7 +225,7 @@ def create_interactive_html(fig_list, alignment_file_name, output_file, include_
             + report_html
         )
     else:
-        body = report_html + _metagene_figures_html(fig_list, js_mode)
+        body = _metagene_figures_html(fig_list, js_mode) + report_html
     output_file.write_text(theme.page(html.escape(title), html.escape(subtitle), body))
 
     # Only remove files recorded as this writer's generated pages on a prior run.

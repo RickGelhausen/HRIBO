@@ -79,6 +79,26 @@ class Report(HTMLParser):
             if target.suffix == ".html" and target != self.path.resolve()
         }
 
+    def downloaded_sorf_audit(self):
+        assert not self.tables
+        assert self.text.rfind("Plotly.newPlot") < self.text.index("candidate_counts.tsv")
+        contigs = set(re.findall(r'"metagene_contig"\s*:\s*"([^"]+)"', self.text))
+        assert len(contigs) == 1
+        contig = contigs.pop()
+        scope = "[all contigs]" if contig == "no_evidence" else contig
+        methods = set(re.findall(r"(fiveprime|threeprime) mapping", self.text))
+        assert methods
+        targets = {target.name: target for target in self.local_targets()}
+        assert {name for name in targets if name.endswith(".xlsx")} == {
+            f"{method}_readcounts_start.xlsx" for method in methods
+        }
+        tables = []
+        for filename in ("candidate_counts.tsv", "candidate_support.tsv"):
+            table = pd.read_csv(targets[filename], sep="\t", dtype=str, keep_default_na=False)
+            table = table[(table["contig"] == scope) & table["mapping_method"].isin(methods)]
+            tables.append(table.to_dict("records"))
+        return scope, methods, *tables
+
 
 def example_figure(contig, marker):
     figure = go.Figure(go.Scatter(x=[0, 1], y=[marker, marker + 1], mode="lines"))
@@ -223,15 +243,12 @@ def test_two_contig_cli_sorf_support_tables_and_library_cpm_remain_separate(tmp_
     leaves = index.leaves()
     assert len(leaves) == 2
     assert "Plotly.newPlot" not in index.text
+    assert not index.tables
     for path in leaves:
         leaf = Report(path)
-        tables = [
-            [dict(zip(table[0], row)) for row in table[1:]]
-            for table in leaf.tables if table
-        ]
-        counts = next(table for table in tables if table and "input_cds" in table[0])
-        support = next(table for table in tables if table and "contributing_cds" in table[0])
-        contig = counts[0]["contig"]
+        contig, methods, counts, support = leaf.downloaded_sorf_audit()
+        assert contig in {"chrA", "chrB"}
+        assert methods == {"fiveprime", "threeprime"}
         retained = 1 if contig == "chrA" else 2
         assert {row["contig"] for row in counts + support} == {contig}
         assert {row["mapping_method"] for row in counts} == {"fiveprime", "threeprime"}
@@ -241,7 +258,8 @@ def test_two_contig_cli_sorf_support_tables_and_library_cpm_remain_separate(tmp_
         assert len(pooled) == 2
         assert {row["contributing_cds"] for row in pooled} == {str(retained)}
         assert {row["raw_count_contributions"] for row in pooled} == {str(retained)}
-        leaf.local_targets()  # Navigation and audit-table downloads all resolve.
+        assert f"{retained} retained CDSs" in leaf.text
+        assert f"{retained} contributing CDSs" in leaf.text
     for method, relative30, relative31 in [("fiveprime", 0, 0), ("threeprime", 29, 30)]:
         workbook = short_root / f"{method}_readcounts_start.xlsx"
         chr_a = pd.read_excel(workbook, sheet_name="chrA").set_index("coordinates")
@@ -292,22 +310,19 @@ def test_cli_mixed_contig_and_no_evidence_reports_scope_mapping_specific_rpkm_co
     leaves = index.leaves()
     assert len(leaves) == 2
     assert "Plotly.newPlot" not in index.text
+    assert not index.tables
     seen = set()
     for path in leaves:
         leaf = Report(path)
-        tables = [
-            [dict(zip(table[0], row)) for row in table[1:]]
-            for table in leaf.tables if table
-        ]
-        counts = next(table for table in tables if table and "input_cds" in table[0])
-        support = next(table for table in tables if table and "contributing_cds" in table[0])
+        contig, methods, counts, support = leaf.downloaded_sorf_audit()
         assert len(counts) == 1
         row = counts[0]
-        contig = row["contig"]
+        assert row["contig"] == contig
         seen.add(contig)
         is_placeholder = contig == "[all contigs]"
         expected_method = "threeprime" if is_placeholder else "fiveprime"
         expected_retained = "0" if is_placeholder else "1"
+        assert methods == {expected_method}
         assert contig in {"chrA", "[all contigs]"}
         assert row["mapping_method"] == expected_method
         assert row["retained_cds"] == expected_retained
@@ -318,6 +333,8 @@ def test_cli_mixed_contig_and_no_evidence_reports_scope_mapping_specific_rpkm_co
         pooled = next(entry for entry in support if entry["read_length"] == "all_selected")
         assert pooled["contributing_cds"] == expected_retained
         assert pooled["raw_count_contributions"] == expected_retained
+        assert f"{expected_retained} retained CDSs" in leaf.text
+        assert f"{expected_retained} contributing CDSs" in leaf.text
         if is_placeholder:
             assert {entry["contributing_cds"] for entry in support} == {"0"}
             assert {entry["raw_count_contributions"] for entry in support} == {"0"}

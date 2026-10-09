@@ -12,9 +12,10 @@ dominant fragment lengths across libraries.  Then open
 to compare start and stop profiles. For libraries with several profiled
 contigs, this page is an index linking to a separate interactive report for
 each contig. Each contig page contains its configured mapping methods and plot
-views, plus candidate and support counts restricted to that contig. A library
-with only one profiled contig opens directly into its plots. Use the adjacent
-Excel workbooks when exact values are needed.
+views. Plots appear first, with links to Excel workbooks and candidate/support
+TSVs at the end; HTML reports do not embed data tables. A library with only one
+profiled contig opens directly into its plots. Use the adjacent Excel workbooks
+when exact values are needed.
 
 The report keeps three complementary views: an enrichment heatmap, the
 original-style overlaid read-length lines, and individual start-profile
@@ -146,9 +147,9 @@ required for sORF eligibility. The general profile and advisor continue to
 require both start and stop windows to fit.
 
 Each group records eligible and retained CDSs together with the CDSs that
-actually contribute reads. The interactive report and figure titles include
-these counts, so an aggregate can be interpreted alongside its underlying
-annotation and read support.
+actually contribute reads in its exported tables. Figure titles retain the
+retained and contributing CDS counts, so an aggregate can be interpreted
+alongside its underlying annotation and read support.
 
 Normalization
 -------------

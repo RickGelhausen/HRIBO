@@ -109,22 +109,39 @@ def summarize_candidate_support(
 
 
 def candidate_report_html(counts, support, description):
-    """Embed candidate numbers and their definitions alongside the profiles."""
+    """Link to exported profile and candidate data after the plots."""
+    mapping_labels = {
+        "fiveprime": "5′", "threeprime": "3′",
+        "centered": "Centered", "global": "Global",
+    }
+    links = []
+    for method in counts["mapping_method"].drop_duplicates():
+        anchors = set(support.loc[support["mapping_method"] == method, "anchor"])
+        for anchor in ("start", "stop"):
+            if anchor in anchors:
+                filename = f"{method}_readcounts_{anchor}.xlsx"
+                links.append(
+                    f'<li><a href="{html.escape(filename)}">'
+                    f'{mapping_labels[method]} {anchor} profiles (Excel)</a></li>'
+                )
+    links.extend([
+        '<li><a href="../candidates.tsv">Candidate identities and exclusions (TSV)</a></li>',
+        '<li><a href="../candidate_counts.tsv">Candidate counts (TSV)</a></li>',
+        '<li><a href="../candidate_support.tsv">Profile support (TSV)</a></li>',
+    ])
     return (
+        '<section class="data-downloads"><h2>Data downloads</h2>'
         f"<p>{html.escape(description)}</p>"
+        "<p>Workbooks contain a sheet for each profiled contig. TSV files cover "
+        "all contigs in this group.</p><ul>"
+        + "".join(links)
+        + "</ul><details><summary>Count definitions</summary>"
         "<p>Counts refer to unique CDS intervals. Retained CDSs pass the filters; "
         "contributing CDSs supply at least one actual count within the displayed "
         "window at the selected read length. All-selected counts count each CDS "
-        "once across the selected lengths. Exclusions record the first failed "
-        "filter. Candidate coordinates in the TSV are zero-based and inclusive.</p>"
-        '<p>Download <a href="../candidates.tsv">candidate identities and exclusions</a>, '
-        '<a href="../candidate_counts.tsv">filter counts</a>, or '
-        '<a href="../candidate_support.tsv">profile support counts</a>.</p>'
-        '<h2>Candidate counts</h2><div class="table-wrap">'
-        + counts.to_html(index=False, border=0)
-        + '</div><h2>Profile support</h2><div class="table-wrap">'
-        + support.to_html(index=False, border=0)
-        + "</div>"
+        "once across the selected lengths. Raw count contributions are aggregated "
+        "profile counts. Exclusions record the first failed filter. Candidate "
+        "coordinates in the TSV are zero-based and inclusive.</p></details></section>"
     )
 
 
@@ -417,7 +434,7 @@ def profile_cohort(args, read_intervals, total_counts, genome_lengths, max_lengt
                          if contig == "no_evidence" else f"Contig: {contig}.")
                 contig_reports[contig] = candidate_report_html(
                     contig_counts, contig_support,
-                    description + " " + scope + " Downloaded TSVs include all contigs in this group.",
+                    description + " " + scope,
                 )
         io.write_plots_to_file(
             figures, args.output_formats, args.include_plotly_js,

@@ -2,7 +2,9 @@
 
 import subprocess
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 import pandas as pd
 import numpy as np
@@ -14,6 +16,42 @@ import metagene_profiling
 SCRIPT = Path(__file__).resolve().parents[1] / "workflow/scripts/metagene_profiling.py"
 READ_LENGTHS = ["30", "31", "32", "33"]
 ALL_CONTIGS = "[all contigs]"
+
+
+class DownloadLinks(HTMLParser):
+    def __init__(self, text):
+        super().__init__()
+        self.links, self.tables = [], []
+        self.feed(text)
+
+    def handle_starttag(self, tag, attributes):
+        if tag == "table":
+            self.tables.append(tag)
+        elif tag == "a":
+            href = dict(attributes).get("href")
+            if href:
+                self.links.append(href)
+
+
+def assert_data_downloads_follow_plots(report, *, stop_workbooks=False):
+    text = report.read_text()
+    parser = DownloadLinks(text)
+    assert not parser.tables
+    assert text.rfind("Plotly.newPlot") < text.index("candidate_counts.tsv")
+    targets = set()
+    for href in parser.links:
+        address = urlsplit(href)
+        if address.scheme or address.netloc or not address.path:
+            continue
+        target = (report.parent / unquote(address.path)).resolve()
+        assert target.is_file()
+        targets.add(target.name)
+    assert {"candidates.tsv", "candidate_counts.tsv", "candidate_support.tsv"} <= targets
+    assert {name for name in targets if name.endswith(".xlsx")} == {
+        f"{method}_readcounts_{anchor}.xlsx"
+        for method in ("fiveprime", "threeprime")
+        for anchor in (("start", "stop") if stop_workbooks else ("start",))
+    }
 
 
 def test_start_only_report_plots_every_selected_read_length(tmp_path):
@@ -194,6 +232,10 @@ def test_short_cds_profiles_selection_support_orientation_and_library_cpm(tmp_pa
     assert "candidate_counts.tsv" in html and "candidate_support.tsv" in html
     assert "overlaid read lengths" in html
     assert "overlaid read lengths" in (output / "cpm/interactive_metagene_profiling.html").read_text()
+    assert_data_downloads_follow_plots(output / "sorfs/cpm/interactive_metagene_profiling.html")
+    assert_data_downloads_follow_plots(
+        output / "cpm/interactive_metagene_profiling.html", stop_workbooks=True,
+    )
 
 
 @pytest.mark.parametrize("cohort", ["short_without_evidence", "no_short_cds", "no_cds"])
@@ -231,6 +273,8 @@ def test_empty_short_profiles_export_explicit_support_and_html(tmp_path, cohort)
     html = (output / "sorfs/cpm/interactive_metagene_profiling.html").read_text()
     assert f"{expected_retained} retained CDSs" in html
     assert "0 contributing CDSs" in html
-    assert "Candidate counts" in html and "Profile support" in html
+    assert "Data downloads" in html
+    assert "candidate_counts.tsv" in html and "candidate_support.tsv" in html
     assert "no_evidence" in html
     assert "overlaid read lengths" in html
+    assert_data_downloads_follow_plots(output / "sorfs/cpm/interactive_metagene_profiling.html")
