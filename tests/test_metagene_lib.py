@@ -189,7 +189,7 @@ def test_empty_metagene_evidence_writes_valid_workbooks(tmp_path):
         sheet_name="no_evidence",
     )
 
-    assert len(figures) == 2
+    assert len(figures) == 3
     assert start["coordinates"].tolist() == [-2, -1, 0, 1, 2, 3]
     assert stop["coordinates"].tolist() == [-4, -3, -2, -1, 0, 1]
     assert list(start.columns) == ["coordinates", "30", "sum"]

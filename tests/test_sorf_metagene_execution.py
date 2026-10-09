@@ -23,8 +23,8 @@ def test_start_only_report_plots_every_selected_read_length(tmp_path):
         start, {}, lengths, tmp_path, "fiveprime", "cpm", 2, 4, [],
         start_only=True,
     )
-    assert len(figures) == 1
-    figure = figures[0][2]
+    assert len(figures) == 2
+    figure = next(figure for name, _, figure in figures if name.endswith("(per read length)"))
     assert [trace.name for trace in figure.data] == [f"{length} nt" for length in lengths]
     assert not (tmp_path / "fiveprime_readcounts_stop.xlsx").exists()
 
@@ -192,6 +192,8 @@ def test_short_cds_profiles_selection_support_orientation_and_library_cpm(tmp_pa
     assert "3 contributing CDSs" in html
     assert "4 contributing CDSs" in html
     assert "candidate_counts.tsv" in html and "candidate_support.tsv" in html
+    assert "overlaid read lengths" in html
+    assert "overlaid read lengths" in (output / "cpm/interactive_metagene_profiling.html").read_text()
 
 
 @pytest.mark.parametrize("cohort", ["short_without_evidence", "no_short_cds", "no_cds"])
@@ -231,3 +233,4 @@ def test_empty_short_profiles_export_explicit_support_and_html(tmp_path, cohort)
     assert "0 contributing CDSs" in html
     assert "Candidate counts" in html and "Profile support" in html
     assert "no_evidence" in html
+    assert "overlaid read lengths" in html

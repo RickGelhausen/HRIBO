@@ -271,7 +271,7 @@ def create_metagene_figures(
             pooled_count = int(support.loc[
                 support["read_length"] == "all_selected", "contributing_cds"
             ].sum())
-            subtitle += f" · {retained_count} retained CDSs · {pooled_count} contributing CDSs at starts"
+            subtitle += f"\n{retained_count} retained CDSs · {pooled_count} contributing CDSs at starts"
             panel_support = {
                 int(row.read_length): {
                     "contributing_cds": row.contributing_cds,
@@ -292,6 +292,20 @@ def create_metagene_figures(
             )
             fig_list.append((chromosome, mapping_method, fig))
 
+        value_label = {"raw": "Reads", "cpm": "CPM", "window": "Window-normalized counts"}[normalization_method]
+        overlaid = plotting.plot_metagene_profiles(
+            df_start,
+            df_stop,
+            read_length_list,
+            f"{chromosome}: overlaid read lengths",
+            subtitle,
+            color_list=color_list,
+            value_label=value_label,
+            start_only=start_only,
+        )
+        if overlaid is not None:
+            fig_list.append((f"{chromosome} (overlaid read lengths)", mapping_method, overlaid))
+
         profiles = plotting.plot_read_length_profiles(
             df_start,
             read_length_list,
@@ -300,9 +314,9 @@ def create_metagene_figures(
             offsets,
             read_end=mapping_method,
             color_list=color_list,
-            max_panels=len(read_length_list) if start_only else 12,
+            max_panels=len(read_length_list),
             candidate_support=panel_support,
-            value_label={"raw": "Reads", "cpm": "CPM", "window": "Window-normalized counts"}[normalization_method],
+            value_label=value_label,
         )
         if profiles is not None:
             fig_list.append((f"{chromosome} (per read length)", mapping_method, profiles))

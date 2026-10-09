@@ -100,7 +100,7 @@ def excel_writer(output_path, data_frames):
             worksheet.set_column(idx, idx, max_len)
     writer.close()
 
-def write_plots_to_file(fig_list, output_format, include_plotly_js, alignment_file_name, meta_dir, fig_width=1400, fig_height=600, report_html="", report_subtitle=None):
+def write_plots_to_file(fig_list, output_format, include_plotly_js, alignment_file_name, meta_dir, fig_width=1400, fig_height=None, report_html="", report_subtitle=None):
     """
     Write plots to requested file formats
     """
@@ -109,8 +109,9 @@ def write_plots_to_file(fig_list, output_format, include_plotly_js, alignment_fi
         if image_format in output_format:
             for chromosome, mapping_method, fig in fig_list:
                 output_path = Path(meta_dir) / f"{chromosome}_{mapping_method}.{image_format}"
+                height = fig_height if fig_height is not None else (fig.layout.height or 600)
                 fig.write_image(
-                    str(output_path), width=fig_width, height=fig_height
+                    str(output_path), width=fig_width, height=height
                 )
 
     if "interactive" in output_format:

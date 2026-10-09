@@ -12,6 +12,15 @@ dominant fragment lengths across libraries.  Then open
 to compare start and stop profiles.  Use the adjacent Excel workbooks when
 exact values are needed.
 
+The report keeps three complementary views: an enrichment heatmap, the
+original-style overlaid read-length lines, and individual start-profile
+panels. Overlaid lines show position on the x axis and the selected raw,
+CPM, or window-normalized values on the y axis, with a common scale for the
+start and stop panels. Each configured read length has the same colour and
+dash style in both panels; clicking its legend entry toggles both lines.
+Individual panels also show every configured length. The sORF report keeps
+both line views, using only the start anchor.
+
 When ``metageneSettings.sorfMaxLength`` is positive, an additional start-only
 profile is written under
 ``metageneprofiling/<library>/sorfs/<normalization>/``. It uses annotated CDSs
@@ -212,7 +221,12 @@ For every ``<library>`` and requested ``<normalization>``, the directory
 * ``interactive_metagene_profiling.html`` when ``interactive`` output is
   enabled; and
 * one ``<contig>_<mapping>.<format>`` heatmap, plus a per-read-length start
-  profile figure when data are available, for each requested static format.
+  profile figure and an overlaid read-length figure when data are available,
+  for each requested static format. The additional filenames include
+  ``(per read length)`` and ``(overlaid read lengths)``, respectively.
+
+Static figures preserve their individual layout heights so that multi-panel
+profiles retain space for the data and support labels.
 
 Workbook sheets are named by contig.  Their first column is ``coordinates``,
 the following columns are exactly the lengths configured in

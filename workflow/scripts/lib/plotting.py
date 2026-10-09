@@ -1,24 +1,16 @@
-"""
-Metagene and P-site figures.
+"""Complementary metagene and P-site figures using the shared HRIBO theme.
 
-The previous version drew every read length as a line on one pair of shared
-axes, cycling ten colours and six dash patterns. With the ten read lengths the
-default configuration asks for, that is twenty overlapping traces and nothing
-can be read off it.
-
-The forms here are chosen by what each figure has to answer:
-
-  which read lengths pile up where     -> heatmap, read length against position
-  what one read length looks like      -> small multiples, one panel each
-  is the signal in frame                -> grouped bars, three reading frames
-  how deep is each read length          -> bar chart
-
-Colour comes from lib.theme; nothing here contains a literal colour.
+Overlaid lines compare counts across read lengths, heatmaps show enrichment,
+and individual panels expose the shape of each read-length profile.
 
 Author: Rick Gelhausen
 """
 
 from __future__ import annotations
+
+import html
+import math
+import textwrap
 
 import numpy as np
 import plotly.graph_objects as go
@@ -75,6 +67,100 @@ def _profile_matrix(frame, read_lengths):
     if not columns:
         return np.zeros((0, len(frame))), []
     return np.vstack([frame[column].to_numpy(dtype=float) for column in columns]), lengths
+
+
+def _metagene_layout(fig, title, subtitle, body_height, bottom_margin=70):
+    """Reserve space for wrapped headings independently of the data panels."""
+    def wrapped(text, width):
+        return [
+            html.escape(line)
+            for paragraph in str(text).splitlines()
+            for line in (textwrap.wrap(paragraph, width=width) or [""])
+        ]
+
+    title_lines = wrapped(title, 38)
+    subtitle_lines = wrapped(subtitle, 55)
+    # Keep the interactive toolbar above the heading, including at narrow widths.
+    top_margin = max(130, 20 * len(title_lines) + 15 * len(subtitle_lines) + 88)
+    theme.apply(fig, "<br>".join(title_lines), "<br>".join(subtitle_lines))
+    fig.update_layout(
+        height=body_height + top_margin + bottom_margin,
+        margin=dict(t=top_margin, b=bottom_margin),
+        title=dict(y=1, yanchor="top", pad=dict(t=52)),
+    )
+    # Plotly's template styles the first axes; apply them to every subplot.
+    axes = theme.template().layout
+    fig.update_xaxes(axes.xaxis.to_plotly_json(), automargin=True)
+    fig.update_yaxes(axes.yaxis.to_plotly_json(), automargin=True)
+
+
+def plot_metagene_profiles(
+    df_start,
+    df_stop,
+    read_lengths,
+    title,
+    subtitle="",
+    color_list=None,
+    value_label="Reads",
+    start_only=False,
+):
+    """Overlay each selected read length on shared count or CPM axes.
+
+    Start and stop panels share a scale and a legend group per length. A legend
+    click therefore toggles that length in both panels. sORF reports retain
+    only the start panel, following their start-only profiling convention.
+    """
+    start_matrix, lengths = _profile_matrix(df_start, read_lengths)
+    if not lengths:
+        return None
+    panels = [("start", df_start, start_matrix)]
+    if not start_only:
+        stop_matrix, _ = _profile_matrix(df_stop, lengths)
+        panels.append(("stop", df_stop, stop_matrix))
+
+    fig = make_subplots(
+        rows=1,
+        cols=len(panels),
+        subplot_titles=[f"{anchor.capitalize()} codon profile" for anchor, _, _ in panels],
+        shared_yaxes=True,
+        horizontal_spacing=0.08 if len(panels) > 1 else 0,
+    )
+    palette = list(color_list) if color_list else theme.CATEGORICAL
+    dashes = ("solid", "dot", "dash", "longdash", "dashdot", "longdashdot")
+    styles = {
+        int(length): dict(
+            color=palette[index % len(palette)],
+            dash=dashes[(index // len(palette)) % len(dashes)],
+            width=1.5,
+        )
+        for index, length in enumerate(read_lengths)
+    }
+    peak = max(float(matrix.max()) for _, _, matrix in panels if matrix.size)
+    upper = peak * 1.1 if peak > 0 else 1.0
+    for column, (anchor, frame, matrix) in enumerate(panels, start=1):
+        for length, values in zip(lengths, matrix):
+            fig.add_trace(
+                go.Scatter(
+                    x=frame["coordinates"], y=values, mode="lines",
+                    name=f"{length} nt", legendgroup=str(length),
+                    showlegend=column == 1, line=styles[length],
+                    hovertemplate=(f"{length} nt<br>%{{x}} nt from {anchor} codon"
+                                   f"<br>%{{y:.3g}} {value_label}<extra></extra>"),
+                ), row=1, col=column,
+            )
+        fig.add_vline(x=0, line=dict(color=theme.INK_SECONDARY, width=1, dash="dot"),
+                      row=1, col=column)
+        fig.update_xaxes(title_text=f"Distance from {anchor} codon (nt)", row=1, col=column)
+        fig.update_yaxes(range=[0, upper], row=1, col=column)
+    fig.update_yaxes(title_text=value_label, row=1, col=1)
+    fig.update_annotations(font_size=12)
+    _metagene_layout(fig, title, subtitle, body_height=340,
+                     bottom_margin=100 + 22 * math.ceil(len(lengths) / 5))
+    fig.update_layout(
+        legend=dict(orientation="h", yanchor="top", y=-75 / 340, xanchor="left", x=0,
+                    entrywidth=72, entrywidthmode="pixels", groupclick="togglegroup"),
+    )
+    return fig
 
 
 def plot_metagene_heatmap(
@@ -197,12 +283,10 @@ def plot_metagene_heatmap(
     fig.update_yaxes(title_text="Read length (nt)", dtick=1, row=1, col=1)
     fig.update_annotations(font_size=12)
 
-    theme.apply(fig, title, subtitle)
+    body_height = max(190, 26 * len(lengths) + 60)
+    _metagene_layout(fig, title, subtitle, body_height, bottom_margin=110)
     fig.update_layout(
-        height=max(360, 26 * len(lengths) + 230),
-        margin=dict(t=110),
-        title=dict(y=1, yanchor="top", pad=dict(t=12)),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        legend=dict(orientation="h", yanchor="top", y=-65 / body_height, xanchor="left", x=0),
     )
     return fig
 
@@ -221,9 +305,6 @@ def plot_read_length_profiles(
 ):
     """One panel per read length, sharing an x axis.
 
-    Small multiples rather than overlaid lines: comparing shapes across panels is
-    what the eye is good at, and it does not need a colour per read length.
-
     User-supplied series colours are assigned in read-length order and cycle
     deterministically when fewer colours than panels are supplied.  An empty
     list falls back to the fixed colour-vision-deficiency-safe theme palette.
@@ -240,19 +321,22 @@ def plot_read_length_profiles(
         for index, read_length in enumerate(read_lengths)
     }
 
+    panel_titles = [
+        f"{length} nt" + (
+            f" · {candidate_support[length]['contributing_cds']} contributing CDSs"
+            f"<br>{candidate_support[length]['raw_count_contributions']} raw count contributions"
+            if candidate_support is not None and length in candidate_support else ""
+        )
+        for length in lengths
+    ]
+    gap = 38 if any("<br>" in text for text in panel_titles) else 24
+    body_height = 100 * len(lengths) + gap * (len(lengths) - 1)
     fig = make_subplots(
         rows=len(lengths),
         cols=1,
         shared_xaxes=True,
-        vertical_spacing=0.012,
-        subplot_titles=[
-            f"{length} nt" + (
-                f" · {candidate_support[length]['contributing_cds']} contributing CDSs"
-                f" · {candidate_support[length]['raw_count_contributions']} raw count contributions"
-                if candidate_support is not None and length in candidate_support else ""
-            )
-            for length in lengths
-        ],
+        vertical_spacing=gap / body_height,
+        subplot_titles=panel_titles,
     )
 
     for index, (length, row_values) in enumerate(zip(lengths, matrix), start=1):
@@ -291,12 +375,7 @@ def plot_read_length_profiles(
     fig.update_yaxes(title_text=value_label, row=max(1, len(lengths) // 2), col=1)
     fig.update_annotations(font_size=10)
 
-    theme.apply(fig, title, subtitle)
-    fig.update_layout(
-        height=max(340, 95 * len(lengths) + 40),
-        margin=dict(t=110),
-        title=dict(y=1, yanchor="top", pad=dict(t=12)),
-    )
+    _metagene_layout(fig, title, subtitle, max(180, body_height))
     return fig
 
 

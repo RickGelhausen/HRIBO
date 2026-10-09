@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import jsonschema
@@ -73,6 +74,22 @@ def test_every_advertised_metagene_output_format_is_written(output_format, tmp_p
         assert figure.image_writes == [
             (tmp_path / f"chr1_fiveprime.{output_format}", 700, 300)
         ]
+
+
+@pytest.mark.parametrize("layout_height,override,expected", [
+    (1900, None, 1900), (None, None, 600), (1900, 300, 300),
+], ids=["preserve-tall-figure", "default-height", "explicit-override"])
+def test_static_metagene_exports_preserve_readable_figure_height(
+    tmp_path, layout_height, override, expected,
+):
+    figure = RecordingFigure()
+    figure.layout = SimpleNamespace(height=layout_height)
+    options = {} if override is None else {"fig_height": override}
+    hribo_io.write_plots_to_file(
+        [("chr1", "fiveprime", figure)], ["png"], "online", "RIBO-A-1",
+        tmp_path, **options,
+    )
+    assert figure.image_writes == [(tmp_path / "chr1_fiveprime.png", 1400, expected)]
 
 
 def test_length_cutoff_is_applied_by_annotation_filtering(tmp_path):
