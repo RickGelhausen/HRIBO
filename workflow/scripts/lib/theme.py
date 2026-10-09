@@ -174,6 +174,21 @@ th, td {{ text-align: left; padding: .4rem .7rem; border-bottom: 1px solid var(-
 th {{ font-weight: 600; color: var(--ink-secondary); white-space: nowrap; }}
 td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
 .table-wrap {{ overflow-x: auto; }}
+.adviser-table th, .adviser-table td {{ vertical-align: top; padding: .4rem .45rem; }}
+.adviser-table th {{ white-space: normal; }}
+.adviser-table th.num {{ text-align: right; }}
+.adviser-table td.num {{ white-space: nowrap; }}
+.adviser-offsets {{ width: auto; }}
+.adviser-evidence th {{ max-width: 8rem; }}
+.adviser-evidence .notes {{
+  min-width: 20rem; max-width: 28rem; white-space: normal;
+  overflow-wrap: break-word;
+}}
+.adviser-scroll-hint {{ color: var(--ink-secondary); font-size: .85rem; margin: .5rem 0; }}
+.adviser-table-wrap {{ scrollbar-color: var(--ink-muted) var(--grid); }}
+.adviser-table-wrap::-webkit-scrollbar {{ height: 12px; }}
+.adviser-table-wrap::-webkit-scrollbar-track {{ background: var(--grid); border-radius: 6px; }}
+.adviser-table-wrap::-webkit-scrollbar-thumb {{ background: var(--ink-muted); border-radius: 6px; }}
 .verdict {{ border-left: 3px solid var(--grid); padding: .6rem 0 .6rem 1rem; margin: 1rem 0; }}
 .verdict strong {{ display: block; font-size: 1.05rem; }}
 .pill {{

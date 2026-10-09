@@ -200,6 +200,6 @@ def test_both_read_ends_are_kept_in_the_output(reference, tmp_path):
 
     html = (out / "tis_recommendation.html").read_text()
     assert "fiveprime" in html and "threeprime" in html
-    assert "<th>P-site offset (nt)</th>" in html
-    assert "<th>Derived A-site offset (nt)</th>" in html
-    assert "<th>Derived P-site offset (nt)</th>" not in html
+    assert ">P-site offset (nt)</th>" in html
+    assert ">Derived A-site offset (nt)</th>" in html
+    assert ">Derived P-site offset (nt)</th>" not in html

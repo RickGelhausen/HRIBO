@@ -533,6 +533,38 @@ def render_report(library, best, comparisons, figures, asite_advice, path,
         parts.append(_scores_table(comparison.scores, site=site,
                                    selected_lengths=comparison.recommendation.read_lengths))
 
+    parts.append("""<script>
+(() => {
+  document.querySelectorAll('.adviser-table-wrap').forEach(wrapper => {
+    const hint = document.createElement('p');
+    hint.className = 'adviser-scroll-hint';
+    hint.textContent = 'Scroll sideways to see all columns →';
+    hint.hidden = true;
+    wrapper.before(hint);
+    const update = () => {
+      const overflowing = wrapper.scrollWidth > wrapper.clientWidth + 1;
+      hint.hidden = !overflowing;
+      if (overflowing) {
+        wrapper.tabIndex = 0;
+        wrapper.setAttribute('role', 'region');
+        wrapper.setAttribute('aria-label', 'Scrollable table; use left and right arrow keys');
+      } else {
+        wrapper.removeAttribute('tabindex');
+        wrapper.removeAttribute('role');
+        wrapper.removeAttribute('aria-label');
+      }
+    };
+    update();
+    window.addEventListener('resize', update);
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(update);
+      observer.observe(wrapper);
+      observer.observe(wrapper.querySelector('table'));
+    }
+  });
+})();
+</script>""")
+
     parts.append("<h2>Figures</h2>")
     js_mode = {"integrated": True, "online": "cdn", "local": "directory"}.get(include_plotly_js, True)
     for index, (heading, figure) in enumerate(figures):
@@ -571,13 +603,14 @@ def _site_offsets_table(recommendation):
     else:
         measured_site, derived_site = "A", "P"
         measured_offsets, derived_offsets = a_offsets, p_offsets
-    rows = ["<div class='table-wrap'><table><thead><tr><th>Read length</th>"
-            f"<th>{measured_site}-site offset (nt)</th>"
-            f"<th>Derived {derived_site}-site offset (nt)</th>"
+    rows = ["<div class='table-wrap adviser-table-wrap'><table class='adviser-table adviser-offsets'>"
+            "<thead><tr><th class='num'>Read length</th>"
+            f"<th class='num'>{measured_site}-site offset (nt)</th>"
+            f"<th class='num'>Derived {derived_site}-site offset (nt)</th>"
             "</tr></thead><tbody>"]
     rows.extend(
-        f"<tr><td>{length}</td><td>{measured_offsets[length]}</td>"
-        f"<td>{derived_offsets[length]}</td></tr>"
+        f"<tr><td class='num'>{length}</td><td class='num'>{measured_offsets[length]}</td>"
+        f"<td class='num'>{derived_offsets[length]}</td></tr>"
         for length in sorted(recommendation.read_lengths)
     )
     rows.append("</tbody></table></div>")
@@ -587,7 +620,7 @@ def _site_offsets_table(recommendation):
 def _end_comparison_table(comparisons, best, site="P"):
     """Side by side summary, so the losing end is visible rather than discarded."""
     rows = [
-        "<div class='table-wrap'><table><thead><tr>"
+        "<div class='table-wrap adviser-table-wrap'><table class='adviser-table'><thead><tr>"
         f"<th>Read end</th><th>Chosen</th><th>Read lengths</th><th>{site}-site offsets (nt)</th>"
         "<th>Peak vs background</th><th>Dominant frame</th><th>3-nt FFT score</th>"
         "<th>Library covered</th><th>Confidence</th></tr></thead><tbody>"
@@ -620,12 +653,14 @@ def _end_comparison_table(comparisons, best, site="P"):
 def _scores_table(scores, site="P", selected_lengths=()):
     selected = set(selected_lengths)
     rows = [
-        "<div class='table-wrap'><table><thead><tr>"
-        f"<th>Read length</th><th>Share of reads</th><th>{site}-site offset (nt)</th>"
-        "<th>Peak read ends</th><th>Background read ends/bin</th>"
-        "<th>Peak vs background</th><th>Body read ends</th><th>Frame 0</th>"
-        "<th>Dominant frame</th><th>3-nt FFT score</th>"
-        "<th>Usable</th><th>Selected</th><th>Notes</th></tr></thead><tbody>"
+        "<div class='table-wrap adviser-table-wrap'><table class='adviser-table adviser-evidence'><thead><tr>"
+        f"<th class='num'>Read length</th><th class='num'>Share of reads</th>"
+        f"<th class='num'>{site}-site offset (nt)</th>"
+        "<th class='num'>Peak read ends</th><th class='num'>Background read ends/bin</th>"
+        "<th class='num'>Peak vs background</th><th class='num'>Body read ends</th>"
+        "<th class='num'>Frame 0</th><th class='num'>Dominant frame</th>"
+        "<th class='num'>3-nt FFT score</th>"
+        "<th>Usable</th><th>Selected</th><th class='notes'>Notes</th></tr></thead><tbody>"
     ]
     for score in scores:
         frame = "-" if not any(score.frame_fractions) else (
@@ -645,7 +680,7 @@ def _scores_table(scores, site="P", selected_lengths=()):
             f"<td class='num'>{score.periodicity:.0%}</td>"
             f"<td>{'yes' if score.usable else 'no'}</td>"
             f"<td>{'yes' if score.read_length in selected else 'no'}</td>"
-            f"<td>{'; '.join(score.reasons)}</td>"
+            f"<td class='notes'>{'; '.join(score.reasons)}</td>"
             "</tr>"
         )
     rows.append("</tbody></table></div>")

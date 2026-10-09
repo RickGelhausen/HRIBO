@@ -133,9 +133,9 @@ def test_reports_label_measured_a_site_and_derived_p_site(reference, tmp_path, r
     assert (out / "tis_recommendation.json").is_file()
     html = (out / "tis_recommendation.html").read_text()
     assert "TTS peak advice" in html
-    assert "<th>A-site offset (nt)</th>" in html
-    assert "<th>Derived P-site offset (nt)</th>" in html
-    assert "<th>Derived A-site offset (nt)</th>" not in html
+    assert ">A-site offset (nt)</th>" in html
+    assert ">Derived P-site offset (nt)</th>" in html
+    assert ">Derived A-site offset (nt)</th>" not in html
     assert "A-site" in html
     assert "stop codon" in html.lower()
     assert "psiteOffsets:" not in html
